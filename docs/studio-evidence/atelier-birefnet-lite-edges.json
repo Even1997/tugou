@@ -1,0 +1,16 @@
+[
+  {
+    "name": "portrait-a",
+    "elapsedMs": 91,
+    "alphaUnchanged": true,
+    "opaqueRGBUnchanged": 276413,
+    "limits": "Explicit white background removal on two light-background portraits; not applicable to unknown coloured backgrounds"
+  },
+  {
+    "name": "portrait-b",
+    "elapsedMs": 30,
+    "alphaUnchanged": true,
+    "opaqueRGBUnchanged": 49333,
+    "limits": "Explicit white background removal on two light-background portraits; not applicable to unknown coloured backgrounds"
+  }
+]

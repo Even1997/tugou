@@ -1,0 +1,314 @@
+{
+  "model": "D:\\CanvasStudioBiRefNetFullQA\\model_fp16.onnx",
+  "sha256": "3654c741eb80bd926ada8fed1713b506ccf8d30eb1f6487e87eb9f234f33df09",
+  "source": "https://huggingface.co/onnx-community/BiRefNet-ONNX/tree/534d3c82d3bb8b2f0867db6dfbc3a525b8e42f67",
+  "integrity": "Published full-model FP16 conversion, fixed revision, LFS SHA256 and size verified; model card MIT and upstream license retained",
+  "limits": "Nine known-alpha synthetic composites, not photographic ground truth or product acceptance",
+  "guard": "4 GiB physical free before start; stop own process below 1 GiB physical or 2 GiB commit headroom, above 16 GiB private committed memory, or after 180 seconds; sampled every 500ms. Private commit is not physical RAM or dedicated VRAM.",
+  "samples": [
+    {
+      "name": "couple-light",
+      "source": "D:\\CanvasStudioBiRefNetFullQA\\alpha-benchmark\\couple-light.png",
+      "sourceSha256": "aeb202d5252a50e150e4d297bf3f08bcd338d1724bdfd2d78e66687d1a84c796",
+      "size": [
+        683,
+        1024
+      ],
+      "inferenceSeconds": [
+        0.747
+      ],
+      "memoryMiB": {
+        "workingSet": 922,
+        "peakWorkingSet": 926,
+        "private": 11640.7,
+        "peakPagefile": 11644.7
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "alphaMetrics": {
+        "meanAbsoluteError": 0.010384305380284786,
+        "transitionMAE": 0.17759276926517487,
+        "foregroundRetained": 0.998859755054654,
+        "backgroundCleared": 0.9952790156713315
+      },
+      "alphaScreenPassed": false
+    },
+    {
+      "name": "couple-dark",
+      "source": "D:\\CanvasStudioBiRefNetFullQA\\alpha-benchmark\\couple-dark.png",
+      "sourceSha256": "843875eda795ad26e53840729fccecc10edfd68876c742819429b54f53f49db5",
+      "size": [
+        683,
+        1024
+      ],
+      "inferenceSeconds": [
+        0.494
+      ],
+      "memoryMiB": {
+        "workingSet": 938.1,
+        "peakWorkingSet": 955.2,
+        "private": 11656.6,
+        "peakPagefile": 11673.9
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "alphaMetrics": {
+        "meanAbsoluteError": 0.01133973803371191,
+        "transitionMAE": 0.2054155021905899,
+        "foregroundRetained": 0.995397556766058,
+        "backgroundCleared": 0.9989142423232465
+      },
+      "alphaScreenPassed": false
+    },
+    {
+      "name": "couple-pattern",
+      "source": "D:\\CanvasStudioBiRefNetFullQA\\alpha-benchmark\\couple-pattern.png",
+      "sourceSha256": "bedcdf8dca59c453f91a2121248ff8fa2a96accd37fbff8b0d847d6712a2e30e",
+      "size": [
+        683,
+        1024
+      ],
+      "inferenceSeconds": [
+        0.492
+      ],
+      "memoryMiB": {
+        "workingSet": 938.1,
+        "peakWorkingSet": 962.2,
+        "private": 11656.6,
+        "peakPagefile": 11680.6
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "alphaMetrics": {
+        "meanAbsoluteError": 0.010730920359492302,
+        "transitionMAE": 0.19014909863471985,
+        "foregroundRetained": 0.9977039613145987,
+        "backgroundCleared": 0.9980690005875461
+      },
+      "alphaScreenPassed": false
+    },
+    {
+      "name": "flowers-light",
+      "source": "D:\\CanvasStudioBiRefNetFullQA\\alpha-benchmark\\flowers-light.png",
+      "sourceSha256": "7194f71467c2f46498790cac20be2c706ad6eb71357930c56b76ce09b6acd5ef",
+      "size": [
+        1024,
+        683
+      ],
+      "inferenceSeconds": [
+        0.492
+      ],
+      "memoryMiB": {
+        "workingSet": 939.8,
+        "peakWorkingSet": 962.2,
+        "private": 11658.2,
+        "peakPagefile": 11680.7
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "alphaMetrics": {
+        "meanAbsoluteError": 0.024346578866243362,
+        "transitionMAE": 0.23075081408023834,
+        "foregroundRetained": 0.9971736627237517,
+        "backgroundCleared": 0.9928084952426894
+      },
+      "alphaScreenPassed": false
+    },
+    {
+      "name": "flowers-dark",
+      "source": "D:\\CanvasStudioBiRefNetFullQA\\alpha-benchmark\\flowers-dark.png",
+      "sourceSha256": "31363db9f59de305a7a32f20a13a0d54cea9356892c14aeeb5c3305ac918ec71",
+      "size": [
+        1024,
+        683
+      ],
+      "inferenceSeconds": [
+        0.493
+      ],
+      "memoryMiB": {
+        "workingSet": 939.8,
+        "peakWorkingSet": 963.8,
+        "private": 11658.2,
+        "peakPagefile": 11682.3
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "alphaMetrics": {
+        "meanAbsoluteError": 0.023818358778953552,
+        "transitionMAE": 0.22973142564296722,
+        "foregroundRetained": 0.9990186328901915,
+        "backgroundCleared": 0.9974928116688988
+      },
+      "alphaScreenPassed": false
+    },
+    {
+      "name": "flowers-pattern",
+      "source": "D:\\CanvasStudioBiRefNetFullQA\\alpha-benchmark\\flowers-pattern.png",
+      "sourceSha256": "619edbe3a29e09de3174141a4fd50c427bae3bc3c0cb649f08d9c8e2d6f15427",
+      "size": [
+        1024,
+        683
+      ],
+      "inferenceSeconds": [
+        0.494
+      ],
+      "memoryMiB": {
+        "workingSet": 939.8,
+        "peakWorkingSet": 963.8,
+        "private": 11658,
+        "peakPagefile": 11682.3
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "alphaMetrics": {
+        "meanAbsoluteError": 0.02574607916176319,
+        "transitionMAE": 0.2314280867576599,
+        "foregroundRetained": 0.9981615722809588,
+        "backgroundCleared": 0.9962974011987957
+      },
+      "alphaScreenPassed": false
+    },
+    {
+      "name": "veil-lines-light",
+      "source": "D:\\CanvasStudioBiRefNetFullQA\\alpha-benchmark\\veil-lines-light.png",
+      "sourceSha256": "44c03217b9e49b27a59b038e784d7bd8e0e7de00470f593511a05cfd7c60220b",
+      "size": [
+        768,
+        768
+      ],
+      "inferenceSeconds": [
+        0.494
+      ],
+      "memoryMiB": {
+        "workingSet": 937.8,
+        "peakWorkingSet": 963.8,
+        "private": 11656,
+        "peakPagefile": 11682.3
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "alphaMetrics": {
+        "meanAbsoluteError": 0.10971724987030029,
+        "transitionMAE": 0.3161073327064514,
+        "foregroundRetained": 0.995284155450759,
+        "backgroundCleared": 0.9599667180963799
+      },
+      "alphaScreenPassed": false
+    },
+    {
+      "name": "veil-lines-dark",
+      "source": "D:\\CanvasStudioBiRefNetFullQA\\alpha-benchmark\\veil-lines-dark.png",
+      "sourceSha256": "3e9b7b67e0d98820327f8f9315c33902f9a75bb62dbce6f28e5a52abeae00550",
+      "size": [
+        768,
+        768
+      ],
+      "inferenceSeconds": [
+        0.495
+      ],
+      "memoryMiB": {
+        "workingSet": 936.5,
+        "peakWorkingSet": 963.8,
+        "private": 11654.8,
+        "peakPagefile": 11682.3
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "alphaMetrics": {
+        "meanAbsoluteError": 0.21194952726364136,
+        "transitionMAE": 0.6697577834129333,
+        "foregroundRetained": 1,
+        "backgroundCleared": 0.953614984718496
+      },
+      "alphaScreenPassed": false
+    },
+    {
+      "name": "veil-lines-pattern",
+      "source": "D:\\CanvasStudioBiRefNetFullQA\\alpha-benchmark\\veil-lines-pattern.png",
+      "sourceSha256": "08b9997ea3f537a4b47fdd2a1c4d79535bedd7f2d40f2e389cfc2af569ed8bbc",
+      "size": [
+        768,
+        768
+      ],
+      "inferenceSeconds": [
+        0.494
+      ],
+      "memoryMiB": {
+        "workingSet": 936.6,
+        "peakWorkingSet": 963.8,
+        "private": 11654.8,
+        "peakPagefile": 11682.3
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "alphaMetrics": {
+        "meanAbsoluteError": 0.09379858523607254,
+        "transitionMAE": 0.3270372450351715,
+        "foregroundRetained": 0.9902499053388868,
+        "backgroundCleared": 1
+      },
+      "alphaScreenPassed": false
+    }
+  ],
+  "modelVariant": "General full BiRefNet at 1024, not the matting-specialized checkpoint",
+  "loadSeconds": 3.933,
+  "providers": [
+    "DmlExecutionProvider",
+    "CPUExecutionProvider"
+  ],
+  "inputShape": [
+    1,
+    3,
+    1024,
+    1024
+  ],
+  "inputType": "tensor(float)",
+  "memoryAfterLoadMiB": {
+    "workingSet": 840.7,
+    "peakWorkingSet": 860.6,
+    "private": 2369.6,
+    "peakPagefile": 2945.1
+  },
+  "alphaScreen": {
+    "meanAbsoluteErrorMax": 0.03,
+    "transitionMAEMax": 0.12,
+    "foregroundRetainedMin": 0.97,
+    "backgroundClearedMin": 0.98
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "at": "2026-10-21T05:27:40.6448266Z",
+  "buildId": "_2ddofeS7Ne3d6ABtFjRF",
+  "unitTests": 53,
+  "typecheck": "passed",
+  "productionBuild": "passed",
+  "packagedSplitUi": {
+    "at": "2026-10-21T05:26:19.466Z",
+    "parts": 5,
+    "grid": 4,
+    "visiblePixelsRecomposeExactly": true,
+    "alphaPreserved": true,
+    "partialThenAllDeduplicated": true,
+    "alignedTransform": true,
+    "sourceHidden": true,
+    "undoRedo": true,
+    "restart": true
+  },
+  "packagedRegionUi": {
+    "at": "2026-10-21T05:26:52.545Z",
+    "dragSelection": true,
+    "exactBounds": true,
+    "outsidePixelsUnchanged": true,
+    "alignedTransform": true,
+    "undoRedo": true,
+    "secondarySnapshot": true,
+    "texture": true,
+    "transparentExtend": [
+      160,
+      224
+    ],
+    "restart": true
+  },
+  "largeImage": {
+    "at": "2026-10-21T05:22:10.774Z",
+    "size": [
+      10000,
+      10000
+    ],
+    "parts": 2,
+    "visiblePixels": 72000000,
+    "elapsedMs": 5452,
+    "maxRssMiB": 1340,
+    "sampledPixelsExact": true,
+    "outputBytes": 2143661,
+    "folder": "D:\\CanvasStudioRuntime\\qa-split\\1792560124654"
+  },
+  "cloudAcceptance": "pending user API configuration"
+}

@@ -524,6 +524,7 @@ function withPromptGuard(config: AiConfig, prompt: string) {
 }
 
 function usesAccountProxy(config: AiConfig) {
+    if (config.localChannels.some((channel) => channel.id === "studio-shared")) return false;
     const token = useUserStore.getState().token;
     return config.channelMode === "remote" || (config.channelMode === "local" && Boolean(token));
 }
@@ -535,6 +536,7 @@ export function aiApiUrl(config: AiConfig, path: string) {
 }
 
 export function aiHeaders(config: AiConfig, contentType?: string) {
+    if (config.localChannels.some((channel) => channel.id === "studio-shared")) return { Authorization: "Bearer studio-managed", ...(contentType ? { "Content-Type": contentType } : {}) };
     const token = useUserStore.getState().token;
     if (config.channelMode === "remote" && !token) throw new Error("请先登录后再使用云端渠道");
     if (config.channelMode === "remote") {
@@ -1035,6 +1037,12 @@ export async function requestEdit(config: AiConfig & { seedIndex?: number; seedC
 }
 
 export async function createCanvasImageTask(config: AiConfig & { seedIndex?: number; seedCount?: number }, prompt: string, references: ReferenceImage[], options: CanvasImageTaskOptions = {}): Promise<CanvasImageTask> {
+    if (config.localChannels.some(channel => channel.id === "studio-shared")) {
+        assertImageReferencesSupported(config.model, references);
+        const { canvasGeneration } = await import("@/app/studio/canvas-generation");
+        const params = createImageRequestParams(config);
+        return canvasGeneration(prompt, await Promise.all(references.map(image => imageToDataUrl(image))), { size: params.size || "auto", quality: isZhipuImageModel(config.model) && params.quality === "auto" ? undefined : params.quality, responseFormatB64Json: !!config.responseFormatB64Json }, options);
+    }
 	const translation = await findParameterTranslation(config);
     if (!usesAccountProxy(config)) {
         const images = await requestImages({ ...config, count: "1" }, prompt, references, options.signal);

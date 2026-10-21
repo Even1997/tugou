@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "results": [
+    "Header drag region and button no-drag styles verified",
+    "Native window movement remains available",
+    "Minimize, restore, maximize buttons and external state updates passed",
+    "Unknown IPC action rejected",
+    "Narrow window wraps navigation below controls without overlap",
+    "Close honors beforeunload: cancel keeps window; confirm closes"
+  ],
+  "regions": {
+    "header": "drag",
+    "button": "no-drag",
+    "dragPoint": {
+      "x": 12,
+      "y": 20
+    },
+    "buttonPoint": {
+      "x": 1478,
+      "y": 32
+    }
+  },
+  "controls": {
+    "width": 1100,
+    "right": 1100,
+    "navTop": 64,
+    "controlsBottom": 64
+  },
+  "captureFailures": []
+}

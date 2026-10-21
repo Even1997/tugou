@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-21T08:11:48.024Z",
+  "channel": "local HTTP fixture; not semantic model quality",
+  "sharedVisionModel": true,
+  "editableDraftSavedAndPortable": true,
+  "categoryRequests": 3,
+  "independentFailureAndRetry": true,
+  "invalidColorMaskRejected": true,
+  "originalRGBExact": true,
+  "sourceAlphaMultiplied": true,
+  "fullCanvasPreserved": true,
+  "alignedLayerUndoRedo": true,
+  "originalUnchanged": true,
+  "collectionDeduplicated": true,
+  "lateAnalysisIgnored": true,
+  "toolbarFits960": true,
+  "consoleErrors": []
+}

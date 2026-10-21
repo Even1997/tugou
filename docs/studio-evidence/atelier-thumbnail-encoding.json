@@ -1,0 +1,392 @@
+{
+  "at": "2026-10-21T10:54:15.859Z",
+  "results": [
+    {
+      "source": "055b4f756ccf4b14d635fdb42511cf812132077a03e09e0cffe68b742e2afea2.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 34.978899999999996,
+          "bytes": 2896
+        },
+        {
+          "effort": 0,
+          "ms": 26.315499999999986,
+          "bytes": 3068
+        }
+      ],
+      "rgbMeanDifference": 1.0068110713252314,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "3b76ac23437b41444a6fea13cf0e4f3bfd9f770738370e9bbdda216150fa0616.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 35.463599999999985,
+          "bytes": 3202
+        },
+        {
+          "effort": 0,
+          "ms": 31.334600000000023,
+          "bytes": 3382
+        }
+      ],
+      "rgbMeanDifference": 1.025135181568287,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "2e0e7e286242abd9c07829ec91538e9d6199142eacfd4c8a1fe0e6d19fc6a0d5.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 34.277799999999985,
+          "bytes": 3106
+        },
+        {
+          "effort": 0,
+          "ms": 26.088900000000024,
+          "bytes": 3244
+        }
+      ],
+      "rgbMeanDifference": 1.0560687029803242,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "4e6e9a7b98709499d27b4d4403ebf3058691f16d974a6c7c0306c9052ea21986.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 31.198399999999992,
+          "bytes": 3200
+        },
+        {
+          "effort": 0,
+          "ms": 27.820299999999975,
+          "bytes": 3746
+        }
+      ],
+      "rgbMeanDifference": 1.283153392650463,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "8472402a221fbeaa734846258879459981c27614c0ed677c6c5cc3401d72cdd7.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 31.110900000000015,
+          "bytes": 3184
+        },
+        {
+          "effort": 0,
+          "ms": 28.151700000000005,
+          "bytes": 3372
+        }
+      ],
+      "rgbMeanDifference": 1.1131162290219907,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "7b7e31b27b4fbc19eefe2c4d0b47999dcf6e8e16c80f2ed6fb72acfbea6c91f6.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 31.537300000000016,
+          "bytes": 3308
+        },
+        {
+          "effort": 0,
+          "ms": 26.714999999999975,
+          "bytes": 3306
+        }
+      ],
+      "rgbMeanDifference": 1.1251966688368056,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "87fb0255dc667d70a28003e2969bf01ebe3f6d5d4f7480fce6481a24ab5fc839.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 30.30970000000002,
+          "bytes": 3348
+        },
+        {
+          "effort": 0,
+          "ms": 26.95569999999998,
+          "bytes": 3408
+        }
+      ],
+      "rgbMeanDifference": 1.0932639793113426,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "5307ad03242b574f83621ff7223b4218c3a0f498092f23a4318ab66333a87982.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 31.964699999999993,
+          "bytes": 3154
+        },
+        {
+          "effort": 0,
+          "ms": 26.528599999999983,
+          "bytes": 3424
+        }
+      ],
+      "rgbMeanDifference": 1.1199024341724537,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "f94004d8e4b542f61783d5571ced39c45bcde4b754b9d34678bb0e1f4b4af127.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 33.84010000000001,
+          "bytes": 3298
+        },
+        {
+          "effort": 0,
+          "ms": 30.447299999999927,
+          "bytes": 3578
+        }
+      ],
+      "rgbMeanDifference": 1.1673403139467593,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "1a2ef0e725f699363d75dfe582612b6da2983e91326b91b68f28db0f987ce69b.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 30.88220000000001,
+          "bytes": 3056
+        },
+        {
+          "effort": 0,
+          "ms": 26.240699999999947,
+          "bytes": 3220
+        }
+      ],
+      "rgbMeanDifference": 1.0645299840856481,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "902af0f61e725f2a4ef31d59a1b5c4ea69b297a458597c8e821606bfc6498782.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 31.19749999999999,
+          "bytes": 3380
+        },
+        {
+          "effort": 0,
+          "ms": 27.104799999999955,
+          "bytes": 3500
+        }
+      ],
+      "rgbMeanDifference": 1.0722701461226851,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "719c7ff40ad89b80f57f1d11bfbba437d2c6ba88d3c0213ea7a3dfbece78ee2e.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 36.8338,
+          "bytes": 3118
+        },
+        {
+          "effort": 0,
+          "ms": 28.27139999999997,
+          "bytes": 3338
+        }
+      ],
+      "rgbMeanDifference": 1.0432535807291667,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "020f33d19bb819b4f46a9e36b188cb3fff48cfb2503eef11402ca8bc74d05010.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 30.917100000000005,
+          "bytes": 3230
+        },
+        {
+          "effort": 0,
+          "ms": 26.78589999999997,
+          "bytes": 3604
+        }
+      ],
+      "rgbMeanDifference": 1.2169438114872686,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "0822e2f934aa241401d22924909eb6add9660e531baf97534e523d4d91a07f04.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 31.36170000000004,
+          "bytes": 3214
+        },
+        {
+          "effort": 0,
+          "ms": 26.626500000000078,
+          "bytes": 3522
+        }
+      ],
+      "rgbMeanDifference": 1.0798045970775463,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "57e1cabcad7e11b556a5bc96d1590c4bbeee5effa47a0259c01c410acdacab97.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 32.874000000000024,
+          "bytes": 3228
+        },
+        {
+          "effort": 0,
+          "ms": 25.385299999999916,
+          "bytes": 3374
+        }
+      ],
+      "rgbMeanDifference": 0.9973980938946759,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "ac650f8a13cdce548100635b64a54fb3f03ed546c7717675f284170d5f147c1f.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 31.505300000000034,
+          "bytes": 3282
+        },
+        {
+          "effort": 0,
+          "ms": 25.614799999999832,
+          "bytes": 3500
+        }
+      ],
+      "rgbMeanDifference": 1.0447704173900463,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "d84efa88b79464ad18d523d066ce5c2134398a69d780d1891f8d8cac569f2269.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 33.64859999999999,
+          "bytes": 3062
+        },
+        {
+          "effort": 0,
+          "ms": 27.935999999999922,
+          "bytes": 3286
+        }
+      ],
+      "rgbMeanDifference": 1.1395421911168981,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "416d04b0bf69d5a262549b594dfef75beeb2c5a0cdeac10267ce88027b5bf244.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 33.10479999999984,
+          "bytes": 3234
+        },
+        {
+          "effort": 0,
+          "ms": 25.70159999999987,
+          "bytes": 3802
+        }
+      ],
+      "rgbMeanDifference": 1.1497734917534723,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "d9396e483bec663fa562de89f5f27e88a9bf152c784acc64ea72fe2d36fbcb5d.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 30.410700000000134,
+          "bytes": 2954
+        },
+        {
+          "effort": 0,
+          "ms": 26.312400000000025,
+          "bytes": 3252
+        }
+      ],
+      "rgbMeanDifference": 1.0527275933159723,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "828f95a1f647a8381a1e85c88559314783a90cf4a8bfda564b901fa8de64e550.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 31.212200000000166,
+          "bytes": 3174
+        },
+        {
+          "effort": 0,
+          "ms": 26.64449999999988,
+          "bytes": 3560
+        }
+      ],
+      "rgbMeanDifference": 1.0449557834201388,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "portrait-a-cutout.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 35.49309999999991,
+          "bytes": 22582
+        },
+        {
+          "effort": 0,
+          "ms": 21.628999999999905,
+          "bytes": 29564
+        }
+      ],
+      "rgbMeanDifference": 1.6487147955246915,
+      "alphaDifferenceSum": 0
+    },
+    {
+      "source": "chelsea.png",
+      "variants": [
+        {
+          "effort": 4,
+          "ms": 20.172200000000203,
+          "bytes": 14130
+        },
+        {
+          "effort": 0,
+          "ms": 11.372600000000148,
+          "bytes": 17216
+        }
+      ],
+      "rgbMeanDifference": 2.4440053104575163,
+      "alphaDifferenceSum": 0
+    }
+  ],
+  "totals": [
+    {
+      "effort": 4,
+      "ms": 704.2946000000004,
+      "bytes": 100340
+    },
+    {
+      "effort": 0,
+      "ms": 575.9830999999992,
+      "bytes": 115266
+    }
+  ],
+  "limits": "Sequential effort 4 then 0 may benefit from warm OS cache; decoded RGB comparison is not visual quality acceptance."
+}

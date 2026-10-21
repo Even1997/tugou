@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-21T08:32:16.173Z",
+  "dimensions": [
+    10000,
+    10000
+  ],
+  "radius": 10,
+  "elapsedMs": 3304,
+  "peakRSSMiB": 342,
+  "checks": "all 100MP alpha pixels never increase under shrink",
+  "limit": "Synchronous morphology only, not complete tool or process tree"
+}

@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-21T08:42:38.844Z",
+  "desktopUpdated": true,
+  "buildId": "amyk6OypARE8BiyQjaxPU",
+  "credentialsUnchanged": true,
+  "projectContentUnchanged": [
+    "222679de-e2a3-4316-a9ec-86cbed7433f3",
+    "67ca1e15-a70e-432a-9f15-6a26cfba9eb4"
+  ],
+  "timestampChanges": [],
+  "resourcesUnchanged": 15,
+  "localToolsReady": true,
+  "lazyResourcesReady": true,
+  "backupRoot": "D:/CanvasStudioBuild/rollback-before-alpha",
+  "verification": "Read-only desktop check; record transcribed from successful tool output. Window relaunch not performed after compound command policy rejection."
+}

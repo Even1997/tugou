@@ -1,0 +1,12 @@
+{
+  "width": 341,
+  "height": 512,
+  "seconds": 2.6775201,
+  "clear": 69146,
+  "solid": 81714,
+  "providers": [
+    "DmlExecutionProvider",
+    "CPUExecutionProvider"
+  ],
+  "output": "D:\\CanvasStudioRuntime\\qa-restored\\cutout\\output.png"
+}

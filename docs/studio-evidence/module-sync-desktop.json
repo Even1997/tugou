@@ -1,0 +1,9 @@
+{
+  "Frontend": 200,
+  "Backend": 200,
+  "Process": 46688,
+  "WindowTitle": "图构 Studio · 模块化视觉创作",
+  "ProjectHash": "AB8FF9464BDB5DCD0377AC0945211277FD923C6F00A4BCC79C2982010BCBA5D4",
+  "ProjectPreserved": true,
+  "Package": "release/module-sync/CanvasStudio-win32-x64"
+}

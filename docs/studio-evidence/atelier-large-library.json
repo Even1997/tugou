@@ -1,0 +1,754 @@
+{
+  "at": "2026-10-21T10:48:38.029Z",
+  "passed": true,
+  "samples": [
+    {
+      "phase": "load",
+      "at": 1792579736255,
+      "electronPrivateMiB": 235.1015625,
+      "serverPrivateMiB": 240.8828125,
+      "totalPrivateMiB": 475.984375,
+      "freeMiB": 4841.4375,
+      "heartbeatMs": null
+    },
+    {
+      "phase": "initial",
+      "at": 1792579737201,
+      "electronPrivateMiB": 397.5078125,
+      "serverPrivateMiB": 256.5,
+      "totalPrivateMiB": 654.0078125,
+      "freeMiB": 4843.28125,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "initial",
+      "at": 1792579738151,
+      "electronPrivateMiB": 403.2890625,
+      "serverPrivateMiB": 257.5,
+      "totalPrivateMiB": 660.7890625,
+      "freeMiB": 4869.8515625,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579739108,
+      "electronPrivateMiB": 414.8515625,
+      "serverPrivateMiB": 255.96484375,
+      "totalPrivateMiB": 670.81640625,
+      "freeMiB": 4839.41015625,
+      "heartbeatMs": 1
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579741008,
+      "electronPrivateMiB": 426.98046875,
+      "serverPrivateMiB": 260.14453125,
+      "totalPrivateMiB": 687.125,
+      "freeMiB": 4834.3203125,
+      "heartbeatMs": 944
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579742004,
+      "electronPrivateMiB": 439.87890625,
+      "serverPrivateMiB": 259.13671875,
+      "totalPrivateMiB": 699.015625,
+      "freeMiB": 4833.5390625,
+      "heartbeatMs": 47
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579743013,
+      "electronPrivateMiB": 443.51953125,
+      "serverPrivateMiB": 259.24609375,
+      "totalPrivateMiB": 702.765625,
+      "freeMiB": 4844.28515625,
+      "heartbeatMs": 78
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579744018,
+      "electronPrivateMiB": 460.08203125,
+      "serverPrivateMiB": 261.203125,
+      "totalPrivateMiB": 721.28515625,
+      "freeMiB": 4845.48828125,
+      "heartbeatMs": 57
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579745030,
+      "electronPrivateMiB": 463.47265625,
+      "serverPrivateMiB": 260.234375,
+      "totalPrivateMiB": 723.70703125,
+      "freeMiB": 4855.74609375,
+      "heartbeatMs": 65
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579746040,
+      "electronPrivateMiB": 469.80859375,
+      "serverPrivateMiB": 260.85546875,
+      "totalPrivateMiB": 730.6640625,
+      "freeMiB": 4819.16015625,
+      "heartbeatMs": 60
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579747038,
+      "electronPrivateMiB": 474.0078125,
+      "serverPrivateMiB": 261.31640625,
+      "totalPrivateMiB": 735.32421875,
+      "freeMiB": 4813.41796875,
+      "heartbeatMs": 62
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579748046,
+      "electronPrivateMiB": 478.51953125,
+      "serverPrivateMiB": 263.0859375,
+      "totalPrivateMiB": 741.60546875,
+      "freeMiB": 4831.9765625,
+      "heartbeatMs": 65
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579749050,
+      "electronPrivateMiB": 405.40625,
+      "serverPrivateMiB": 262.23046875,
+      "totalPrivateMiB": 667.63671875,
+      "freeMiB": 4905.59375,
+      "heartbeatMs": 66
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579750056,
+      "electronPrivateMiB": 379.89453125,
+      "serverPrivateMiB": 261.9921875,
+      "totalPrivateMiB": 641.88671875,
+      "freeMiB": 4920.4375,
+      "heartbeatMs": 74
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579751066,
+      "electronPrivateMiB": 383.37890625,
+      "serverPrivateMiB": 263.03515625,
+      "totalPrivateMiB": 646.4140625,
+      "freeMiB": 4926.04296875,
+      "heartbeatMs": 75
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579752068,
+      "electronPrivateMiB": 386.59765625,
+      "serverPrivateMiB": 263.85546875,
+      "totalPrivateMiB": 650.453125,
+      "freeMiB": 4941.24609375,
+      "heartbeatMs": 58
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579753081,
+      "electronPrivateMiB": 390.8515625,
+      "serverPrivateMiB": 263.87890625,
+      "totalPrivateMiB": 654.73046875,
+      "freeMiB": 4949.234375,
+      "heartbeatMs": 84
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579754084,
+      "electronPrivateMiB": 394.2890625,
+      "serverPrivateMiB": 264.6953125,
+      "totalPrivateMiB": 658.984375,
+      "freeMiB": 4972.87109375,
+      "heartbeatMs": 61
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579755088,
+      "electronPrivateMiB": 398.5078125,
+      "serverPrivateMiB": 263.52734375,
+      "totalPrivateMiB": 662.03515625,
+      "freeMiB": 4992.03125,
+      "heartbeatMs": 76
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579756094,
+      "electronPrivateMiB": 402.15625,
+      "serverPrivateMiB": 124.19921875,
+      "totalPrivateMiB": 526.35546875,
+      "freeMiB": 5125.9453125,
+      "heartbeatMs": 69
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579757112,
+      "electronPrivateMiB": 408.37890625,
+      "serverPrivateMiB": 127.21484375,
+      "totalPrivateMiB": 535.59375,
+      "freeMiB": 5129.50390625,
+      "heartbeatMs": 74
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579758110,
+      "electronPrivateMiB": 409.6484375,
+      "serverPrivateMiB": 132.578125,
+      "totalPrivateMiB": 542.2265625,
+      "freeMiB": 5152.93359375,
+      "heartbeatMs": 54
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579759115,
+      "electronPrivateMiB": 413.73046875,
+      "serverPrivateMiB": 134.36328125,
+      "totalPrivateMiB": 548.09375,
+      "freeMiB": 5145.42578125,
+      "heartbeatMs": 73
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579760123,
+      "electronPrivateMiB": 417.75,
+      "serverPrivateMiB": 134.9375,
+      "totalPrivateMiB": 552.6875,
+      "freeMiB": 5156.4140625,
+      "heartbeatMs": 69
+    },
+    {
+      "phase": "scroll-0",
+      "at": 1792579761121,
+      "electronPrivateMiB": 421.16015625,
+      "serverPrivateMiB": 144.578125,
+      "totalPrivateMiB": 565.73828125,
+      "freeMiB": 5152.640625,
+      "heartbeatMs": 63
+    },
+    {
+      "phase": "idle-0",
+      "at": 1792579762068,
+      "electronPrivateMiB": 425.203125,
+      "serverPrivateMiB": 142.015625,
+      "totalPrivateMiB": 567.21875,
+      "freeMiB": 5145.59375,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "idle-0",
+      "at": 1792579763004,
+      "electronPrivateMiB": 428.80078125,
+      "serverPrivateMiB": 142.015625,
+      "totalPrivateMiB": 570.81640625,
+      "freeMiB": 5153.078125,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "idle-0",
+      "at": 1792579763943,
+      "electronPrivateMiB": 432.296875,
+      "serverPrivateMiB": 142.015625,
+      "totalPrivateMiB": 574.3125,
+      "freeMiB": 5151.28125,
+      "heartbeatMs": 1
+    },
+    {
+      "phase": "idle-1",
+      "at": 1792579764878,
+      "electronPrivateMiB": 433.6484375,
+      "serverPrivateMiB": 142.015625,
+      "totalPrivateMiB": 575.6640625,
+      "freeMiB": 5151.5234375,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "idle-1",
+      "at": 1792579765816,
+      "electronPrivateMiB": 434.65625,
+      "serverPrivateMiB": 142.015625,
+      "totalPrivateMiB": 576.671875,
+      "freeMiB": 5156.1875,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "idle-1",
+      "at": 1792579766751,
+      "electronPrivateMiB": 422.1328125,
+      "serverPrivateMiB": 142.015625,
+      "totalPrivateMiB": 564.1484375,
+      "freeMiB": 5171.8203125,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "idle-2",
+      "at": 1792579767715,
+      "electronPrivateMiB": 499.02734375,
+      "serverPrivateMiB": 143.3984375,
+      "totalPrivateMiB": 642.42578125,
+      "freeMiB": 5043.1171875,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "idle-2",
+      "at": 1792579768647,
+      "electronPrivateMiB": 515.08984375,
+      "serverPrivateMiB": 143.3671875,
+      "totalPrivateMiB": 658.45703125,
+      "freeMiB": 5049.5390625,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "idle-2",
+      "at": 1792579769595,
+      "electronPrivateMiB": 504.9609375,
+      "serverPrivateMiB": 143.3671875,
+      "totalPrivateMiB": 648.328125,
+      "freeMiB": 5006.265625,
+      "heartbeatMs": 1
+    },
+    {
+      "phase": "idle-2",
+      "at": 1792579770545,
+      "electronPrivateMiB": 504.43359375,
+      "serverPrivateMiB": 143.3671875,
+      "totalPrivateMiB": 647.80078125,
+      "freeMiB": 5064.4453125,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "selected-original",
+      "at": 1792579771487,
+      "electronPrivateMiB": 532.23828125,
+      "serverPrivateMiB": 145.45703125,
+      "totalPrivateMiB": 677.6953125,
+      "freeMiB": 5036.9453125,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "final-idle",
+      "at": 1792579772438,
+      "electronPrivateMiB": 575.9921875,
+      "serverPrivateMiB": 145.45703125,
+      "totalPrivateMiB": 721.44921875,
+      "freeMiB": 5031.484375,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "final-idle",
+      "at": 1792579773391,
+      "electronPrivateMiB": 582.7109375,
+      "serverPrivateMiB": 145.203125,
+      "totalPrivateMiB": 727.9140625,
+      "freeMiB": 5039.109375,
+      "heartbeatMs": 0
+    },
+    {
+      "phase": "final-idle",
+      "at": 1792579774341,
+      "electronPrivateMiB": 586.47265625,
+      "serverPrivateMiB": 145.203125,
+      "totalPrivateMiB": 731.67578125,
+      "freeMiB": 5043.4609375,
+      "heartbeatMs": 1
+    }
+  ],
+  "scrolls": [
+    {
+      "round": 0,
+      "index": 0,
+      "readyMs": 3
+    },
+    {
+      "round": 0,
+      "index": 20,
+      "readyMs": 0
+    },
+    {
+      "round": 0,
+      "index": 40,
+      "readyMs": 544
+    },
+    {
+      "round": 0,
+      "index": 60,
+      "readyMs": 806
+    },
+    {
+      "round": 0,
+      "index": 80,
+      "readyMs": 1019
+    },
+    {
+      "round": 0,
+      "index": 100,
+      "readyMs": 997
+    },
+    {
+      "round": 0,
+      "index": 120,
+      "readyMs": 1008
+    },
+    {
+      "round": 0,
+      "index": 140,
+      "readyMs": 1006
+    },
+    {
+      "round": 0,
+      "index": 160,
+      "readyMs": 1011
+    },
+    {
+      "round": 0,
+      "index": 180,
+      "readyMs": 1011
+    },
+    {
+      "round": 0,
+      "index": 200,
+      "readyMs": 997
+    },
+    {
+      "round": 0,
+      "index": 220,
+      "readyMs": 1008
+    },
+    {
+      "round": 0,
+      "index": 240,
+      "readyMs": 1005
+    },
+    {
+      "round": 0,
+      "index": 260,
+      "readyMs": 1005
+    },
+    {
+      "round": 0,
+      "index": 280,
+      "readyMs": 1010
+    },
+    {
+      "round": 0,
+      "index": 300,
+      "readyMs": 1003
+    },
+    {
+      "round": 0,
+      "index": 320,
+      "readyMs": 1012
+    },
+    {
+      "round": 0,
+      "index": 340,
+      "readyMs": 1004
+    },
+    {
+      "round": 0,
+      "index": 360,
+      "readyMs": 1004
+    },
+    {
+      "round": 0,
+      "index": 380,
+      "readyMs": 1006
+    },
+    {
+      "round": 0,
+      "index": 400,
+      "readyMs": 1017
+    },
+    {
+      "round": 0,
+      "index": 420,
+      "readyMs": 998
+    },
+    {
+      "round": 0,
+      "index": 440,
+      "readyMs": 1005
+    },
+    {
+      "round": 0,
+      "index": 460,
+      "readyMs": 1009
+    },
+    {
+      "round": 0,
+      "index": 480,
+      "readyMs": 998
+    },
+    {
+      "round": 1,
+      "index": 0,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 20,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 40,
+      "readyMs": 0
+    },
+    {
+      "round": 1,
+      "index": 60,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 80,
+      "readyMs": 7
+    },
+    {
+      "round": 1,
+      "index": 100,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 120,
+      "readyMs": 0
+    },
+    {
+      "round": 1,
+      "index": 140,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 160,
+      "readyMs": 0
+    },
+    {
+      "round": 1,
+      "index": 180,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 200,
+      "readyMs": 0
+    },
+    {
+      "round": 1,
+      "index": 220,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 240,
+      "readyMs": 0
+    },
+    {
+      "round": 1,
+      "index": 260,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 280,
+      "readyMs": 0
+    },
+    {
+      "round": 1,
+      "index": 300,
+      "readyMs": 0
+    },
+    {
+      "round": 1,
+      "index": 320,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 340,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 360,
+      "readyMs": 0
+    },
+    {
+      "round": 1,
+      "index": 380,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 400,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 420,
+      "readyMs": 0
+    },
+    {
+      "round": 1,
+      "index": 440,
+      "readyMs": 1
+    },
+    {
+      "round": 1,
+      "index": 460,
+      "readyMs": 0
+    },
+    {
+      "round": 1,
+      "index": 480,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 0,
+      "readyMs": 59
+    },
+    {
+      "round": 2,
+      "index": 20,
+      "readyMs": 6
+    },
+    {
+      "round": 2,
+      "index": 40,
+      "readyMs": 9
+    },
+    {
+      "round": 2,
+      "index": 60,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 80,
+      "readyMs": 0
+    },
+    {
+      "round": 2,
+      "index": 100,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 120,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 140,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 160,
+      "readyMs": 0
+    },
+    {
+      "round": 2,
+      "index": 180,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 200,
+      "readyMs": 0
+    },
+    {
+      "round": 2,
+      "index": 220,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 240,
+      "readyMs": 0
+    },
+    {
+      "round": 2,
+      "index": 260,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 280,
+      "readyMs": 0
+    },
+    {
+      "round": 2,
+      "index": 300,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 320,
+      "readyMs": 0
+    },
+    {
+      "round": 2,
+      "index": 340,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 360,
+      "readyMs": 0
+    },
+    {
+      "round": 2,
+      "index": 380,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 400,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 420,
+      "readyMs": 0
+    },
+    {
+      "round": 2,
+      "index": 440,
+      "readyMs": 1
+    },
+    {
+      "round": 2,
+      "index": 460,
+      "readyMs": 0
+    },
+    {
+      "round": 2,
+      "index": 480,
+      "readyMs": 1
+    }
+  ],
+  "errors": [],
+  "projectId": "large-library-1792579718163",
+  "assets": 500,
+  "size": [
+    2048,
+    2048
+  ],
+  "sourceBytes": 393633812,
+  "uniquePixelContents": 500,
+  "hypotheticalFullRgbaBytes": 8388608000,
+  "lazyOpenMs": 31,
+  "lazyResponseBytes": 113542,
+  "initialRequests": 36,
+  "thumbnailOnlyWhileBrowsing": true,
+  "reopened": true,
+  "originalBytesPreserved": true,
+  "peakPrivateMiB": 742,
+  "maxHeartbeatMs": 944,
+  "memoryScope": "All test Electron processes plus isolated Next server; excludes fixture preparation, unrelated apps and Go API. Private commit is not physical RAM or VRAM.",
+  "limits": "500 distinct synthetic 4MP pixels, 3 bounded scroll passes, one reload, one selected full image. Not 500 simultaneous editor layers, arbitrary photo quality, or unlimited lifetime."
+}

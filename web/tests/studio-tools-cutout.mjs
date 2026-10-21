@@ -1,0 +1,23 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import assert from "node:assert/strict";
+import sharp from "sharp";
+import { processImageTool, toolCapabilities } from "../src/app/api/studio/image-tools.ts";
+const root = process.env.STUDIO_GPU_TEST_DIR;
+if (!root || !path.isAbsolute(root)) throw new Error("Set isolated STUDIO_GPU_TEST_DIR");
+process.env.STUDIO_TOOL_RUNTIME ||= "D:/CanvasStudioRuntime/realesrgan-20220424";
+assert.equal((await toolCapabilities(root)).cutout, true);
+const folder = path.join(root, "cutout"); await mkdir(folder, { recursive: true });
+const original = path.resolve("public/studio-demo/03-couple.png");
+const input = await sharp(original).resize({ height: 512 }).flatten({ background: "#ffffff" }).png().toFile(path.join(folder, "input"));
+const start = performance.now();
+const result = await processImageTool(root, { tool: "cutout", options: {} }, folder, new AbortController().signal, () => {});
+assert.equal(result.width, input.width); assert.equal(result.height, input.height);
+const pixels = await sharp(path.join(folder, "output.png")).ensureAlpha().raw().toBuffer();
+let clear = 0, solid = 0;
+for (let i = 3; i < pixels.length; i += 4) { if (pixels[i] < 10) clear++; if (pixels[i] > 245) solid++; }
+assert.ok(clear > input.width * input.height * .1); assert.ok(solid > input.width * input.height * .1);
+const details = JSON.parse(await readFile(path.join(folder, "output.png.json"), "utf8"));
+const report = { ...result, seconds: (performance.now() - start) / 1000, clear, solid, providers: details.providers, output: path.join(folder, "output.png") };
+await writeFile(path.resolve("../docs/studio-evidence/atelier-cutout-results.json"), JSON.stringify(report, null, 2));
+console.log(JSON.stringify(report));

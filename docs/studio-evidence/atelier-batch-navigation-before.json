@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-21T10:43:22.562Z",
+  "passed": false,
+  "projectId": "batch-navigation-1792579402763",
+  "submittedSources": [
+    "second",
+    "first"
+  ],
+  "requests": 2,
+  "error": "AssertionError [ERR_ASSERTION]: Leaving tools must stop unsubmitted batch items\n\n2 !== 1\n\n    at C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\desktop\\tests\\atelier-batch-navigation.e2e.cjs:50:16"
+}

@@ -1,0 +1,177 @@
+{
+  "at": "2026-10-21T14:07:46.469Z",
+  "scale": 1.5,
+  "passed": true,
+  "cases": [
+    {
+      "window": [
+        1280,
+        800
+      ],
+      "modeSwitch": true,
+      "devicePixelRatio": 1.5,
+      "viewport": [
+        1270,
+        748
+      ],
+      "bodyOverflow": false,
+      "controls": [
+        {
+          "label": "图片处理工具",
+          "visible": true,
+          "hit": true,
+          "rect": {
+            "x": 434.66668701171875,
+            "y": 76.33333587646484,
+            "width": 160,
+            "height": 35.333335876464844
+          }
+        },
+        {
+          "label": "主体识别模式",
+          "visible": true,
+          "hit": true,
+          "rect": {
+            "x": 606.6666870117188,
+            "y": 76.33333587646484,
+            "width": 128,
+            "height": 35.333335876464844
+          }
+        },
+        {
+          "label": "边缘羽化",
+          "visible": true,
+          "hit": true,
+          "rect": {
+            "x": 794.3333740234375,
+            "y": 77,
+            "width": 66.66667175292969,
+            "height": 34
+          }
+        },
+        {
+          "label": "边缘收缩",
+          "visible": true,
+          "hit": true,
+          "rect": {
+            "x": 932.3333740234375,
+            "y": 77,
+            "width": 66.66667175292969,
+            "height": 34
+          }
+        },
+        {
+          "label": "边缘去底色",
+          "visible": true,
+          "hit": true,
+          "rect": {
+            "x": 1022.6666870117188,
+            "y": 76.33333587646484,
+            "width": 128,
+            "height": 35.333335876464844
+          }
+        }
+      ],
+      "buttons": [
+        {
+          "label": "开始处理",
+          "visible": true
+        },
+        {
+          "label": "存入素材库",
+          "visible": true
+        }
+      ],
+      "screenshotPixels": {
+        "width": 1905,
+        "height": 1122
+      }
+    },
+    {
+      "window": [
+        960,
+        640
+      ],
+      "modeSwitch": true,
+      "devicePixelRatio": 1.5,
+      "viewport": [
+        950,
+        588
+      ],
+      "bodyOverflow": false,
+      "controls": [
+        {
+          "label": "图片处理工具",
+          "visible": true,
+          "hit": true,
+          "rect": {
+            "x": 492,
+            "y": 113,
+            "width": 160,
+            "height": 35.333335876464844
+          }
+        },
+        {
+          "label": "主体识别模式",
+          "visible": true,
+          "hit": true,
+          "rect": {
+            "x": 664,
+            "y": 113,
+            "width": 128,
+            "height": 35.333335876464844
+          }
+        },
+        {
+          "label": "边缘羽化",
+          "visible": true,
+          "hit": true,
+          "rect": {
+            "x": 851.6666870117188,
+            "y": 113.66667175292969,
+            "width": 66.66667175292969,
+            "height": 34
+          }
+        },
+        {
+          "label": "边缘收缩",
+          "visible": true,
+          "hit": true,
+          "rect": {
+            "x": 67.66667175292969,
+            "y": 161.6666717529297,
+            "width": 66.66667175292969,
+            "height": 34
+          }
+        },
+        {
+          "label": "边缘去底色",
+          "visible": true,
+          "hit": true,
+          "rect": {
+            "x": 158,
+            "y": 161,
+            "width": 128,
+            "height": 35.333335876464844
+          }
+        }
+      ],
+      "buttons": [
+        {
+          "label": "开始处理",
+          "visible": true
+        },
+        {
+          "label": "存入素材库",
+          "visible": true
+        }
+      ],
+      "screenshotPixels": {
+        "width": 1425,
+        "height": 882
+      }
+    }
+  ],
+  "newModelRequests": 0,
+  "projectAndJobsUnchanged": true
+}

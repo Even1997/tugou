@@ -1,0 +1,16 @@
+{
+  "dimensions": [
+    10000,
+    10000
+  ],
+  "sourceVerified": true,
+  "workerExit": 1,
+  "elapsedMs": 271,
+  "availablePhysicalMiB": 2711,
+  "availableCommitMiB": 15867,
+  "memoryGuard": true,
+  "modelLoadingStarted": false,
+  "outputExists": false,
+  "sourceUnchanged": true,
+  "limits": "Low-memory rejection before model allocation; not successful 100MP inference or a low-VRAM test"
+}

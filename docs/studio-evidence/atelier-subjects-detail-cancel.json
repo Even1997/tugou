@@ -1,0 +1,11 @@
+{
+  "root": "D:\\CanvasStudioCancelQA\\run-1792590327184",
+  "workerPid": 39036,
+  "parentPid": 34216,
+  "cancellationMs": 127,
+  "outcome": "qa-user-cancelled",
+  "modelReady": true,
+  "workerStillAlive": false,
+  "parentStillAlive": false,
+  "limits": "Real DirectML model loaded; aborted at inference boundary. Not a quality or long-running GPU benchmark."
+}

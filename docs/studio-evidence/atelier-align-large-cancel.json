@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-21T10:12:11.782Z",
+  "mode": "cancel",
+  "fixture": "Synthetic 100MP return explicitly downsized to 64MP; no real model",
+  "newRemoteRequests": 0,
+  "freeBeforeMiB": 5098,
+  "elapsedMs": 1078,
+  "processingPeakMiB": 350,
+  "targetSize": [
+    8000,
+    8000
+  ],
+  "providerSize": [
+    10000,
+    10000
+  ],
+  "rejectedAfterCancelMs": 971,
+  "resultReturned": false,
+  "limit": "Native Sharp resize finishes before the abort check; not instant native cancellation"
+}

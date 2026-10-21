@@ -1,0 +1,62 @@
+{
+  "frontend": 200,
+  "backend": 200,
+  "projectUnchangedExceptGlobalFlags": true,
+  "desktop": [
+    {
+      "Id": 46376,
+      "MainWindowTitle": "图构 Studio · 模块化视觉创作",
+      "Path": "C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\release\\global-modules\\CanvasStudio-win32-x64\\CanvasStudio.exe"
+    }
+  ],
+  "savedProjects": [
+    {
+      "id": "222679de-e2a3-4316-a9ec-86cbed7433f3",
+      "name": "未命名创作",
+      "modules": [
+        {
+          "name": "公共画风",
+          "global": true
+        }
+      ],
+      "assets": 0,
+      "layers": 0
+    },
+    {
+      "id": "67ca1e15-a70e-432a-9f15-6a26cfba9eb4",
+      "name": "蓝白花园 · C 版",
+      "modules": [
+        {
+          "name": "公共画风",
+          "global": null
+        },
+        {
+          "name": "人物身份",
+          "global": null
+        },
+        {
+          "name": "动作与表情",
+          "global": null
+        },
+        {
+          "name": "服饰与配饰",
+          "global": null
+        },
+        {
+          "name": "花园背景",
+          "global": null
+        },
+        {
+          "name": "角落花簇",
+          "global": null
+        },
+        {
+          "name": "纸张材质",
+          "global": null
+        }
+      ],
+      "assets": 4,
+      "layers": 6
+    }
+  ]
+}

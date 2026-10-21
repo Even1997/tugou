@@ -1,0 +1,6 @@
+{
+  "at": "2026-10-21T10:59:11.346Z",
+  "passes": [],
+  "passed": false,
+  "error": "Error: Timeout: thumbnail\n    at until (C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\desktop\\tests\\atelier-thumbnail-profile.cjs:27:126)\n    at async C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\desktop\\tests\\atelier-thumbnail-profile.cjs:33:13"
+}

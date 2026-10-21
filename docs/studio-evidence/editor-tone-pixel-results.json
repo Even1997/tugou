@@ -1,0 +1,24 @@
+[
+  "调整只影响下方内容；上方保持原色；强度、停用像素正确",
+  "组内隔离、剪贴单层、蒙版范围正确",
+  "调整及混合模式保持半透明 alpha，不重复叠加原内容",
+  "12 类调整通过真实 Chromium 像素合成",
+  "颜色叠加、内阴影、内发光、内描边逐像素保留半透明原 alpha",
+  "外描边使用圆形距离；投影方向/距离正确；外发光扩展范围未裁切",
+  {
+    "sequentialBlurAndEffectsStripMaxError": 0
+  },
+  "特效参数一次撤销重做与工程校验",
+  {
+    "adjustment2048Ms": 177
+  },
+  {
+    "independentEffectLayers": 100,
+    "margin": 90,
+    "elapsedMs": 95,
+    "hiddenGroupIgnored": true
+  },
+  {
+    "hiddenMaskEffectStripMaxError": 0
+  }
+]

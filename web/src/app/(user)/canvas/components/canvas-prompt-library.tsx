@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Tooltip } from "antd";
+import { Button, Modal, Tooltip } from "antd";
 import { BookOpen } from "lucide-react";
 
 import { PromptSelectDialog } from "@/components/prompts/prompt-select-dialog";
 import { canvasThemes } from "@/lib/canvas-theme";
 import { useThemeStore } from "@/stores/use-theme-store";
+import { CanvasModules } from "@/app/studio/canvas-modules";
 
-export function CanvasPromptLibrary({ onSelect }: { onSelect: (prompt: string) => void }) {
+export function CanvasPromptLibrary({ embedded = false, onSelect }: { embedded?: boolean; onSelect: (prompt: string) => void }) {
     const [open, setOpen] = useState(false);
     const theme = canvasThemes[useThemeStore((state) => state.theme)];
 
@@ -24,7 +25,9 @@ export function CanvasPromptLibrary({ onSelect }: { onSelect: (prompt: string) =
                     aria-label="提示词库"
                 />
             </Tooltip>
-            <PromptSelectDialog open={open} onOpenChange={setOpen} onSelect={onSelect} />
+            {embedded ? <Modal title="提示词模块" open={open} onCancel={() => setOpen(false)} footer={null} width={560} destroyOnHidden>
+                <div className="h-[480px]"><CanvasModules onInsert={(payload) => { onSelect(payload.content); setOpen(false); }} /></div>
+            </Modal> : <PromptSelectDialog open={open} onOpenChange={setOpen} onSelect={onSelect} />}
         </>
     );
 }

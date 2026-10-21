@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-21T06:45:35.131Z",
+  "testChannel": "isolated local HTTP fixture; not real model acceptance",
+  "recipeAutoCollect": true,
+  "cancellation": true,
+  "lateResultIgnored": true,
+  "explicitPaidRetry": true,
+  "restoreWithoutResubmission": true,
+  "deduplicatedCollection": true,
+  "sharedCanvasQueue": true,
+  "orderedRolePrompt": true,
+  "secretNotPersisted": true,
+  "requests": 4
+}

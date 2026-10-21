@@ -1,0 +1,81 @@
+{
+  "criteria": {
+    "foregroundRetainedMin": 0.97,
+    "backgroundClearedMin": 0.98
+  },
+  "limits": "Default subject core/background screen. Original fractional-alpha effects are excluded from these two metrics, not declared perfect or irrelevant. Manual edge/detail review remains necessary. Six composites of two illustration assets, not broad photo validation.",
+  "samples": [
+    {
+      "name": "couple-light",
+      "seconds": 1.7627998,
+      "width": 683,
+      "height": 1024,
+      "foregroundRetained": 0.9789987612793548,
+      "backgroundCleared": 0.9808136997880024,
+      "coreScreenPassed": true,
+      "originalRGBUnchanged": true,
+      "sourceSha256": "aeb202d5252a50e150e4d297bf3f08bcd338d1724bdfd2d78e66687d1a84c796",
+      "output": "D:\\CanvasStudioSubjectQA\\couple-light\\output.png"
+    },
+    {
+      "name": "couple-dark",
+      "seconds": 1.4550629,
+      "width": 683,
+      "height": 1024,
+      "foregroundRetained": 0.9965844480955318,
+      "backgroundCleared": 0.9748523403919035,
+      "coreScreenPassed": false,
+      "originalRGBUnchanged": true,
+      "sourceSha256": "843875eda795ad26e53840729fccecc10edfd68876c742819429b54f53f49db5",
+      "output": "D:\\CanvasStudioSubjectQA\\couple-dark\\output.png"
+    },
+    {
+      "name": "couple-pattern",
+      "seconds": 1.3358395,
+      "width": 683,
+      "height": 1024,
+      "foregroundRetained": 0.9966932896584967,
+      "backgroundCleared": 0.9923481571325002,
+      "coreScreenPassed": true,
+      "originalRGBUnchanged": true,
+      "sourceSha256": "bedcdf8dca59c453f91a2121248ff8fa2a96accd37fbff8b0d847d6712a2e30e",
+      "output": "D:\\CanvasStudioSubjectQA\\couple-pattern\\output.png"
+    },
+    {
+      "name": "flowers-light",
+      "seconds": 1.3351962999999996,
+      "width": 1024,
+      "height": 683,
+      "foregroundRetained": 0.6405317701245682,
+      "backgroundCleared": 0.995491292545505,
+      "coreScreenPassed": false,
+      "originalRGBUnchanged": true,
+      "sourceSha256": "7194f71467c2f46498790cac20be2c706ad6eb71357930c56b76ce09b6acd5ef",
+      "output": "D:\\CanvasStudioSubjectQA\\flowers-light\\output.png"
+    },
+    {
+      "name": "flowers-dark",
+      "seconds": 1.3523872000000001,
+      "width": 1024,
+      "height": 683,
+      "foregroundRetained": 0.9689299173034649,
+      "backgroundCleared": 0.9980471436037077,
+      "coreScreenPassed": false,
+      "originalRGBUnchanged": true,
+      "sourceSha256": "31363db9f59de305a7a32f20a13a0d54cea9356892c14aeeb5c3305ac918ec71",
+      "output": "D:\\CanvasStudioSubjectQA\\flowers-dark\\output.png"
+    },
+    {
+      "name": "flowers-pattern",
+      "seconds": 1.3293832999999995,
+      "width": 1024,
+      "height": 683,
+      "foregroundRetained": 0.002898304197634251,
+      "backgroundCleared": 0.9492786279649882,
+      "coreScreenPassed": false,
+      "originalRGBUnchanged": true,
+      "sourceSha256": "619edbe3a29e09de3174141a4fd50c427bae3bc3c0cb649f08d9c8e2d6f15427",
+      "output": "D:\\CanvasStudioSubjectQA\\flowers-pattern\\output.png"
+    }
+  ]
+}

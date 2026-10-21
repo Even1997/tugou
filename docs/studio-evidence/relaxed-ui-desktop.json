@@ -1,0 +1,20 @@
+{
+  "frontend": 200,
+  "backend": 200,
+  "projects": [
+    {
+      "name": "222679de-e2a3-4316-a9ec-86cbed7433f3.json",
+      "unchanged": true
+    },
+    {
+      "name": "67ca1e15-a70e-432a-9f15-6a26cfba9eb4.json",
+      "unchanged": true
+    }
+  ],
+  "desktop": [
+    {
+      "Id": 45596,
+      "Path": "C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\release\\relaxed-ui\\CanvasStudio-win32-x64\\CanvasStudio.exe"
+    }
+  ]
+}

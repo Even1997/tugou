@@ -1,0 +1,8 @@
+{
+  "Frontend": 200,
+  "Backend": 200,
+  "WindowTitle": "图构 Studio · 模块化视觉创作",
+  "ProjectPreserved": true,
+  "ProjectHash": "4F40DD5CA22203EC5E62C79E885A320EDB8EA7DC4C45DBA0AA65956297EC45F3",
+  "Package": "release/ui-refinement/CanvasStudio-win32-x64"
+}

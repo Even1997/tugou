@@ -1,0 +1,74 @@
+const { app, BrowserWindow } = require('electron');
+const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), assert = require('node:assert/strict');
+const sharp = require('../../web/node_modules/sharp');
+const base = process.env.STUDIO_TEST_URL;
+if (base !== 'http://127.0.0.1:3439') throw Error('Isolated QA required');
+app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'studio-batch-navigation-')));
+app.disableHardwareAcceleration();
+app.on('window-all-closed', () => {});
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+const report = { at: new Date().toISOString(), passed: false };
+const request = async (action, payload) => {
+    const response = await fetch(base + '/api/studio', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Studio-Request': '1' }, body: JSON.stringify({ action, payload }) });
+    if (!response.ok) throw Error(await response.text());
+    return response.json();
+};
+app.whenReady().then(async () => {
+    const deadline = setTimeout(() => app.exit(1), 90000);
+    try {
+        assert.ok((await request('list')).location.includes('atelier-qa'));
+        const id = 'batch-navigation-' + Date.now(), now = new Date().toISOString();
+        const dataUrl = 'data:image/png;base64,' + (await sharp({ create: { width: 32, height: 32, channels: 4, background: '#ab3456aa' } }).png().toBuffer()).toString('base64');
+        await request('save', { format: 'canvas-studio', version: 5, id, name: id, width: 32, height: 32, background: 'transparent', updatedAt: now, modules: [], recipes: [], jobs: [], layers: [], assets: ['first', 'second'].map(name => ({ id: name, name, dataUrl, width: 32, height: 32, hasAlpha: true, createdAt: now })) });
+        const win = new BrowserWindow({ width: 1300, height: 960, show: false, webPreferences: { sandbox: true, contextIsolation: true, backgroundThrottling: false } });
+        const run = code => win.webContents.executeJavaScript(code, true);
+        const until = async (predicate, label) => { for (let i = 0; i < 200; i++) { if (await predicate()) return; await wait(100); } throw Error('Timeout: ' + label); };
+        await win.loadURL(base + '/studio');
+        await until(() => run(`document.body.innerText.includes(${JSON.stringify(id)})`), 'project');
+        await run(`[...document.querySelectorAll('button')].find(e=>e.textContent.trim()==='图片工具').click()`);
+        await until(() => run(`!!document.querySelector('[aria-label="图片工具"] button.ant-btn-primary:not([disabled])')`), 'tools');
+        const choose = async (label, option) => {
+            await run(`(()=>{const root=document.querySelector('[aria-label="${label}"]').closest('.ant-select');const trigger=root.querySelector('.ant-select-content')||root.querySelector('.ant-select-selector')||root;trigger.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0}));trigger.click();})()`);
+            await until(() => run(`[...document.querySelectorAll('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option')].some(e=>e.textContent.trim()===${JSON.stringify(option)})`), option);
+            await run(`[...document.querySelectorAll('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option')].find(e=>e.textContent.trim()===${JSON.stringify(option)}).click()`);
+        };
+        await choose('图片处理工具', '调整尺寸');
+        await run(`document.querySelector('[aria-label="图片工具参数"] .ant-checkbox-input').click()`);
+        await choose('批量素材', 'second');
+        // Hold the response only after the real server has accepted the first item.
+        await run(`(()=>{const original=window.fetch.bind(window);window.batchCalls=0;window.fetch=async(...args)=>{const body=args[1]?.body;const isSubmit=typeof body==='string'&&JSON.parse(body).action==='tool-submit';if(!isSubmit)return original(...args);const n=++window.batchCalls;const response=await original(...args);if(n===1){window.batchAccepted=true;await new Promise(resolve=>window.releaseBatch=resolve);}return response;};})()`);
+        await run(`document.querySelector('[aria-label="图片工具"] button.ant-btn-primary').click()`);
+        await until(() => run('window.batchAccepted === true'), 'first accepted');
+        await run(`[...document.querySelectorAll('nav[aria-label="工作区"] button')].find(e=>e.textContent.trim()==='素材库').click()`);
+        await until(() => run(`!document.querySelector('section[aria-label="图片工具"]')`), 'panel unmounted');
+        await run('window.releaseBatch()');
+        await wait(1500);
+        const jobs = await request('tool-list', { projectId: id });
+        report.projectId = id;
+        report.submittedSources = jobs.map(job => job.sourceId);
+        report.requests = await run('window.batchCalls');
+        assert.equal(jobs.length, 1, 'Leaving tools must stop unsubmitted batch items');
+        await until(async () => (await request('tool-list', { projectId: id }))[0].status === 'completed', 'accepted job finishes');
+        await win.reload();
+        await until(() => run(`document.body.innerText.includes(${JSON.stringify(id)})`), 'reload');
+        const restored = await request('tool-list', { projectId: id });
+        assert.equal(restored.length, 1);
+        assert.equal(restored[0].status, 'completed');
+        report.acceptedTaskCompleted = true;
+        report.historyPreserved = true;
+        await run(`[...document.querySelectorAll('button')].find(e=>e.textContent.trim()==='图片工具').click()`);
+        await until(() => run(`!!document.querySelector('[aria-label="图片工具"] button.ant-btn-primary:not([disabled])')`), 'reopen tools');
+        await choose('图片处理工具', '调整尺寸');
+        await run(`document.querySelector('[aria-label="图片工具参数"] .ant-checkbox-input').click()`);
+        await choose('批量素材', 'second');
+        await run(`document.querySelector('[aria-label="图片工具"] button.ant-btn-primary').click()`);
+        await until(async () => (await request('tool-list', { projectId: id })).filter(job => job.status === 'completed').length === 3, 'ordinary batch completes');
+        report.ordinaryBatchCompleted = true;
+        report.passed = true;
+    } catch (error) { report.error = String(error.stack || error); }
+    clearTimeout(deadline);
+    const name = report.passed ? 'atelier-batch-navigation.json' : 'atelier-batch-navigation-before.json';
+    fs.writeFileSync(path.resolve(__dirname, '../../docs/studio-evidence', name), JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(report));
+    app.exit(report.passed ? 0 : 1);
+});

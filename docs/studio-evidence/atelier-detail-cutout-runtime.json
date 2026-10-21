@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-21T13:52:46.8150220Z",
+  "model": "D:\\CanvasStudioRuntime\\segmentation\\birefnet-general-fp16.onnx",
+  "sha256": "3654c741eb80bd926ada8fed1713b506ccf8d30eb1f6487e87eb9f234f33df09",
+  "helperSha256": "E5CCA1B244B5EBF137341912F35A7B9EAF958882089C3ADDBE7F6D61C90D53A9",
+  "existingIsnetPreserved": true,
+  "configurationChanged": false,
+  "formalAppUpdated": false
+}

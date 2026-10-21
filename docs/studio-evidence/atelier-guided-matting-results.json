@@ -1,0 +1,43 @@
+{
+  "limits": "Analytic 768px veil fixture with fixed geometric guidance; no real-photo, UI, large-image or cancellation acceptance. Guidance is not generated from alpha truth.",
+  "criteria": {
+    "MAEMax": 0.03,
+    "transitionMAEMax": 0.12,
+    "knownSeedsExact": true
+  },
+  "samples": [
+    {
+      "background": "light",
+      "seconds": 16.923,
+      "metrics": {
+        "MAE": 0.09382961393232897,
+        "transitionMAE": 0.32836338718919805
+      },
+      "knownSeedsExact": true,
+      "passed": false,
+      "sourceSha256": "44c03217b9e49b27a59b038e784d7bd8e0e7de00470f593511a05cfd7c60220b"
+    },
+    {
+      "background": "dark",
+      "seconds": 12.406,
+      "metrics": {
+        "MAE": 0.19628652508812008,
+        "transitionMAE": 0.6715082661497198
+      },
+      "knownSeedsExact": true,
+      "passed": false,
+      "sourceSha256": "3e9b7b67e0d98820327f8f9315c33902f9a75bb62dbce6f28e5a52abeae00550"
+    },
+    {
+      "background": "pattern",
+      "seconds": 21.708,
+      "metrics": {
+        "MAE": 0.09416879643374575,
+        "transitionMAE": 0.32815171544378857
+      },
+      "knownSeedsExact": true,
+      "passed": false,
+      "sourceSha256": "08b9997ea3f537a4b47fdd2a1c4d79535bedd7f2d40f2e389cfc2af569ed8bbc"
+    }
+  ]
+}

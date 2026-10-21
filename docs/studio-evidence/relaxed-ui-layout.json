@@ -1,0 +1,19 @@
+{
+  "narrow": {
+    "inspector": 264,
+    "inspectorScroll": 264,
+    "scrollWidth": 1024,
+    "sidebar": 214,
+    "sidebarScroll": 214,
+    "toolbar": 534,
+    "toolbarScroll": 534,
+    "width": 1024
+  },
+  "checks": [
+    "Empty state spans full asset grid",
+    "Inspector labels 13px, values 14px, toolbar 12px",
+    "Long layer name ellipsis: 172px available, 266px content",
+    "Rename undo restores original title",
+    "Collapsed sidebar: scrollWidth equals clientWidth 1024"
+  ]
+}

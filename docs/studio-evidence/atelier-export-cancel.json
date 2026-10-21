@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-21T09:01:18.465Z",
+  "passed": true,
+  "cancelMs": 206,
+  "checks": [
+    "top toolbar cancel during real 100MP export",
+    "no partial or finished file after cancellation",
+    "leaving workspace cancels",
+    "format locked during export",
+    "successful export after cancel, exact RGBA"
+  ],
+  "errors": []
+}

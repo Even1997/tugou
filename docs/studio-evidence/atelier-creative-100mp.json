@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-21T04:21:37.409Z",
+  "results": [
+    {
+      "tool": "relight",
+      "width": 10000,
+      "height": 10000,
+      "seconds": 11.2749744,
+      "nodeIncludingNativePeakMiB": 633,
+      "output": "D:\\CanvasStudioRuntime\\qa-creative\\relight-1792556482467\\output.png"
+    },
+    {
+      "tool": "pattern",
+      "width": 10000,
+      "height": 10000,
+      "seconds": 1.502178899999999,
+      "nodeIncludingNativePeakMiB": 1334,
+      "output": "D:\\CanvasStudioRuntime\\qa-creative\\pattern-1792556494357\\output.png"
+    }
+  ]
+}

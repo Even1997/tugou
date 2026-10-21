@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-21T13:50:22.533Z",
+  "passed": true,
+  "screenshot": true,
+  "projectId": "detail-cutout-1792590622597",
+  "jobId": "892daafa-039a-4787-a804-03170b73d8c0",
+  "defaultDetail": true,
+  "modeSwitch": true,
+  "widths": [
+    1300,
+    960
+  ],
+  "actualModel": "detail",
+  "savedAndReloaded": true,
+  "originalUnchanged": true
+}

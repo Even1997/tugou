@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-21T08:11:32.255Z",
+  "buildId": "Ioa8JcUZx0BxYT9fYRaHN",
+  "actualServerRestart": true,
+  "completedBytesPreserved": true,
+  "runningAndQueuedInterrupted": true,
+  "noAutomaticResubmission": true,
+  "explicitRetry": true,
+  "cloudOperationRestored": true,
+  "cloudInstructionNotDuplicated": true,
+  "selectionMaskRestored": true,
+  "semanticCategoryRestored": true,
+  "semanticPixelsVerified": true,
+  "secretsAbsent": true,
+  "fixtureRequests": 7,
+  "isolatedData": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\atelier-generation-restart-97YR1Q"
+}

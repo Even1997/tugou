@@ -1,0 +1,27 @@
+{
+  "status": "failed",
+  "at": "2026-10-21T09:39:05.379Z",
+  "host": "xymm.win",
+  "model": "gpt-image-2.5-flare",
+  "source": "Locally generated geometric shapes; no user photos",
+  "sourceSha256": "35699b7270e5d84c3f8b9165921b17bdd2b9bf61d9f8da55f7becf614975c721",
+  "operation": {
+    "kind": "edit",
+    "sourceId": "live-shapes",
+    "sourceWidth": 1024,
+    "sourceHeight": 1024,
+    "width": 464,
+    "height": 464,
+    "left": 280,
+    "top": 280
+  },
+  "remoteRequests": 1,
+  "responseMs": 21484,
+  "providerSize": [
+    1254,
+    1254
+  ],
+  "error": "模型返回1254×1254，请求为1024×1024；未拉伸或覆盖原图，请选择支持此尺寸的模型",
+  "finishedAt": "2026-10-21T09:39:26.884Z",
+  "limits": "One synthetic local-edit request only; no portrait fidelity, broad visual quality, other operations or provider async protocol acceptance"
+}

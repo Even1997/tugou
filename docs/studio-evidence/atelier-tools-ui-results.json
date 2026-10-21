@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-21T08:38:45.877Z",
+  "actualGpu": true,
+  "output": [
+    256,
+    384
+  ],
+  "originalPreserved": true,
+  "compare": true,
+  "duplicateImportPrevented": true,
+  "historyRestored": true,
+  "batchResize": true,
+  "alphaTool": true,
+  "cubeImport": true,
+  "crossOriginRejected": true,
+  "consoleErrors": []
+}

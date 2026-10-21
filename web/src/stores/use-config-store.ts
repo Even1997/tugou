@@ -179,6 +179,7 @@ export const defaultConfig: AiConfig = {
 
 type ConfigStore = {
     config: AiConfig;
+    studioConfig?: AiConfig;
     publicSettings: AdminPublicSettings | null;
     isPublicSettingsLoading: boolean;
     isConfigOpen: boolean;
@@ -409,7 +410,13 @@ export const useConfigStore = create<ConfigStore>()(
                 }
             },
             isAiConfigReady: (config, model) => isAiConfigReady(config, model),
-            openConfigDialog: (shouldPromptContinue = false) => set({ isConfigOpen: true, shouldPromptContinue }),
+            openConfigDialog: (shouldPromptContinue = false) => {
+                if (get().studioConfig) {
+                    window.dispatchEvent(new Event("studio:settings"));
+                    return;
+                }
+                set({ isConfigOpen: true, shouldPromptContinue });
+            },
             setConfigDialogOpen: (isConfigOpen) => set({ isConfigOpen }),
             clearPromptContinue: () => set({ shouldPromptContinue: false }),
         }),
@@ -485,11 +492,12 @@ function normalizeModelList(models: string[]) {
 
 export function useEffectiveConfig() {
     const config = useConfigStore((state) => state.config);
+    const studioConfig = useConfigStore((state) => state.studioConfig);
     const modelChannel = useConfigStore((state) => state.publicSettings?.modelChannel || null);
     const token = useUserStore((state) => state.token);
     const user = useUserStore((state) => state.user);
     const canUseRemoteChannel = Boolean(token && user && (user.role === "admin" || modelChannel?.allowUserRemoteChannel === true));
-    return useMemo(() => resolveEffectiveConfig(config, modelChannel, canUseRemoteChannel), [canUseRemoteChannel, config, modelChannel]);
+    return useMemo(() => studioConfig || resolveEffectiveConfig(config, modelChannel, canUseRemoteChannel), [studioConfig, canUseRemoteChannel, config, modelChannel]);
 }
 
 export function buildApiUrl(baseUrl: string, path: string) {

@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-21T04:28:24.055Z",
+  "realGpuCancellation": true,
+  "lightAlphaPreserved": true,
+  "pattern": [
+    512,
+    512
+  ],
+  "sharedTaskOverview": true,
+  "reopenDifferentResults": true,
+  "originalPreserved": true,
+  "restart": true,
+  "projectIsolation": true
+}

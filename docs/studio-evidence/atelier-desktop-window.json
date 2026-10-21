@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-21T08:42:38.844Z",
+  "buildId": "amyk6OypARE8BiyQjaxPU",
+  "pid": 36720,
+  "windowHandle": 0,
+  "visibleWindowVerified": false,
+  "serviceHttpStatus": 200,
+  "note": "Background processes respond; compound check/relaunch command was rejected by automatic policy. No relaunch workaround attempted.",
+  "responding": true,
+  "path": "C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\release\\editor-review\\CanvasStudio-win32-x64\\CanvasStudio.exe"
+}

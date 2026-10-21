@@ -60,11 +60,18 @@ export function getGenerationResourceNodes(nodeId: string, nodes: CanvasNodeData
     return [];
 }
 
+export function getGenerationResourceConnections(nodeId: string, nodes: CanvasNodeData[], connections: CanvasConnection[]) {
+    const config = connections.find(c => c.fromNodeId === nodeId && nodes.some(n => n.id === c.toNodeId && n.type === CanvasNodeType.Config));
+    const target = config && getContextResourceNodes(config.toNodeId, nodes, connections).some(n => n.id !== nodeId) ? config.toNodeId : nodeId;
+    return connections.filter(c => c.toNodeId === target && c.fromNodeId !== nodeId);
+}
+
 function getContextResourceNodes(nodeId: string, nodes: CanvasNodeData[], connections: CanvasConnection[]) {
-    return connections
+    const result = connections
         .filter((connection) => connection.toNodeId === nodeId)
         .map((connection) => nodes.find((node) => node.id === connection.fromNodeId))
         .filter((node): node is CanvasNodeData => Boolean(node && isCanvasReferenceNode(node)));
+    return [...new Map(result.map(node => [node.id, node])).values()];
 }
 
 function getConnectedConfigResourceNodes(nodeId: string, nodes: CanvasNodeData[], connections: CanvasConnection[]) {

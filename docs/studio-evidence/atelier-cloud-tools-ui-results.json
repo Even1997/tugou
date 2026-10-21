@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-21T08:12:47.347Z",
+  "testChannel": "local HTTP fixture, not model quality acceptance",
+  "modes": [
+    "enhance",
+    "upscale",
+    "edit",
+    "outpaint"
+  ],
+  "protectedPixelsExact": true,
+  "wrongSizeRejected": true,
+  "configRecovery": true,
+  "comparison": true,
+  "collectionAndProvenance": true,
+  "reopenedHistory": true,
+  "duplicateCollectionPrevented": true,
+  "originalUnchanged": true,
+  "toolbarFits960": true,
+  "requests": 5,
+  "consoleErrors": []
+}

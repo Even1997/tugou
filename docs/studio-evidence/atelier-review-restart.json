@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "at": "2026-10-21T10:05:26.165Z",
+  "checks": [
+    "actual server restart preserves pending raw result",
+    "completed processed pixels unchanged",
+    "raw bytes unchanged",
+    "local resolution works with no API credentials"
+  ],
+  "id": "review-1792576553014"
+}

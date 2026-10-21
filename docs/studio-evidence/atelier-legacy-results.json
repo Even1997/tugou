@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-21T03:24:28.808Z",
+  "originalDataReadOnly": true,
+  "credentialsUnchanged": true,
+  "projects": [
+    {
+      "id": "222679de-e2a3-4316-a9ec-86cbed7433f3",
+      "assets": 0,
+      "layers": 0,
+      "roundTripEqual": true
+    },
+    {
+      "id": "67ca1e15-a70e-432a-9f15-6a26cfba9eb4",
+      "assets": 4,
+      "layers": 5,
+      "roundTripEqual": true
+    }
+  ]
+}

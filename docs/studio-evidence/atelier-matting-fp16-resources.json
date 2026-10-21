@@ -1,0 +1,410 @@
+{
+  "processId": 31384,
+  "exitCode": 0,
+  "limits": "Sampled Windows GPU Process Memory counters; may miss transient peaks. Formal editor is hidden/idle, not interactive co-running acceptance. ORT profiling changes timing.",
+  "samples": [
+    {
+      "elapsedMs": 173,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 40.6,
+      "privateMiB": 633.5,
+      "dedicatedMiB": 0.0,
+      "sharedMiB": 0.0,
+      "gpuInstances": 0
+    },
+    {
+      "elapsedMs": 608,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 57.9,
+      "privateMiB": 645.3,
+      "dedicatedMiB": 0.0,
+      "sharedMiB": 0.0,
+      "gpuInstances": 0
+    },
+    {
+      "elapsedMs": 1019,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 602.2,
+      "privateMiB": 1193.5,
+      "dedicatedMiB": 0.0,
+      "sharedMiB": 0.0,
+      "gpuInstances": 0
+    },
+    {
+      "elapsedMs": 1411,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 672.8,
+      "privateMiB": 1293.3,
+      "dedicatedMiB": 13.5,
+      "sharedMiB": 22.9,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 1805,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 661.3,
+      "privateMiB": 1283.3,
+      "dedicatedMiB": 13.5,
+      "sharedMiB": 22.9,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 2193,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 655.4,
+      "privateMiB": 1281.6,
+      "dedicatedMiB": 13.5,
+      "sharedMiB": 22.9,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 2584,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 658.5,
+      "privateMiB": 1282.7,
+      "dedicatedMiB": 13.5,
+      "sharedMiB": 22.9,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 2983,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 672.7,
+      "privateMiB": 1291.0,
+      "dedicatedMiB": 13.5,
+      "sharedMiB": 22.9,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 3439,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 792.5,
+      "privateMiB": 1391.0,
+      "dedicatedMiB": 13.5,
+      "sharedMiB": 23.0,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 3836,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 781.5,
+      "privateMiB": 1398.1,
+      "dedicatedMiB": 23.1,
+      "sharedMiB": 36.5,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 4253,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 798.8,
+      "privateMiB": 2250.4,
+      "dedicatedMiB": 863.9,
+      "sharedMiB": 501.9,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 4649,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 855.5,
+      "privateMiB": 2956.1,
+      "dedicatedMiB": 1501.1,
+      "sharedMiB": 515.9,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 5041,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 908.4,
+      "privateMiB": 5460.7,
+      "dedicatedMiB": 3297.6,
+      "sharedMiB": 534.7,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 5489,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 2644.8,
+      "privateMiB": 13682.9,
+      "dedicatedMiB": 8537.4,
+      "sharedMiB": 541.7,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 5954,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 3840.8,
+      "privateMiB": 13683.0,
+      "dedicatedMiB": 10896.7,
+      "sharedMiB": 541.7,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 6401,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4691.7,
+      "privateMiB": 13691.7,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 6820,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4691.7,
+      "privateMiB": 13691.7,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 7216,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4711.6,
+      "privateMiB": 13707.2,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 7603,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4711.6,
+      "privateMiB": 13707.2,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 7996,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4711.6,
+      "privateMiB": 13707.2,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 8391,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4711.6,
+      "privateMiB": 13707.2,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 8792,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4711.6,
+      "privateMiB": 13707.2,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 9180,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4711.6,
+      "privateMiB": 13707.2,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 9574,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4711.6,
+      "privateMiB": 13707.0,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 9991,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4711.6,
+      "privateMiB": 13707.0,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 10388,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4711.6,
+      "privateMiB": 13707.0,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 10807,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4710.7,
+      "privateMiB": 13707.0,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 11224,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4710.7,
+      "privateMiB": 13707.0,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 11618,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4710.7,
+      "privateMiB": 13707.0,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 12036,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 4710.7,
+      "privateMiB": 13707.0,
+      "dedicatedMiB": 11250.5,
+      "sharedMiB": 1442.4,
+      "gpuInstances": 1
+    },
+    {
+      "elapsedMs": 12445,
+      "processIds": [
+        31384,
+        31432,
+        39264
+      ],
+      "workingMiB": 15.8,
+      "privateMiB": 6.6,
+      "dedicatedMiB": 75.6,
+      "sharedMiB": 529.8,
+      "gpuInstances": 1
+    }
+  ]
+}

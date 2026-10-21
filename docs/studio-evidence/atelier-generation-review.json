@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-21T10:04:15.731Z",
+  "passed": true,
+  "id": "review-1792577045301",
+  "projectId": "review-cloud-qa",
+  "requests": 1,
+  "newPaidRequests": 0,
+  "protectedPixels": 833280,
+  "center": [
+    0,
+    90,
+    253,
+    255
+  ],
+  "checks": [
+    "raw persisted before failure",
+    "raw bytes preserved",
+    "1300 and 960 UI",
+    "raw preview/save/undo/redo",
+    "reopen preserves review",
+    "confirmation cancel sends nothing",
+    "explicit local downsize",
+    "original pixels outside selection exact",
+    "raw and processed assets independently collected",
+    "repeat resolution idempotent"
+  ],
+  "errors": []
+}

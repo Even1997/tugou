@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-21T10:13:07.108Z",
+  "newRemoteRequests": 0,
+  "mask": "Synthetic rectangle with Sharp sigma 8 blur; exercises existing coverage compositor, not browser blur equivalence or a new model response",
+  "protectedPixels": 806588,
+  "featherPixels": 51892,
+  "sampledHardEdgeJump": 4,
+  "sampledSoftEdgeJump": 1,
+  "limit": "Single geometric cached image; feather spreads coverage beyond the rectangle and does not correct colour mismatch or content movement"
+}

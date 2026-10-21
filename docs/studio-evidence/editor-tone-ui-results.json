@@ -1,0 +1,95 @@
+[
+  "选区转调整蒙版；顶部编辑蒙版；强度一次撤销重做；真实 PNG 导出范围与透明度正确",
+  {
+    "name": "levels",
+    "layout": {
+      "width": 1500,
+      "body": 1500,
+      "height": 43,
+      "right": 828,
+      "topRight": 1482
+    }
+  },
+  {
+    "name": "levels",
+    "layout": {
+      "width": 1100,
+      "body": 1100,
+      "height": 43,
+      "right": 828,
+      "topRight": 1082
+    }
+  },
+  {
+    "name": "levels",
+    "layout": {
+      "width": 900,
+      "body": 900,
+      "height": 43,
+      "right": 828,
+      "topRight": 882
+    }
+  },
+  {
+    "name": "balance",
+    "layout": {
+      "width": 1500,
+      "body": 1500,
+      "height": 43,
+      "right": 794.1875,
+      "topRight": 1482
+    }
+  },
+  {
+    "name": "balance",
+    "layout": {
+      "width": 1100,
+      "body": 1100,
+      "height": 43,
+      "right": 794.1875,
+      "topRight": 1082
+    }
+  },
+  {
+    "name": "balance",
+    "layout": {
+      "width": 900,
+      "body": 900,
+      "height": 43,
+      "right": 794.1875,
+      "topRight": 882
+    }
+  },
+  "12 个调整入口可添加删除；色阶扩展参数落盘；曲线加点、键盘调点/删点不误操作图层，主题正确",
+  {
+    "name": "shadow",
+    "layout": {
+      "width": 1500,
+      "body": 1500,
+      "height": 43,
+      "right": 1482,
+      "topRight": 1482
+    }
+  },
+  {
+    "name": "shadow",
+    "layout": {
+      "width": 1100,
+      "body": 1100,
+      "height": 43,
+      "right": 1082,
+      "topRight": 1082
+    }
+  },
+  {
+    "name": "shadow",
+    "layout": {
+      "width": 900,
+      "body": 900,
+      "height": 43,
+      "right": 882,
+      "topRight": 882
+    }
+  },
+  "小数输入归整后可保存；曲线在选区存在时可删点/撤销重做；特效完成返回对象工具；重置可独立撤销；6 个图层特效并存；重选重开保留参数；停用、重置、移除及撤销正确；锁定禁止编辑；900/1100/1500 顶部工具栏无溢出"
+]

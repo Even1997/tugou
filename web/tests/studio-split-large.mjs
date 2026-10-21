@@ -1,0 +1,22 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import assert from "node:assert/strict";
+import sharp from "sharp";
+import { processImageTool } from "../src/app/api/studio/image-tools.ts";
+
+const root=process.env.STUDIO_SPLIT_TEST_DIR;
+if(!root||!path.isAbsolute(root))throw Error('Set an absolute isolated STUDIO_SPLIT_TEST_DIR');
+const dir=path.join(root,String(Date.now()));await mkdir(dir,{recursive:true});
+sharp.cache(false);
+const rect=await sharp({create:{width:4000,height:9000,channels:4,background:'#dd552280'}}).png().toBuffer();
+await sharp({create:{width:10000,height:10000,channels:4,background:'#00000000'}}).composite([{input:rect,left:500,top:500},{input:rect,left:5500,top:500}]).png().toFile(path.join(dir,'input'));
+const start=performance.now();
+const result=await processImageTool(root,{id:'large',projectId:'qa',sourceId:'source',name:'100MP拆分',tool:'split',options:{splitMode:'alpha',minArea:16,columns:2,rows:1}},dir,new AbortController().signal,()=>{});
+const elapsedMs=performance.now()-start;
+assert.equal(result.outputs.length,2);assert.ok(result.outputs.every(o=>o.width===10000&&o.height===10000&&o.pixels===36000000));
+const pixel=async(file,x,y)=>sharp(path.join(dir,file)).extract({left:x,top:y,width:1,height:1}).ensureAlpha().raw().toBuffer();
+const original=await pixel('input',600,600);
+assert.deepEqual(await pixel('output.png',600,600),original);assert.equal((await pixel('output.png',6000,600))[3],0);
+assert.deepEqual(await pixel('output-1.png',6000,600),original);assert.equal((await pixel('output-1.png',600,600))[3],0);
+const evidence={at:new Date().toISOString(),size:[10000,10000],parts:2,visiblePixels:72000000,elapsedMs:Math.round(elapsedMs),maxRssMiB:Math.round(process.resourceUsage().maxRSS/1024),sampledPixelsExact:true,outputBytes:result.outputs.reduce((sum,o)=>sum+o.bytes,0),folder:dir};
+await writeFile(new URL('../../docs/studio-evidence/atelier-split-large.json',import.meta.url),JSON.stringify(evidence,null,2));console.log(JSON.stringify(evidence));

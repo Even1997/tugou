@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-21T05:26:52.545Z",
+  "dragSelection": true,
+  "exactBounds": true,
+  "outsidePixelsUnchanged": true,
+  "alignedTransform": true,
+  "undoRedo": true,
+  "secondarySnapshot": true,
+  "texture": true,
+  "transparentExtend": [
+    160,
+    224
+  ],
+  "restart": true
+}

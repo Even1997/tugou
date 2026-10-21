@@ -20,6 +20,9 @@ import { CanvasNodeType, type CanvasNodeData } from "../types";
 import { isCanvasImageNodeType } from "../utils/canvas-panorama";
 import type { InsertAssetPayload } from "./asset-picker-modal";
 
+import { CanvasAssets } from "@/app/studio/canvas-assets";
+import { CanvasModules } from "@/app/studio/canvas-modules";
+
 export const CANVAS_ASSET_DRAG_TYPE = "application/x-infinite-canvas-asset";
 
 const PANEL_MOTION_SECONDS = 0.5;
@@ -32,6 +35,7 @@ const PROMPT_CACHE_TIME = 24 * 60 * 60 * 1000;
 type PanelTab = "canvas" | "assets" | "prompts";
 
 type Props = {
+    embedded?: boolean;
     nodes: CanvasNodeData[];
     selectedNodeIds: Set<string>;
     open: boolean;
@@ -91,7 +95,7 @@ const STATUS_COLOR: Record<string, string> = {
     error: "#ef4444",
 };
 
-export function CanvasSidePanel({ nodes, selectedNodeIds, open, width, onWidthChange, onFocusNode, onAssetDragStart, onAssetDragEnd, onInsertAsset }: Props) {
+export function CanvasSidePanel({ embedded = false, nodes, selectedNodeIds, open, width, onWidthChange, onFocusNode, onAssetDragStart, onAssetDragEnd, onInsertAsset }: Props) {
     const theme = canvasThemes[useThemeStore((state) => state.theme)];
     const [tab, setTab] = useState<PanelTab>("canvas");
     const [mounted, setMounted] = useState(open);
@@ -147,16 +151,16 @@ export function CanvasSidePanel({ nodes, selectedNodeIds, open, width, onWidthCh
             >
                 <div className="flex items-center gap-5 px-4 pt-3.5">
                     <PanelTabButton label="画布" active={tab === "canvas"} theme={theme} onClick={() => setTab("canvas")} />
-                    <PanelTabButton label="资产" active={tab === "assets"} theme={theme} onClick={() => setTab("assets")} />
+                    <PanelTabButton label="素材库" active={tab === "assets"} theme={theme} onClick={() => setTab("assets")} />
                     <PanelTabButton label="提示词库" active={tab === "prompts"} theme={theme} onClick={() => setTab("prompts")} />
                 </div>
                 <div className="mt-2 min-h-0 flex-1 overflow-hidden">
                     {tab === "canvas" ? (
                         <CanvasNodesTab nodes={nodes} selectedNodeIds={selectedNodeIds} onFocusNode={onFocusNode} theme={theme} />
                     ) : tab === "assets" ? (
-                        <CanvasAssetsTab theme={theme} onAssetDragStart={onAssetDragStart} onAssetDragEnd={onAssetDragEnd} />
+                        embedded ? <CanvasAssets onInsert={onInsertAsset} onDragStart={onAssetDragStart} onDragEnd={onAssetDragEnd} /> : <CanvasAssetsTab theme={theme} onAssetDragStart={onAssetDragStart} onAssetDragEnd={onAssetDragEnd} />
                     ) : (
-                        <CanvasPromptsTab theme={theme} onInsert={onInsertAsset} />
+                        embedded ? <CanvasModules onInsert={onInsertAsset} onDragStart={onAssetDragStart} onDragEnd={onAssetDragEnd} /> : <CanvasPromptsTab theme={theme} onInsert={onInsertAsset} />
                     )}
                 </div>
                 <button type="button" className="absolute inset-y-0 right-0 z-40 w-4 translate-x-1/2 cursor-col-resize" onPointerDown={startResize} aria-label="调整左侧面板宽度" />

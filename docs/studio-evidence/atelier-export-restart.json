@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-21T08:52:08.625Z",
+  "passed": true,
+  "dataDir": "C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\.tools\\export-restart-E5b6ba",
+  "checks": [
+    "actual server terminated after stripe persisted",
+    "restart then first export cleans orphan",
+    "completed image bytes unchanged",
+    "new export can start and cancel"
+  ],
+  "realModelRequests": 0
+}

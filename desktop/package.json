@@ -1,0 +1,10 @@
+{
+  "name": "canvas-studio-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "模块化提示词与图层创作工作台",
+  "main": "main.cjs",
+  "license": "AGPL-3.0-only",
+  "scripts": { "start": "electron .", "package": "node package.cjs" },
+  "devDependencies": { "electron": "^42.0.0", "@electron/packager": "^19.0.0" }
+}

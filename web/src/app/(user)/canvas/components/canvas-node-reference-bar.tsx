@@ -1,21 +1,30 @@
 "use client";
 
 import { FileText, Image as ImageIcon, Music2, Plus, Video, X } from "lucide-react";
-import { Popover } from "antd";
+import { AutoComplete, Button, Popover } from "antd";
+import { referenceRolePresets } from "@/app/studio/reference-roles.js";
 
 import { canvasThemes } from "@/lib/canvas-theme";
 import { useThemeStore } from "@/stores/use-theme-store";
 import { buildAllCanvasResourceReferences, type CanvasResourceReference } from "../utils/canvas-resource-references";
-import type { CanvasNodeData } from "../types";
+import type { CanvasConnection, CanvasNodeData } from "../types";
 
-export function CanvasNodeReferenceBar({ nodeId, connectedNodes, onDisconnect, onStartSelection }: { nodeId: string; connectedNodes: CanvasNodeData[]; onDisconnect?: (fromNodeId: string, toNodeId: string) => void; onStartSelection?: (nodeId: string) => void }) {
+export type ReferenceChange = (fromNodeId: string, toNodeId: string, change: { role?: string; direction?: -1 | 1 }) => void;
+
+export function CanvasNodeReferenceBar({ nodeId, connectedNodes, connections = [], onChange, onDisconnect, onStartSelection }: { nodeId: string; connectedNodes: CanvasNodeData[]; connections?: CanvasConnection[]; onChange?: ReferenceChange; onDisconnect?: (fromNodeId: string, toNodeId: string) => void; onStartSelection?: (nodeId: string) => void }) {
     const theme = canvasThemes[useThemeStore((state) => state.theme)];
     const references = buildAllCanvasResourceReferences(connectedNodes);
     return (
-        <div className="mb-2">
+        <div className="studio-ui mb-2">
             <div className="mb-1.5 text-[11px] font-medium" style={{ color: theme.node.muted }}>参考内容</div>
             <div className="thin-scrollbar flex min-h-12 gap-2 overflow-x-auto pb-1">
-                {references.map((reference) => <ReferenceItem key={reference.id} reference={reference} onRemove={() => onDisconnect?.(reference.nodeId, nodeId)} />)}
+                {references.map((reference, index) => <div key={reference.id} className="shrink-0">
+                    <ReferenceItem reference={reference} onRemove={() => onDisconnect?.(reference.nodeId, nodeId)} />
+                    {reference.kind === "image" && onChange && <Popover trigger="click" title={`${reference.label} · 参考职责`} content={<div className="w-72 space-y-3" onPointerDown={e => e.stopPropagation()}>
+                        <AutoComplete className="w-full" aria-label={`${reference.label}职责`} value={connections.find(c => c.fromNodeId === reference.nodeId && c.toNodeId === nodeId)?.referenceRole || ""} options={referenceRolePresets} placeholder="选择或输入职责" onChange={role => onChange(reference.nodeId, nodeId, { role })} />
+                        <div className="flex gap-2"><Button size="small" disabled={index === 0} onClick={() => onChange(reference.nodeId, nodeId, { direction: -1 })}>前移</Button><Button size="small" disabled={index === references.length - 1} onClick={() => onChange(reference.nodeId, nodeId, { direction: 1 })}>后移</Button></div>
+                    </div>}><button type="button" className="mt-1 block w-12 truncate text-[10px]" style={{ color: theme.node.muted }} aria-label={`设置${reference.label}职责`}>{reference.label}</button></Popover>}
+                </div>)}
                 <button type="button" className="grid size-12 shrink-0 place-items-center rounded-xl border bg-transparent transition hover:opacity-70" style={{ borderColor: theme.toolbar.border, color: theme.node.muted }} title="从画布选择参考节点" onClick={() => onStartSelection?.(nodeId)}>
                     <Plus className="size-4" />
                 </button>

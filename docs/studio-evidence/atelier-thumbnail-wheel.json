@@ -1,0 +1,1156 @@
+{
+  "at": "2026-10-21T11:00:45.850Z",
+  "passes": [
+    {
+      "cache": "first-pass-disk-cache-partial",
+      "scrolls": [
+        {
+          "input": "wheel",
+          "before": 0,
+          "after": 720
+        },
+        {
+          "input": "wheel",
+          "before": 720,
+          "after": 1620
+        },
+        {
+          "input": "wheel",
+          "before": 1620,
+          "after": 2520
+        },
+        {
+          "input": "wheel",
+          "before": 2520,
+          "after": 3420
+        }
+      ],
+      "longTasks": [
+        {
+          "start": 381.20000000298023,
+          "duration": 57
+        },
+        {
+          "start": 440.20000000298023,
+          "duration": 50
+        }
+      ],
+      "resources": [
+        {
+          "start": 1201.300000000745,
+          "duration": 9.400000002235174,
+          "request": 1203.7000000029802,
+          "responseStart": 1209.7000000029802,
+          "responseEnd": 1210.7000000029802,
+          "transferSize": 3502
+        },
+        {
+          "start": 1201.300000000745,
+          "duration": 9.699999999254942,
+          "request": 1203.6000000014901,
+          "responseStart": 1209.9000000022352,
+          "responseEnd": 1211,
+          "transferSize": 3196
+        },
+        {
+          "start": 1201.4000000022352,
+          "duration": 8.399999998509884,
+          "request": 1203.9000000022352,
+          "responseStart": 1209.2000000029802,
+          "responseEnd": 1209.800000000745,
+          "transferSize": 3500
+        },
+        {
+          "start": 1201.4000000022352,
+          "duration": 12.5,
+          "request": 1204,
+          "responseStart": 1210.2000000029802,
+          "responseEnd": 1213.9000000022352,
+          "transferSize": 3484
+        },
+        {
+          "start": 1201.4000000022352,
+          "duration": 12.599999997764826,
+          "request": 1203.800000000745,
+          "responseStart": 1210.4000000022352,
+          "responseEnd": 1214,
+          "transferSize": 3406
+        },
+        {
+          "start": 1201.4000000022352,
+          "duration": 12.899999998509884,
+          "request": 1204.1000000014901,
+          "responseStart": 1210.7000000029802,
+          "responseEnd": 1214.300000000745,
+          "transferSize": 3608
+        },
+        {
+          "start": 1201.5,
+          "duration": 21.100000001490116,
+          "request": 1210.5,
+          "responseStart": 1212.2000000029802,
+          "responseEnd": 1222.6000000014901,
+          "transferSize": 3648
+        },
+        {
+          "start": 1201.5,
+          "duration": 21.5,
+          "request": 1212.5,
+          "responseStart": 1214.2000000029802,
+          "responseEnd": 1223,
+          "transferSize": 3454
+        },
+        {
+          "start": 1201.5,
+          "duration": 21.800000000745058,
+          "request": 1214,
+          "responseStart": 1222,
+          "responseEnd": 1223.300000000745,
+          "transferSize": 3598
+        },
+        {
+          "start": 1201.5,
+          "duration": 28.300000000745058,
+          "request": 1215.300000000745,
+          "responseStart": 1229.5,
+          "responseEnd": 1229.800000000745,
+          "transferSize": 3356
+        },
+        {
+          "start": 1201.5,
+          "duration": 29.400000002235174,
+          "request": 1221.800000000745,
+          "responseStart": 1230,
+          "responseEnd": 1230.9000000022352,
+          "transferSize": 3680
+        },
+        {
+          "start": 1201.5,
+          "duration": 29.800000000745058,
+          "request": 1223.2000000029802,
+          "responseStart": 1230.7000000029802,
+          "responseEnd": 1231.300000000745,
+          "transferSize": 3418
+        },
+        {
+          "start": 1201.6000000014901,
+          "duration": 29.5,
+          "request": 1224.800000000745,
+          "responseStart": 1230.300000000745,
+          "responseEnd": 1231.1000000014901,
+          "transferSize": 3514
+        },
+        {
+          "start": 1201.6000000014901,
+          "duration": 31.5,
+          "request": 1223.9000000022352,
+          "responseStart": 1231.800000000745,
+          "responseEnd": 1233.1000000014901,
+          "transferSize": 3530
+        },
+        {
+          "start": 1201.6000000014901,
+          "duration": 32.5,
+          "request": 1230.6000000014901,
+          "responseStart": 1233.800000000745,
+          "responseEnd": 1234.1000000014901,
+          "transferSize": 3528
+        },
+        {
+          "start": 1201.6000000014901,
+          "duration": 33.19999999925494,
+          "request": 1231.4000000022352,
+          "responseStart": 1234.1000000014901,
+          "responseEnd": 1234.800000000745,
+          "transferSize": 3582
+        },
+        {
+          "start": 1201.7000000029802,
+          "duration": 34,
+          "request": 1233,
+          "responseStart": 1235.1000000014901,
+          "responseEnd": 1235.7000000029802,
+          "transferSize": 3534
+        },
+        {
+          "start": 1201.7000000029802,
+          "duration": 34.099999997764826,
+          "request": 1231.800000000745,
+          "responseStart": 1235.4000000022352,
+          "responseEnd": 1235.800000000745,
+          "transferSize": 3362
+        },
+        {
+          "start": 1201.7000000029802,
+          "duration": 37,
+          "request": 1234,
+          "responseStart": 1238.5,
+          "responseEnd": 1238.7000000029802,
+          "transferSize": 3254
+        },
+        {
+          "start": 1201.7000000029802,
+          "duration": 38,
+          "request": 1235.6000000014901,
+          "responseStart": 1239,
+          "responseEnd": 1239.7000000029802,
+          "transferSize": 3566
+        },
+        {
+          "start": 1201.7000000029802,
+          "duration": 38,
+          "request": 1234.9000000022352,
+          "responseStart": 1239.2000000029802,
+          "responseEnd": 1239.7000000029802,
+          "transferSize": 3474
+        },
+        {
+          "start": 1201.7000000029802,
+          "duration": 39.69999999925494,
+          "request": 1236.4000000022352,
+          "responseStart": 1240.300000000745,
+          "responseEnd": 1241.4000000022352,
+          "transferSize": 3526
+        },
+        {
+          "start": 1201.800000000745,
+          "duration": 39.80000000074506,
+          "request": 1236.9000000022352,
+          "responseStart": 1240.4000000022352,
+          "responseEnd": 1241.6000000014901,
+          "transferSize": 3636
+        },
+        {
+          "start": 1201.800000000745,
+          "duration": 40.600000001490116,
+          "request": 1239.4000000022352,
+          "responseStart": 1241.5,
+          "responseEnd": 1242.4000000022352,
+          "transferSize": 3488
+        },
+        {
+          "start": 1201.800000000745,
+          "duration": 42.400000002235174,
+          "request": 1240.300000000745,
+          "responseStart": 1243.9000000022352,
+          "responseEnd": 1244.2000000029802,
+          "transferSize": 3666
+        },
+        {
+          "start": 1201.800000000745,
+          "duration": 43.80000000074506,
+          "request": 1241.300000000745,
+          "responseStart": 1244.300000000745,
+          "responseEnd": 1245.6000000014901,
+          "transferSize": 3474
+        },
+        {
+          "start": 1201.800000000745,
+          "duration": 43.80000000074506,
+          "request": 1241.9000000022352,
+          "responseStart": 1244.7000000029802,
+          "responseEnd": 1245.6000000014901,
+          "transferSize": 3502
+        },
+        {
+          "start": 1201.800000000745,
+          "duration": 44.80000000074506,
+          "request": 1242.4000000022352,
+          "responseStart": 1246.300000000745,
+          "responseEnd": 1246.6000000014901,
+          "transferSize": 3232
+        },
+        {
+          "start": 1201.9000000022352,
+          "duration": 46,
+          "request": 1243,
+          "responseStart": 1246.6000000014901,
+          "responseEnd": 1247.9000000022352,
+          "transferSize": 3664
+        },
+        {
+          "start": 1201.9000000022352,
+          "duration": 47.5,
+          "request": 1245.300000000745,
+          "responseStart": 1248.1000000014901,
+          "responseEnd": 1249.4000000022352,
+          "transferSize": 3598
+        },
+        {
+          "start": 1201.9000000022352,
+          "duration": 47.5,
+          "request": 1246.300000000745,
+          "responseStart": 1248.9000000022352,
+          "responseEnd": 1249.4000000022352,
+          "transferSize": 3504
+        },
+        {
+          "start": 1201.9000000022352,
+          "duration": 48.599999997764826,
+          "request": 1246.5,
+          "responseStart": 1249.300000000745,
+          "responseEnd": 1250.5,
+          "transferSize": 3634
+        },
+        {
+          "start": 1201.9000000022352,
+          "duration": 49.30000000074506,
+          "request": 1248,
+          "responseStart": 1250.1000000014901,
+          "responseEnd": 1251.2000000029802,
+          "transferSize": 3332
+        },
+        {
+          "start": 1201.9000000022352,
+          "duration": 49.899999998509884,
+          "request": 1249.1000000014901,
+          "responseStart": 1251.6000000014901,
+          "responseEnd": 1251.800000000745,
+          "transferSize": 3636
+        },
+        {
+          "start": 1201.9000000022352,
+          "duration": 50.599999997764826,
+          "request": 1250,
+          "responseStart": 1252,
+          "responseEnd": 1252.5,
+          "transferSize": 3412
+        },
+        {
+          "start": 1201.9000000022352,
+          "duration": 50.69999999925494,
+          "request": 1250.6000000014901,
+          "responseStart": 1252.300000000745,
+          "responseEnd": 1252.6000000014901,
+          "transferSize": 3536
+        },
+        {
+          "start": 5221.10000000149,
+          "duration": 11.899999998509884,
+          "request": 5224.5,
+          "responseStart": 5231.400000002235,
+          "responseEnd": 5233,
+          "transferSize": 3596
+        },
+        {
+          "start": 5221.10000000149,
+          "duration": 12.399999998509884,
+          "request": 5224.5,
+          "responseStart": 5232,
+          "responseEnd": 5233.5,
+          "transferSize": 3612
+        },
+        {
+          "start": 5221.10000000149,
+          "duration": 12.600000001490116,
+          "request": 5224.300000000745,
+          "responseStart": 5232.20000000298,
+          "responseEnd": 5233.70000000298,
+          "transferSize": 3448
+        },
+        {
+          "start": 5221.10000000149,
+          "duration": 13.600000001490116,
+          "request": 5224.60000000149,
+          "responseStart": 5233,
+          "responseEnd": 5234.70000000298,
+          "transferSize": 3368
+        },
+        {
+          "start": 5221.10000000149,
+          "duration": 13.699999999254942,
+          "request": 5224.60000000149,
+          "responseStart": 5233.20000000298,
+          "responseEnd": 5234.800000000745,
+          "transferSize": 3600
+        },
+        {
+          "start": 5221.10000000149,
+          "duration": 14.100000001490116,
+          "request": 5224.5,
+          "responseStart": 5233.5,
+          "responseEnd": 5235.20000000298,
+          "transferSize": 3400
+        },
+        {
+          "start": 7251,
+          "duration": 12.100000001490116,
+          "request": 7253.800000000745,
+          "responseStart": 7261.10000000149,
+          "responseEnd": 7263.10000000149,
+          "transferSize": 3640
+        },
+        {
+          "start": 7251.10000000149,
+          "duration": 9.800000000745058,
+          "request": 7254,
+          "responseStart": 7260.20000000298,
+          "responseEnd": 7260.900000002235,
+          "transferSize": 3378
+        },
+        {
+          "start": 7251.10000000149,
+          "duration": 11.5,
+          "request": 7254.800000000745,
+          "responseStart": 7260.5,
+          "responseEnd": 7262.60000000149,
+          "transferSize": 3482
+        },
+        {
+          "start": 7251.10000000149,
+          "duration": 11.600000001490116,
+          "request": 7254.800000000745,
+          "responseStart": 7260.70000000298,
+          "responseEnd": 7262.70000000298,
+          "transferSize": 3528
+        },
+        {
+          "start": 7251.10000000149,
+          "duration": 12.399999998509884,
+          "request": 7254.800000000745,
+          "responseStart": 7261.10000000149,
+          "responseEnd": 7263.5,
+          "transferSize": 3500
+        },
+        {
+          "start": 7251.10000000149,
+          "duration": 12.699999999254942,
+          "request": 7254.800000000745,
+          "responseStart": 7261.400000002235,
+          "responseEnd": 7263.800000000745,
+          "transferSize": 3622
+        },
+        {
+          "start": 9258.800000000745,
+          "duration": 6.900000002235174,
+          "request": 9259.300000000745,
+          "responseStart": 9265.10000000149,
+          "responseEnd": 9265.70000000298,
+          "transferSize": 3380
+        },
+        {
+          "start": 9259,
+          "duration": 6,
+          "request": 9259.60000000149,
+          "responseStart": 9264.60000000149,
+          "responseEnd": 9265,
+          "transferSize": 3560
+        },
+        {
+          "start": 9259,
+          "duration": 6.5,
+          "request": 9259.70000000298,
+          "responseStart": 9265,
+          "responseEnd": 9265.5,
+          "transferSize": 3340
+        },
+        {
+          "start": 9259,
+          "duration": 7.800000000745058,
+          "request": 9259.800000000745,
+          "responseStart": 9265.60000000149,
+          "responseEnd": 9266.800000000745,
+          "transferSize": 3658
+        },
+        {
+          "start": 9259,
+          "duration": 8,
+          "request": 9259.900000002235,
+          "responseStart": 9265.800000000745,
+          "responseEnd": 9267,
+          "transferSize": 3548
+        },
+        {
+          "start": 9259,
+          "duration": 8.100000001490116,
+          "request": 9259.900000002235,
+          "responseStart": 9266.10000000149,
+          "responseEnd": 9267.10000000149,
+          "transferSize": 3486
+        },
+        {
+          "start": 11262.300000000745,
+          "duration": 11.600000001490116,
+          "request": 11263.20000000298,
+          "responseStart": 11271.800000000745,
+          "responseEnd": 11273.900000002235,
+          "transferSize": 3610
+        },
+        {
+          "start": 11262.400000002235,
+          "duration": 8.099999997764826,
+          "request": 11264.10000000149,
+          "responseStart": 11270.10000000149,
+          "responseEnd": 11270.5,
+          "transferSize": 3412
+        },
+        {
+          "start": 11262.400000002235,
+          "duration": 9.199999999254942,
+          "request": 11263.300000000745,
+          "responseStart": 11270.60000000149,
+          "responseEnd": 11271.60000000149,
+          "transferSize": 3504
+        },
+        {
+          "start": 11262.400000002235,
+          "duration": 9.199999999254942,
+          "request": 11264,
+          "responseStart": 11271,
+          "responseEnd": 11271.60000000149,
+          "transferSize": 3602
+        },
+        {
+          "start": 11262.400000002235,
+          "duration": 9.599999997764826,
+          "request": 11264.10000000149,
+          "responseStart": 11271.400000002235,
+          "responseEnd": 11272,
+          "transferSize": 3540
+        },
+        {
+          "start": 11262.400000002235,
+          "duration": 11.599999997764826,
+          "request": 11264.20000000298,
+          "responseStart": 11271.900000002235,
+          "responseEnd": 11274,
+          "transferSize": 3270
+        },
+        {
+          "start": 13270.300000000745,
+          "duration": 9.100000001490116,
+          "request": 13271.10000000149,
+          "responseStart": 13277.20000000298,
+          "responseEnd": 13279.400000002235,
+          "transferSize": 3646
+        },
+        {
+          "start": 13270.400000002235,
+          "duration": 7.199999999254942,
+          "request": 13271.5,
+          "responseStart": 13276.70000000298,
+          "responseEnd": 13277.60000000149,
+          "transferSize": 3654
+        },
+        {
+          "start": 13270.400000002235,
+          "duration": 9.099999997764826,
+          "request": 13272.20000000298,
+          "responseStart": 13277.70000000298,
+          "responseEnd": 13279.5,
+          "transferSize": 3504
+        },
+        {
+          "start": 13270.5,
+          "duration": 8,
+          "request": 13272.20000000298,
+          "responseStart": 13276.800000000745,
+          "responseEnd": 13278.5,
+          "transferSize": 3628
+        },
+        {
+          "start": 13270.5,
+          "duration": 9,
+          "request": 13272.20000000298,
+          "responseStart": 13278.300000000745,
+          "responseEnd": 13279.5,
+          "transferSize": 3666
+        },
+        {
+          "start": 13270.5,
+          "duration": 9.100000001490116,
+          "request": 13272.20000000298,
+          "responseStart": 13278.400000002235,
+          "responseEnd": 13279.60000000149,
+          "transferSize": 3330
+        },
+        {
+          "start": 15272.70000000298,
+          "duration": 8.399999998509884,
+          "request": 15274.5,
+          "responseStart": 15280.20000000298,
+          "responseEnd": 15281.10000000149,
+          "transferSize": 3386
+        },
+        {
+          "start": 15272.800000000745,
+          "duration": 7.400000002235174,
+          "request": 15274.60000000149,
+          "responseStart": 15279.70000000298,
+          "responseEnd": 15280.20000000298,
+          "transferSize": 3506
+        },
+        {
+          "start": 15272.800000000745,
+          "duration": 8,
+          "request": 15274.70000000298,
+          "responseStart": 15280,
+          "responseEnd": 15280.800000000745,
+          "transferSize": 3498
+        },
+        {
+          "start": 15272.800000000745,
+          "duration": 9.100000001490116,
+          "request": 15274.70000000298,
+          "responseStart": 15280.70000000298,
+          "responseEnd": 15281.900000002235,
+          "transferSize": 3604
+        },
+        {
+          "start": 15272.800000000745,
+          "duration": 9.400000002235174,
+          "request": 15274.800000000745,
+          "responseStart": 15281.300000000745,
+          "responseEnd": 15282.20000000298,
+          "transferSize": 3686
+        },
+        {
+          "start": 15272.900000002235,
+          "duration": 9.399999998509884,
+          "request": 15275.10000000149,
+          "responseStart": 15281.5,
+          "responseEnd": 15282.300000000745,
+          "transferSize": 3388
+        },
+        {
+          "start": 16276.5,
+          "duration": 9.300000000745058,
+          "request": 16277.900000002235,
+          "responseStart": 16284.70000000298,
+          "responseEnd": 16285.800000000745,
+          "transferSize": 3584
+        },
+        {
+          "start": 16276.60000000149,
+          "duration": 8,
+          "request": 16278,
+          "responseStart": 16283.900000002235,
+          "responseEnd": 16284.60000000149,
+          "transferSize": 3352
+        },
+        {
+          "start": 16276.60000000149,
+          "duration": 9.100000001490116,
+          "request": 16278,
+          "responseStart": 16284.70000000298,
+          "responseEnd": 16285.70000000298,
+          "transferSize": 3646
+        },
+        {
+          "start": 16276.70000000298,
+          "duration": 8.199999999254942,
+          "request": 16278.10000000149,
+          "responseStart": 16284.300000000745,
+          "responseEnd": 16284.900000002235,
+          "transferSize": 3498
+        },
+        {
+          "start": 16276.70000000298,
+          "duration": 9.599999997764826,
+          "request": 16278.10000000149,
+          "responseStart": 16285.20000000298,
+          "responseEnd": 16286.300000000745,
+          "transferSize": 3508
+        },
+        {
+          "start": 16276.70000000298,
+          "duration": 9.899999998509884,
+          "request": 16278.20000000298,
+          "responseStart": 16285.800000000745,
+          "responseEnd": 16286.60000000149,
+          "transferSize": 3516
+        },
+        {
+          "start": 18293.70000000298,
+          "duration": 9.799999997019768,
+          "request": 18295.10000000149,
+          "responseStart": 18302,
+          "responseEnd": 18303.5,
+          "transferSize": 3520
+        },
+        {
+          "start": 18293.800000000745,
+          "duration": 7.400000002235174,
+          "request": 18295.20000000298,
+          "responseStart": 18300.400000002235,
+          "responseEnd": 18301.20000000298,
+          "transferSize": 3586
+        },
+        {
+          "start": 18293.800000000745,
+          "duration": 8.100000001490116,
+          "request": 18295.20000000298,
+          "responseStart": 18300.70000000298,
+          "responseEnd": 18301.900000002235,
+          "transferSize": 3270
+        },
+        {
+          "start": 18293.800000000745,
+          "duration": 8.199999999254942,
+          "request": 18295.20000000298,
+          "responseStart": 18301.20000000298,
+          "responseEnd": 18302,
+          "transferSize": 3572
+        },
+        {
+          "start": 18293.800000000745,
+          "duration": 9.900000002235174,
+          "request": 18295.20000000298,
+          "responseStart": 18302.300000000745,
+          "responseEnd": 18303.70000000298,
+          "transferSize": 3336
+        },
+        {
+          "start": 18293.900000002235,
+          "duration": 9.800000000745058,
+          "request": 18295.300000000745,
+          "responseStart": 18302.5,
+          "responseEnd": 18303.70000000298,
+          "transferSize": 3502
+        },
+        {
+          "start": 20299.800000000745,
+          "duration": 9.600000001490116,
+          "request": 20301.800000000745,
+          "responseStart": 20308.70000000298,
+          "responseEnd": 20309.400000002235,
+          "transferSize": 3594
+        },
+        {
+          "start": 20299.800000000745,
+          "duration": 11,
+          "request": 20302.300000000745,
+          "responseStart": 20309.400000002235,
+          "responseEnd": 20310.800000000745,
+          "transferSize": 3508
+        },
+        {
+          "start": 20299.800000000745,
+          "duration": 11.199999999254942,
+          "request": 20302.20000000298,
+          "responseStart": 20309.60000000149,
+          "responseEnd": 20311,
+          "transferSize": 3640
+        },
+        {
+          "start": 20299.800000000745,
+          "duration": 13,
+          "request": 20302,
+          "responseStart": 20310.900000002235,
+          "responseEnd": 20312.800000000745,
+          "transferSize": 3448
+        },
+        {
+          "start": 20299.900000002235,
+          "duration": 11.800000000745058,
+          "request": 20302.5,
+          "responseStart": 20310.5,
+          "responseEnd": 20311.70000000298,
+          "transferSize": 3642
+        },
+        {
+          "start": 20299.900000002235,
+          "duration": 12.399999998509884,
+          "request": 20302.70000000298,
+          "responseStart": 20310.70000000298,
+          "responseEnd": 20312.300000000745,
+          "transferSize": 3446
+        },
+        {
+          "start": 22313.10000000149,
+          "duration": 9.600000001490116,
+          "request": 22315.300000000745,
+          "responseStart": 22321.800000000745,
+          "responseEnd": 22322.70000000298,
+          "transferSize": 3506
+        },
+        {
+          "start": 22313.10000000149,
+          "duration": 10.199999999254942,
+          "request": 22315.400000002235,
+          "responseStart": 22322.10000000149,
+          "responseEnd": 22323.300000000745,
+          "transferSize": 3222
+        },
+        {
+          "start": 22313.10000000149,
+          "duration": 10.600000001490116,
+          "request": 22315.5,
+          "responseStart": 22322.400000002235,
+          "responseEnd": 22323.70000000298,
+          "transferSize": 3486
+        },
+        {
+          "start": 22313.10000000149,
+          "duration": 11.699999999254942,
+          "request": 22315.5,
+          "responseStart": 22322.900000002235,
+          "responseEnd": 22324.800000000745,
+          "transferSize": 3594
+        },
+        {
+          "start": 22313.10000000149,
+          "duration": 13,
+          "request": 22315.5,
+          "responseStart": 22323.5,
+          "responseEnd": 22326.10000000149,
+          "transferSize": 3642
+        },
+        {
+          "start": 22313.10000000149,
+          "duration": 13.199999999254942,
+          "request": 22315.60000000149,
+          "responseStart": 22323.5,
+          "responseEnd": 22326.300000000745,
+          "transferSize": 3602
+        }
+      ]
+    },
+    {
+      "cache": "repeat-pass",
+      "scrolls": [
+        {
+          "input": "wheel",
+          "before": 0,
+          "after": 720
+        },
+        {
+          "input": "wheel",
+          "before": 720,
+          "after": 1620
+        },
+        {
+          "input": "wheel",
+          "before": 1620,
+          "after": 2520
+        },
+        {
+          "input": "wheel",
+          "before": 2520,
+          "after": 3420
+        }
+      ],
+      "longTasks": [],
+      "resources": []
+    }
+  ],
+  "passed": true,
+  "trace": [
+    {
+      "name": "RunTask",
+      "ms": 95.661
+    },
+    {
+      "name": "GPUTask",
+      "ms": 95.651,
+      "data": {
+        "renderer_pid": 20232,
+        "used_bytes": 1474560
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 56.965
+    },
+    {
+      "name": "FunctionCall",
+      "ms": 56.2,
+      "data": {
+        "columnNumber": 150489,
+        "frame": "E78E18F0D49716394596AF314A4581E1",
+        "functionName": "",
+        "isolate": "18067853361639994480",
+        "lineNumber": 1,
+        "sampleTraceId": 4713528398557196,
+        "scriptId": "8",
+        "url": "http://127.0.0.1:3439/_next/static/chunks/4bd1b696-8cd12253b448cc13.js"
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 55.845
+    },
+    {
+      "name": "RunTask",
+      "ms": 55.667
+    },
+    {
+      "name": "GPUTask",
+      "ms": 55.654,
+      "data": {
+        "renderer_pid": 20232,
+        "used_bytes": 8847360
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 51.146
+    },
+    {
+      "name": "FunctionCall",
+      "ms": 51.097
+    },
+    {
+      "name": "EvaluateScript",
+      "ms": 51.049,
+      "data": {
+        "columnNumber": 1,
+        "frame": "E78E18F0D49716394596AF314A4581E1",
+        "lineNumber": 1,
+        "url": ""
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 50.973
+    },
+    {
+      "name": "FunctionCall",
+      "ms": 49.399,
+      "data": {
+        "columnNumber": 150489,
+        "frame": "E78E18F0D49716394596AF314A4581E1",
+        "functionName": "",
+        "isolate": "18067853361639994480",
+        "lineNumber": 1,
+        "sampleTraceId": 4713528398557382,
+        "scriptId": "8",
+        "url": "http://127.0.0.1:3439/_next/static/chunks/4bd1b696-8cd12253b448cc13.js"
+      }
+    },
+    {
+      "name": "FunctionCall",
+      "ms": 47.668
+    },
+    {
+      "name": "EvaluateScript",
+      "ms": 47.595,
+      "data": {
+        "columnNumber": 1,
+        "frame": "E78E18F0D49716394596AF314A4581E1",
+        "lineNumber": 1,
+        "url": ""
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 42.744
+    },
+    {
+      "name": "FunctionCall",
+      "ms": 42.672
+    },
+    {
+      "name": "EvaluateScript",
+      "ms": 42.635,
+      "data": {
+        "columnNumber": 1,
+        "frame": "E78E18F0D49716394596AF314A4581E1",
+        "lineNumber": 1,
+        "url": ""
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 39.87
+    },
+    {
+      "name": "GPUTask",
+      "ms": 39.86,
+      "data": {
+        "renderer_pid": 20232,
+        "used_bytes": 11796480
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 32.238
+    },
+    {
+      "name": "RunTask",
+      "ms": 31.137
+    },
+    {
+      "name": "GPUTask",
+      "ms": 31.131,
+      "data": {
+        "renderer_pid": 20232,
+        "used_bytes": 11796480
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 31.123
+    },
+    {
+      "name": "EvaluateScript",
+      "ms": 31.093,
+      "data": {
+        "columnNumber": 1,
+        "frame": "E78E18F0D49716394596AF314A4581E1",
+        "lineNumber": 1,
+        "url": "http://127.0.0.1:3439/_next/static/chunks/app/layout-a72bce81b66668d1.js"
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 29.515
+    },
+    {
+      "name": "UpdateLayoutTree",
+      "ms": 28.406
+    },
+    {
+      "name": "RunTask",
+      "ms": 28.381
+    },
+    {
+      "name": "RunTask",
+      "ms": 28.16
+    },
+    {
+      "name": "GPUTask",
+      "ms": 28.151,
+      "data": {
+        "renderer_pid": 20232,
+        "used_bytes": 11796480
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 28.077
+    },
+    {
+      "name": "FunctionCall",
+      "ms": 28.039,
+      "data": {
+        "columnNumber": 150489,
+        "frame": "E78E18F0D49716394596AF314A4581E1",
+        "functionName": "",
+        "isolate": "18067853361639994480",
+        "lineNumber": 1,
+        "sampleTraceId": 4713528398560138,
+        "scriptId": "8",
+        "url": "http://127.0.0.1:3439/_next/static/chunks/4bd1b696-8cd12253b448cc13.js"
+      }
+    },
+    {
+      "name": "EvaluateScript",
+      "ms": 27.888,
+      "data": {
+        "columnNumber": 1,
+        "frame": "E78E18F0D49716394596AF314A4581E1",
+        "lineNumber": 1,
+        "url": "http://127.0.0.1:3439/_next/static/chunks/app/studio/page-74a771be84cb7df6.js"
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 27.167
+    },
+    {
+      "name": "Layout",
+      "ms": 26.977
+    },
+    {
+      "name": "RunTask",
+      "ms": 26.882
+    },
+    {
+      "name": "GPUTask",
+      "ms": 26.873,
+      "data": {
+        "renderer_pid": 20232,
+        "used_bytes": 11796480
+      }
+    },
+    {
+      "name": "RunTask",
+      "ms": 26.648
+    },
+    {
+      "name": "FunctionCall",
+      "ms": 26.57,
+      "data": {
+        "columnNumber": 150489,
+        "frame": "E78E18F0D49716394596AF314A4581E1",
+        "functionName": "",
+        "isolate": "18067853361639994480",
+        "lineNumber": 1,
+        "sampleTraceId": 4713528398559840,
+        "scriptId": "8",
+        "url": "http://127.0.0.1:3439/_next/static/chunks/4bd1b696-8cd12253b448cc13.js"
+      }
+    },
+    {
+      "name": "UpdateLayoutTree",
+      "ms": 26.071
+    },
+    {
+      "name": "RunTask",
+      "ms": 23.929
+    },
+    {
+      "name": "RunTask",
+      "ms": 23.656
+    },
+    {
+      "name": "RunTask",
+      "ms": 23.567
+    },
+    {
+      "name": "UpdateLayoutTree",
+      "ms": 22.84
+    },
+    {
+      "name": "RunTask",
+      "ms": 22.192
+    },
+    {
+      "name": "RunTask",
+      "ms": 21.379
+    },
+    {
+      "name": "RunTask",
+      "ms": 20.865
+    },
+    {
+      "name": "RunTask",
+      "ms": 20.302
+    },
+    {
+      "name": "RunTask",
+      "ms": 20.074
+    },
+    {
+      "name": "RunTask",
+      "ms": 19.961
+    },
+    {
+      "name": "RunTask",
+      "ms": 19.938
+    }
+  ],
+  "layoutTotals": [
+    {
+      "name": "Layout",
+      "ms": 84.24000000000001
+    },
+    {
+      "name": "UpdateLayoutTree",
+      "ms": 92.114
+    },
+    {
+      "name": "Paint",
+      "ms": 145.451
+    },
+    {
+      "name": "FunctionCall",
+      "ms": 686.1889999999971
+    },
+    {
+      "name": "RecalculateStyles",
+      "ms": 0
+    }
+  ]
+}

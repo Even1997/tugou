@@ -1,0 +1,104 @@
+{
+  "model": "D:\\CanvasStudioBiRefNetQA\\BiRefNet-matting-local-fp16-ort-file-shapes.onnx",
+  "sha256": "9e2757b2118c60d085dc0109fd8b23e29543fdc20598c0455ad727aa63f808fc",
+  "source": "https://github.com/ZhengPeng7/BiRefNet/releases/download/v1/BiRefNet-matting-epoch_100.onnx",
+  "integrity": "Local FP16 derivation of the pinned upstream matting ONNX; conversion-ort-file-shapes.json records source/output hashes and checker result",
+  "limits": "Offline QA only; no ground-truth alpha, large-image, cancellation, product or UI acceptance",
+  "guard": "4 GiB physical free before start; stop own process below 1 GiB physical or 2 GiB commit headroom, above 16 GiB private committed memory, or after 180 seconds; sampled every 500ms. Private commit is not physical RAM or dedicated VRAM.",
+  "samples": [
+    {
+      "name": "portrait-a",
+      "source": "C:\\Users\\Administrator\\Documents\\\u5a5a\u793c\u8bf7\u67ec\\\u98ce\u683c\u8bd5\u9a8c\\C\u7ec4-\u7167\u7247\u4eba\u7269\u6d4b\u8bd501\\\u4eba\u7269\u53c2\u8003\\01-person.png",
+      "sourceSha256": "d31a74bd0925c4954acafa7a3ff916d37d7f54c3e8499f54831d648454ec38d5",
+      "size": [
+        660,
+        880
+      ],
+      "inferenceSeconds": [
+        2.481,
+        0.863
+      ],
+      "memoryMiB": {
+        "workingSet": 4703.4,
+        "peakWorkingSet": 4706.9,
+        "private": 13700.7,
+        "peakPagefile": 13704.3
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "name": "portrait-b",
+      "source": "C:\\Users\\Administrator\\Documents\\\u5a5a\u793c\u8bf7\u67ec\\\u98ce\u683c\u8bd5\u9a8c\\C\u7ec4-\u7167\u7247\u4eba\u7269\u6d4b\u8bd501\\\u4eba\u7269\u53c2\u8003\\02-person.png",
+      "sourceSha256": "5dbf776f23700f6e00c14b11f742f6cb5aa6aa93760b156aa7d55d1a5920200e",
+      "size": [
+        333,
+        500
+      ],
+      "inferenceSeconds": [
+        0.87,
+        0.866
+      ],
+      "memoryMiB": {
+        "workingSet": 4693.3,
+        "peakWorkingSet": 4725.2,
+        "private": 13689.9,
+        "peakPagefile": 13722.6
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "name": "pet",
+      "source": "D:\\CanvasStudioQuality\\samples\\chelsea.png",
+      "sourceSha256": "596aa1e7cb875eb79f437e310381d26b338a81c2da23439704a73c4651e8c4bb",
+      "size": [
+        451,
+        300
+      ],
+      "inferenceSeconds": [
+        0.874,
+        0.865
+      ],
+      "memoryMiB": {
+        "workingSet": 4696.8,
+        "peakWorkingSet": 4725.2,
+        "private": 13693.0,
+        "peakPagefile": 13722.6
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ]
+    }
+  ],
+  "modelVariant": "Dedicated general matting checkpoint, types inferred through file API before conversion; numerical equivalence not yet proven",
+  "loadSeconds": 3.857,
+  "providers": [
+    "DmlExecutionProvider",
+    "CPUExecutionProvider"
+  ],
+  "inputShape": [
+    1,
+    3,
+    1024,
+    1024
+  ],
+  "inputType": "tensor(float)",
+  "memoryAfterLoadMiB": {
+    "workingSet": 843.0,
+    "peakWorkingSet": 862.0,
+    "private": 2374.3,
+    "peakPagefile": 2949.6
+  }
+}

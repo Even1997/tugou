@@ -1,0 +1,142 @@
+[
+  "直线拖动预览不落盘；忽略中间折返；Shift 连接上一笔；一次撤销重做",
+  "平滑过滤短距离抖动，松手补齐终点；一次撤销重做",
+  {
+    "toolbar": {
+      "width": 1100,
+      "body": 1100,
+      "height": 43,
+      "controls": [
+        {
+          "top": 125.5,
+          "bottom": 151.5,
+          "right": 158,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121,
+          "bottom": 156,
+          "right": 198,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.5,
+          "bottom": 155.5,
+          "right": 264.140625,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.5,
+          "bottom": 155.5,
+          "right": 387.53125,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.5,
+          "bottom": 155.5,
+          "right": 531.53125,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.5,
+          "bottom": 155.5,
+          "right": 644.140625,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.90625,
+          "bottom": 155.09375,
+          "right": 722,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.90625,
+          "bottom": 155.09375,
+          "right": 1082,
+          "barTop": 117,
+          "barBottom": 160
+        }
+      ]
+    }
+  },
+  {
+    "toolbar": {
+      "width": 900,
+      "body": 900,
+      "height": 43,
+      "controls": [
+        {
+          "top": 162.5,
+          "bottom": 188.5,
+          "right": 143,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158,
+          "bottom": 193,
+          "right": 183,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.5,
+          "bottom": 192.5,
+          "right": 249.140625,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.5,
+          "bottom": 192.5,
+          "right": 372.53125,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.5,
+          "bottom": 192.5,
+          "right": 516.53125,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.5,
+          "bottom": 192.5,
+          "right": 629.140625,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.90625,
+          "bottom": 192.09375,
+          "right": 707,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.90625,
+          "bottom": 192.09375,
+          "right": 882,
+          "barTop": 154,
+          "barBottom": 197
+        }
+      ]
+    }
+  },
+  "真实 Web Worker 填充去污点；选区外逐像素不变；一次撤销/重做；保存重开；PNG 全图逐像素一致；素材原图保留",
+  {
+    "cancelMs": 26,
+    "bitmapUnchanged": true
+  },
+  "填充期间编辑图层会取消旧任务，迟到结果不会覆盖新编辑",
+  "切换画笔会取消填充，并立即恢复笔刷选项",
+  "修图菜单同入口；取消与锁定保护不产生位图"
+]

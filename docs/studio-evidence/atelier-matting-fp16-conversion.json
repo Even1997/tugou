@@ -1,0 +1,12 @@
+{
+  "sourceSha256": "6065d27c615ea27308f5b88598dd8db116eb07436c7a323ca40d13b2866c309e",
+  "sha256": "9e2757b2118c60d085dc0109fd8b23e29543fdc20598c0455ad727aa63f808fc",
+  "bytes": 489658479,
+  "seconds": 36.625,
+  "checkerPassed": true,
+  "converter": "onnxruntime 1.22.0 transformer converter / onnx 1.17.0",
+  "keepIoTypes": true,
+  "disableShapeInference": true,
+  "fileShapeInference": true,
+  "limits": "Conversion only; no numerical equivalence or inference acceptance yet"
+}

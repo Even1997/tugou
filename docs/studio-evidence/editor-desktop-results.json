@@ -1,0 +1,24 @@
+{
+  "frontendStatus": 200,
+  "backendStatus": 200,
+  "listedProjects": 2,
+  "projects": [
+    {
+      "id": "222679de-e2a3-4316-a9ec-86cbed7433f3",
+      "name": "未命名创作",
+      "layers": 0,
+      "assets": 0,
+      "semanticMatch": true
+    },
+    {
+      "id": "67ca1e15-a70e-432a-9f15-6a26cfba9eb4",
+      "name": "蓝白花园 · C 版",
+      "layers": 5,
+      "assets": 4,
+      "semanticMatch": true
+    }
+  ],
+  "credentialsUnchanged": true,
+  "modelConfigured": false,
+  "package": "editor-review"
+}

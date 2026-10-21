@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-21T04:49:45.6602242Z",
+  "tests": 48,
+  "passed": 48,
+  "failed": 0,
+  "suites": [
+    "resources",
+    "editor",
+    "selection",
+    "model",
+    "tools"
+  ],
+  "typecheck": "passed",
+  "devUi": [
+    "500 resources",
+    "GPU tools",
+    "references",
+    "regions"
+  ]
+}

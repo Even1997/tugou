@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-21T07:10:19.554Z",
+  "fixture": "synthetic 64MP semitransparent source, 100MP provider placeholder; no real model",
+  "output": [
+    10000,
+    10000
+  ],
+  "preparedMs": 780,
+  "protectedCompositeMs": 470,
+  "peakProcessMiB": 1017,
+  "protected64MPHashEqual": true,
+  "maskBoundarySamples": true,
+  "outputFile": "D:\\CanvasStudioRuntime\\qa-cloud-tools\\protected-outpaint.png"
+}

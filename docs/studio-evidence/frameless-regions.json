@@ -1,0 +1,26 @@
+{
+  "regions": {
+    "header": "drag",
+    "button": "no-drag",
+    "dragPoint": {
+      "x": 12,
+      "y": 20
+    },
+    "buttonPoint": {
+      "x": 1478,
+      "y": 32
+    }
+  },
+  "bounds": {
+    "x": 210,
+    "y": 26,
+    "width": 1500,
+    "height": 980
+  },
+  "contentBounds": {
+    "x": 210,
+    "y": 26,
+    "width": 1500,
+    "height": 980
+  }
+}

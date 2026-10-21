@@ -1,0 +1,37 @@
+{
+  "measurements": [
+    {
+      "tool": "upscale",
+      "source": [
+        1024,
+        1536
+      ],
+      "output": [
+        4096,
+        6144
+      ],
+      "seconds": 5.5361590000000005,
+      "peakNodeRssMiB": 224.30078125,
+      "gpuBaselineMiB": 1656,
+      "peakTotalGpuMiB": 2215,
+      "folder": "D:\\CanvasStudioRuntime\\qa-large\\upscale-1792551578359"
+    },
+    {
+      "tool": "cutout",
+      "source": [
+        1024,
+        1536
+      ],
+      "output": [
+        1024,
+        1536
+      ],
+      "seconds": 2.1638882999999995,
+      "peakNodeRssMiB": 187.33984375,
+      "gpuBaselineMiB": 1656,
+      "peakTotalGpuMiB": 1669,
+      "folder": "D:\\CanvasStudioRuntime\\qa-large\\cutout-1792551583965"
+    }
+  ],
+  "limits": "GPU 是全设备占用，Node RSS 不包含外部模型进程；不能作为完整进程树峰值。"
+}

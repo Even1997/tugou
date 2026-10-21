@@ -1,0 +1,12 @@
+{
+  "profilePath": "D:\\CanvasStudioBiRefNetQA\\results-matting-fp16-profile\\ort_2026-10-21_19-37-57.json",
+  "profileSha256": "08D42A02C96F397C96B8494BB33338DDBD2F63ADCF25FBB8B3787343FBF83864",
+  "providers": [
+    {
+      "provider": "DmlExecutionProvider",
+      "events": 41,
+      "durationUs": 1583093.0
+    }
+  ],
+  "limits": "Recorded CPU host dispatch durations are not pure GPU compute timings. Fused-node events do not enumerate every original ONNX operator."
+}

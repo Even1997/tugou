@@ -1,0 +1,104 @@
+{
+  "model": "D:\\CanvasStudioBiRefNetFullQA\\model_fp16.onnx",
+  "sha256": "3654c741eb80bd926ada8fed1713b506ccf8d30eb1f6487e87eb9f234f33df09",
+  "source": "https://huggingface.co/onnx-community/BiRefNet-ONNX/tree/534d3c82d3bb8b2f0867db6dfbc3a525b8e42f67",
+  "integrity": "Published full-model FP16 conversion, fixed revision, LFS SHA256 and size verified; model card MIT and upstream license retained",
+  "limits": "Offline QA only; no ground-truth alpha, large-image, cancellation, product or UI acceptance",
+  "guard": "4 GiB physical free before start; stop own process below 1 GiB physical or 2 GiB commit headroom, above 16 GiB private committed memory, or after 180 seconds; sampled every 500ms. Private commit is not physical RAM or dedicated VRAM.",
+  "samples": [
+    {
+      "name": "portrait-a",
+      "source": "C:\\Users\\Administrator\\Documents\\\u5a5a\u793c\u8bf7\u67ec\\\u98ce\u683c\u8bd5\u9a8c\\C\u7ec4-\u7167\u7247\u4eba\u7269\u6d4b\u8bd501\\\u4eba\u7269\u53c2\u8003\\01-person.png",
+      "sourceSha256": "d31a74bd0925c4954acafa7a3ff916d37d7f54c3e8499f54831d648454ec38d5",
+      "size": [
+        660,
+        880
+      ],
+      "inferenceSeconds": [
+        0.607,
+        0.492
+      ],
+      "memoryMiB": {
+        "workingSet": 929.3,
+        "peakWorkingSet": 932.8,
+        "private": 11645.8,
+        "peakPagefile": 11649.3
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "name": "portrait-b",
+      "source": "C:\\Users\\Administrator\\Documents\\\u5a5a\u793c\u8bf7\u67ec\\\u98ce\u683c\u8bd5\u9a8c\\C\u7ec4-\u7167\u7247\u4eba\u7269\u6d4b\u8bd501\\\u4eba\u7269\u53c2\u8003\\02-person.png",
+      "sourceSha256": "5dbf776f23700f6e00c14b11f742f6cb5aa6aa93760b156aa7d55d1a5920200e",
+      "size": [
+        333,
+        500
+      ],
+      "inferenceSeconds": [
+        0.493,
+        0.494
+      ],
+      "memoryMiB": {
+        "workingSet": 924.9,
+        "peakWorkingSet": 951.1,
+        "private": 11641.8,
+        "peakPagefile": 11667.6
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ]
+    },
+    {
+      "name": "pet",
+      "source": "D:\\CanvasStudioQuality\\samples\\chelsea.png",
+      "sourceSha256": "596aa1e7cb875eb79f437e310381d26b338a81c2da23439704a73c4651e8c4bb",
+      "size": [
+        451,
+        300
+      ],
+      "inferenceSeconds": [
+        0.495,
+        0.495
+      ],
+      "memoryMiB": {
+        "workingSet": 927.6,
+        "peakWorkingSet": 951.1,
+        "private": 11643.9,
+        "peakPagefile": 11667.6
+      },
+      "rgbPreserved": true,
+      "originalFileUnchanged": true,
+      "alphaRange": [
+        0,
+        255
+      ]
+    }
+  ],
+  "modelVariant": "General full BiRefNet at 1024, not the matting-specialized checkpoint",
+  "loadSeconds": 5.249,
+  "providers": [
+    "DmlExecutionProvider",
+    "CPUExecutionProvider"
+  ],
+  "inputShape": [
+    1,
+    3,
+    1024,
+    1024
+  ],
+  "inputType": "tensor(float)",
+  "memoryAfterLoadMiB": {
+    "workingSet": 849.1,
+    "peakWorkingSet": 867.5,
+    "private": 2373.9,
+    "peakPagefile": 2949.4
+  }
+}

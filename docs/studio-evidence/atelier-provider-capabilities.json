@@ -1,0 +1,46 @@
+{
+  "at": "2026-10-21T10:33:25.822Z",
+  "host": "xymm.win",
+  "configuredModel": "gpt-image-2.5-flare",
+  "readOnly": true,
+  "imageRequests": 0,
+  "credentialFileUnchanged": true,
+  "results": [
+    {
+      "route": "/v1/models",
+      "status": 200,
+      "body": {
+        "data": [
+          {
+            "id": "gpt-image-2.5-flare",
+            "object": "model",
+            "created": 1788825600,
+            "owned_by": "openai",
+            "type": "model",
+            "display_name": "GPT Image 2.5 Flare"
+          },
+          {
+            "id": "gpt-image-2.5-sunburst",
+            "object": "model",
+            "created": 1788825600,
+            "owned_by": "openai",
+            "type": "model",
+            "display_name": "GPT Image 2.5 Sunburst"
+          }
+        ],
+        "object": "list"
+      }
+    },
+    {
+      "route": "/v1/images/batches/models",
+      "status": 404,
+      "body": {
+        "error": {
+          "code": "BATCH_IMAGE_DISABLED",
+          "message": "batch image API is disabled",
+          "type": "invalid_request_error"
+        }
+      }
+    }
+  ]
+}

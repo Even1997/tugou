@@ -1,0 +1,24 @@
+{
+  "at": "2026-10-21T11:44:15.7260299Z",
+  "readOnlyVerification": true,
+  "formalBuild": "amyk6OypARE8BiyQjaxPU",
+  "candidateBuild": "eNMKEaN7IDIBsYcy8IG7U",
+  "mainResponding": true,
+  "mainWindowVisibleHandle": false,
+  "originalProjects": [
+    "222679de-e2a3-4316-a9ec-86cbed7433f3",
+    "67ca1e15-a70e-432a-9f15-6a26cfba9eb4"
+  ],
+  "originalResources": 15,
+  "credentialsUnchanged": true,
+  "timestampChanges": [],
+  "imageModel": "gpt-image-2.5-flare",
+  "analysisModelConfigured": false,
+  "imageKeyConfigured": true,
+  "newImageRequests": 0,
+  "pending": [
+    "Formal window opening deferred by user; no replacement of running app",
+    "Provider size/async protocol and visual model remain unanswered",
+    "Fine alpha quality and memory not accepted; glow preference pending"
+  ]
+}

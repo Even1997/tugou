@@ -51,6 +51,11 @@ type CanvasStore = {
 
 const initialViewport: ViewportTransform = { x: 0, y: 0, k: 1 };
 const CANVAS_STORE_KEY = "infinite-canvas:canvas_store";
+export async function flushCanvasProjects() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = null;
+    await localForageStorage.setItem(CANVAS_STORE_KEY, JSON.stringify({ state: { projects: useCanvasStore.getState().projects }, version: 0 }));
+}
 type PersistedCanvasState = Pick<CanvasStore, "projects">;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let queuedPersistState: PersistedCanvasState | null = null;

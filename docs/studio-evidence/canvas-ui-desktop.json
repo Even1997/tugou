@@ -1,0 +1,11 @@
+{
+  "backend": 200,
+  "after": "4F40DD5CA22203EC5E62C79E885A320EDB8EA7DC4C45DBA0AA65956297EC45F3",
+  "frontend": 200,
+  "desktop": {
+    "Id": 52444,
+    "MainWindowTitle": "图构 Studio · 模块化视觉创作",
+    "Path": "C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\release\\canvas-ui\\CanvasStudio-win32-x64\\CanvasStudio.exe"
+  },
+  "before": "4F40DD5CA22203EC5E62C79E885A320EDB8EA7DC4C45DBA0AA65956297EC45F3"
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "scenario": "group",
+    "protected": true,
+    "layersUnchanged": true
+  },
+  {
+    "scenario": "adjustment",
+    "protected": true,
+    "layersUnchanged": true
+  },
+  {
+    "scenario": "merge",
+    "protected": true,
+    "layersUnchanged": true
+  }
+]

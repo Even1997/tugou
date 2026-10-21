@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-21T08:08:50.796Z",
+  "fixture": "100MP synthetic source and grayscale mask; not a real semantic model",
+  "output": [
+    10000,
+    10000
+  ],
+  "extractionMs": 1454,
+  "peakProcessMiB": 1224,
+  "all100MPRGBHashEqual": true,
+  "alphaAndHoleSamples": true
+}

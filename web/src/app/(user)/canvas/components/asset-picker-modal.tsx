@@ -12,18 +12,21 @@ import { uploadAssetMediaFile } from "@/services/file-storage";
 import { uploadImage } from "@/services/image-storage";
 import type { InsertAssetPayload } from "../types";
 
+import { CanvasAssets } from "@/app/studio/canvas-assets";
+
 export type { InsertAssetPayload } from "../types";
 
 export type AssetPickerTab = "my-assets" | "library";
 
 type Props = {
+    embedded?: boolean;
     open: boolean;
     defaultTab?: AssetPickerTab;
     onInsert: (payload: InsertAssetPayload) => void;
     onClose: () => void;
 };
 
-export function AssetPickerModal({ open, defaultTab = "my-assets", onInsert, onClose }: Props) {
+export function AssetPickerModal({ embedded = false, open, defaultTab = "my-assets", onInsert, onClose }: Props) {
     const [activeTab, setActiveTab] = useState<AssetPickerTab>(defaultTab);
 
     useEffect(() => {
@@ -32,14 +35,14 @@ export function AssetPickerModal({ open, defaultTab = "my-assets", onInsert, onC
 
     return (
         <Modal title="选择素材" open={open} onCancel={onClose} footer={null} width={860} destroyOnHidden styles={{ body: { padding: "0 24px 24px", minHeight: 480 } }}>
-            <Tabs
+            {embedded ? <div className="h-[480px]"><CanvasAssets onInsert={onInsert} /></div> : <Tabs
                 activeKey={activeTab}
                 onChange={(key) => setActiveTab(key as AssetPickerTab)}
                 items={[
                     { key: "my-assets", label: "我的素材", children: <MyAssetsTab onInsert={onInsert} /> },
                     { key: "library", label: "素材库", children: <LibraryTab onInsert={onInsert} /> },
                 ]}
-            />
+            />}
         </Modal>
     );
 }

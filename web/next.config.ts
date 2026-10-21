@@ -15,6 +15,7 @@ export default function nextConfig(phase: string): NextConfig {
 
     return {
         output: "standalone",
+        distDir: process.env.STUDIO_BUILD_DIR || ".next",
         allowedDevOrigins: isDev ? ["*.*.*.*"] : [],
         typescript: {
             ignoreBuildErrors: true,

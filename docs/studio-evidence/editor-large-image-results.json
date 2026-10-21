@@ -1,0 +1,33 @@
+{
+  "fixture": "100MP gradient, 1000 patches, transparent areas and one-pixel detail",
+  "sourceBytes": 70955660,
+  "paintedBytes": 70958966,
+  "dimensions": [
+    10000,
+    10000
+  ],
+  "importMs": 1434,
+  "selectionMs": 2452,
+  "paintMs": 2127,
+  "working": {
+    "workingBytes": 402621440,
+    "touchedTiles": 4
+  },
+  "pngMs": 5388,
+  "jpegMs": 5282,
+  "totalMs": 22144,
+  "png": "C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\.tools\\editor-foundation-qa\\exports\\100MP 原尺寸验收-90de4cd5-37e4-44c5-8fd9-05ae3e8c6f29.png",
+  "jpg": "C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\.tools\\editor-foundation-qa\\exports\\100MP 原尺寸验收-67e8a186-1526-42e6-aae4-2861d595f7e6.jpg",
+  "checks": [
+    "100MP import source preserved",
+    "original-resolution single-pixel color selection",
+    "paint cannot cross selection boundary",
+    "undo and redo",
+    "save and reopen",
+    "bounded live-paint viewport",
+    "100% viewport preserves a one-pixel detail",
+    "PNG and JPEG strip export",
+    "export corners/brush/transparent pixels",
+    "JPEG white flatten"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "at": "2026-10-21T14:01:18.628Z",
+  "status": "failed",
+  "host": "xymm.win",
+  "model": "gpt-image-2.5-sunburst",
+  "configuredModel": "gpt-image-2.5-flare",
+  "sourceSha256": "e7e32eafe79e41287100afd8418f6e27fbdcd4391c9ea82630e2c44220ca964a",
+  "requestedSize": [
+    2048,
+    2048
+  ],
+  "remoteRequests": 1,
+  "source": "Existing CC0 Chelsea plus local shapes and text; no user photos",
+  "responseMs": 40208,
+  "httpStatus": 200,
+  "providerSize": [
+    1254,
+    1254
+  ],
+  "error": "Provider output does not match requested 2K dimensions\n+ actual - expected\n\n  [\n+   1254,\n+   1254\n-   2048,\n-   2048\n  ]\n",
+  "credentialFileUnchanged": true,
+  "finishedAt": "2026-10-21T14:02:34.507Z"
+}

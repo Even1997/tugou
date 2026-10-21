@@ -32,11 +32,15 @@ export type CameraControlOptions = {
     aperture: number;
 };
 
+export type CanvasModuleReference = { projectId: string; moduleId: string; name: string; kind: string; text: string; format: "plain" | "labeled" };
+
 export type CanvasNodeMetadata = {
+    moduleRef?: CanvasModuleReference;
     content?: string;
     groupId?: string;
     composerContent?: string;
     prompt?: string;
+    generationPrompt?: string;
     excludeUpstreamText?: boolean;
     status?: CanvasNodeStatus;
     errorDetails?: string;
@@ -147,6 +151,7 @@ export type CanvasConnection = {
     id: string;
     fromNodeId: string;
     toNodeId: string;
+    referenceRole?: string;
 };
 
 export type CanvasAssistantReference = {
@@ -162,7 +167,7 @@ export type CanvasAssistantReference = {
 };
 
 export type InsertAssetPayload =
-    | { kind: "text"; content: string; title: string; assetId?: string; source?: "asset" | "library" }
+    | { kind: "text"; content: string; title: string; moduleRef?: CanvasModuleReference; assetId?: string; source?: "asset" | "library" }
     | { kind: "image"; dataUrl: string; title: string; storageKey?: string; assetId?: string; width?: number; height?: number; bytes?: number; mimeType?: string; source?: "asset" | "library" }
     | { kind: "video"; url: string; title: string; storageKey?: string; assetId?: string; width?: number; height?: number; bytes?: number; mimeType?: string; source?: "asset" | "library" }
     | { kind: "audio"; url: string; title: string; storageKey?: string; assetId?: string; bytes?: number; mimeType?: string; durationMs?: number; source?: "asset" | "library" };

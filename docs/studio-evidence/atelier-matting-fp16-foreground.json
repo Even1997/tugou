@@ -1,0 +1,20 @@
+[
+  {
+    "name": "portrait-a",
+    "seconds": 0.195,
+    "alphaUnchanged": true,
+    "opaqueRGBUnchanged": true
+  },
+  {
+    "name": "portrait-b",
+    "seconds": 0.057,
+    "alphaUnchanged": true,
+    "opaqueRGBUnchanged": true
+  },
+  {
+    "name": "pet",
+    "seconds": 0.093,
+    "alphaUnchanged": true,
+    "opaqueRGBUnchanged": true
+  }
+]

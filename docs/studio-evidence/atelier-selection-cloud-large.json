@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-21T07:45:42.328Z",
+  "fixture": "100MP synthetic semitransparent source and local provider placeholder; not model quality",
+  "output": [
+    10000,
+    10000
+  ],
+  "preparedMs": 752,
+  "compositeMs": 1665,
+  "peakProcessMiB": 1095,
+  "protected23MPHashEqual": true,
+  "holeAndFeatherPixels": true
+}

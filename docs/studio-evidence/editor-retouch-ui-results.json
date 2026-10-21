@@ -1,0 +1,133 @@
+[
+  "仿制图章：顶部菜单、原生笔触、一次撤销重做、保存重开、PNG 全图像素一致",
+  "修复：顶部菜单、原生笔触、一次撤销重做、保存重开、PNG 全图像素一致",
+  "模糊：顶部菜单、原生笔触、一次撤销重做、保存重开、PNG 全图像素一致",
+  "涂抹：顶部菜单、原生笔触、一次撤销重做、保存重开、PNG 全图像素一致",
+  "液化：顶部菜单、原生笔触、一次撤销重做、保存重开、PNG 全图像素一致",
+  "Escape 中途取消不产生笔画或历史提交",
+  {
+    "largeBrush": 1000,
+    "cancelMs": 23,
+    "unchanged": true
+  },
+  "锁定图层拒绝修图，不产生位图副本",
+  "顶部取样按钮可替代 Alt；对齐取样跨笔画生效",
+  {
+    "toolbar": {
+      "width": 1100,
+      "body": 1100,
+      "toolbarHeight": 52,
+      "topRight": 1082,
+      "controls": [
+        {
+          "top": 125.5,
+          "bottom": 151.5,
+          "right": 158,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.5,
+          "bottom": 155.5,
+          "right": 224.140625,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.5,
+          "bottom": 155.5,
+          "right": 347.53125,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.5,
+          "bottom": 155.5,
+          "right": 467.53125,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.90625,
+          "bottom": 155.09375,
+          "right": 566,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.90625,
+          "bottom": 155.09375,
+          "right": 612,
+          "barTop": 117,
+          "barBottom": 160
+        },
+        {
+          "top": 121.90625,
+          "bottom": 155.09375,
+          "right": 1082,
+          "barTop": 117,
+          "barBottom": 160
+        }
+      ]
+    }
+  },
+  {
+    "toolbar": {
+      "width": 900,
+      "body": 900,
+      "toolbarHeight": 52,
+      "topRight": 882,
+      "controls": [
+        {
+          "top": 162.5,
+          "bottom": 188.5,
+          "right": 143,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.5,
+          "bottom": 192.5,
+          "right": 209.140625,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.5,
+          "bottom": 192.5,
+          "right": 332.53125,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.5,
+          "bottom": 192.5,
+          "right": 452.53125,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.90625,
+          "bottom": 192.09375,
+          "right": 551,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.90625,
+          "bottom": 192.09375,
+          "right": 597,
+          "barTop": 154,
+          "barBottom": 197
+        },
+        {
+          "top": 158.90625,
+          "bottom": 192.09375,
+          "right": 882,
+          "barTop": 154,
+          "barBottom": 197
+        }
+      ]
+    }
+  }
+]

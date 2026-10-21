@@ -1,0 +1,28 @@
+{
+  "status": "failed",
+  "at": "2026-10-21T10:30:35.458Z",
+  "host": "xymm.win",
+  "model": "gpt-image-2.5-flare",
+  "source": "CC0 Chelsea photograph plus local geometric shapes and ATELIER 2026 text; no user photos",
+  "sourceSha256": "e7e32eafe79e41287100afd8418f6e27fbdcd4391c9ea82630e2c44220ca964a",
+  "operation": {
+    "kind": "enhance",
+    "sourceId": "live-quality",
+    "sourceWidth": 1024,
+    "sourceHeight": 1024,
+    "width": 1024,
+    "height": 1024,
+    "left": 0,
+    "top": 0
+  },
+  "remoteRequests": 1,
+  "responseMs": 26418,
+  "providerSize": [
+    1254,
+    1254
+  ],
+  "explicitDownsizeAvailable": true,
+  "error": "模型返回1254×1254，请求为1024×1024；未拉伸或覆盖原图，请选择支持此尺寸的模型",
+  "finishedAt": "2026-10-21T10:31:01.887Z",
+  "limits": "One actual provider request per operation; requires visual review, no measured detail ground truth or general identity guarantee"
+}

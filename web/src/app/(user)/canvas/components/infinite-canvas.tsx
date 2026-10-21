@@ -50,6 +50,7 @@ export function InfiniteCanvas({ containerRef, viewport, tool, backgroundMode = 
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
+            if (!containerRef.current?.getClientRects().length || document.querySelector("dialog[open]")) return;
             if (event.code !== "Space") return;
             const target = event.target instanceof Element ? event.target : null;
             if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement || target?.closest("[contenteditable='true']")) return;
@@ -223,7 +224,7 @@ export function InfiniteCanvas({ containerRef, viewport, tool, backgroundMode = 
     return (
         <div
             ref={containerRef}
-            className={`relative h-full w-full select-none overflow-hidden ${activeTool === "pan" || isPanning ? "[&_*]:!cursor-[inherit]" : ""}`}
+            className={`relative h-full w-full select-none overflow-clip ${activeTool === "pan" || isPanning ? "[&_*]:!cursor-[inherit]" : ""}`}
             style={{ background: theme.canvas.background, cursor }}
             onPointerDown={activeTool === "pan" ? undefined : handlePointerDown}
             onPointerDownCapture={activeTool === "pan" ? handlePointerDown : undefined}

@@ -1,0 +1,203 @@
+{
+  "at": "2026-10-21T08:34:24.334Z",
+  "channel": "offline packaged local tools, no model API requests",
+  "sources": {
+    "portraits": "User supplied local reference files; not a measured identity dataset",
+    "pet": "Chelsea, Stefan van der Walt, CC0; https://scikit-image.org/docs/stable/api/skimage.data#skimage.data.chelsea; https://raw.githubusercontent.com/scikit-image/scikit-image/v0.21.0/skimage/data/chelsea.png"
+  },
+  "measurements": [
+    {
+      "name": "portrait-a",
+      "tool": "cutout",
+      "input": [
+        660,
+        880
+      ],
+      "output": [
+        660,
+        880
+      ],
+      "taskMs": 3189,
+      "reusedVerifiedResult": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "transparent": 237745,
+      "soft": 343054,
+      "opaque": 1,
+      "originalRGBPreserved": true,
+      "file": "D:\\CanvasStudioQuality\\portrait-a-cutout.png",
+      "comparison": "D:\\CanvasStudioQuality\\portrait-a-cutout-backgrounds.png"
+    },
+    {
+      "name": "portrait-a",
+      "tool": "upscale",
+      "input": [
+        660,
+        880
+      ],
+      "output": [
+        1320,
+        1760
+      ],
+      "taskMs": 6523,
+      "reusedVerifiedResult": true,
+      "alphaRange": [
+        255,
+        255
+      ],
+      "transparent": 0,
+      "soft": 0,
+      "opaque": 2323200,
+      "originalRGBPreserved": false,
+      "file": "D:\\CanvasStudioQuality\\portrait-a-upscale.png",
+      "comparison": "D:\\CanvasStudioQuality\\portrait-a-upscale-backgrounds.png"
+    },
+    {
+      "name": "portrait-a",
+      "tool": "alpha",
+      "input": [
+        660,
+        880
+      ],
+      "output": [
+        660,
+        880
+      ],
+      "taskMs": 252,
+      "reusedVerifiedResult": false,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "transparent": 241300,
+      "soft": 339500,
+      "opaque": 0,
+      "originalRGBPreserved": false,
+      "file": "D:\\CanvasStudioQuality\\portrait-a-alpha.png",
+      "comparison": "D:\\CanvasStudioQuality\\portrait-a-alpha-backgrounds.png"
+    },
+    {
+      "name": "portrait-b",
+      "tool": "cutout",
+      "input": [
+        333,
+        500
+      ],
+      "output": [
+        333,
+        500
+      ],
+      "taskMs": 1373,
+      "reusedVerifiedResult": true,
+      "alphaRange": [
+        0,
+        255
+      ],
+      "transparent": 109848,
+      "soft": 56619,
+      "opaque": 33,
+      "originalRGBPreserved": true,
+      "file": "D:\\CanvasStudioQuality\\portrait-b-cutout.png",
+      "comparison": "D:\\CanvasStudioQuality\\portrait-b-cutout-backgrounds.png"
+    },
+    {
+      "name": "portrait-b",
+      "tool": "upscale",
+      "input": [
+        333,
+        500
+      ],
+      "output": [
+        666,
+        1000
+      ],
+      "taskMs": 3169,
+      "reusedVerifiedResult": true,
+      "alphaRange": [
+        255,
+        255
+      ],
+      "transparent": 0,
+      "soft": 0,
+      "opaque": 666000,
+      "originalRGBPreserved": false,
+      "file": "D:\\CanvasStudioQuality\\portrait-b-upscale.png",
+      "comparison": "D:\\CanvasStudioQuality\\portrait-b-upscale-backgrounds.png"
+    },
+    {
+      "name": "portrait-b",
+      "tool": "alpha",
+      "input": [
+        333,
+        500
+      ],
+      "output": [
+        333,
+        500
+      ],
+      "taskMs": 96,
+      "reusedVerifiedResult": false,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "transparent": 111478,
+      "soft": 55022,
+      "opaque": 0,
+      "originalRGBPreserved": false,
+      "file": "D:\\CanvasStudioQuality\\portrait-b-alpha.png",
+      "comparison": "D:\\CanvasStudioQuality\\portrait-b-alpha-backgrounds.png"
+    },
+    {
+      "name": "pet",
+      "tool": "cutout",
+      "input": [
+        451,
+        300
+      ],
+      "output": [
+        451,
+        300
+      ],
+      "taskMs": 1308,
+      "reusedVerifiedResult": true,
+      "alphaRange": [
+        0,
+        254
+      ],
+      "transparent": 16380,
+      "soft": 118920,
+      "opaque": 0,
+      "originalRGBPreserved": true,
+      "file": "D:\\CanvasStudioQuality\\pet-cutout.png",
+      "comparison": "D:\\CanvasStudioQuality\\pet-cutout-backgrounds.png"
+    },
+    {
+      "name": "pet",
+      "tool": "upscale",
+      "input": [
+        451,
+        300
+      ],
+      "output": [
+        902,
+        600
+      ],
+      "taskMs": 2907,
+      "reusedVerifiedResult": true,
+      "alphaRange": [
+        255,
+        255
+      ],
+      "transparent": 0,
+      "soft": 0,
+      "opaque": 541200,
+      "originalRGBPreserved": false,
+      "file": "D:\\CanvasStudioQuality\\pet-upscale.png",
+      "comparison": "D:\\CanvasStudioQuality\\pet-upscale-backgrounds.png"
+    }
+  ],
+  "limits": "No ground-truth mattes or high-resolution originals. These checks prove dimensions, RGB/alpha mechanics and repeatable outputs; visual quality must be assessed separately."
+}

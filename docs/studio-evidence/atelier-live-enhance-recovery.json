@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-21T10:34:57.576Z",
+  "newRemoteRequests": 0,
+  "originalRequestStillFailed": true,
+  "explicitLocalRecovery": true,
+  "size": [
+    1024,
+    1024
+  ],
+  "elapsedMs": 186,
+  "alphaPixelsVerified": 1048576,
+  "fullAlphaRangeVerified": true,
+  "limits": "Cached single real enhancement plus synthetic continuous-alpha fixture; no general fidelity claim or passing 2x creative upscale"
+}

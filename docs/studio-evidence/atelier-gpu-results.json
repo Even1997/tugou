@@ -1,0 +1,22 @@
+[
+  {
+    "model": "illustration",
+    "width": 512,
+    "height": 768,
+    "seconds": 1.5248146000000002,
+    "transparent": 154655,
+    "opaque": 4731,
+    "nonblack": 219854,
+    "output": "D:\\CanvasStudioRuntime\\qa-restored\\illustration\\output.png"
+  },
+  {
+    "model": "general",
+    "width": 512,
+    "height": 768,
+    "seconds": 2.7211089000000004,
+    "transparent": 154655,
+    "opaque": 4731,
+    "nonblack": 219873,
+    "output": "D:\\CanvasStudioRuntime\\qa-restored\\general\\output.png"
+  }
+]

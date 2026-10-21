@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "at": "2026-10-21T09:51:35.181Z",
+  "sourceSha256": "35699b7270e5d84c3f8b9165921b17bdd2b9bf61d9f8da55f7becf614975c721",
+  "providerSize": [
+    1254,
+    1254
+  ],
+  "targetSize": [
+    1024,
+    1024
+  ],
+  "explicitAlignment": true,
+  "outsideChanged": 0,
+  "insideChanged": 215295,
+  "center": [
+    0,
+    90,
+    253,
+    255
+  ],
+  "elapsedMs": 224,
+  "newRemoteRequests": 0,
+  "limits": "Single cached live geometric edit; not broad model fidelity or packaged UI acceptance"
+}

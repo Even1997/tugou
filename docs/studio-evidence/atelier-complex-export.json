@@ -1,0 +1,1154 @@
+{
+  "at": "2026-10-21T08:37:16.660Z",
+  "passed": true,
+  "layers": 29,
+  "assets": 2,
+  "exports": [
+    {
+      "file": "C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\.tools\\atelier-qa\\exports\\100MP 复杂工程验收-6c71d42f-83c7-47ed-9a67-daa6b63ea517.png",
+      "elapsedMs": 54279,
+      "pixelHash": "b8186c913b2d022fef0de48c38e7f2d4007ae67d1f65a284a2474cd34f648762",
+      "dimensions": [
+        10000,
+        10000
+      ]
+    },
+    {
+      "file": "C:\\Users\\Administrator\\Documents\\婚礼请柬\\studio\\.tools\\atelier-qa\\exports\\100MP 复杂工程验收-500f1bf4-124e-434c-8e73-4c374b2e1009.png",
+      "elapsedMs": 48718,
+      "pixelHash": "b8186c913b2d022fef0de48c38e7f2d4007ae67d1f65a284a2474cd34f648762",
+      "dimensions": [
+        10000,
+        10000
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "at": 1792571711977,
+      "phase": "setup",
+      "electronPrivateMiB": 383,
+      "electronWorkingMiB": 436,
+      "serverPrivateMiB": 114,
+      "serverWorkingMiB": 115,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571712990,
+      "phase": "baseline",
+      "electronPrivateMiB": 384,
+      "electronWorkingMiB": 436,
+      "serverPrivateMiB": 114,
+      "serverWorkingMiB": 115,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571713997,
+      "phase": "baseline",
+      "electronPrivateMiB": 384,
+      "electronWorkingMiB": 435,
+      "serverPrivateMiB": 114,
+      "serverWorkingMiB": 115,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571715002,
+      "phase": "baseline",
+      "electronPrivateMiB": 389,
+      "electronWorkingMiB": 436,
+      "serverPrivateMiB": 114,
+      "serverWorkingMiB": 115,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571716008,
+      "phase": "export-1",
+      "electronPrivateMiB": 494,
+      "electronWorkingMiB": 451,
+      "serverPrivateMiB": 114,
+      "serverWorkingMiB": 115,
+      "heartbeatMs": 19
+    },
+    {
+      "at": 1792571717012,
+      "phase": "export-1",
+      "electronPrivateMiB": 737,
+      "electronWorkingMiB": 641,
+      "serverPrivateMiB": 114,
+      "serverWorkingMiB": 115,
+      "heartbeatMs": 315
+    },
+    {
+      "at": 1792571718027,
+      "phase": "export-1",
+      "electronPrivateMiB": 1016,
+      "electronWorkingMiB": 733,
+      "serverPrivateMiB": 115,
+      "serverWorkingMiB": 116,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571719030,
+      "phase": "export-1",
+      "electronPrivateMiB": 962,
+      "electronWorkingMiB": 838,
+      "serverPrivateMiB": 115,
+      "serverWorkingMiB": 116,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571720031,
+      "phase": "export-1",
+      "electronPrivateMiB": 822,
+      "electronWorkingMiB": 708,
+      "serverPrivateMiB": 115,
+      "serverWorkingMiB": 116,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571721035,
+      "phase": "export-1",
+      "electronPrivateMiB": 822,
+      "electronWorkingMiB": 708,
+      "serverPrivateMiB": 115,
+      "serverWorkingMiB": 116,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571722046,
+      "phase": "export-1",
+      "electronPrivateMiB": 965,
+      "electronWorkingMiB": 796,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 2
+    },
+    {
+      "at": 1792571723053,
+      "phase": "export-1",
+      "electronPrivateMiB": 1045,
+      "electronWorkingMiB": 785,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571724068,
+      "phase": "export-1",
+      "electronPrivateMiB": 874,
+      "electronWorkingMiB": 772,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571725075,
+      "phase": "export-1",
+      "electronPrivateMiB": 875,
+      "electronWorkingMiB": 774,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571726085,
+      "phase": "export-1",
+      "electronPrivateMiB": 876,
+      "electronWorkingMiB": 775,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571727090,
+      "phase": "export-1",
+      "electronPrivateMiB": 879,
+      "electronWorkingMiB": 767,
+      "serverPrivateMiB": 114,
+      "serverWorkingMiB": 115,
+      "heartbeatMs": 13
+    },
+    {
+      "at": 1792571728098,
+      "phase": "export-1",
+      "electronPrivateMiB": 1114,
+      "electronWorkingMiB": 845,
+      "serverPrivateMiB": 124,
+      "serverWorkingMiB": 126,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571729106,
+      "phase": "export-1",
+      "electronPrivateMiB": 972,
+      "electronWorkingMiB": 676,
+      "serverPrivateMiB": 124,
+      "serverWorkingMiB": 126,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571730113,
+      "phase": "export-1",
+      "electronPrivateMiB": 701,
+      "electronWorkingMiB": 644,
+      "serverPrivateMiB": 125,
+      "serverWorkingMiB": 126,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571731122,
+      "phase": "export-1",
+      "electronPrivateMiB": 702,
+      "electronWorkingMiB": 645,
+      "serverPrivateMiB": 125,
+      "serverWorkingMiB": 126,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571732131,
+      "phase": "export-1",
+      "electronPrivateMiB": 762,
+      "electronWorkingMiB": 675,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 81
+    },
+    {
+      "at": 1792571733140,
+      "phase": "export-1",
+      "electronPrivateMiB": 1058,
+      "electronWorkingMiB": 787,
+      "serverPrivateMiB": 116,
+      "serverWorkingMiB": 118,
+      "heartbeatMs": 11
+    },
+    {
+      "at": 1792571734152,
+      "phase": "export-1",
+      "electronPrivateMiB": 1213,
+      "electronWorkingMiB": 801,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571735157,
+      "phase": "export-1",
+      "electronPrivateMiB": 901,
+      "electronWorkingMiB": 734,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571736167,
+      "phase": "export-1",
+      "electronPrivateMiB": 995,
+      "electronWorkingMiB": 829,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571737177,
+      "phase": "export-1",
+      "electronPrivateMiB": 872,
+      "electronWorkingMiB": 721,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571738188,
+      "phase": "export-1",
+      "electronPrivateMiB": 960,
+      "electronWorkingMiB": 776,
+      "serverPrivateMiB": 114,
+      "serverWorkingMiB": 116,
+      "heartbeatMs": 11
+    },
+    {
+      "at": 1792571739192,
+      "phase": "export-1",
+      "electronPrivateMiB": 1097,
+      "electronWorkingMiB": 829,
+      "serverPrivateMiB": 125,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571740197,
+      "phase": "export-1",
+      "electronPrivateMiB": 1213,
+      "electronWorkingMiB": 855,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 126,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571741211,
+      "phase": "export-1",
+      "electronPrivateMiB": 824,
+      "electronWorkingMiB": 755,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 126,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571742220,
+      "phase": "export-1",
+      "electronPrivateMiB": 851,
+      "electronWorkingMiB": 794,
+      "serverPrivateMiB": 117,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 109
+    },
+    {
+      "at": 1792571743235,
+      "phase": "export-1",
+      "electronPrivateMiB": 1132,
+      "electronWorkingMiB": 880,
+      "serverPrivateMiB": 125,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 4
+    },
+    {
+      "at": 1792571744243,
+      "phase": "export-1",
+      "electronPrivateMiB": 1270,
+      "electronWorkingMiB": 879,
+      "serverPrivateMiB": 131,
+      "serverWorkingMiB": 133,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571745252,
+      "phase": "export-1",
+      "electronPrivateMiB": 842,
+      "electronWorkingMiB": 698,
+      "serverPrivateMiB": 131,
+      "serverWorkingMiB": 133,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571746262,
+      "phase": "export-1",
+      "electronPrivateMiB": 843,
+      "electronWorkingMiB": 695,
+      "serverPrivateMiB": 131,
+      "serverWorkingMiB": 133,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571747264,
+      "phase": "export-1",
+      "electronPrivateMiB": 918,
+      "electronWorkingMiB": 818,
+      "serverPrivateMiB": 132,
+      "serverWorkingMiB": 134,
+      "heartbeatMs": 261
+    },
+    {
+      "at": 1792571748273,
+      "phase": "export-1",
+      "electronPrivateMiB": 1085,
+      "electronWorkingMiB": 868,
+      "serverPrivateMiB": 138,
+      "serverWorkingMiB": 140,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571749284,
+      "phase": "export-1",
+      "electronPrivateMiB": 778,
+      "electronWorkingMiB": 765,
+      "serverPrivateMiB": 138,
+      "serverWorkingMiB": 140,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571750295,
+      "phase": "export-1",
+      "electronPrivateMiB": 781,
+      "electronWorkingMiB": 766,
+      "serverPrivateMiB": 114,
+      "serverWorkingMiB": 115,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571751304,
+      "phase": "export-1",
+      "electronPrivateMiB": 781,
+      "electronWorkingMiB": 764,
+      "serverPrivateMiB": 114,
+      "serverWorkingMiB": 115,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571752308,
+      "phase": "export-1",
+      "electronPrivateMiB": 780,
+      "electronWorkingMiB": 746,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 12
+    },
+    {
+      "at": 1792571753319,
+      "phase": "export-1",
+      "electronPrivateMiB": 1037,
+      "electronWorkingMiB": 860,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571754327,
+      "phase": "export-1",
+      "electronPrivateMiB": 869,
+      "electronWorkingMiB": 700,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571755340,
+      "phase": "export-1",
+      "electronPrivateMiB": 665,
+      "electronWorkingMiB": 669,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571756349,
+      "phase": "export-1",
+      "electronPrivateMiB": 665,
+      "electronWorkingMiB": 669,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571757360,
+      "phase": "export-1",
+      "electronPrivateMiB": 732,
+      "electronWorkingMiB": 717,
+      "serverPrivateMiB": 129,
+      "serverWorkingMiB": 130,
+      "heartbeatMs": 56
+    },
+    {
+      "at": 1792571758366,
+      "phase": "export-1",
+      "electronPrivateMiB": 986,
+      "electronWorkingMiB": 825,
+      "serverPrivateMiB": 132,
+      "serverWorkingMiB": 132,
+      "heartbeatMs": 4
+    },
+    {
+      "at": 1792571759372,
+      "phase": "export-1",
+      "electronPrivateMiB": 1114,
+      "electronWorkingMiB": 843,
+      "serverPrivateMiB": 137,
+      "serverWorkingMiB": 138,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571760378,
+      "phase": "export-1",
+      "electronPrivateMiB": 826,
+      "electronWorkingMiB": 755,
+      "serverPrivateMiB": 115,
+      "serverWorkingMiB": 116,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571761391,
+      "phase": "export-1",
+      "electronPrivateMiB": 892,
+      "electronWorkingMiB": 817,
+      "serverPrivateMiB": 122,
+      "serverWorkingMiB": 122,
+      "heartbeatMs": 51
+    },
+    {
+      "at": 1792571762392,
+      "phase": "export-1",
+      "electronPrivateMiB": 790,
+      "electronWorkingMiB": 728,
+      "serverPrivateMiB": 122,
+      "serverWorkingMiB": 122,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571763397,
+      "phase": "export-1",
+      "electronPrivateMiB": 809,
+      "electronWorkingMiB": 788,
+      "serverPrivateMiB": 122,
+      "serverWorkingMiB": 122,
+      "heartbeatMs": 267
+    },
+    {
+      "at": 1792571764404,
+      "phase": "export-1",
+      "electronPrivateMiB": 1080,
+      "electronWorkingMiB": 848,
+      "serverPrivateMiB": 123,
+      "serverWorkingMiB": 123,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571765407,
+      "phase": "export-1",
+      "electronPrivateMiB": 711,
+      "electronWorkingMiB": 708,
+      "serverPrivateMiB": 123,
+      "serverWorkingMiB": 123,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571766421,
+      "phase": "export-1",
+      "electronPrivateMiB": 701,
+      "electronWorkingMiB": 697,
+      "serverPrivateMiB": 165,
+      "serverWorkingMiB": 165,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571767428,
+      "phase": "export-1",
+      "electronPrivateMiB": 701,
+      "electronWorkingMiB": 697,
+      "serverPrivateMiB": 261,
+      "serverWorkingMiB": 262,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571768435,
+      "phase": "export-1",
+      "electronPrivateMiB": 445,
+      "electronWorkingMiB": 598,
+      "serverPrivateMiB": 364,
+      "serverWorkingMiB": 365,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571769447,
+      "phase": "export-1",
+      "electronPrivateMiB": 441,
+      "electronWorkingMiB": 594,
+      "serverPrivateMiB": 462,
+      "serverWorkingMiB": 463,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571770458,
+      "phase": "export-1",
+      "electronPrivateMiB": 909,
+      "electronWorkingMiB": 760,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 118,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571771467,
+      "phase": "export-1",
+      "electronPrivateMiB": 871,
+      "electronWorkingMiB": 1017,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 118,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571772471,
+      "phase": "export-1",
+      "electronPrivateMiB": 1000,
+      "electronWorkingMiB": 1143,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 118,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571773482,
+      "phase": "idle-after-first",
+      "electronPrivateMiB": 777,
+      "electronWorkingMiB": 924,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 118,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571774497,
+      "phase": "idle-after-first",
+      "electronPrivateMiB": 778,
+      "electronWorkingMiB": 922,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 118,
+      "heartbeatMs": 4
+    },
+    {
+      "at": 1792571775506,
+      "phase": "idle-after-first",
+      "electronPrivateMiB": 783,
+      "electronWorkingMiB": 927,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 118,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571776522,
+      "phase": "idle-after-first",
+      "electronPrivateMiB": 780,
+      "electronWorkingMiB": 924,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 118,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571777532,
+      "phase": "idle-after-first",
+      "electronPrivateMiB": 782,
+      "electronWorkingMiB": 926,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 118,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571778553,
+      "phase": "idle-after-first",
+      "electronPrivateMiB": 811,
+      "electronWorkingMiB": 951,
+      "serverPrivateMiB": 121,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 44
+    },
+    {
+      "at": 1792571779559,
+      "phase": "idle-after-first",
+      "electronPrivateMiB": 870,
+      "electronWorkingMiB": 975,
+      "serverPrivateMiB": 121,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 11
+    },
+    {
+      "at": 1792571780561,
+      "phase": "idle-after-first",
+      "electronPrivateMiB": 875,
+      "electronWorkingMiB": 964,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 287
+    },
+    {
+      "at": 1792571781569,
+      "phase": "export-2",
+      "electronPrivateMiB": 1102,
+      "electronWorkingMiB": 1098,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571782576,
+      "phase": "export-2",
+      "electronPrivateMiB": 1102,
+      "electronWorkingMiB": 1099,
+      "serverPrivateMiB": 120,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 147
+    },
+    {
+      "at": 1792571783585,
+      "phase": "export-2",
+      "electronPrivateMiB": 1441,
+      "electronWorkingMiB": 1218,
+      "serverPrivateMiB": 121,
+      "serverWorkingMiB": 121,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571784592,
+      "phase": "export-2",
+      "electronPrivateMiB": 1337,
+      "electronWorkingMiB": 1089,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 168
+    },
+    {
+      "at": 1792571785602,
+      "phase": "export-2",
+      "electronPrivateMiB": 1301,
+      "electronWorkingMiB": 1196,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571786611,
+      "phase": "export-2",
+      "electronPrivateMiB": 1301,
+      "electronWorkingMiB": 1194,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 237
+    },
+    {
+      "at": 1792571787612,
+      "phase": "export-2",
+      "electronPrivateMiB": 1553,
+      "electronWorkingMiB": 1236,
+      "serverPrivateMiB": 120,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 190
+    },
+    {
+      "at": 1792571788619,
+      "phase": "export-2",
+      "electronPrivateMiB": 1445,
+      "electronWorkingMiB": 1276,
+      "serverPrivateMiB": 132,
+      "serverWorkingMiB": 133,
+      "heartbeatMs": 173
+    },
+    {
+      "at": 1792571789629,
+      "phase": "export-2",
+      "electronPrivateMiB": 1457,
+      "electronWorkingMiB": 1177,
+      "serverPrivateMiB": 115,
+      "serverWorkingMiB": 117,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571790631,
+      "phase": "export-2",
+      "electronPrivateMiB": 1459,
+      "electronWorkingMiB": 1179,
+      "serverPrivateMiB": 116,
+      "serverWorkingMiB": 117,
+      "heartbeatMs": 265
+    },
+    {
+      "at": 1792571791640,
+      "phase": "export-2",
+      "electronPrivateMiB": 1572,
+      "electronWorkingMiB": 1298,
+      "serverPrivateMiB": 120,
+      "serverWorkingMiB": 121,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571792646,
+      "phase": "export-2",
+      "electronPrivateMiB": 1425,
+      "electronWorkingMiB": 1129,
+      "serverPrivateMiB": 120,
+      "serverWorkingMiB": 121,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571793654,
+      "phase": "export-2",
+      "electronPrivateMiB": 1110,
+      "electronWorkingMiB": 1059,
+      "serverPrivateMiB": 120,
+      "serverWorkingMiB": 121,
+      "heartbeatMs": 373
+    },
+    {
+      "at": 1792571794660,
+      "phase": "export-2",
+      "electronPrivateMiB": 1561,
+      "electronWorkingMiB": 1294,
+      "serverPrivateMiB": 131,
+      "serverWorkingMiB": 132,
+      "heartbeatMs": 380
+    },
+    {
+      "at": 1792571795666,
+      "phase": "export-2",
+      "electronPrivateMiB": 1375,
+      "electronWorkingMiB": 1171,
+      "serverPrivateMiB": 135,
+      "serverWorkingMiB": 136,
+      "heartbeatMs": 97
+    },
+    {
+      "at": 1792571796669,
+      "phase": "export-2",
+      "electronPrivateMiB": 1592,
+      "electronWorkingMiB": 1248,
+      "serverPrivateMiB": 135,
+      "serverWorkingMiB": 136,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571797678,
+      "phase": "export-2",
+      "electronPrivateMiB": 1188,
+      "electronWorkingMiB": 1147,
+      "serverPrivateMiB": 135,
+      "serverWorkingMiB": 136,
+      "heartbeatMs": 286
+    },
+    {
+      "at": 1792571798687,
+      "phase": "export-2",
+      "electronPrivateMiB": 1486,
+      "electronWorkingMiB": 1233,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 96
+    },
+    {
+      "at": 1792571799694,
+      "phase": "export-2",
+      "electronPrivateMiB": 1458,
+      "electronWorkingMiB": 1153,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571800707,
+      "phase": "export-2",
+      "electronPrivateMiB": 1336,
+      "electronWorkingMiB": 1137,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571801717,
+      "phase": "export-2",
+      "electronPrivateMiB": 1561,
+      "electronWorkingMiB": 1305,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 291
+    },
+    {
+      "at": 1792571802718,
+      "phase": "export-2",
+      "electronPrivateMiB": 1692,
+      "electronWorkingMiB": 1229,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571803726,
+      "phase": "export-2",
+      "electronPrivateMiB": 1399,
+      "electronWorkingMiB": 1183,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 19
+    },
+    {
+      "at": 1792571804736,
+      "phase": "export-2",
+      "electronPrivateMiB": 1423,
+      "electronWorkingMiB": 1130,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 121,
+      "heartbeatMs": 13
+    },
+    {
+      "at": 1792571805739,
+      "phase": "export-2",
+      "electronPrivateMiB": 1484,
+      "electronWorkingMiB": 1184,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 121,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571806745,
+      "phase": "export-2",
+      "electronPrivateMiB": 1188,
+      "electronWorkingMiB": 1139,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 121,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571807755,
+      "phase": "export-2",
+      "electronPrivateMiB": 1444,
+      "electronWorkingMiB": 1201,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 120,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571808765,
+      "phase": "export-2",
+      "electronPrivateMiB": 1476,
+      "electronWorkingMiB": 1244,
+      "serverPrivateMiB": 121,
+      "serverWorkingMiB": 123,
+      "heartbeatMs": 71
+    },
+    {
+      "at": 1792571809772,
+      "phase": "export-2",
+      "electronPrivateMiB": 1386,
+      "electronWorkingMiB": 1201,
+      "serverPrivateMiB": 122,
+      "serverWorkingMiB": 123,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571810777,
+      "phase": "export-2",
+      "electronPrivateMiB": 1381,
+      "electronWorkingMiB": 1192,
+      "serverPrivateMiB": 122,
+      "serverWorkingMiB": 123,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571811782,
+      "phase": "export-2",
+      "electronPrivateMiB": 1424,
+      "electronWorkingMiB": 1420,
+      "serverPrivateMiB": 127,
+      "serverWorkingMiB": 128,
+      "heartbeatMs": 3
+    },
+    {
+      "at": 1792571812787,
+      "phase": "export-2",
+      "electronPrivateMiB": 1437,
+      "electronWorkingMiB": 1427,
+      "serverPrivateMiB": 140,
+      "serverWorkingMiB": 141,
+      "heartbeatMs": 298
+    },
+    {
+      "at": 1792571813788,
+      "phase": "export-2",
+      "electronPrivateMiB": 1475,
+      "electronWorkingMiB": 1338,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571814792,
+      "phase": "export-2",
+      "electronPrivateMiB": 1206,
+      "electronWorkingMiB": 1254,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571815797,
+      "phase": "export-2",
+      "electronPrivateMiB": 1207,
+      "electronWorkingMiB": 1255,
+      "serverPrivateMiB": 126,
+      "serverWorkingMiB": 127,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571816807,
+      "phase": "export-2",
+      "electronPrivateMiB": 1393,
+      "electronWorkingMiB": 1245,
+      "serverPrivateMiB": 120,
+      "serverWorkingMiB": 121,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571817808,
+      "phase": "export-2",
+      "electronPrivateMiB": 1485,
+      "electronWorkingMiB": 1296,
+      "serverPrivateMiB": 120,
+      "serverWorkingMiB": 121,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571818820,
+      "phase": "export-2",
+      "electronPrivateMiB": 1481,
+      "electronWorkingMiB": 1290,
+      "serverPrivateMiB": 120,
+      "serverWorkingMiB": 121,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571819830,
+      "phase": "export-2",
+      "electronPrivateMiB": 1460,
+      "electronWorkingMiB": 1325,
+      "serverPrivateMiB": 132,
+      "serverWorkingMiB": 132,
+      "heartbeatMs": 328
+    },
+    {
+      "at": 1792571820840,
+      "phase": "export-2",
+      "electronPrivateMiB": 1467,
+      "electronWorkingMiB": 1288,
+      "serverPrivateMiB": 117,
+      "serverWorkingMiB": 118,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571821844,
+      "phase": "export-2",
+      "electronPrivateMiB": 1257,
+      "electronWorkingMiB": 1223,
+      "serverPrivateMiB": 117,
+      "serverWorkingMiB": 118,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571822853,
+      "phase": "export-2",
+      "electronPrivateMiB": 1421,
+      "electronWorkingMiB": 1243,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 221
+    },
+    {
+      "at": 1792571823858,
+      "phase": "export-2",
+      "electronPrivateMiB": 1451,
+      "electronWorkingMiB": 1262,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571824865,
+      "phase": "export-2",
+      "electronPrivateMiB": 1398,
+      "electronWorkingMiB": 1229,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571825869,
+      "phase": "export-2",
+      "electronPrivateMiB": 1044,
+      "electronWorkingMiB": 1057,
+      "serverPrivateMiB": 220,
+      "serverWorkingMiB": 219,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571826871,
+      "phase": "export-2",
+      "electronPrivateMiB": 1040,
+      "electronWorkingMiB": 1054,
+      "serverPrivateMiB": 314,
+      "serverWorkingMiB": 315,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571827875,
+      "phase": "export-2",
+      "electronPrivateMiB": 1040,
+      "electronWorkingMiB": 1054,
+      "serverPrivateMiB": 403,
+      "serverWorkingMiB": 404,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571828881,
+      "phase": "export-2",
+      "electronPrivateMiB": 805,
+      "electronWorkingMiB": 1017,
+      "serverPrivateMiB": 486,
+      "serverWorkingMiB": 487,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571829891,
+      "phase": "export-2",
+      "electronPrivateMiB": 1264,
+      "electronWorkingMiB": 1293,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571830898,
+      "phase": "idle-after-second",
+      "electronPrivateMiB": 1182,
+      "electronWorkingMiB": 1395,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 1
+    },
+    {
+      "at": 1792571831903,
+      "phase": "idle-after-second",
+      "electronPrivateMiB": 1131,
+      "electronWorkingMiB": 1344,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571832918,
+      "phase": "idle-after-second",
+      "electronPrivateMiB": 1122,
+      "electronWorkingMiB": 1335,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571833923,
+      "phase": "idle-after-second",
+      "electronPrivateMiB": 1121,
+      "electronWorkingMiB": 1335,
+      "serverPrivateMiB": 118,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 0
+    },
+    {
+      "at": 1792571834930,
+      "phase": "idle-after-second",
+      "electronPrivateMiB": 1126,
+      "electronWorkingMiB": 1339,
+      "serverPrivateMiB": 119,
+      "serverWorkingMiB": 119,
+      "heartbeatMs": 0
+    }
+  ],
+  "errors": [],
+  "gpuFeatures": {
+    "2d_canvas": "enabled",
+    "direct_rendering_display_compositor": "disabled_off_ok",
+    "gpu_compositing": "enabled",
+    "multiple_raster_threads": "enabled_on",
+    "opengl": "enabled_on",
+    "rasterization": "enabled",
+    "raw_draw": "disabled_off_ok",
+    "skia_graphite": "disabled_off",
+    "trees_in_viz": "disabled_off",
+    "video_decode": "enabled",
+    "video_encode": "enabled",
+    "webgl": "enabled",
+    "webgpu": "enabled",
+    "webnn": "disabled_off"
+  },
+  "memoryScope": "Sum of all test Electron app processes and standalone Next server PID 34632; private memory. Working sets can double-count shared pages. External Go API and unrelated user processes excluded.",
+  "limits": "Two exports separated by reload; bounded repeatability test, not long-duration leak proof. No API model requests."
+}

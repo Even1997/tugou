@@ -1,0 +1,45 @@
+{
+  "at": "2026-10-21T04:54:46.140Z",
+  "assets": 500,
+  "uniqueResources": 500,
+  "sourceBytes": 34567800,
+  "eagerResponseBytes": 46172256,
+  "lazyResponseBytes": 114156,
+  "lazyOpenMs": 30,
+  "initialThumbnailRequests": 36,
+  "rendererMemoryKiB": {
+    "workingSetSize": 230440,
+    "peakWorkingSetSize": 230464,
+    "privateBytes": 157200
+  },
+  "navigation": [
+    {
+      "text": "提示词工作台",
+      "selected": null,
+      "background": "rgba(0, 0, 0, 0)",
+      "inline": "color:var(--studio-muted)"
+    },
+    {
+      "text": "无限画布",
+      "selected": null,
+      "background": "rgba(0, 0, 0, 0)",
+      "inline": "color:var(--studio-muted)"
+    },
+    {
+      "text": "图层合成",
+      "selected": null,
+      "background": "rgba(0, 0, 0, 0)",
+      "inline": "color: var(--studio-muted);"
+    },
+    {
+      "text": "素材库",
+      "selected": "page",
+      "background": "rgb(41, 50, 71)",
+      "inline": "color: var(--studio-accent); background: var(--studio-accent-fill);"
+    }
+  ],
+  "originalExportExact": true,
+  "portableExport": true,
+  "toolReadsFullImage": true,
+  "restart": true
+}

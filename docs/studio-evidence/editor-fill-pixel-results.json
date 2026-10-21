@@ -1,0 +1,44 @@
+[
+  {
+    "transform": {},
+    "featheredPixels": 512,
+    "changedPixels": 576,
+    "elapsedMs": 44,
+    "outsideUnchanged": true
+  },
+  {
+    "transform": {
+      "rotation": 18,
+      "scaleX": 1.1,
+      "scaleY": 0.8
+    },
+    "featheredPixels": 547,
+    "changedPixels": 576,
+    "elapsedMs": 37,
+    "outsideUnchanged": true
+  },
+  {
+    "transform": {
+      "warp": [
+        0,
+        0,
+        1,
+        0.1,
+        0.9,
+        1,
+        0.1,
+        0.9
+      ]
+    },
+    "featheredPixels": 540,
+    "changedPixels": 576,
+    "elapsedMs": 42,
+    "outsideUnchanged": true
+  },
+  "选中透明洞可填实，不产生黑边",
+  {
+    "workerCancelled": true,
+    "cancelMs": 1
+  },
+  "选中全部来源时拒绝填充，原位图保持不变"
+]

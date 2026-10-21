@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-21T07:46:55.865Z",
+  "channel": "local HTTP fixture, not model quality acceptance",
+  "orientedImport": true,
+  "orientedThumbnail": true,
+  "originalBytesUnchanged": true,
+  "actualOrientedLayerExport": true,
+  "layerRotation": 90,
+  "layerScale": 2,
+  "selectionHole": true,
+  "featherPixels": 1640,
+  "protectedPixels": 5780,
+  "allOutputPixelsVerified": true,
+  "apiMaskInverseExact": true,
+  "maskHistoryRestored": true,
+  "genericRotatedResponse": true,
+  "toolbarFits960": true,
+  "consoleErrors": []
+}

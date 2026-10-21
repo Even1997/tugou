@@ -1,0 +1,222 @@
+{
+  "normalWindowUiExportMilliseconds": 9547,
+  "dimensions": [
+    10000,
+    10000
+  ],
+  "exportProfile": [
+    {
+      "action": "export-start",
+      "ms": 4
+    },
+    {
+      "action": "encode",
+      "ms": 474
+    },
+    {
+      "action": "export-stripe",
+      "ms": 4
+    },
+    {
+      "action": "encode",
+      "ms": 998
+    },
+    {
+      "action": "export-stripe",
+      "ms": 4
+    },
+    {
+      "action": "encode",
+      "ms": 997
+    },
+    {
+      "action": "export-stripe",
+      "ms": 4
+    },
+    {
+      "action": "encode",
+      "ms": 1000
+    },
+    {
+      "action": "export-stripe",
+      "ms": 4
+    },
+    {
+      "action": "encode",
+      "ms": 2010
+    },
+    {
+      "action": "export-stripe",
+      "ms": 7
+    },
+    {
+      "action": "encode",
+      "ms": 13
+    },
+    {
+      "action": "export-stripe",
+      "ms": 4
+    },
+    {
+      "action": "encode",
+      "ms": 27
+    },
+    {
+      "action": "export-stripe",
+      "ms": 5
+    },
+    {
+      "action": "encode",
+      "ms": 26
+    },
+    {
+      "action": "export-stripe",
+      "ms": 5
+    },
+    {
+      "action": "encode",
+      "ms": 28
+    },
+    {
+      "action": "export-stripe",
+      "ms": 8
+    },
+    {
+      "action": "encode",
+      "ms": 29
+    },
+    {
+      "action": "export-stripe",
+      "ms": 7
+    },
+    {
+      "action": "encode",
+      "ms": 25
+    },
+    {
+      "action": "export-stripe",
+      "ms": 7
+    },
+    {
+      "action": "encode",
+      "ms": 36
+    },
+    {
+      "action": "export-stripe",
+      "ms": 7
+    },
+    {
+      "action": "encode",
+      "ms": 29
+    },
+    {
+      "action": "export-stripe",
+      "ms": 10
+    },
+    {
+      "action": "encode",
+      "ms": 27
+    },
+    {
+      "action": "export-stripe",
+      "ms": 25
+    },
+    {
+      "action": "encode",
+      "ms": 25
+    },
+    {
+      "action": "export-stripe",
+      "ms": 7
+    },
+    {
+      "action": "encode",
+      "ms": 13
+    },
+    {
+      "action": "export-stripe",
+      "ms": 4
+    },
+    {
+      "action": "encode",
+      "ms": 26
+    },
+    {
+      "action": "export-stripe",
+      "ms": 8
+    },
+    {
+      "action": "encode",
+      "ms": 26
+    },
+    {
+      "action": "export-stripe",
+      "ms": 6
+    },
+    {
+      "action": "encode",
+      "ms": 19
+    },
+    {
+      "action": "export-stripe",
+      "ms": 4
+    },
+    {
+      "action": "encode",
+      "ms": 27
+    },
+    {
+      "action": "export-stripe",
+      "ms": 6
+    },
+    {
+      "action": "encode",
+      "ms": 25
+    },
+    {
+      "action": "export-stripe",
+      "ms": 6
+    },
+    {
+      "action": "encode",
+      "ms": 27
+    },
+    {
+      "action": "export-stripe",
+      "ms": 7
+    },
+    {
+      "action": "encode",
+      "ms": 27
+    },
+    {
+      "action": "export-stripe",
+      "ms": 8
+    },
+    {
+      "action": "encode",
+      "ms": 25
+    },
+    {
+      "action": "export-stripe",
+      "ms": 6
+    },
+    {
+      "action": "encode",
+      "ms": 33
+    },
+    {
+      "action": "export-stripe",
+      "ms": 9
+    },
+    {
+      "action": "export-finish",
+      "ms": 2886
+    }
+  ],
+  "layout": {
+    "width": 1484,
+    "body": 1484,
+    "toolbar": 1484
+  }
+}

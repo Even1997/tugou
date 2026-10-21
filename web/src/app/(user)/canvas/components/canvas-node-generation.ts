@@ -6,7 +6,8 @@ import type { ReferenceAudio, ReferenceVideo } from "@/types/media";
 import type { VideoElementItem, VideoElementReference, VideoMultiPromptItem } from "@/stores/use-config-store";
 import { CanvasNodeType, type CanvasConnection, type CanvasNodeData } from "../types";
 import { isCanvasImageNodeType } from "../utils/canvas-panorama";
-import { getGenerationResourceNodes } from "../utils/canvas-resource-references";
+import { getGenerationResourceNodes, getGenerationResourceConnections } from "../utils/canvas-resource-references";
+import { referenceRoleBlock } from "@/app/studio/reference-roles.js";
 
 export type NodeGenerationContext = {
     prompt: string;
@@ -27,6 +28,7 @@ export type NodeGenerationInput = {
     nodeId: string;
     type: "text" | "image" | "video" | "audio";
     title: string;
+    referenceRole?: string;
     text?: string;
     image?: ReferenceImage;
     video?: ReferenceVideo;
@@ -37,7 +39,8 @@ export function buildNodeGenerationContext(nodeId: string, nodes: CanvasNodeData
     const inputs = buildNodeGenerationInputs(nodeId, nodes, connections);
     const sourceNode = nodes.find((node) => node.id === nodeId);
     if (sourceNode?.type === CanvasNodeType.Config && Boolean(sourceNode.metadata?.composerContent?.trim())) {
-        return buildComposerGenerationContext(inputs, prompt, sourceNode);
+        const context = buildComposerGenerationContext(inputs, prompt, sourceNode);
+        return withReferenceRoles(context, inputs);
     }
 
     const advanced = buildCanvasVideoAdvancedContext(sourceNode, inputs);
@@ -53,7 +56,7 @@ export function buildNodeGenerationContext(nodeId: string, nodes: CanvasNodeData
     const frameNodeIds = new Set([frameReferences.firstFrame?.id, frameReferences.lastFrame?.id].filter((id): id is string => Boolean(id)));
     const effectiveReferenceImages = referenceImages.filter((image) => !frameNodeIds.has(image.id));
 
-    return {
+    return withReferenceRoles({
         prompt: upstreamText ? `${prompt}\n\n${upstreamText}` : prompt,
         referenceImages: [...advanced.klingImageReferences, ...effectiveReferenceImages],
         firstFrame: frameReferences.firstFrame,
@@ -66,7 +69,12 @@ export function buildNodeGenerationContext(nodeId: string, nodes: CanvasNodeData
         imageCount: referenceImages.length,
         videoCount: referenceVideos.length,
         audioCount: referenceAudios.length,
-    };
+    }, inputs);
+}
+
+function withReferenceRoles(context: NodeGenerationContext, inputs: NodeGenerationInput[]): NodeGenerationContext {
+    const block = referenceRoleBlock(context.referenceImages.map(image => inputs.find(input => input.nodeId === image.id)?.referenceRole));
+    return block ? { ...context, prompt: [context.prompt, block].filter(Boolean).join("\n\n") } : context;
 }
 
 function buildComposerGenerationContext(inputs: NodeGenerationInput[], prompt: string, sourceNode?: CanvasNodeData): NodeGenerationContext {
@@ -191,9 +199,10 @@ function inputToElementReference(input: NodeGenerationInput | undefined): VideoE
 }
 
 export function buildNodeGenerationInputs(nodeId: string, nodes: CanvasNodeData[], connections: CanvasConnection[]): NodeGenerationInput[] {
+    const links = getGenerationResourceConnections(nodeId, nodes, connections);
     return getGenerationResourceNodes(nodeId, nodes, connections).flatMap((node): NodeGenerationInput[] => {
         const image = readReferenceImage(node);
-        if (image) return [{ nodeId: node.id, type: "image" as const, title: node.title, image }];
+        if (image) return [{ nodeId: node.id, type: "image" as const, title: node.title, image, referenceRole: links.find(c => c.fromNodeId === node.id)?.referenceRole }];
         const video = readReferenceVideo(node);
         if (video) return [{ nodeId: node.id, type: "video" as const, title: node.title, video }];
         const audio = readReferenceAudio(node);
