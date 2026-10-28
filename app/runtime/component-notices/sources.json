@@ -1,0 +1,17 @@
+[
+  {
+    "name": "BiRefNet.txt",
+    "url": "https://raw.githubusercontent.com/ZhengPeng7/BiRefNet/97e4f35d74043427b0e9ba935ca10991853a36bc/LICENSE",
+    "sha256": "92a7089e0915fc32bc40067560b398f1e6a7a5958abd7d04eda393629a5acefb"
+  },
+  {
+    "name": "ncnn.txt",
+    "url": "https://raw.githubusercontent.com/Tencent/ncnn/11bfbb4b2206023d34f32579a14abf9241052d09/LICENSE.txt",
+    "sha256": "7c974bac98848df46be1af5bdaa3c3c9c01f6082a90f55caeb7f60c6208aa255"
+  },
+  {
+    "name": "ncnn-runtime.txt",
+    "url": "https://raw.githubusercontent.com/xinntao/Real-ESRGAN-ncnn-vulkan/37026f49824c5cf84062e7c6a5dd71445dcf610f/LICENSE",
+    "sha256": "5abb941454de437b0e90d78dcb72e3688f74e14bcd4e24393273cb5cd0e9c937"
+  }
+]

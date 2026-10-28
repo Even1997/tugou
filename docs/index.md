@@ -14,6 +14,10 @@
 
 ## 开发文档
 
+- [土狗设置页与更新方案（待确认）](engineering/settings-update-proposal.md)
+
+- [字体素材图闭环与 MCP](engineering/independent-font-pipeline.md)
+
 - [本地开发](backend/local-development.md)
 - [接口响应约定](backend/api-response.md)
 - [系统配置数据结构](backend/system-settings.md)

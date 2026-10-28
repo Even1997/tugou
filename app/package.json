@@ -1,0 +1,36 @@
+{
+  "name": "tugou-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "土狗独立桌面实现",
+  "main": "main.cjs",
+  "scripts": {
+    "build": "node build.cjs",
+    "start": "npm run build && electron .",
+    "test": "node --test test/*.test.cjs",
+    "pack:dir": "npm run build && electron-builder --config electron-builder.cjs --dir",
+    "dist:win": "npm run build && electron-builder --config electron-builder.cjs --win --x64",
+    "dist:mac": "node scripts/require-mac.cjs && npm run build && electron-builder --config electron-builder.cjs --mac",
+    "test:desktop": "electron test/platform-desktop.cjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "ajv": "8.20.0",
+    "sharp": "0.35.5",
+    "tar": "7.5.22",
+    "yauzl": "3.4.0"
+  },
+  "devDependencies": {
+    "@ant-design/icons": "6.3.4",
+    "@xyflow/react": "12.12.0",
+    "antd": "6.6.6",
+    "electron": "42.11.18",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.25.12",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "three": "0.185.1"
+  },
+  "license": "Apache-2.0",
+  "author": "Even"
+}

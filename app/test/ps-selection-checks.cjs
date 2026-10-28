@@ -1,0 +1,68 @@
+const fs=require('node:fs'),path=require('node:path'),L=require('../core/layers.cjs');
+module.exports=async h=>{
+  const {w,js,delay,check,wait,click,set,shot,save,load,report}=h;
+  const bitmap=await js(`(()=>{const c=document.createElement('canvas');c.width=c.height=400;const x=c.getContext('2d');x.fillStyle='#315cf5';x.fillRect(0,0,400,400);return {dataUrl:c.toDataURL()}})()`);
+  const layers=[L.createLayer('group',{id:'board',artboard:true,name:'画板 1',width:600,height:600,background:'#ffffff'}),L.createLayer('image',{id:'image',name:'测试图片',parentId:'board',x:80,y:80,width:400,height:400,bitmap}),L.createLayer('shape',{id:'other',name:'其他图层',parentId:'board',x:10,y:10,width:20,height:20})];
+  report.id=await js(`(async()=>{const r=await tugou.create('自由选区与目标切换');await tugou.save(r.id,{...r.document,width:600,height:600,layers:${JSON.stringify(layers)}},r.revision);return r.id})()`);await load();await click('选择 测试图片');await click('选区','.composition-primary-tools button');await set('当前编辑工具','lasso');
+  const draw=async points=>{
+    const coords=await js(`${JSON.stringify(points)}.map(([x,y])=>{const p=new DOMPoint(x,y).matrixTransform(document.querySelector('.layer-overlay>g').getScreenCTM());return {x:Math.round(p.x),y:Math.round(p.y)}})`);
+    w.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...coords[0]});await delay(150);
+    for(const p of coords.slice(1)){w.webContents.sendInputEvent({type:'mouseMove',...p,modifiers:['leftButtonDown']});await delay(120);await w.capturePage()}
+    w.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,...coords.at(-1)});await delay(250);
+  };
+  const triangle=[[180,180],[380,180],[280,380],[180,180]];await draw(triangle);
+  let doc=await save(),selection=JSON.stringify(doc.layers[0].selection);
+  check('freehand lasso preserves nonrectangular path',doc.layers[0].selection.paths[0].points.length>=6);
+  await click('编辑 测试图片 的蒙版');doc=await save();
+  check('mask thumbnail creates white mask without consuming selection',!!doc.layers[1].mask&&JSON.stringify(doc.layers[0].selection)===selection);
+  check('mask target keeps lasso and marks only mask thumbnail',await js(`document.querySelector('[aria-label="当前编辑工具"]').closest('.studio-select').innerText.includes('套索')&&document.querySelector('[aria-label="编辑 测试图片 的蒙版"]').getAttribute('aria-pressed')==='true'&&document.querySelector('[aria-label="选择 测试图片"]').getAttribute('aria-pressed')==='false'`));
+  await click('反选','.selection-actions button');await click('蒙版黑色 · 隐藏');await click('填充蒙版选区');await wait('!document.querySelector("[aria-label=填充蒙版选区]").disabled');doc=await save();
+  const read=async(resource,x,y)=>js(`(async()=>{const i=new Image();i.crossOrigin='anonymous';i.src='tugou-media://original/'+${JSON.stringify(resource)};await i.decode();const c=document.createElement('canvas');c.width=i.naturalWidth;c.height=i.naturalHeight;const ctx=c.getContext('2d');ctx.drawImage(i,0,0);return [...ctx.getImageData(${x},${y},1,1).data]})()`);
+  const mask=doc.layers[1].mask.bitmap.resource;
+  check('inverse freehand selection black fill hides only background',(await read(mask,200,160))[3]===255&&(await read(mask,340,340))[3]===0);
+  check('mask operation preserves original pixels',JSON.stringify(doc.layers[1].bitmap)===JSON.stringify(bitmap));await shot('freehand-inverse-mask');
+  selection=JSON.stringify(doc.layers[0].selection);await click('选择 测试图片');
+  check('image thumbnail retains selection and tool',JSON.stringify((await save()).layers[0].selection)===selection&&await js(`document.querySelector('[aria-label="当前编辑工具"]').closest('.studio-select').innerText.includes('套索')&&document.querySelector('[aria-label="选择 测试图片"]').getAttribute('aria-pressed')==='true'`));
+  await set('选区填充颜色','#ff0000');await click('填充图片选区','.selection-actions button');await wait('[...document.querySelectorAll(".selection-actions button")].some(e=>e.textContent==="填充图片选区"&&!e.disabled)');doc=await save();
+  check('image fill modifies selected image only and keeps target',doc.layers.length===3&&doc.layers[1].mask.bitmap.resource===mask&&await js(`document.querySelector('[data-tree-id="image"]').getAttribute('aria-selected')==='true'`));
+  check('image fill respects inverse selection',(await read(doc.layers[1].bitmap.resource,340,340))[0]===255&&(await read(doc.layers[1].bitmap.resource,200,160))[2]===245);
+  await click('撤销');doc=await save();check('image fill undo leaves mask intact',JSON.stringify(doc.layers[1].bitmap)===JSON.stringify(bitmap)&&doc.layers[1].mask.bitmap.resource===mask);
+  await set('选区组合方式','add');await draw([[250,240],[300,240],[300,280],[250,280],[250,240]]);doc=await save();check('add selection after inverse adds pixels without Shift',(await read(doc.layers[0].selection.bitmap.resource,280,260))[3]===255);
+  await set('选区组合方式','subtract');await draw(triangle);doc=await save();check('subtract selection removes pixels without Shift',(await read(doc.layers[0].selection.bitmap.resource,280,260))[3]===0);
+  await click('取消选区','.selection-actions button');await set('选区组合方式','replace');
+  await wait('document.querySelector(".subject-status")&&!document.querySelector(".subject-status").textContent.includes("正在检查")');check('missing model gives setup guidance without changing selection',!(await save()).layers[0].selection&&await js(`[...document.querySelectorAll('button')].find(b=>b.textContent==='AI 选择主体').disabled&&document.querySelector('.subject-status').textContent.includes('工具页')`));
+  const runtime=require('./../test-results/installer-native.json').runtime;
+  fs.writeFileSync(path.join(report.profile,'workspace/local-runtime.json'),JSON.stringify({folder:runtime.folder,provider:runtime.provider}));
+  const photo=fs.readFileSync(path.resolve(__dirname,'../../../风格试验/C组-照片人物测试01/人物参考/01-person.png'));
+  const reference=await js(`tugou.storeRaster(new Uint8Array(${JSON.stringify([...photo])}),'人物参考')`);
+  doc=await save();doc.layers[1]={...doc.layers[1],bitmap:reference,mask:undefined};
+  await js(`(async()=>{const r=await tugou.open(${JSON.stringify(report.id)});await tugou.save(r.id,${JSON.stringify(doc)},r.revision)})()`);await load();await click('选择 测试图片');await click('选区','.composition-primary-tools button');
+  await wait('document.querySelector(".subject-status")&&!document.querySelector(".subject-status").textContent.includes("正在检查")');
+  const start=Date.now();
+  if(await js(`[...document.querySelectorAll('button')].find(b=>b.textContent==='AI 选择主体').disabled`))report.liveAIBlocked=await js(`document.querySelector('.subject-status').textContent`);
+  else{await click('AI 选择主体');for(let i=0;i<1500;i++){if(await js('document.body.innerText.includes("已选中主体")'))break;if(await js('document.body.innerText.includes("精细抠图可用内存不足")')){report.liveAIBlocked='精细抠图可用内存不足';break}await delay(100)}}
+  if(report.liveAIBlocked){
+    check('real AI memory gate preserves project and publishes no selection',!(await save()).layers[0].selection);
+    const jobs=path.join(report.profile,'workspace/local-jobs');check('real AI failure leaves no temporary files',!fs.existsSync(jobs)||fs.readdirSync(jobs).length===0);
+    const bytes=fs.readFileSync('D:/TugouIndependentQA/local-final/01-person-cutout.png');
+    const replay=await js(`tugou.storeRaster(new Uint8Array(${JSON.stringify([...bytes])}),'历史模型结果回放')`);
+    const {ipcMain}=require('electron');ipcMain.removeHandler('tugou:selectSubject');ipcMain.handle('tugou:selectSubject',async()=>({ok:true,value:replay}));ipcMain.removeHandler('tugou:subjectStatus');ipcMain.handle('tugou:subjectStatus',()=>({ok:true,value:{ready:true,reason:'历史模型输出回放'}}));await click('刷新 AI 状态');
+    report.subjectVerification='historical model output replay; live inference blocked';await click('AI 选择主体');
+  }else report.subjectVerification='live local inference';
+  await wait('document.body.innerText.includes("已选中主体")');report.subjectMs=Date.now()-start;doc=await save();
+  check('model alpha maps to subject selection without replacing image',!!doc.layers[0].selection.bitmap&&doc.layers[1].bitmap.resource===reference.resource&&!doc.layers[1].mask);
+  await click('反选','.selection-actions button');await click('编辑 测试图片 的蒙版');await click('蒙版黑色 · 隐藏');await click('填充蒙版选区');await wait('!document.querySelector("[aria-label=填充蒙版选区]").disabled');doc=await save();
+  check('AI inverse thumbnail black fill completes and original remains',!!doc.layers[1].mask.bitmap&&doc.layers[1].bitmap.resource===reference.resource);await shot('ai-subject-mask');
+  const saved=doc.layers[1].mask.bitmap.resource;await load();doc=await save();check('subject selection and mask survive reopening',doc.layers[1].mask.bitmap.resource===saved&&!!doc.layers[0].selection.bitmap);
+  await click('选择 测试图片');await click('选区','.composition-primary-tools button');await wait('!document.querySelector(".subject-status").textContent.includes("正在检查")');
+  let requests=0;
+  const {ipcMain}=require('electron');ipcMain.removeHandler('tugou:selectSubject');ipcMain.handle('tugou:selectSubject',async()=>{requests++;await delay(1200);return {ok:true,value:doc.layers[1].mask.bitmap}});
+  const started=async count=>{for(let i=0;i<100&&requests<count;i++)await delay(50);check('subject request reached delayed provider '+count,requests===count)};
+  const unchanged=JSON.stringify(doc.layers[0].selection);
+  await click('AI 选择主体');await started(1);await click('取消选区处理');await wait('[...document.querySelectorAll(".selection-actions button")].some(e=>e.textContent==="AI 选择主体"&&!e.disabled)');
+  check('cancelled subject result never changes selection',JSON.stringify((await save()).layers[0].selection)===unchanged);
+  await click('AI 选择主体');await started(2);await click('隐藏 测试图片');await wait('[...document.querySelectorAll(".selection-actions button")].some(e=>e.textContent==="AI 选择主体"&&!e.disabled)');
+  check('stale subject result does not overwrite intervening edits',JSON.stringify((await save()).layers[0].selection)===unchanged&&(await save()).layers[1].visible===false);await click('撤销');await save();
+  await click('编辑 测试图片 的蒙版');w.setSize(1100,800);await delay(300);
+  check('selection controls wrap above canvas at narrower window',await js(`(()=>{const row=document.querySelector('.layer-parameter-row').getBoundingClientRect(),bar=document.querySelector('.composition-breadcrumb').getBoundingClientRect();return row.bottom<=bar.top+1&&[...document.querySelectorAll('.selection-actions button,.mask-selection-actions button')].every(e=>{const r=e.getBoundingClientRect();return r.bottom<=row.bottom&&r.right<=row.right})})()`));await shot('selection-narrow');
+};

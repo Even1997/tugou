@@ -1,0 +1,26 @@
+const { app, safeStorage, nativeImage } = require('electron');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const { ProjectStore } = require('../core/storage.cjs');
+const { ConnectionStore } = require('../core/connection.cjs');
+const { decryptLegacyConnection } = require('../core/legacy-connection.cjs');
+const { TaskQueue } = require('../core/tasks.cjs');
+const { GenerationService } = require('../core/generation.cjs');
+app.setPath('userData', require('./qa-paths.cjs').path("live-generation"));
+app.whenReady().then(async () => {
+  const root = path.join(app.getPath('userData'), 'workspace');
+  const store = new ProjectStore(root); await store.init();
+  const connections = new ConnectionStore(root, safeStorage);
+  await connections.importLegacy(path.join(app.getPath('appData'), 'CanvasStudio', 'credentials.enc'), decryptLegacyConnection);
+  const tasks = new TaskQueue(root); await tasks.init();
+  if (tasks.list().length) throw new Error('Live test already attempted; refusing automatic paid retry');
+  const generation = new GenerationService(store, connections, tasks, bytes => nativeImage.createFromBuffer(bytes).getSize());
+  const record = await store.create('独立接口验收');
+  const recipe = { id: 'r', name: '接口验收', moduleIds: [], moduleBindings: [], references: [], output: 'A simple flat illustration of one small pale blue flower on an ivory background. No text.', size: '1024x1536' };
+  record.document.recipes = [recipe]; record.document.tugouCanvas = { version: 1, nodes: [{ id: 'node', type: 'recipe', position: { x: 0, y: 0 }, data: { recipeId: 'r', snapshot: recipe } }], edges: [], viewport: { x: 0, y: 0, zoom: 1 } };
+  await store.save(record.id, record.document, record.revision);
+  const started = Date.now(); await generation.start(record.id, record.document, 'node'); await tasks.execution;
+  const task = tasks.list()[0], results = await generation.results(record.id);
+  await fs.writeFile(path.join(__dirname, '../test-results/generation-live.json'), JSON.stringify({ status: task.status, message: task.message, model: task.context.model, requestedSize: task.context.requestedSize, elapsedMs: Date.now() - started, results: results.flatMap(r=>r.assets.map(a=>({ resource:a.resource, width:a.width, height:a.height, bytes:a.bytes }))) }, null, 2));
+  app.exit(task.status === 'completed' ? 0 : 1);
+}).catch(error => { console.error(error.message); app.exit(1); });

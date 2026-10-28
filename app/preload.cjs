@@ -1,0 +1,12 @@
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
+const invoke = async (name, ...args) => {
+  const response = await ipcRenderer.invoke(`tugou:${name}`, ...args);
+  if (!response.ok) throw new Error(response.error);
+  return response.value;
+};
+contextBridge.exposeInMainWorld('tugou', {onAutomation:callback=>{const handler=async(_event,request)=>{try{ipcRenderer.send('tugou:automation-reply',request.id,await callback(request));}catch{ipcRenderer.send('tugou:automation-reply',request.id,{ok:false,error:{code:'UI_ERROR',message:'界面命令失败'}});}};ipcRenderer.on('tugou:automation',handler);return()=>ipcRenderer.removeListener('tugou:automation',handler);},platform:process.platform,onSubjectProgress:callback=>{const handler=(_event,stage)=>callback(stage);ipcRenderer.on('tugou:subject-progress',handler);return()=>ipcRenderer.removeListener('tugou:subject-progress',handler);},importDroppedMedia:files=>invoke('importMediaPaths',files.map(file=>webUtils.getPathForFile(file))),importDroppedImages:files=>invoke('importImagePaths',files.map(file=>webUtils.getPathForFile(file))),onCommand:callback=>{const handler=(_event,command)=>callback(command);ipcRenderer.on('tugou:command',handler);return()=>ipcRenderer.removeListener('tugou:command',handler);},onReload: callback => {const handler=()=>callback();ipcRenderer.on('tugou:reload-request',handler);return()=>ipcRenderer.removeListener('tugou:reload-request',handler);}, ...Object.fromEntries(
+  ['subjectStatus', 'selectSubject', 'cancelSubject', 'startCloudBatch', 'cancelCloudBatch', 'assetDetails', 'installLocalTools', 'retryRuntimeInstall', 'analyzeCategories', 'readCategories', 'splitCategories', 'retryCloudTool', 'startCloudTool', 'cloudReview', 'resumeCloudTool', 'keepCloudRaw', 'startRasterTool', 'retryImageTool', 'localToolsStatus', 'configureLocalTools', 'startLocalTool', 'analyze', 'analyses', 'saveAnalysisReview', 'editCommand', 'list', 'create', 'open', 'save', 'import', 'connection', 'saveConnection', 'testConnection', 'fetchModels', 'listConnections', 'listSuppliers', 'saveConnections', 'tasks', 'cancelTask', 'generate', 'results', 'migrateCanvases', 'importImage', 'storeRaster', 'chooseExport', 'cancelExport', 'writeExport', 'copyText', 'dirty', 'window']
+    .concat('fontCommand','fontImport','fontExport','fontConfigure','generateAngle','generateWorkflow','retryWorkflow','importMedia','storeMedia','exportAsset','importModel').map((name) => [name, (...args) => invoke(name, ...args)]),
+)});
+
+

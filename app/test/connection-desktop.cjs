@@ -1,0 +1,60 @@
+const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
+const out=path.resolve('test-results/connection-compact'),kind=process.env.TUGOU_QA_KIND||'source';fs.mkdirSync(out,{recursive:true});
+const profile=fs.mkdtempSync(path.join(out,'profile-'));process.env.TUGOU_DATA_DIR=profile;
+if(!process.env.TUGOU_TEST_APP)process.env.TUGOU_BUILD_DIR=path.join(out,'build');else delete process.env.TUGOU_BUILD_DIR;
+const report={checks:[],errors:[],profile},requests=[];let mode='ok',delayMs=0,baseUrl,ended=false;
+const server=http.createServer((req,res)=>{
+  requests.push({url:req.url,method:req.method,auth:req.headers.authorization});const current=mode;
+  setTimeout(()=>{if(res.destroyed)return;if(typeof current==='number'){res.writeHead(current);res.end('provider-body-secret');return;}res.setHeader('content-type','application/json');res.end(JSON.stringify({data:current==='empty'?[]:current==='large'?Array.from({length:5000},(_,i)=>({id:`model-${i.toString().padStart(4,'0')}`})):[{id:'image-quality'},{id:'image-fast'},{id:'vision-chat'}]}));},delayMs);
+});
+const finish=code=>{if(ended)return;ended=true;fs.writeFileSync(path.join(out,kind+'.json'),JSON.stringify(report,null,2));server.closeAllConnections();server.close();app.exit(code);};
+setTimeout(()=>{report.failure='desktop timeout';finish(1);},120000);
+app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webContents.setBackgroundThrottling(false);w.webContents.on('console-message',d=>{if(d.level==='error')report.errors.push(d.message);});w.webContents.once('did-finish-load',async()=>{
+ const js=s=>w.webContents.executeJavaScript(s,true),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+ const wait=async s=>{for(let i=0;i<150;i++){if(await js(s))return;await sleep(40);}throw Error('wait: '+s);};
+ const check=(label,value)=>{assert.ok(value,label);report.checks.push(label);};
+ const click=async selector=>{const p=await js(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw Error('missing control');e.scrollIntoView({block:'nearest'});const r=e.getBoundingClientRect();return{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`);for(const type of ['mouseDown','mouseUp'])w.webContents.sendInputEvent({type,button:'left',clickCount:1,...p});await sleep(80);};
+ const button=async label=>{await js(`(()=>{const b=[...(document.querySelector('.connection-dialog')||document).querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(label)}||b.getAttribute('aria-label')===${JSON.stringify(label)});if(!b)throw Error('missing button');b.dataset.qaButton='active';})()`);await click('[data-qa-button=active]');await js("document.querySelector('[data-qa-button=active]')?.removeAttribute('data-qa-button')");};
+ const key=async(keyCode,modifiers=[])=>{for(const type of ['keyDown','keyUp'])w.webContents.sendInputEvent({type,keyCode,modifiers});await sleep(80);};
+ const fill=async(selector,value)=>{await click(selector);await key('A',['control']);w.webContents.insertText(value);await sleep(100);};
+ const text=()=>js("document.querySelector('.connection-dialog')?.textContent||''");
+ const shot=async name=>{await w.capturePage();await sleep(120);fs.writeFileSync(path.join(out,`${kind}-${name}.png`),(await w.capturePage()).toPNG());};
+ const file=path.join(profile,'workspace','connection.enc');
+ try{
+  w.setSize(1380,900);await wait('!!document.querySelector(".studio-header")');await button('新建工程');await wait('!!document.querySelector(".prompt-workbench")');
+  await js(`tugou.saveConnection({baseUrl:${JSON.stringify(baseUrl)},apiKey:'saved-desktop-key',model:'existing-image',analysisModel:'existing-vision'})`);const original=fs.readFileSync(file);
+  await button('模型连接');await wait('!!document.querySelector("#connection-address")');
+  check('legacy import and per-model test controls removed',!(await text()).includes('导入旧版')&&await js("document.querySelectorAll('.connection-model-row button').length===0&&tugou.importConnection===undefined"));
+  check('saved key is never returned or populated',await js("document.querySelector('#connection-key').value===''&&tugou.connection().then(s=>s.hasKey&&!s.apiKey)"));
+  await fill('#connection-address',baseUrl+'/draft/v1/');await fill('#connection-key','draft-desktop-key');
+  await button('测试连接');await wait("document.querySelector('.connection-dialog').textContent.includes('连接成功')");check('test uses unsaved URL and Key',requests.at(-1).url==='/draft/v1/models'&&requests.at(-1).auth==='Bearer draft-desktop-key');
+  check('test alone does not populate models',(await text()).includes('尚未拉取'));
+  await button('拉取模型');await wait("document.querySelector('.connection-dialog').textContent.includes('已拉取 3 个模型')");
+  check('test and fetch preserve saved encrypted bytes',original.equals(fs.readFileSync(file)));
+  check('fetch preserves selected model IDs',await js("document.querySelector('#connection-model').value==='existing-image'"));await shot('main');
+  await click('#connection-model');await wait("document.querySelectorAll('.ant-select-item-option').length>=3");await shot('dropdown');check('fetched list opens',true);
+  await key('Down');await key('Enter');report.keyboard=await js("({dialog:!!document.querySelector('.connection-dialog'),value:document.querySelector('#connection-model')?.value,active:document.activeElement?.outerHTML})");check('keyboard selects model without submitting the form',report.keyboard.dialog&&['image-fast','image-quality','vision-chat'].includes(report.keyboard.value));
+  await fill('#connection-model','vision');await wait("[...document.querySelectorAll('.ant-select-item-option')].some(e=>e.textContent==='vision-chat')");
+  check('model search filters options',await js("![...document.querySelectorAll('.ant-select-item-option')].some(e=>e.textContent==='image-fast')"));
+  await js("[...document.querySelectorAll('.ant-select-item-option')].find(e=>e.textContent==='vision-chat').dataset.qaChoice='yes'");await click('[data-qa-choice=yes]');check('click chooses exact model ID',await js("document.querySelector('#connection-model').value==='vision-chat'"));
+  await click('#connection-model');await key('Escape');check('Escape closes picker without closing dialog',await js("!!document.querySelector('.connection-dialog')&&document.querySelector('#connection-model').getAttribute('aria-expanded')==='false'"));
+  await fill('#connection-model','manual-image-id');await key('Escape');check('manual IDs remain editable',await js("document.querySelector('#connection-model').value==='manual-image-id'"));
+  await click('.connection-extra summary');await fill('#connection-textModel','manual-text');await key('Escape');await click('.connection-extra summary');
+  await fill('#connection-key','changed-desktop-key');check('changing Key clears prior results and list',(await text()).includes('当前配置尚未测试')&&(await text()).includes('尚未拉取'));
+  delayMs=600;await button('拉取模型');await fill('#connection-key','latest-desktop-key');await sleep(750);check('stale response ignored after Key edit',(await text()).includes('尚未拉取'));delayMs=0;
+  mode=401;await button('测试连接');await wait("document.querySelector('.connection-dialog').textContent.includes('401')");check('auth failure is inline and sanitized',!(await text()).includes('provider-body-secret'));await shot('error');
+  mode=404;await button('拉取模型');await wait("document.querySelector('.connection-models').textContent.includes('手动填写')");check('unsupported model endpoint allows manual entry',!(await js("document.querySelector('#connection-model').disabled")));
+  mode='empty';await button('拉取模型');await wait("document.querySelector('.connection-models').textContent.includes('列表为空')");check('empty model list handled',true);
+  mode='large';const started=Date.now();await button('拉取模型');await wait("document.querySelector('.connection-dialog').textContent.includes('已拉取 5000 个模型')");await click('#connection-model');await sleep(100);report.largeListMs=Date.now()-started;check('large catalog is virtualized',await js("document.querySelectorAll('.ant-select-item-option').length<80"));await key('Escape');
+  await button('取消');check('cancel after probes leaves saved configuration unchanged',original.equals(fs.readFileSync(file)));
+  await button('模型连接');await wait('!!document.querySelector("#connection-address")');await fill('#connection-model','saved-manual-model');await key('Escape');await button('保存');await wait('!document.querySelector(".connection-dialog")');const saved=await js('tugou.connection()');check('save preserves blank saved Key and manual model',saved.hasKey&&saved.model==='saved-manual-model'&&!saved.apiKey);
+  await button('模型连接');await wait('!!document.querySelector("#connection-address")');check('saved model survives reopen',await js("document.querySelector('#connection-model').value==='saved-manual-model'"));
+  mode='ok';await button('拉取模型');await wait("document.querySelector('.connection-dialog').textContent.includes('已拉取 3 个模型')");check('blank key fetch uses encrypted saved Key',requests.at(-1).auth==='Bearer saved-desktop-key');
+  await click('.connection-extra summary');w.setSize(940,640);await sleep(200);await js("document.querySelector('.connection-dialog .ant-modal-container').scrollTop=9999");await sleep(80);await shot('small');check('small-window footer stays reachable',await js("(()=>{const r=document.querySelector('.connection-dialog footer').getBoundingClientRect();return r.bottom<=innerHeight&&r.top>=0})()"));
+  check('no horizontal overflow in small dialog',await js("(()=>{const e=document.querySelector('.connection-dialog .ant-modal-container');return e.scrollWidth<=e.clientWidth+1})()"));
+  await button('取消');await button('切换浅色主题');await button('模型连接');await wait('!!document.querySelector("#connection-address")');await shot('light');check('light theme renders through shared provider',await js("document.documentElement.dataset.theme==='light'&&getComputedStyle(document.querySelector('.connection-dialog .ant-modal-container')).backgroundColor==='rgb(255, 255, 255)'"));
+  check('all probes are read-only model requests',requests.every(r=>r.method==='GET'&&r.url.endsWith('/models')));check('no renderer errors',report.errors.length===0);finish(0);
+ }catch(e){report.failure=e.stack;await shot('failure');finish(1);}
+});});
+server.listen(0,'127.0.0.1',()=>{baseUrl=`http://127.0.0.1:${server.address().port}`;require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');});
+

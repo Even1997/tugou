@@ -1,0 +1,23 @@
+module.exports=async({w,js,delay,check,click,set,shot,save,key})=>{
+  w.setSize(1440,960);await delay(200);await key('Escape');await click('形状','summary');
+  check('shape trigger is a compact rounded square',await js(`(()=>{const e=document.querySelector('.shape-trigger-icon'),r=e.getBoundingClientRect();return r.width===24&&r.height===24&&parseFloat(getComputedStyle(e).borderRadius)===6})()`));
+  check('all shared disclosure icons render at 10px',await js(`(()=>{const icons=[...document.querySelectorAll('.disclosure-icon svg')].filter(e=>e.getBoundingClientRect().width);return icons.length>2&&icons.every(e=>e.getBoundingClientRect().width===10&&e.getBoundingClientRect().height===10)})()`));
+  check('layer and shape tiles share compact dimensions',await js(`(()=>{const tiles=[...document.querySelectorAll('.layer-thumbnail,.shape-option-icon')];return tiles.length>6&&tiles.every(e=>{const r=e.getBoundingClientRect();return r.width===24&&r.height===24})})()`));
+  check('shape options use six rounded icon tiles and one selected state',await js(`document.querySelectorAll('.shape-option-icon').length===6&&document.querySelectorAll('.shape-picker-grid [aria-pressed=true]').length===1`));await shot('shape-menu-refined');await key('Escape');
+  await click('画板','.layer-sidebar .panel-heading button');const before=await save();await click('画板背景');
+  check('color editor is themed and has no native color input',await js(`!!document.querySelector('.color-control-panel')&&!document.querySelector('input[type=color]')`));
+  check('color trigger is a rounded square',await js(`(()=>{const e=document.querySelector('[aria-label="画板背景"]'),r=e.getBoundingClientRect();return r.width===r.height&&parseFloat(getComputedStyle(e).borderRadius)>=8})()`));await shot('color-editor-dark');
+  check('HEX format remains readable',await js(`(()=>{const e=document.querySelector('.ant-color-picker-format-select .ant-select-content');return e.textContent==='HEX'&&e.getBoundingClientRect().width>=20&&getComputedStyle(document.querySelector('.ant-color-picker-format-select input')).backgroundColor==='rgba(0, 0, 0, 0)'})()`));
+  await js(`document.querySelector('.ant-color-picker-format-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);await delay(120);await click('RGB','.ant-select-item-option');await shot('color-editor-rgb');
+  check('RGB editor exposes three numeric fields',await js(`document.querySelectorAll('.ant-color-picker-rgb-input input').length===3`));
+  await js(`document.querySelector('.ant-color-picker-format-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);await delay(120);await click('HEX','.ant-select-item-option');
+  await js(`{const e=document.querySelector('.ant-color-picker-hex-input input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'22aabb');e.dispatchEvent(new Event('input',{bubbles:true}))}`);await delay(150);await click('取消','.color-control-panel button');
+  check('cancel color edit preserves document',JSON.stringify((await save()).layers)===JSON.stringify(before.layers));
+  await set('画板背景','#f1b783');check('apply color persists artboard background',(await save()).layers.some(l=>l.artboard&&l.background==='#f1b783'));
+  await click('撤销');check('one undo restores original color',JSON.stringify((await save()).layers)===JSON.stringify(before.layers));
+  await click('画板背景');await js(`document.querySelector('.ant-color-picker-hex-input input').focus()`);await key('Escape');
+  check('Escape closes color editor and returns focus',await js(`!document.querySelector('.color-control-panel')&&document.activeElement.matches('[aria-label="画板背景"]')`));
+  await click('切换浅色主题');await click('画板背景');await shot('color-editor-light');await click('取消','.color-control-panel button');await click('切换深色主题');
+  w.setSize(940,640);await delay(250);await click('画板背景');await shot('color-editor-compact');
+  check('color popup fits minimum window',await js(`(()=>{const r=document.querySelector('.color-control-panel').getBoundingClientRect();return r.top>=0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight})()`));await click('取消','.color-control-panel button');
+};

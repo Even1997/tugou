@@ -1,0 +1,108 @@
+.analysis-dialog {
+  top: 72px;
+}
+.analysis-footer {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+}
+.analysis-content {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  max-height: calc(100vh - 280px);
+  overflow: auto;
+}
+.analysis-source,
+.analysis-review {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.analysis-source label,
+.analysis-result-heading label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.analysis-image {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  background: var(--bg);
+  border-radius: 6px;
+}
+.analysis-job {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.analysis-result-heading {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  justify-content: space-between;
+}
+.analysis-result-heading label {
+  flex: 1;
+}
+.analysis-modules {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.analysis-module {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.analysis-module-heading {
+  display: grid;
+  grid-template-columns: 18px minmax(80px, 1fr) 100px auto;
+  gap: 8px;
+  align-items: center;
+}
+.analysis-module-heading .check {
+  white-space: nowrap;
+  font-size: 12px;
+}
+.analysis-recipe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.analysis-recipe > .ant-input {
+  max-width: 190px;
+}
+.analysis-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@media (max-width: 1000px) {
+  .analysis-content {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 16px;
+  }
+  .analysis-module-heading {
+    grid-template-columns: 18px minmax(80px, 1fr) 90px;
+  }
+  .analysis-module-heading .check {
+    grid-column: 2/4;
+  }
+}

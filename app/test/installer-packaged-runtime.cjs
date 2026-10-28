@@ -1,0 +1,16 @@
+const fs=require('node:fs/promises'),path=require('node:path'),assert=require('node:assert/strict');
+const packed=require('./qa-paths.cjs').path("installer-package/win-unpacked/resources/app.asar");
+const {RuntimeInstaller}=require(path.join(packed,'core/runtime-install.cjs')),{LocalAIService}=require(path.join(packed,'core/local-ai.cjs')),{TaskQueue}=require(path.join(packed,'core/tasks.cjs'));
+const {extractArchive,hashFile}=require(path.join(packed,'core/runtime-files.cjs'));
+const report={packaged:packed,checks:[]};
+(async()=>{
+  const prior=JSON.parse(await fs.readFile('test-results/installer-native.json','utf8'));assert.equal(prior.ok,true);
+  const attempt=process.argv.includes('--retry')?JSON.parse(await fs.readFile('test-results/installer-packaged-runtime.json','utf8')):null;
+  const root=attempt?.profile||await fs.mkdtemp(path.join(prior.parent,'packed-profile-'));report.profile=root;const tasks=new TaskQueue(root);await tasks.init();const local=new LocalAIService({root});const installer=new RuntimeInstaller(local,tasks);
+  if(attempt)await installer.retry(attempt.task.id);else await installer.start(prior.parent,{cutout:true});await tasks.execution;report.task=tasks.list().at(-1);assert.equal(report.task.status,'completed',report.task.message);const status=await local.status();assert.equal(status.configured,true);assert.equal(status.models.length,3);assert.equal(status.cutout,true);report.checks.push('actual full installer executes from asar with cached verified artifacts');
+  report.runtime=status;assert.ok((await fs.readFile(path.join(status.folder,'licenses/uv-MIT.txt'),'utf8')).includes('Permission'));report.checks.push('hashed requirements and license files copied out of asar for native processes');
+  const manifest=require(path.join(packed,'runtime/components.json')),signal=new AbortController().signal;
+  for(const [archive,key]of [['uv-arm.tar.gz','darwin-arm64'],['uv-intel.tar.gz','darwin-x64']]){const source=path.join(require('./qa-paths.cjs').path("installer-probe"),archive),target=path.join(root,key);assert.equal(await hashFile(source),manifest.uv[key].sha256);await extractArchive(source,target,manifest.uv[key],signal);assert.ok((await fs.stat(path.join(target,'uv'))).size>1024);}
+  const mac=path.join(root,'mac-upscale');await extractArchive(require('./qa-paths.cjs').path("installer-probe/esrgan-mac.zip"),mac,manifest.upscale.darwin,signal);const native=await fs.readFile(path.join(mac,'realesrgan-ncnn-vulkan'));assert.equal(native.readUInt32BE(0),0xcafebabe);assert.equal(native.readUInt32BE(4),2);assert.deepEqual([native.readUInt32BE(8),native.readUInt32BE(28)].sort(),[0x1000007,0x100000c]);await fs.access(path.join(mac,'models/realesrgan-x4plus.bin'));report.checks.push('both Mac uv archives and universal x64/arm64 upscaler extract with production rules; execution unverified');
+  const reopened=new TaskQueue(root);await reopened.init();assert.equal(reopened.list().at(-1).status,'completed');report.checks.push('packaged installer journal and activated runtime persist');
+})().catch(e=>{report.failure=e.stack;process.exitCode=1}).finally(async()=>{await fs.writeFile('test-results/installer-packaged-runtime.json',JSON.stringify(report,null,2));console.log(JSON.stringify({checks:report.checks,failure:report.failure}));});

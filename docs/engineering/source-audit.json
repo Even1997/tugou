@@ -1,0 +1,5131 @@
+{
+  "generatedAt": "2026-10-21T16:16:47.016Z",
+  "baseline": "ccda172efba25cbee990a785bba715b90cc42b95",
+  "currentCommit": "cc1069f6c9aa5e23aac16ab7c1b0d20dc5ffdcad",
+  "groups": {
+    "agent": {
+      "upstream-unchanged": 3,
+      "upstream-modified": 0,
+      "added-needs-review": 0
+    },
+    "go-backend": {
+      "upstream-unchanged": 130,
+      "upstream-modified": 1,
+      "added-needs-review": 0
+    },
+    "desktop": {
+      "upstream-unchanged": 0,
+      "upstream-modified": 0,
+      "added-needs-review": 2
+    },
+    "web-base": {
+      "upstream-unchanged": 192,
+      "upstream-modified": 20,
+      "added-needs-review": 0
+    },
+    "studio-api": {
+      "upstream-unchanged": 0,
+      "upstream-modified": 0,
+      "added-needs-review": 17
+    },
+    "studio-ui": {
+      "upstream-unchanged": 0,
+      "upstream-modified": 0,
+      "added-needs-review": 76
+    }
+  },
+  "dependencies": [
+    {
+      "project": "web",
+      "name": "@ant-design/icons",
+      "version": "6.3.4",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "@ant-design/nextjs-registry",
+      "version": "1.3.0",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "@ant-design/pro-components",
+      "version": "3.1.12-0",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "@codemirror/lang-javascript",
+      "version": "6.2.5",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "@codemirror/lang-json",
+      "version": "6.0.2",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "@photo-sphere-viewer/core",
+      "version": "5.15.1",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "@tanstack/react-query",
+      "version": "5.104.4",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "@uiw/react-codemirror",
+      "version": "4.25.12",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "antd",
+      "version": "6.6.6",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "axios",
+      "version": "1.20.0",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "class-variance-authority",
+      "version": "0.7.1",
+      "license": "Apache-2.0"
+    },
+    {
+      "project": "web",
+      "name": "clsx",
+      "version": "2.1.1",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "copy-to-clipboard",
+      "version": "4.0.2",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "dayjs",
+      "version": "1.11.23",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "fflate",
+      "version": "0.8.3",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "file-saver",
+      "version": "2.0.5",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "jsonrepair",
+      "version": "3.15.0",
+      "license": "ISC"
+    },
+    {
+      "project": "web",
+      "name": "konva",
+      "version": "10.9.0",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "localforage",
+      "version": "1.10.0",
+      "license": "Apache-2.0"
+    },
+    {
+      "project": "web",
+      "name": "lucide-react",
+      "version": "1.59.0",
+      "license": "ISC"
+    },
+    {
+      "project": "web",
+      "name": "mediabunny",
+      "version": "1.55.7",
+      "license": "MPL-2.0"
+    },
+    {
+      "project": "web",
+      "name": "motion",
+      "version": "12.43.0",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "nanoid",
+      "version": "5.1.16",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "next",
+      "version": "16.4.2",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "radix-ui",
+      "version": "1.8.1",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "react",
+      "version": "19.2.5",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "react-dom",
+      "version": "19.2.5",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "react-konva",
+      "version": "19.2.2",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "react-markdown",
+      "version": "10.1.0",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "remark-gfm",
+      "version": "4.0.1",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "shadcn",
+      "version": "4.22.1",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "tailwind-merge",
+      "version": "3.7.0",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "tailwindcss",
+      "version": "4.3.3",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "tw-animate-css",
+      "version": "1.4.0",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "zustand",
+      "version": "5.0.15",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "sharp",
+      "version": "0.35.5",
+      "license": "Apache-2.0"
+    },
+    {
+      "project": "web",
+      "name": "@tailwindcss/postcss",
+      "version": "4.3.3",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "@types/file-saver",
+      "version": "2.0.7",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "@types/node",
+      "version": "20.19.43",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "@types/react",
+      "version": "19.1.12",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "@types/react-dom",
+      "version": "19.1.9",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "prettier",
+      "version": "3.9.10",
+      "license": "MIT"
+    },
+    {
+      "project": "web",
+      "name": "typescript",
+      "version": "5.9.3",
+      "license": "Apache-2.0"
+    },
+    {
+      "project": "desktop",
+      "name": "electron",
+      "version": "42.11.15",
+      "license": "MIT"
+    },
+    {
+      "project": "desktop",
+      "name": "@electron/packager",
+      "version": "19.1.1",
+      "license": "BSD-2-Clause"
+    }
+  ],
+  "files": [
+    {
+      "path": "docs/engineering/independent-implementation.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "scripts/audit-source.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/plugins/marketplace.json",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/frontend-design/LICENSE.txt",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/frontend-design/SKILL.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/AGENTS.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/README.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/SKILL.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/metadata.json",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/_sections.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/_template.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/advanced-effect-event-deps.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/advanced-event-handler-refs.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/advanced-init-once.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/advanced-use-latest.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-api-routes.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-cheap-condition-before-await.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-defer-await.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-dependencies.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-parallel.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-suspense-boundaries.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-analyzable-paths.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-barrel-imports.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-conditional.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-defer-third-party.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-dynamic-imports.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-preload.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/client-event-listeners.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/client-localstorage-schema.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/client-passive-event-listeners.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/client-swr-dedup.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-batch-dom-css.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-cache-function-results.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-cache-property-access.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-cache-storage.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-combine-iterations.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-early-exit.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-flatmap-filter.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-hoist-regexp.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-index-maps.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-length-check-first.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-min-max-loop.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-request-idle-callback.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-set-map-lookups.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-tosorted-immutable.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-activity.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-animate-svg-wrapper.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-conditional-render.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-content-visibility.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-hoist-jsx.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-hydration-no-flicker.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-hydration-suppress-warning.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-resource-hints.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-script-defer-async.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-svg-precision.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-usetransition-loading.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-defer-reads.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-dependencies.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-derived-state-no-effect.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-derived-state.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-functional-setstate.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-lazy-state-init.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-memo-with-default-value.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-memo.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-move-effect-to-event.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-no-inline-components.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-simple-expression-in-memo.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-split-combined-hooks.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-transitions.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-use-deferred-value.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-use-ref-transient-values.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-after-nonblocking.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-auth-actions.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-cache-lru.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-cache-react.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-dedup-props.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-hoist-static-io.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-no-shared-module-state.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-parallel-fetching.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-parallel-nested-fetching.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-serialization.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".dockerignore",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".env.example",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".gitattributes",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".github/workflows/canvas-agent.yml",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".github/workflows/docker-image.yml",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": ".gitignore",
+      "lineage": "upstream-modified",
+      "runtimeSource": false
+    },
+    {
+      "path": "AGENTS.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "CHANGELOG.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "Dockerfile",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "LICENSE",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "README-STUDIO.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "README.md",
+      "lineage": "upstream-modified",
+      "runtimeSource": false
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "VERSION",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "assets/88.webp",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "assets/metaso.png",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "assets/wc.png",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/.codex-plugin/plugin.json",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/.mcp.json",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/README.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/codex.mjs",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "canvas-agent/index.mjs",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "canvas-agent/native/comfy-bridge/go.mod",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/native/comfy-bridge/main.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/native/comfy-bridge/media.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/native/comfy-bridge/output_server.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/native/comfy-bridge/recovery.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/native/comfy-bridge/workflow.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/native/comfy-bridge/workflow_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/package.json",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "canvas-agent/scripts/build-comfy-bridge.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "canvas-agent/skills/open-canvas/SKILL.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "config/config.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "config/config_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "desktop/main.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "desktop/package-lock.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/package.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/package.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/preload.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "desktop/setup-image-tools.ps1",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/__pycache__/atelier-alpha-fixtures.cpython-310.pyc",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/__pycache__/atelier-birefnet-fp16.cpython-310.pyc",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/__pycache__/atelier-birefnet-proof.cpython-310.pyc",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/__pycache__/atelier-guided-matting-proof.cpython-310.pyc",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/__pycache__/atelier-lite-foreground-proof.cpython-310.pyc",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-alpha-fixtures.py",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-batch-navigation.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-birefnet-fp16.py",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-birefnet-proof.py",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-cloud-tools-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-complex-export.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-creative-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-desktop-check.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-detail-cutout.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-detail-memory-guard.py",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-export-cancel.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-generation-review.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-generation-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-guided-matting-proof.py",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-large-library.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-legacy-check.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-lite-foreground-proof.py",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-matting-proof.py",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-matting-resources.ps1",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-provider-capabilities.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-references-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-regions-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-resources-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-scale.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-selection-cloud-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-semantic-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-split-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-sunburst-size.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-thumbnail-profile.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/atelier-tools-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/create-large-fixture.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-fill-pixels.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-fill-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-large-image.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-renderer.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-retouch-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-retouch.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-review-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-selection.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-tone-export.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-tone-pixels.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-tone-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-ui.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/editor-workspace-visual.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tests/window-controls.e2e.cjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tool-runtime/__pycache__/segment-birefnet.cpython-310.pyc",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tool-runtime/segment-birefnet.py",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "desktop/tool-runtime/segment.py",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docker-compose.local.yml",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docker-compose.yml",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docker-entrypoint.sh",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/backend/api-response.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/backend/backend-database.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/backend/canvas-data-structure.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/backend/local-development.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/backend/system-settings.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/business/business.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/business/license.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/canvas/canvas-node-manual.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/canvas/canvas-shortcuts.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/index.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/overview/docker.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/overview/features.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/overview/quick-start.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/overview/third-party-prompt-repositories.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/progress/atelier-roadmap.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/progress/pending-test.md",
+      "lineage": "upstream-modified",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/progress/todo.md",
+      "lineage": "upstream-modified",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/api-direct-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/api-direct-settings.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-align-large-cancel.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-align-large-complete.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-alignment-quality-followup.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-alpha-benchmark.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-alpha-large.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-alpha-quality-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-batch-navigation-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-batch-navigation-before.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-batch-navigation.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-birefnet-evaluation.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-birefnet-full-alpha-benchmark.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-birefnet-full-evaluation.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-birefnet-full-foreground.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-birefnet-full-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-birefnet-lite-edges.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-birefnet-lite-evaluation.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-birefnet-lite-foreground.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-birefnet-lite-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-birefnet-portrait-alpha-benchmark.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-birefnet-portrait-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-blocked-audit.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-cloud-tools-960.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-cloud-tools-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-cloud-tools-large.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-cloud-tools-ui-progress.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-cloud-tools-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-cloud-tools-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-complex-export.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-complex-export.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-complex-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-creative-100mp.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-creative-checks.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-creative-large.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-creative-ui-progress.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-creative-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-creative-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-cutout-criteria.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-cutout-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-delivery-status.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-desktop-update.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-desktop-window.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-detail-cutout-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-detail-cutout-restart.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-detail-cutout-runtime.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-detail-cutout-ui-1300.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-detail-cutout-ui-960.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-detail-cutout-ui.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-detail-cutout-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-detail-memory-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-detail-memory-guard.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-export-cancel-960.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-export-cancel.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-export-cancel.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-export-endurance.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-export-endurance.json.progress",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-export-lifecycle-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-export-restart.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-generation-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-generation-restart.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-generation-review-960.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-generation-review-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-generation-review.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-generation-review.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-generation-ui-progress.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-generation-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-generation-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-gpu-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-guided-matting-evaluation.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-guided-matting-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-implementation-checkpoint.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-large-library-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-large-library.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-large-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-legacy-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-live-cloud-quality-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-live-edit-aligned.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-live-edit-feather.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-live-edit.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-live-enhance-recovery.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-live-enhance.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-live-provider-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-live-upscale-sunburst.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-live-upscale.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-local-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-matting-experiment.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-matting-fp16-alpha-benchmark.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-matting-fp16-conversion.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-matting-fp16-foreground.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-matting-fp16-profile.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-matting-fp16-resources.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-matting-fp16-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-photo-quality.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-provider-capabilities.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-readiness-guided-matting.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-references-ui-progress.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-references-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-references-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-regions-large.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-regions-options.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-regions-ui-progress.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-regions-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-regions-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-resources-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-resources-checks.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-resources-ui-progress.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-resources-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-resources-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-review-restart.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-scale-1.25-1280.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-scale-1.25-960.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-scale-1.25.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-scale-1.5-1280.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-scale-1.5-960.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-scale-1.5.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-scale-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-selection-cloud-960.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-selection-cloud-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-selection-cloud-large.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-selection-cloud-ui-progress.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-selection-cloud-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-selection-cloud-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-semantic-960.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-semantic-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-semantic-large.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-semantic-ui-progress.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-semantic-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-semantic-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-split-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-split-checks.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-split-large.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-split-ui-progress.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-split-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-split-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-subjects-detail-alpha.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-subjects-detail-cancel.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-subjects-detail-resources.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-subjects-detail.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-subjects-standard.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-sunburst-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-tasks-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-thumbnail-encoding.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-thumbnail-investigation.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-thumbnail-profile.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-thumbnail-trace.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-thumbnail-visible.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-thumbnail-wheel.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-tools-ui-progress.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-tools-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/atelier-tools-ui.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/bridge.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/canvas-ui-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/canvas-ui-dark-narrow.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/canvas-ui-desktop.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/canvas-ui-final.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/canvas-ui-light.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/canvas-ui-model-requests.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/compose.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-desktop-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-fill-1100.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-fill-900.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-fill-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-fill-pixel-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-fill-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-foundation-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-foundation-dark.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-foundation-narrow.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-large-image-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-mask-toolbar.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-original-c.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-paint-narrow.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-paint.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-perspective.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-renderer-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-retouch-1100.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-retouch-900.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-retouch-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-retouch-pixel-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-retouch-ui-failure.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-retouch-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-review-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-review-deployment.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-review-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-selection-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-selection-toolbar.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-selection-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-storage-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-balance-1100.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-balance-1500.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-balance-900.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-curve.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-deployment.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-export-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-levels-1100.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-levels-1500.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-levels-900.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-pixel-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-shadow-1100.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-shadow-1500.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-shadow-900.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-ui-failure.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-tone-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-ui-failure.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-ui-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-workspace-900.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-workspace-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-workspace-c.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/editor-workspace-visual-results.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/frameless-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/frameless-dark.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/frameless-desktop.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/frameless-e2e.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/frameless-light.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/frameless-narrow.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/frameless-regions.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/global-modules-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/global-modules-dark.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/global-modules-desktop.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/global-modules-light.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/integrated-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/integrated-workspace.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/module-sync-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/module-sync-conflicts.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/module-sync-desktop.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/module-synced.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/module-update-requests.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/prompts.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/relaxed-ui-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/relaxed-ui-desktop.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/relaxed-ui-empty-dark.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/relaxed-ui-layout.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/relaxed-ui-populated-light.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/shared-assets-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/shared-assets.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/shared-prompts-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/shared-prompts-request.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/shared-prompts.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/ui-acceptance-state.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/ui-before.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/ui-desktop-final.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/ui-desktop.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/ui-refinement-acceptance.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/ui-workbench-dark.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/ui-workbench-light.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/studio-evidence/ui-workbench-narrow.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "docs/support/donate.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "go.mod",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "go.sum",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "handler/admin.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/agent_skill.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/ai.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/ai_direct_request.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/ai_direct_request_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/apimart_image.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/apimart_video.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/ark_seedance.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/assets.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/auth.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/autodl.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/canvas_project.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/canvas_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/canvas_task_multipart_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/comfy_bridge.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/generation_log.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/kie_image.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/kie_video.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/mimo_audio.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/minimax_video.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/model_parameter_translation.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/model_parameter_translation_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/model_protocol.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/model_protocol_direct_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/model_protocol_flow_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/model_protocol_path_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/prompts.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/response.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/runninghub_workflow.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/settings.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/storage.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/tokendance.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/user_data.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/video_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/workflow.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "handler/workflow_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "main.go",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "middleware/admin.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "middleware/anonymous_storage.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/agent_skill.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/agent_skill_file.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/ai_log.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/asset.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/canvas_audio_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/canvas_image_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/canvas_project.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/comfy_bridge.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/generation_log.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/prompt.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/query.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/setting.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/storage.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/user.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/user_config.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/video_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "model/workflow.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "render.yaml",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "repository/agent_skill.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/asset.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/canvas_audio_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/canvas_image_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/canvas_project.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/canvas_task_stop.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/comfy_bridge.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/db.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/generation_log.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/prompt.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/setting.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/storage.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/user.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/user_config.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/video_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/workflow.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "repository/workflow_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "router/router.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/agent_skill.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/agent_skill_defaults.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/ai_log.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/assets.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/auth.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/auth_redirect_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/autodl.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/canvas_audio_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/canvas_image_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/canvas_project.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/canvas_project_deletion_scheduler.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/canvas_task_stop.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/comfy_bridge.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/context.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/gemini.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/generation_log.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/mimo_tts.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/minimax.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/model_parameter_translation.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/model_parameter_translation_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/model_protocol.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/model_protocol_contract_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/prompt_fetch.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/prompt_sync_scheduler.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/prompts.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/runninghub_execution.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/runninghub_fields.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/runninghub_workflow.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/settings.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/settings_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/skills/h3-3d-animation-short-generator.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/skills/h3-brand-promo-video-generator.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/skills/h3-game-intro-generator/SKILL.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/skills/h3-game-intro-generator/references/h3-confirmation-image-template.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/skills/h3-game-intro-generator/references/h3-video-prompt-template.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/skills/h3-music-video-subtitle-generator.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/skills/h3-paper-collage-explainer-generator.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/skills/h3-product-ad-generator.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/skills/h3-prompt-writing/SKILL.md",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/skills/h3-prompt-writing/references/base-en.txt",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/skills/h3-prompt-writing/references/ref-en.txt",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/ssrf.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/ssrf_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/storage.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/storage_provider_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/tokendance.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/user_data.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/video_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/webdav_storage.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/workflow.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/workflow_agent.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/workflow_mapping.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/workflow_mapping_test.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/workflow_resolve.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "service/workflow_task.go",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "skills-lock.json",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/.editorconfig",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/.prettierignore",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/.prettierrc.json",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/AGENTS.md",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/bun.lock",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/components.json",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/next-env.d.ts",
+      "lineage": "upstream-modified",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/next.config.ts",
+      "lineage": "upstream-modified",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/package-lock.json",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/package.json",
+      "lineage": "upstream-modified",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/postcss.config.mjs",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/director/assets/index-BaMsYsAL.css",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/director/assets/index-oQuo7db8.js",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/director/index.html",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/director/models/ue-mannequin-retopology.glb",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/director/models/ue-mannequin-retopology.license.txt",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/icons/claude.svg",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/icons/deepseek.svg",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/icons/gemini.svg",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/icons/glm.svg",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/icons/grok.svg",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/icons/linuxdo.svg",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/icons/openai.svg",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/logo.svg",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/studio-demo/01-paper.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/studio-demo/02-scene.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/studio-demo/03-couple.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/studio-demo/04-flowers.png",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/public/webdav-media-sw.js",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/src/app/(admin)/admin/ai-logs/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/assets/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/assets/use-admin-assets.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/credit-logs/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/credit-logs/use-admin-credit-logs.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/layout.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/prompts/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/prompts/use-admin-prompts.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/settings/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/skills/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/users/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(admin)/admin/users/use-admin-users.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/asset-library/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/assets/asset-transfer.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/assets/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/[id]/canvas-client-page.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/[id]/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/canvas-agent-context.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/canvas-agent-memory.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/canvas-agent-runtime.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/canvas-agent-skills.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/canvas-agent-tools.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/audio.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/core.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/image-character-sheet.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/image-storyboard.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/image.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/organize.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/script.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/video-editing.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/video-extension.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/video-multi-shot.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/video-single-shot.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/video.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/skills/workflow.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/agent/use-codex-agent.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/asset-picker-modal.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-agent-skill-popover.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-assistant-composer.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-assistant-panel.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-audio-settings-popover.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-camera-control.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-codex-connect-view.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-config-composer.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-config-node-panel.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-connections.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-context-menu.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-delete-projects-dialog.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-director-node-panel.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-director.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-image-settings-popover.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-image-toolbar-settings-modal.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-image-toolbar-tools.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-mini-map.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-node-angle-dialog.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-node-crop-dialog.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-node-generation.ts",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-node-hover-toolbar.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-node-mask-edit-dialog.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-node-prompt-panel.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-node-reference-bar.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-node-split-dialog.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-node-upscale-dialog.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-node.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-panorama-viewer.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-project-card.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-prompt-chip-input.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-prompt-library.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-resource-mention-textarea.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-side-panel.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-toolbar.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-video-settings-popover.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/canvas-zoom-controls.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/components/infinite-canvas.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/constants.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/export-types.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/stores/use-canvas-store.ts",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/stores/use-canvas-ui-store.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/types.ts",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/utils/canvas-camera.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/utils/canvas-export.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/utils/canvas-group.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/utils/canvas-image-data.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/utils/canvas-node-size.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/utils/canvas-panorama.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/utils/canvas-resource-references.ts",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/canvas/utils/canvas-video-frame.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/home-banner-carousel.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/image/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/layout.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/login/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/prompts/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/tokendance/callback/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/video/components/kling-v26-workbench-panel.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/video/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/(user)/workflows/page.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/[...path]/route.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/cloud-image-tools.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/creative-tools.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/cube-lut.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/gateway.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/generation-queue.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/generations.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/image-export.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/image-resources.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/image-tools.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/model/v1/[...path]/route.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/project-storage.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/region-tools.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/resource/[name]/route.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/route.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/split-image.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/tool-queue.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/api/studio/tools.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/favicon.ico",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/globals.css",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/layout.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/not-found.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/asset-library.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/brush-path.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/canvas-assets.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/canvas-bridge.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/canvas-generation.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/canvas-module-sync.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/canvas-modules.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/canvas-tasks.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/client-api.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/cloud-image-tool-panel.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/cloud-tool-input.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/collect-generation.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/collect-tool-results.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/content-fill-pixels.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/content-fill.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/content-fill.worker.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/coverage-morphology.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/creative-tool-controls.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/curve-editor.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/demo.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/document-operations.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/document-size.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/editor-fill.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/editor-history.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/editor-paint.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/editor-renderer.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/editor-selection.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/editor-tone.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/editor-tools.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/editor.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/generation-schema.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/generation-task-list.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/image-bounds.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/image-export.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/image-limits.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/image-tool-panel.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/layer-inspector.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/layer-operations.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/layer-panel.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/layout.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/local-tool-settings.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/mask-controls.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/mask-toolbar.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/model.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/module-sync.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/page.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/perspective.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/prompt-workspace.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/raster-paint.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/raster-retouch.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/reference-roles.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/resource-url.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/retouch-pixels.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/selection-color.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/selection-edit.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/selection-pixels.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/selection-preview.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/selection-raster.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/settings.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/shared-connection.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/split-tool-controls.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/store.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/studio.css",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/task-overview.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/tone-pixels.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/tone-render.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/tone-schema.js",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/tool-image-preview.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/tool-region-preview.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/tool-schema.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/tool-task-list.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/ui.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/use-tool-tasks.ts",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/warp-controls.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/window-controls.module.css",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/app/studio/window-controls.tsx",
+      "lineage": "added-needs-review",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/agent-skill-cover.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/assets/asset-form-modal.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/audio-settings-panel.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/channel-model-selector-modal.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/channel-parameter-translation-editor.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/grok-tts-voice-select.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/image-generation-pending.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/image-settings-panel.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/layout/announcement-banner.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/layout/app-config-modal.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/layout/app-providers.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/layout/app-top-nav.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/layout/client-root-init.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/layout/mobile-nav-drawer.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/layout/user-status-actions.tsx",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/model-picker.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/prompts/prompt-card.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/prompts/prompt-detail-dialog.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/prompts/prompt-select-dialog.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/prompts/use-prompt-list.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/ui/animated-theme-toggler.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/ui/dia-text-reveal.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/ui/select.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/video-settings-panel.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/workflow/workflow-channel-pane.module.css",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/workflow/workflow-channel-pane.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/workflow/workflow-field-mapping-editor.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/workflow/workflow-graph-editor.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/workflow/workflow-test-workbench.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/components/workflows/creative-workflow-workspace.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/constant/credits.tsx",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/constant/env.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/constant/navigation-tools.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/hooks/use-autodl-workflow.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/hooks/use-copy-text.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/app-theme.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/audio-generation.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/autodl.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/canvas-theme.ts",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/channel-parameter-translation.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/comfy-workflow-json.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/gemini-tts.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/gemini-video.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/gemini.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/grok-tts.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/image-reference-prompt.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/image-utils.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/kie-models.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/localforage-storage.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/mimo-tts.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/minimax-video.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/model-channel.test.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/model-channel.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/release.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/seedance-video.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/tokendance-oauth.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/utils.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/video-model-capabilities.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/workflow-channel.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/workflow-field-options.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/lib/zip.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/anonymous-storage.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/admin.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/agent-skills.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/assets.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/audio.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/auth.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/autodl.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/canvas-agent.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/canvas-tasks.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/channel-parameter-translation.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/codex-agent.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/comfy-bridge.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/direct-ai.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/generation-logs.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/image.ts",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/parameter-translation-worker.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/prompts.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/protocols/apimart.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/protocols/ark.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/protocols/autodl.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/protocols/direct-registry.test.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/protocols/direct-registry.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/protocols/kie.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/protocols/kling-models.test.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/protocols/kling-models.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/protocols/shared.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/protocols/tokendance.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/protocols/types.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/request.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/runninghub.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/storage.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/user-config.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/video.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/api/workflow-generation.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/file-storage.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/image-storage.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/storage-migration.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/webdav-direct-storage.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/services/workflow-channel-storage.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/stores/use-agent-skill-store.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/stores/use-asset-store.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/stores/use-channel-translation-store.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/stores/use-config-store.ts",
+      "lineage": "upstream-modified",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/stores/use-theme-store.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/stores/use-user-store.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/types/image.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/src/types/media.ts",
+      "lineage": "upstream-unchanged",
+      "runtimeSource": true
+    },
+    {
+      "path": "web/tests/studio-api.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-birefnet-lite-edges.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-canvas-prompts-check.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-canvas-tasks.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-cloud-tools-large.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-cloud-tools.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-creative-large.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-creative-tools.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-cutout-alpha.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-cutout-subjects.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-editor.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-export-lifecycle.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-export-restart.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-export.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-fill.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-generation-align-large.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-generation-restart.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-generation-review.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-generation.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-live-cloud-quality.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-live-edit-feather.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-live-edit.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-live-enhance-recovery.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-lut.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-model.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-module-sync.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-module-update-check.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-orientation.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-perspective.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-photo-quality.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-recover-live-edit.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-references.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-regions-large.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-regions.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-resources.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-review-restart.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-review.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-selection-cloud-large.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-selection.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-semantic-large.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-semantic-split.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-split-large.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-split.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-thumbnail-encoding.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-tone.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-tools-cutout.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-tools-gpu.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-tools-large.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-tools-process-cancel.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-tools.test.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tests/studio-ui-provider.mjs",
+      "lineage": "added-needs-review",
+      "runtimeSource": false
+    },
+    {
+      "path": "web/tsconfig.json",
+      "lineage": "upstream-modified",
+      "runtimeSource": false
+    }
+  ],
+  "limits": [
+    "Added does not mean independently authored or owned.",
+    "Only direct installed npm dependencies are listed; transitive dependencies, Go modules and model terms require separate review.",
+    "Lineage does not determine derivative-work status or authorize relicensing."
+  ]
+}

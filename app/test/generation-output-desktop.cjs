@@ -1,0 +1,62 @@
+const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
+const {workflowNode}=require('../core/workflow-nodes.cjs'),{encode}=require('../core/cloud-pixels.cjs');
+const out=path.resolve('test-results/generation-output'),kind=process.env.TUGOU_TEST_APP?'packaged':'source';fs.mkdirSync(out,{recursive:true});
+const profile=fs.mkdtempSync(path.join(out,'profile-'));process.env.TUGOU_DATA_DIR=profile;
+if(!process.env.TUGOU_TEST_APP)process.env.TUGOU_BUILD_DIR=path.join(out,'build');else delete process.env.TUGOU_BUILD_DIR;
+const report={checks:[],errors:[],profile},pending=[];let png,ended=false,mode='image',videoDone=false;
+require('./workflow-fixtures.cjs').write(out);
+const server=http.createServer(async(req,res)=>{const chunks=[];for await(const c of req)chunks.push(c);const body=Buffer.concat(chunks).toString();
+ if(req.url.includes('/images/'))pending.push({res,count:JSON.parse(body).n||1});
+ else if(req.url.endsWith('/chat/completions'))res.end(JSON.stringify({choices:[{message:{content:'外部文本结果'}}]}));
+ else if(req.url==='/v1/videos'&&req.method==='POST')res.end(JSON.stringify({id:'fixture-video',status:'queued'}));
+ else if(req.url==='/v1/videos/fixture-video')res.end(JSON.stringify({id:'fixture-video',status:videoDone?'completed':'running',progress:videoDone?100:42}));
+ else if(req.url.endsWith('/content'))res.end(fs.readFileSync(path.join(out,'sample.mp4')));
+ else{res.statusCode=404;res.end();}
+});
+const release=(status=200)=>{for(const p of pending.splice(0)){if(p.res.destroyed)continue;p.res.statusCode=status;p.res.end(status===200?JSON.stringify({data:Array.from({length:p.count},()=>({b64_json:png.toString('base64')}))}):'private-provider-error');}};
+const finish=code=>{if(ended)return;ended=true;fs.writeFileSync(path.join(out,kind+'.json'),JSON.stringify(report,null,2));server.closeAllConnections();server.close();app.exit(code);};
+setTimeout(()=>{report.failure='timeout';finish(1);},150000);
+app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webContents.setBackgroundThrottling(false);w.webContents.on('console-message',d=>{if(d.level==='error')report.errors.push(d.message);});w.webContents.once('did-finish-load',async()=>{
+ const js=s=>w.webContents.executeJavaScript(s,true),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+ const wait=async s=>{for(let i=0;i<500;i++){if(await js(`(async()=>Boolean(await (${s})))()`))return;await sleep(40);}throw Error('wait '+s);};
+ const check=(label,value)=>{assert.ok(value,label);report.checks.push(label);};
+ const click=async(label,scope='document')=>{const p=await js(`(()=>{const b=[...${scope}.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(label)}||b.getAttribute('aria-label')===${JSON.stringify(label)});if(!b||b.disabled)throw Error('missing '+${JSON.stringify(label)});const r=b.getBoundingClientRect();return{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`);for(const type of ['mouseDown','mouseUp'])w.webContents.sendInputEvent({type,button:'left',clickCount:1,...p});await sleep(140);};
+ const shot=async name=>{await w.capturePage();await sleep(120);fs.writeFileSync(path.join(out,kind+'-'+name+'.png'),(await w.capturePage()).toPNG());};
+ const load=async()=>{await js(`sessionStorage.setItem('tugou-reload-view',JSON.stringify({id:${JSON.stringify(report.id)},workspace:'canvas'}))`);const ready=new Promise(r=>w.webContents.once('did-finish-load',r));w.webContents.reload();await ready;await wait('document.querySelector(".react-flow__pane")');};
+ const save=async()=>{await sleep(100);await click('保存');await wait('document.querySelector(".statusbar [role=status]").textContent==="已保存"');return(await js(`tugou.open(${JSON.stringify(report.id)})`)).document;};
+ const seed=async doc=>{await js(`(async()=>{const r=await tugou.open(${JSON.stringify(report.id)});await tugou.save(r.id,${JSON.stringify(doc)},r.revision)})()`);await load();await click('适应画布');await sleep(300);};
+ const desk='document.querySelector(\'[data-id="desk"]\')';
+ const latest=()=>js('(async()=> (await tugou.tasks()).filter(t=>t.context.nodeId==="desk").at(-1))()');
+ try{
+  w.setSize(1450,950);png=await encode({width:384,height:256,data:Buffer.from(Array.from({length:384*256},(_,i)=>[100+Math.floor(i/384)%100,145,210,255]).flat())});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  report.id=await js('(async()=> (await tugou.create("生成结果节点验收")).id)()');await js(`tugou.saveConnection({baseUrl:'http://127.0.0.1:${server.address().port}/v1',apiKey:'fixture-key',model:'image',textModel:'text',videoModel:'video'})`);
+  let doc=(await js(`tugou.open(${JSON.stringify(report.id)})`)).document;const node={...workflowNode('config',{x:350,y:80}),id:'desk'};node.data.count=2;node.data.prompt='蓝色渐变';node.data.size='1024x1024';doc.tugouCanvas=require('../core/prompts.cjs').emptyCanvas();doc.tugouCanvas.nodes=[{id:'words',type:'text',position:{x:0,y:80},data:{text:'一只小猫咪',name:'文本'}},node];doc.tugouCanvas.edges=[{id:'input',source:'words',target:'desk'}];await seed(doc);
+  check('desk contains no inline result preview',await js(`${desk}.querySelector('.node-results,.desk-result-placeholder')===null`));
+  await click('开始生成',desk);await wait('document.querySelectorAll(".generation-output-placeholder").length===2');await click('适应画布');await sleep(350);
+  let t=await latest();check('task journals output count and real stage',t.context.count===2&&t.stage==='generating');
+  const ids=await js('[...document.querySelectorAll(".generation-output-placeholder")].map(e=>e.closest(".react-flow__node").dataset.id)');
+  check('two pending nodes appear before server responds',pending.length===1&&ids.length===2);await click('定位结果',desk);await sleep(250);check('desk can locate a pending result',await js('document.querySelector(".react-flow__node.selected .generation-output-placeholder")!==null'));await click('适应画布');await sleep(200);
+  check('one edge connects each pending result',await js('[...document.querySelectorAll(".react-flow__edge")].filter(e=>e.dataset.id.startsWith("output-")).length===2'));
+  check('indeterminate progress has no invented percentage',await js('[...document.querySelectorAll("[role=progressbar]")].every(e=>!e.hasAttribute("aria-valuenow"))'));
+  await sleep(1200);check('elapsed time advances while waiting',await js('[...document.querySelectorAll(".generation-progress")].some(e=>/[1-9] 秒/.test(e.textContent))'));await shot('generating');
+  release();await wait('document.querySelectorAll(".generation-output-placeholder").length===0&&document.querySelectorAll(".node-picture img").length===2');doc=await save();
+  check('completion fills the same node IDs',ids.every(id=>doc.tugouCanvas.nodes.some(n=>n.id===id&&n.data.assetId)));
+  check('results are positioned right of the source',doc.tugouCanvas.nodes.filter(n=>ids.includes(n.id)).every(n=>n.position.x>=820));
+  check('source card stays compact after completion',await js(`${desk}.querySelector('.node-results,.node-media-preview')===null`));
+  await shot('completed');await load();await click('适应画布');await sleep(200);check('save and reopen preserve result nodes and edges',await js('document.querySelectorAll(".node-picture img").length===2&&[...document.querySelectorAll(".react-flow__edge")].filter(e=>e.dataset.id.startsWith("output-")).length===2'));
+  await click('开始生成',desk);await wait('document.querySelectorAll(".generation-output-placeholder").length===2');await click('适应画布');await sleep(250);await click('取消生成',desk);await wait('(await tugou.tasks()).at(-1).status==="cancelled"');await sleep(1300);
+  check('cancellation retains explicit output state',await js('[...document.querySelectorAll(".generation-output-placeholder")].every(e=>e.textContent.includes("已取消")&&!e.querySelector("[role=progressbar]"))'));release();
+  doc=await save();check('cancel does not publish more images',doc.assets.length===2);
+  // Keep this test scene compact while preserving task receipts, then exercise a provider failure.
+  doc.tugouCanvas.nodes=doc.tugouCanvas.nodes.filter(n=>!n.data.generationTaskId||n.data.assetId);doc.tugouCanvas.edges=doc.tugouCanvas.edges.filter(e=>doc.tugouCanvas.nodes.some(n=>n.id===e.target));await seed(doc);
+  await click('开始生成',desk);await wait('document.querySelectorAll(".generation-output-placeholder").length===2');release(401);await wait('(await tugou.tasks()).at(-1).status==="failed"');await sleep(1300);await click('适应画布');await sleep(200);
+  check('failed results expose retry and safe feedback',await js('[...document.querySelectorAll(".generation-output-placeholder")].every(e=>e.textContent.includes("生成失败")&&e.textContent.includes("重新生成"))&&!document.body.textContent.includes("private-provider-error")'));await shot('failed');
+  await click('重新生成',desk);await wait('(await tugou.tasks()).at(-1).status==="running"');release();await wait('(await tugou.tasks()).at(-1).status==="completed"');await sleep(1400);doc=await save();check('retry creates a new result batch without replacing previous images',doc.assets.length===4);
+  doc.tugouCanvas.nodes=doc.tugouCanvas.nodes.filter(n=>n.id==='desk'||n.id==='words');doc.tugouCanvas.edges=[{id:'input',source:'words',target:'desk'}];doc.tugouCanvas.nodes.find(n=>n.id==='desk').data.mode='video';await seed(doc);await click('开始生成',desk);await wait('[...document.querySelectorAll("[role=progressbar]")].some(e=>e.getAttribute("aria-valuenow")==="42")');check('provider percentage is displayed when actually supplied',true);videoDone=true;await wait('(await tugou.tasks()).at(-1).status==="completed"');await sleep(1400);await click('适应画布');await sleep(250);await wait('document.querySelector(".node-media-preview video")');doc=await save();check('video completes in external media node',doc.assets.some(a=>a.kind==='video'));
+  doc.tugouCanvas.nodes=doc.tugouCanvas.nodes.filter(n=>n.id==='desk'||n.id==='words');doc.tugouCanvas.edges=[{id:'input',source:'words',target:'desk'}];doc.tugouCanvas.nodes.find(n=>n.id==='desk').data.mode='text';await seed(doc);await click('开始生成',desk);await wait('(await tugou.tasks()).at(-1).status==="completed"');await sleep(1400);await click('适应画布');await sleep(250);await wait('document.querySelector(".node-media-preview")?.textContent.includes("外部文本结果")');await click('适应画布');await sleep(250);
+  const textNodeId=await js('document.querySelector(".node-media-preview").closest(".react-flow__node").dataset.id'),textScope=`document.querySelector('[data-id="${textNodeId}"]')`;await click('编辑文字',textScope);await js(`{const e=document.querySelector('[aria-label="节点内文本"]');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(e,'修改后的结果');e.dispatchEvent(new Event('input',{bubbles:true}));e.blur()}`);await sleep(200);if(await js('!!document.querySelector(".node-text-editor")'))await click('完成编辑',textScope);doc=await save();check('external text result remains editable and persists',doc.tugouCanvas.nodes.some(n=>n.data.resultText==='修改后的结果'));
+  await js("localStorage.setItem('tugou-theme','light')");await load();await click('适应画布');await sleep(300);await shot('light');w.setSize(1100,760);await click('适应画布');await sleep(200);await shot('compact');check('small window renders external output',await js('!!document.querySelector(".node-media-preview")'));
+  check('no renderer errors',report.errors.length===0);check('isolated desktop never exposes a test window',!w.isVisible());finish(0);
+ }catch(e){report.failure=e.stack;report.text=await js('document.body.innerText');await shot('failure');finish(1);}
+});});
+require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');

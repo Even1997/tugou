@@ -1,0 +1,56 @@
+const {app,dialog}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {workflowNode,compileWorkflow}=require('../core/workflow-nodes.cjs');
+const base=path.resolve(__dirname,'../test-results/node-design');fs.mkdirSync(base,{recursive:true});
+const profile=fs.mkdtempSync(path.join(base,'desktop-'));process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.resolve(__dirname,'../test-results/workflow-build');
+if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;
+const assetsDir=process.env.TUGOU_DESIGN_ASSETS||path.resolve(__dirname,'../../../node-comparison-prototype/public/assets');
+const report={profile,checks:[],errors:[]},finish=code=>{fs.writeFileSync(path.join(base,process.env.TUGOU_TEST_APP?'packaged-design.json':'design.json'),JSON.stringify(report,null,2));app.exit(code);};
+setTimeout(()=>{report.failure='timeout';finish(1);},90000);
+app.on('web-contents-created',(_,c)=>c.on('console-message',d=>{if(d.level==='error')report.errors.push(d.message);}));
+app.on('browser-window-created',(_,w)=>{
+  w.show=()=>{};w.focus=()=>{};w.webContents.setBackgroundThrottling(false);
+  w.webContents.once('did-finish-load',async()=>{
+    const js=s=>w.webContents.executeJavaScript(s,true),delay=ms=>new Promise(r=>setTimeout(r,ms));
+    const check=(name,value)=>{assert.ok(value,name);report.checks.push(name);};
+    const wait=async s=>{for(let i=0;i<300;i++){if(await js(`Boolean(${s})`))return;await delay(40);}throw Error('timeout '+s);};
+    const click=async(label,selector='button')=>{await js(`{const e=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>e.getAttribute('aria-label')===${JSON.stringify(label)}||e.textContent.trim()===${JSON.stringify(label)});if(!e||e.disabled)throw Error('missing '+${JSON.stringify(label)});e.click()}`);await delay(180);};
+    const snapshot=async name=>{await w.capturePage();await delay(150);fs.writeFileSync(path.join(base,name+'.png'),(await w.capturePage()).toPNG());};
+    const save=async()=>{await delay(200);if(await js('!document.querySelector("button[aria-label=保存]").disabled'))await click('保存');await wait('document.querySelector(".statusbar [role=status]").textContent==="已保存"');return(await js(`tugou.open(${JSON.stringify(report.id)})`)).document;};
+    try{
+      w.setSize(1800,1050);
+      dialog.showOpenDialog=async()=>({canceled:false,filePaths:['couple.png','result-a.png','result-b.png','panorama.png'].map(name=>path.join(assetsDir,name))});
+      const assets=await js('tugou.importImage()');['人物参考','合影方案一','合影方案二','花园全景'].forEach((name,i)=>assets[i].name=name);
+      const picture={id:'picture',type:'asset',position:{x:30,y:145},data:{assetId:assets[0].id,role:'人物身份'}};
+      const desk=workflowNode('config',{x:380,y:35}),panorama=workflowNode('panorama',{x:840,y:205});report.desk=desk.id;report.panorama=panorama.id;
+      Object.assign(desk.data,{prompt:'将人物融入春日花园，保留面部特征',model:'gpt-image-1',size:'1024x1024',count:2,outputAssetIds:[assets[1].id,assets[2].id],outputAssetId:assets[1].id,camera:'平视，人物居中',negativePrompt:'多余手指，扭曲面部'});
+      Object.assign(panorama.data,{name:'花园全景',model:'gpt-image-1',prompt:'春日婚礼花园，草坪、花境与树林环绕，柔和自然光。',outputAssetIds:[assets[3].id],outputAssetId:assets[3].id,role:'环境与光线'});
+      const graph={version:1,nodes:[picture,desk,panorama],edges:[{id:'person-desk',source:picture.id,target:desk.id},{id:'garden-desk',source:panorama.id,target:desk.id}],viewport:{x:5,y:10,zoom:.9}};
+      report.id=await js(`(async()=>{const r=await tugou.create('节点设计验收');await tugou.save(r.id,{...r.document,assets:${JSON.stringify(assets)},tugouCanvas:${JSON.stringify(graph)}},r.revision);return r.id})()`);
+      await js(`sessionStorage.setItem('tugou-reload-view',JSON.stringify({id:${JSON.stringify(report.id)},workspace:'canvas'}))`);const ready=new Promise(r=>w.webContents.once('did-finish-load',r));w.webContents.reload();await ready;
+      await wait('document.querySelectorAll(".node-result-preview img").length===2&&[...document.querySelectorAll(".node-media-preview img,.node-result-preview img")].every(e=>e.naturalWidth>0)');
+      const select=async id=>{await click('适应画布');await w.capturePage();await wait(`document.querySelector('[data-id="${id}"]')`);await js(`document.querySelector('[data-id="${id}"]').click()`);await delay(180);};
+      await select(desk.id);await click('更多参数','.ant-collapse-header');
+      check('image title is inside its card',await js('(()=>{const c=document.querySelector(".node-picture"),h=c.querySelector("header");return h.getBoundingClientRect().top>=c.getBoundingClientRect().top})()'));
+      check('image shows its reference role and dimensions',await js('document.querySelector(".node-picture .node-meta").textContent.includes("人物身份")&&document.querySelector(".node-picture .node-meta").textContent.includes("1024 × 1536")'));
+      check('generator uses an internal heading and image thumbnail results',await js(`document.querySelector('[data-id="${desk.id}"] .desk-heading').textContent.includes('生成台')&&document.querySelectorAll('[data-id="${desk.id}"] .node-result-picker img').length===2`));
+      check('inspector does not duplicate input cards generated images or the prompt editor',await js('!document.querySelector(".canvas-inspector [aria-label=节点提示词]")&&!document.querySelector(".canvas-inspector .node-inputs")&&!document.querySelector(".canvas-inspector .node-results")'));
+      check('generation parameters start collapsed and advanced controls remain editable',await js('!document.querySelector(".inspector-generation-params").open&&!document.querySelector(".canvas-inspector [aria-label=镜头要求]").disabled'));
+      check('panorama preview is 2 to 1 with a 360 badge',await js(`(()=>{const e=document.querySelector('[data-id="${panorama.id}"] .node-result-preview'),r=e.getBoundingClientRect();return Math.abs(r.width/r.height-2)<.02&&e.textContent.includes('360°')})()`));
+      await click('切换浅色主题');await snapshot('integrated-light');await click('切换深色主题');await snapshot('integrated-dark');
+      await click('引用结果 2',`[data-id="${desk.id}"] button`);const saved=await save();
+      check('thumbnail selection updates the main image and current reference label',await js(`document.querySelector('[data-id="${desk.id}"] .node-current-result').textContent.includes('2 / 2')&&document.querySelector('[data-id="${desk.id}"] .node-result-preview img').alt==='合影方案二'`));
+      const downstream=workflowNode('image',{x:0,y:0});downstream.data.prompt='用当前方案继续生成';
+      const compiled=compileWorkflow({...saved,tugouCanvas:{...saved.tugouCanvas,nodes:[...saved.tugouCanvas.nodes,downstream],edges:[...saved.tugouCanvas.edges,{source:desk.id,target:downstream.id}]}},downstream.id);
+      check('the actual selected result is compiled into the next node',compiled.references.length===1&&compiled.references[0].assetId===assets[2].id);
+      await click('定位引入 人物参考',`[data-id="${desk.id}"] button`);await delay(250);check('source locate selects the original node',await js('document.querySelector("[data-id=picture]").classList.contains("selected")'));
+      check('selected image exposes its preview and replacement toolbar',await js('getComputedStyle(document.querySelector(".image-node-tools")).visibility==="visible"&&!!document.querySelector(".image-node-tools [aria-label=替换图片]")'));
+      await click('预览素材','[data-id=picture] button');await wait('document.body.innerText.includes("素材详情")');await click('关闭素材详情');
+      await select(panorama.id);await click('环视全景',`[data-id="${panorama.id}"] button`);await wait('document.querySelector("[data-scene-view] canvas")');await snapshot('integrated-panorama');await click('关闭全景查看');
+      check('panorama opens the existing immersive viewer',!await js('Boolean(document.querySelector("[data-scene-view]"))'));
+      w.setSize(1280,800);await select(desk.id);await click('适应画布');await delay(200);await snapshot('integrated-compact');
+      check('compact desktop keeps the node controls inside each card',await js('[...document.querySelectorAll(".generation-desk")].every(e=>e.scrollWidth<=e.clientWidth+1)'));
+      check('no renderer errors',report.errors.length===0);check('test window stays hidden',!w.isVisible());finish(0);
+    }catch(e){report.failure=e.stack;report.text=await js('document.body.innerText');await snapshot('design-failure');finish(1);}
+  });
+});
+require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');

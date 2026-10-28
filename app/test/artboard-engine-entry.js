@@ -1,0 +1,38 @@
+import {Compositor} from '../renderer/composite.js';
+import * as A from '../core/artboards.cjs';
+import * as L from '../core/layers.cjs';
+import {surface} from '../renderer/selection.js';
+import {createStroke} from '../renderer/painting.js';
+window.artboardQA={A,L,Compositor,surface,createStroke};
+window.artboardQA.verify=async()=>{
+  const checks=[],check=(name,ok)=>{if(!ok)throw Error(name);checks.push(name)},pixel=(c,x,y)=>[...c.getContext('2d').getImageData(x,y,1,1).data];
+  const engine=new Compositor(),c=surface(1,1);
+  let doc=A.normalize({name:'test',width:100,height:100,background:'#ffffff',assets:[],layers:[L.createLayer('shape',{id:'red',name:'red',shape:'rect',x:70,y:10,width:70,height:40,color:'#ff0000'})]});
+  doc=A.update(doc,'artboard-main',{x:-150,y:-100});
+  const added=A.create(doc,{width:100,height:100});doc=A.update(added.document,added.id,{x:50,y:-100,background:'#0000ff'});
+  await engine.render(A.display(doc,'artboard-main',A.extract(doc,'artboard-main')),c,{x:-20,y:-20,width:340,height:140});
+  check('both artboard backgrounds render in one viewport, including negative world coordinates',pixel(c,25,25)[0]===255&&pixel(c,225,25)[2]===255);
+  check('artboard clipping prevents child overflow into workspace',pixel(c,130,50)[3]===0&&pixel(c,110,50)[0]===255);
+  doc=A.update(doc,'artboard-main',{clipContent:false});await engine.render(A.display(doc,'artboard-main',A.extract(doc,'artboard-main')),c,{x:-20,y:-20,width:340,height:140});
+  check('disabling clip exposes child overflow',pixel(c,130,50)[0]===255&&pixel(c,130,50)[3]===255);
+  let local=A.extract(doc,'artboard-main');const bytes=await engine.export(local,{transparent:true}),img=await createImageBitmap(new Blob([bytes],{type:'image/png'}));
+  check('single-board export uses exact dimensions',img.width===100&&img.height===100);
+  const out=surface(100,100);out.getContext('2d').drawImage(img,0,0);check('transparent export excludes background and neighboring boards',pixel(out,0,0)[3]===0&&pixel(out,80,20)[0]===255);img.close();
+  const bitmap=surface(32,32);bitmap.getContext('2d').fillStyle='#ff0000';bitmap.getContext('2d').fillRect(0,0,32,32);
+  local={...local,width:32,height:32,background:'transparent',layers:[L.createLayer('image',{id:'paint',name:'paint',x:0,y:0,width:32,height:32,bitmap:{dataUrl:bitmap.toDataURL()},mask:{x:0,y:0,width:.5,height:1,density:50}})]};
+  await engine.render(local,out);check('mask density blends uncovered pixels at 50 percent',Math.abs(pixel(out,28,16)[3]-128)<=1&&pixel(out,5,16)[3]===255);
+  local.layers[0].mask=undefined;local.selection={paths:[{operation:'add',points:[0,0,16,0,16,32,0,32]}]};
+  doc=A.replace(doc,'artboard-main',local);const moved=A.update(doc,'artboard-main',{x:-4000,y:2800});
+  const edit=A.extract(moved,'artboard-main');
+  const stroke=await createStroke(edit,edit.layers[0],engine,{size:12,opacity:100,hardness:100,color:'#0000ff',pressure:false,smoothing:0});
+  stroke.add({x:8,y:16,pressure:1});stroke.add({x:24,y:16,pressure:1});stroke.render();
+  check('brush respects selection after moving board far from origin',pixel(stroke.canvas,8,16)[2]===255&&pixel(stroke.canvas,24,16)[0]===255);
+  stroke.dispose();
+  check('selection stays local after moving the board',edit.selection.paths[0].points[2]===16&&edit.layers[0].x===0);
+  let many=A.normalize({name:'many',width:200,height:200,background:'#ffffff',assets:[],layers:[]});
+  for(let i=1;i<40;i++){const added=A.create(many,{width:200,height:200});many=added.document;}
+  const start=performance.now();await engine.render(A.display(many,'artboard-main',A.extract(many,'artboard-main')),c,{width:1200,height:800});
+  window.artboardQA.performance={boards:40,renderMs:Math.round(performance.now()-start)};
+  check('40-board viewport renders within 1500ms',window.artboardQA.performance.renderMs<1500);
+  engine.dispose();return checks;
+};

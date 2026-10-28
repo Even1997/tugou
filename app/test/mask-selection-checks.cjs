@@ -1,0 +1,26 @@
+const L=require('../core/layers.cjs'),fs=require('node:fs'),path=require('node:path');
+module.exports=async({w,js,delay,check,wait,click,set,shot,save,load,report,base})=>{
+  await js(fs.readFileSync(path.join(base,'mask-engine.js'),'utf8'));report.checks.push(...await js('maskSelectionQA()'));
+  const bitmap=await js(`(()=>{const c=document.createElement('canvas');c.width=c.height=400;const x=c.getContext('2d');x.fillStyle='#315cf5';x.fillRect(0,0,400,400);return {dataUrl:c.toDataURL()}})()`);
+  const layers=[L.createLayer('group',{id:'board',artboard:true,name:'画板 1',x:0,y:0,width:600,height:600,background:'#ffffff'}),L.createLayer('image',{id:'image',name:'蓝色图片',parentId:'board',x:80,y:80,width:400,height:400,bitmap})];
+  report.id=await js(`(async()=>{const r=await tugou.create('蒙版选区验收');await tugou.save(r.id,{...r.document,width:600,height:600,layers:${JSON.stringify(layers)}},r.revision);return r.id})()`);await load();await js(`document.querySelector('[data-layer-id="image"]').click()`);await delay(150);
+  await click('编辑蒙版','.move-tool-options button');await click('选区','.composition-primary-tools button');
+  check('selection tool retains mask inspector and black white controls',await js(`!!document.querySelector('.mask-properties')&&!!document.querySelector('[aria-label="蒙版黑色 · 隐藏"]')&&document.querySelector('.mask-context-label').textContent.includes('蒙版')`));
+  const screen=async(x,y)=>js(`(()=>{const g=document.querySelector('.layer-overlay>g'),p=new DOMPoint(${x},${y}).matrixTransform(g.getScreenCTM());return {x:Math.round(p.x),y:Math.round(p.y)}})()`);
+  const from=await screen(180,180),to=await screen(380,380);
+  w.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...from});await delay(100);w.webContents.sendInputEvent({type:'mouseMove',...to,modifiers:['leftButtonDown']});await delay(120);await w.capturePage();await wait('document.querySelector(".layer-overlay polygon[stroke-dasharray]")');await delay(150);w.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,...to});await delay(200);
+  check('rectangle creates selection without replacing active layer',!!(await save()).layers.find(l=>l.artboard).selection&&await js(`document.querySelector('.mask-properties')!==null`));
+  const alpha=async(x,y)=>js(`(async()=>{const d=(await tugou.open(${JSON.stringify(report.id)})).document,l=d.layers.find(l=>l.id==='image'),i=new Image();i.crossOrigin='anonymous';i.src='tugou-media://original/'+l.mask.bitmap.resource;try{await i.decode()}catch(e){throw new Error("decode mask "+i.src+": "+e)};const c=document.createElement('canvas');c.width=i.naturalWidth;c.height=i.naturalHeight;const ctx=c.getContext('2d');ctx.drawImage(i,0,0);return ctx.getImageData(${x},${y},1,1).data[3]})()`);
+  await click('填充蒙版选区','.mask-selection-actions button');await wait('!document.querySelector("[aria-label=填充蒙版选区]").disabled');let doc=await save();
+  check('black fills only selection in mask',await alpha(200,200)===0&&await alpha(20,20)===255);check('mask fill adds no image layer or source revision',doc.layers.length===2&&JSON.stringify(doc.layers.find(l=>l.id==='image').bitmap)===JSON.stringify(bitmap));await shot('mask-black-selection');
+  const hidden=doc.layers.find(l=>l.id==='image').mask.bitmap.resource;
+  await click('蒙版白色 · 恢复');await click('填充蒙版选区','.mask-selection-actions button');await wait('!document.querySelector("[aria-label=填充蒙版选区]").disabled');await save();check('white restores selected area',await alpha(200,200)===255);
+  await click('撤销');doc=await save();check('one undo restores previous mask',doc.layers.find(l=>l.id==='image').mask.bitmap.resource===hidden);await click('重做');await save();check('redo restores white fill',await alpha(200,200)===255);
+  await click('画笔','.composition-primary-tools button');check('returning to brush retains mask and selection',await js(`document.querySelector('[aria-label="蒙版白色 · 恢复"]').getAttribute('aria-pressed')==='true'&&document.querySelector('.mask-context-label').textContent.includes('仅选区内')`));await shot('mask-white-brush');
+  await click('蒙版黑色 · 隐藏');await set('笔刷大小',40);
+  const a=await screen(100,280),b=await screen(430,280);w.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...a});await delay(150);w.webContents.sendInputEvent({type:'mouseMove',...b,modifiers:['leftButtonDown']});await delay(200);await w.capturePage();w.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,...b});await delay(300);await wait('!document.body.innerText.includes("正在保存笔触")');await save();
+  check('real black brush remains confined to selection',await alpha(200,200)===0&&await alpha(20,200)===255&&await alpha(350,200)===255);await shot('mask-brush-selection');
+  await click('撤销');await save();check('one undo restores brush stroke',await alpha(200,200)===255);
+  await click('取消选区','.composition-context button');check('clear selection preserves mask',!(await save()).layers.find(l=>l.artboard).selection&&await alpha(200,200)===255);
+  await click('完成蒙版');await load();await js(`document.querySelector('[data-layer-id="image"]').click()`);await delay(150);check('mask bitmap survives reload',Boolean((await save()).layers.find(l=>l.id==='image').mask.bitmap.resource));
+};

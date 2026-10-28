@@ -1,0 +1,39 @@
+{
+  "scope": "独立桌面 app 的业务 IPC 与主要编辑动作；不包含历史 web 项目、第三方模型内部功能和每个视觉控件",
+  "ipc": [
+    {"area":"独立字体项目与图集工作台", "status":"covered", "handlers":["fontCommand","fontImport","fontExport"], "commands":["font.status","font.library","font.face","font.publish","font.project.create","font.project.list","font.project.get","font.atlas.plan","font.atlas.import","font.atlas.preview","font.atlas.recognize","font.atlas.review","font.atlas.process","font.revision.apply","font.glyph.query","font.glyph.preview","font.review.record","font.build","font.outline.refine","font.job.get","font.artifact.preview","font.artifact.export"], "note":"字体单独保存；支持任意字数导入、本地 OCR 默认保留与独立复核草稿；显式模板工具兼容旧工程，merge 合并已应用字形；原生文件对话框对应 MCP 交换目录"},
+    {"area":"字体运行环境目录选择", "status":"uiOnly", "handlers":["fontConfigure"], "commands":["font.status"], "note":"仅选择已安装环境；MCP 可查询状态，不自动安装依赖"},
+    {"area":"工程", "status":"covered", "handlers":["list","create","open","save"], "commands":["project.list","project.create","project.open","project.save"]},
+    {"area":"旧工程和历史画布迁入", "status":"missing", "handlers":["import","migrateCanvases"], "commands":[]},
+    {"area":"供应商、唯一 URL、多 Key、模型用途", "status":"covered", "handlers":["connection","listConnections","listSuppliers","saveConnections","saveConnection","testConnection","fetchModels"], "commands":["models.status","models.provider.create","models.provider.update","models.provider.delete","models.key.create","models.key.update","models.key.delete","models.test","models.fetch","models.set","models.assign"]},
+    {"area":"任务查询与取消", "status":"covered", "handlers":["tasks","cancelTask"], "commands":["task.list","task.get","task.wait","task.cancel"]},
+    {"area":"生成、重试、多角度和来源记录", "status":"covered", "handlers":["generateWorkflow","retryWorkflow","generate","generateAngle","results","assetDetails"], "commands":["generation.start","generation.angle","task.retry","asset.details"]},
+    {"area":"素材与模型导入导出", "status":"covered", "handlers":["importMedia","importMediaPaths","importImage","importImagePaths","exportAsset","importModel"], "commands":["asset.import","asset.export","scene.model.import"]},
+    {"area":"内部媒体和栅格存储", "status":"internal", "handlers":["storeMedia","storeRaster"], "commands":["paint.stroke","mask.fill","scene.capture"], "note":"作为业务命令内部流程，不暴露任意存储接口；视频录制缺口见界面对照"},
+    {"area":"本地组件状态和主体识别", "status":"covered", "handlers":["localToolsStatus","subjectStatus","selectSubject","cancelSubject"], "commands":["tools.status","selection.subject","task.cancel"], "note":"主体可用性检查在提交前执行；识别成功依赖已安装组件"},
+    {"area":"本地组件安装、重试和配置", "status":"missing", "handlers":["installLocalTools","retryRuntimeInstall","configureLocalTools"], "commands":[]},
+    {"area":"本地图像处理及重试", "status":"covered", "handlers":["startLocalTool","startRasterTool","retryImageTool"], "commands":["image.process","task.retry"]},
+    {"area":"云端单张、批量、审阅和重试", "status":"covered", "handlers":["startCloudTool","startCloudBatch","cancelCloudBatch","cloudReview","resumeCloudTool","keepCloudRaw","retryCloudTool"], "commands":["cloud.process","cloud.batch","cloud.cancelBatch","cloud.review","cloud.resolve","task.retry"]},
+    {"area":"对象类别识别、读取和拆分", "status":"covered", "handlers":["analyzeCategories","readCategories","splitCategories"], "commands":["semantic.analyze","semantic.read","semantic.generate"]},
+    {"area":"视觉分析和审阅", "status":"covered", "handlers":["analyze","analyses","saveAnalysisReview"], "commands":["analysis.start","analysis.results","analysis.review","analysis.apply"]},
+    {"area":"画板 PNG 导出", "status":"partial", "handlers":["chooseExport","cancelExport","writeExport"], "commands":["artboard.export"], "note":"MCP 使用交换目录，不调用保存对话框；尚无导出进度与中途取消命令"},
+    {"area":"原生编辑和剪贴板", "status":"partial", "handlers":["editCommand"], "commands":["history.undo","history.redo"], "note":"业务对象可查询和新建；不直接操纵系统剪贴板、输入框全选或剪切"},
+    {"area":"宿主窗口、剪贴板和脏状态", "status":"uiOnly", "handlers":["copyText","dirty","window"], "commands":[], "note":"脏状态由编辑自动维护，窗口与剪贴板不属于文档创作命令"}
+  ],
+  "editor": [
+    {"area":"提示词模块", "source":"app/renderer/prompt-workbench.jsx", "status":"covered", "commands":["prompt.create","prompt.update","prompt.delete","prompt.sync","canvas.create"]},
+    {"area":"配方及引用", "source":"app/renderer/recipes.jsx", "status":"partial", "commands":["recipe.create","recipe.update","recipe.delete","prompt.sync"], "missing":["参考图及职责排序编辑","单项绑定的本地覆盖、冲突保留/替换、重置"]},
+    {"area":"画布节点、连接与组合", "source":"app/renderer/canvas.jsx", "status":"partial", "commands":["canvas.create","canvas.update","canvas.connect","canvas.disconnect","canvas.delete","canvas.group","canvas.ungroup","canvas.arrange","canvas.viewport"], "missing":["节点复制与统一尺寸调整","指定生成结果作为后续引用"]},
+    {"area":"生成台参数", "source":"app/renderer/workflow-settings.jsx", "status":"covered", "commands":["canvas.update","canvas.compile","generation.start"], "note":"输入顺序/职责、首尾帧、声音、水印、视频扩展参数、音频指令已支持；供应商支持程度需真实接口验证"},
+    {"area":"素材库", "source":"app/renderer/materials.jsx", "status":"partial", "commands":["asset.import","asset.export","asset.preview","asset.rename","asset.delete","asset.details","layer.replaceImage"], "missing":["按来源、比例和像素数筛选排序（当前仅搜索分页）"]},
+    {"area":"画板", "source":"app/renderer/composite-workspace.jsx", "status":"covered", "commands":["artboard.create","artboard.update","artboard.duplicate","artboard.delete","artboard.export"], "note":"导出受 MCP 1600 万像素预算约束"},
+    {"area":"图层基本编辑", "source":"app/renderer/layers.jsx", "status":"partial", "commands":["layer.create","layer.update","layer.delete","layer.duplicate","layer.group","layer.ungroup","layer.move","layer.reorder","layer.reparent","layer.align","layer.distribute","layer.lock","layer.merge"], "missing":["裁切、透视/倾斜/自由变换","剪贴与外部蒙版来源关系","直线形状","图层混合模式完整枚举"]},
+    {"area":"调整和特效", "source":"app/renderer/adjustment-tools.jsx", "status":"partial", "commands":["layer.adjustment","layer.effects"], "missing":["从选区自动建立局部调整蒙版"]},
+    {"area":"选区", "source":"app/renderer/selection-tools.jsx", "status":"partial", "commands":["selection.rectangle","selection.ellipse","selection.polygon","selection.invert","selection.clear","selection.rasterize","selection.subject"], "missing":["魔棒和颜色范围","扩展、收缩、羽化及边缘优化","矩形/椭圆直接加减交（可转多边形代替）"]},
+    {"area":"蒙版", "source":"app/renderer/mask-view.js", "status":"partial", "commands":["mask.create","mask.update","mask.delete","mask.fill","mask.loadSelection"], "missing":["蒙版与图像解除关联后的独立位移/变换"]},
+    {"area":"绘画与修图", "source":"app/renderer/retouch.js", "status":"partial", "commands":["paint.stroke","image.fillSelection"], "missing":["新建空白绘画图层","内容识别填充","仿制、修复、模糊、涂抹、液化笔刷","压感和平滑参数"]},
+    {"area":"排版辅助", "source":"app/renderer/layers.jsx", "status":"missing", "commands":[], "missing":["参考线、网格、吸附和排版布局配置"], "note":"标尺和尺寸提示仅为界面反馈，无需复刻为命令"},
+    {"area":"3D 导演台", "source":"app/renderer/scene-view.jsx", "status":"partial", "commands":["scene.update","scene.object.create","scene.object.update","scene.object.duplicate","scene.object.delete","scene.camera.create","scene.camera.update","scene.camera.activate","scene.camera.delete","scene.frame.set","scene.frame.delete","scene.frame.apply","scene.model.import","scene.preview","scene.capture"], "missing":["机位视频录制和取消","4/12 方位批量截图（目前可逐个机位调用）"], "note":"MCP 预览长边上限 2048，未承诺 UI 4K 输出范围"},
+    {"area":"工作区导航与编辑历史", "source":"app/renderer/index.jsx", "status":"covered", "commands":["workspace.show","history.undo","history.redo"]}
+  ]
+}

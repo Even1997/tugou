@@ -1,0 +1,17 @@
+module.exports = {
+  appId: 'app.tugou.studio',
+  productName: '土狗',
+  copyright: 'Copyright (c) 2026 Even',
+  executableName: 'Tugou',
+  asar: true,
+  compression: 'maximum',
+  electronLanguages: ['zh-CN', 'en-US'],
+  electronDist: process.platform === 'win32' && process.arch === 'x64' ? 'node_modules/electron/dist' : undefined,
+  directories: { output: process.env.TUGOU_PACKAGE_DIR || 'release' },
+  files: ['LICENSE', 'NOTICE', 'LICENSING.md', 'main.cjs', 'desktop-main.cjs', 'preload.cjs', 'core/**/*', 'runtime/**/*', 'assets/brand/icon.png', {from:process.env.TUGOU_BUILD_DIR || 'dist',to:'dist',filter:['**/*']}, 'package.json'],
+  asarUnpack: ['node_modules/sharp/**/*', 'node_modules/@img/**/*', 'runtime/font-*.py'],
+  artifactName: 'tugou-${version}-${os}-${arch}.${ext}',
+  win: { icon: 'assets/brand/icon.ico', target: [{ target: 'nsis', arch: ['x64'] }] },
+  nsis: { oneClick: false, perMachine: false, allowToChangeInstallationDirectory: true, deleteAppDataOnUninstall: false },
+  mac: { icon: 'assets/brand/icon.icns', category: 'public.app-category.graphics-design', target: [{ target: 'dmg', arch: ['arm64', 'x64'] }], hardenedRuntime: true },
+};

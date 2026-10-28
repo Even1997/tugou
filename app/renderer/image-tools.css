@@ -1,0 +1,278 @@
+.image-tools {
+  display:grid;
+  grid-template-columns:208px minmax(0,1fr) 320px;
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+  height: 100%;
+  min-height: 0;
+}
+.tools-navigation { grid-column:1; grid-row:1 / -1; padding:24px 16px; overflow:auto; background:var(--shell); border-right:1px solid var(--line); }
+.tools-navigation > section { margin-top:24px; }
+.tools-navigation h3 { font-size:11px; font-weight:400; color:var(--muted); margin:0 0 8px; }
+.tools-navigation section > .ant-btn { width:100%; justify-content:flex-start; text-align:left; height:40px; font-size:12px; padding:0 10px; }
+.tools-navigation [aria-pressed=true] { background:var(--accent-bg); color:var(--accent); }
+.tools-navigation .processing-history { width:auto; padding:16px 0; margin-top:24px; border:0; background:transparent; overflow:visible; }
+.processing-history > summary { color:var(--muted); cursor:pointer; font-size:12px; }
+.tools-settings { grid-column:3; grid-row:1 / -1; display:flex; flex-direction:column; min-height:0; padding:24px; background:var(--shell); border-left:1px solid var(--line); }
+.tools-setting-fields { flex:1; min-height:0; overflow:auto; margin-top:24px; }
+.tools-setting-fields > label { margin-bottom:20px; }
+.tools-setting-fields .image-tool-parameters { display:flex; flex-direction:column; align-items:stretch; padding:0; border:0; background:transparent; gap:20px; }
+.tools-setting-fields .image-tool-parameters label { flex-wrap:wrap; justify-content:space-between; white-space:normal; }
+.tools-setting-fields .studio-select { max-width:100%; }
+.tools-setting-fields .image-tool-parameters .studio-select { flex:1; min-width:100px; }
+.tools-setting-fields .image-tool-parameters p { white-space:normal; }
+.tools-setting-fields .semantic-controls { padding:0; border:0; }
+.tools-submit { padding-top:20px; margin-top:20px; border-top:1px solid var(--line); }
+.tools-submit > .ant-btn { width:100%; min-height:44px; }
+.image-tools > .image-tools-toolbar { grid-column:2; grid-row:1; padding:20px 24px; background:transparent; border:0; }
+.image-tools > .message { grid-column:2; grid-row:2; }
+.image-tools > .image-tools-body { grid-column:2; grid-row:3; overflow:hidden; }
+.image-tools > .image-tools-footer { grid-column:2; grid-row:4; flex-wrap:wrap; gap:8px; }
+.image-tools > .image-tools-footer > span { flex-basis:100%; }
+.image-tools .image-comparison { padding:12px 24px 24px; }
+.image-tools .image-comparison figure { border:1px solid var(--line); border-radius:12px; }
+@media (max-width:1150px) { .image-tools { grid-template-columns:176px minmax(0,1fr) 260px; } .tools-settings { padding:18px; } }
+.image-processing-dialog .image-tools { grid-template-columns:160px minmax(0,1fr) 250px; }
+.cloud-mask-preview { min-height: 0; flex: 1; display: flex; flex-direction: column; }
+.cloud-mask-preview canvas { width: 100%; height: 0; min-height: 200px; flex: 1; object-fit: contain; padding: 16px; }
+.cloud-mask-rules .ant-checkbox-wrapper { justify-content: flex-start; }
+.image-tools-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.image-tools-toolbar > strong {
+  font-weight: 500;
+  margin-right: 12px;
+}
+.image-tools-toolbar > .studio-select {
+  max-width: 180px;
+}
+.image-tools-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.image-tool-parameters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 8px 20px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.image-tool-parameters label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.image-tool-parameters input[type="number"] {
+  width: 76px;
+  min-width: 0;
+}
+.image-tool-parameters input[type="color"] {
+  width: 32px;
+}
+.image-tool-parameters .studio-select {
+  max-width: 220px;
+}
+.lut-import {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  color: var(--muted);
+}
+.lut-import input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+}
+.lut-import:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.image-tool-detail {
+  display: grid;
+  gap: 12px;
+  max-width: 300px;
+}
+.image-tool-detail label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  white-space: nowrap;
+}
+.image-tool-detail input {
+  width: 88px;
+  min-width: 0;
+}
+.image-tool-detail p {
+  max-width: 280px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.7;
+}
+.image-tools-toolbar input {
+  width: 80px;
+}
+.tools-spacer {
+  flex: 1;
+}
+.image-tools-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.image-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  flex: 1;
+  min-width: 0;
+  padding: 24px;
+  overflow: auto;
+}
+.image-comparison.view-original,
+.image-comparison.view-result {
+  grid-template-columns: 1fr;
+}
+.image-comparison > figure {
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  background:var(--surface);
+  border: 1px solid var(--line);
+}
+.image-comparison figcaption {
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  background: var(--panel);
+  font-size: 12px;
+}
+.image-comparison figcaption span {
+  color: var(--muted);
+}
+.image-comparison img {
+  width: 100%;
+  height: 0;
+  min-height: 200px;
+  flex: 1;
+  object-fit: contain;
+  padding: 16px;
+}
+.processing-history {
+  width: 250px;
+  flex-shrink: 0;
+  padding: 20px 16px;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  overflow: auto;
+}
+.tool-region {
+  width: 100%;
+  height: 0;
+  min-height: 200px;
+  flex: 1;
+  touch-action: none;
+  cursor: crosshair;
+  box-sizing: border-box;
+  padding: 16px;
+}
+.composition-reference {
+  width: 240px;
+  max-height: 240px;
+  object-fit: contain;
+  background: var(--surface);
+}
+.processing-item.ant-btn {
+  width: 100%;
+  height: auto;
+  display: flex;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 10px;
+  white-space: normal;
+}
+.processing-item.selected {
+  background: var(--surface);
+}
+.processing-item img {
+  width: 44px;
+  height: 52px;
+  object-fit: contain;
+}
+.processing-item span {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.processing-item small {
+  display: block;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.image-tools-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--line);
+}
+.image-tools-footer > span {
+  flex: 1;
+}
+.image-processing-dialog .image-tools-footer > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace-tools .document-heading,
+.workspace-tools .workflow-toolbar {
+  display: none;
+}
+@media (max-width: 1050px) {
+  .processing-history {
+    width: 200px;
+  }
+  .image-comparison {
+    padding: 16px;
+    gap: 12px;
+  }
+  .image-tools-toolbar {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+}
+@media (max-width: 760px) {
+  .processing-history {
+    width: 160px;
+  }
+  .image-comparison {
+    grid-template-columns: 1fr;
+  }
+}
+.batch-assets { max-height: 360px; overflow: auto; display: grid; gap: 8px; margin-top: 12px; }
+.batch-asset { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 6px; background: var(--bg); }
+.batch-asset img { width: 48px; height: 48px; object-fit: contain; }
+.batch-asset span { min-width: 0; overflow-wrap: anywhere; }
+.batch-asset small { display: block; margin-top: 4px; color: var(--muted); }
+.cloud-original-preview { display: block; width: 100%; height: 280px; object-fit: contain; background: repeating-conic-gradient(var(--bg) 0% 25%, var(--panel) 0% 50%) 0 0 / 16px 16px; border-radius: 6px; }
+
+.tools-setting-fields .image-tool-parameters label { flex-direction:column; align-items:stretch; gap:8px; }
+.tools-setting-fields .image-tool-parameters label:has(input[type=checkbox]) { flex-direction:row; justify-content:flex-start; align-items:center; }
+.tools-setting-fields .image-tool-parameters input[type=number] { width:100%; }

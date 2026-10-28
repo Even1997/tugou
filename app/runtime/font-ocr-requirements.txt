@@ -1,0 +1,11 @@
+# Installed with --no-deps: reuse the pinned headless OpenCV and NumPy font runtime.
+rapidocr-onnxruntime==1.4.4
+onnxruntime==1.23.2
+pyclipper==1.4.0
+shapely==2.1.2
+six==1.17.0
+PyYAML==6.0.3
+tqdm==4.70.1
+flatbuffers==25.12.19
+packaging==26.3
+protobuf==7.36.2
