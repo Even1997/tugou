@@ -1,6 +1,7 @@
 import {Select} from './select.jsx';
 import React, { useState, useRef, useEffect } from "react";
 import {materialMime} from './material-drag.js';
+import {usePreferences} from './preferences.jsx';
 import {
   Button,
   Icon,
@@ -31,6 +32,7 @@ export function StudioHeader({
   canRedo,
   rename,
 }) {
+  const {t,update}=usePreferences();
   const dragTimer=useRef(null);
   useEffect(()=>()=>clearTimeout(dragTimer.current),[]);
   const theme = useTheme(),
@@ -38,21 +40,20 @@ export function StudioHeader({
     [name, setName] = useState("");
   return (
     <>
-      <header className="studio-header toolbar">
+      <header className="studio-header toolbar" data-platform={window.tugou.platform}>
         <div className="brand">
-          <img className="brand-logo" src="brand/logo.png" alt="" draggable={false} />
-          <span>土狗</span>
+          <img className="brand-logo" src="brand/logo.png" alt="土狗" draggable={false} />
         </div>
         <div className="project-menu">
           <Select
-            aria-label="当前工程"
-            title={record?.document.name || "选择工程"}
+            aria-label={t('projectSelect')}
+            title={record?.document.name || t('projectSelect')}
             value={record?.id || ""}
             disabled={busy}
             onChange={(e) => openProject(e.target.value)}
           >
             <option value="" disabled>
-              选择工程
+              {t('projectSelect')}
             </option>
             {projects.map((p) => (
               <option key={p.id} value={p.id} disabled={Boolean(p.error)}>
@@ -65,50 +66,50 @@ export function StudioHeader({
           </Select>
           <Button
             iconOnly
-            aria-label="新建工程"
-            title="新建工程"
+            aria-label={t('create')}
+            title={t('create')}
             icon="add"
             disabled={busy}
             onClick={create}
           />
           <Button
             iconOnly
-            aria-label="导入工程"
-            title="导入工程"
+            aria-label={t('importProject')}
+            title={t('importProject')}
             icon="import"
             disabled={busy}
             onClick={importProject}
           />
         </div>
-        <span className="workspace-title">{({prompts:"提示词工作台",canvas:"无限画布",layers:"图层合成",tools:"图像工具",assets:"素材库",fonts:"字体"})[workspace]}</span>
+        <span className="workspace-title">{t(workspace)}</span>
         <div className="header-space" />
         <div className="toolbar-end">
           <IconButton
-            label="撤销"
+            label={t('undo')}
             icon="undo"
             disabled={!canUndo || busy}
             onClick={undo}
           />
           <IconButton
-            label="重做"
+            label={t('redo')}
             icon="redo"
             disabled={!canRedo || busy}
             onClick={redo}
           />
-          <span className="header-save-state">{workspace==='fonts'?'字体自动保存':busy ? "保存中" : dirty ? "未保存" : "已保存"}</span>
-          <Button icon="tasks" onClick={tasks}>任务</Button>
+          <span className="header-save-state">{workspace==='fonts'?t('fontAuto'):busy ? t('saving') : dirty ? t('unsavedLabel') : t('saved')}</span>
+          <Button icon="tasks" onClick={tasks}>{t('tasks')}</Button>
           <Button
             primary
-            title="保存"
-            aria-label="保存"
+            title={t('save')}
+            aria-label={t('save')}
             disabled={!dirty || busy}
             icon={busy ? "loading" : "save"}
             aria-busy={busy}
             onClick={save}
-          >保存</Button>
-          <Button aria-label="模型连接" icon="settings" onClick={connection}>模型连接</Button>
+          >{t('save')}</Button>
+          <Button aria-label={t('models')} icon="settings" onClick={connection}>{t('models')}</Button>
           {workspace==='layers'&&<span id="composition-export"/>}
-          <ToolPopover label="更多操作" className="import-menu">
+          <ToolPopover label={t('more')} className="import-menu">
             <Button
               disabled={!record || busy}
               onClick={() => {
@@ -116,33 +117,33 @@ export function StudioHeader({
                 setRenaming(true);
               }}
             >
-              重命名工程
+              {t('rename')}
             </Button>
             <Button onClick={tasks} icon="tasks">
-              任务中心
+              {t('tasks')}
             </Button>
             <Button disabled={busy} onClick={hotReload}>
-              保存并热更新
+              {t('reload')}
             </Button>
           </ToolPopover>
         </div>
-        <div className="window-controls">
+        {window.tugou.platform!=='darwin'&&<div className="window-controls">
           <IconButton
-            label="最小化"
+            label={t('minimize')}
             icon="minimize"
             onClick={() => window.tugou.window("minimize")}
           />
           <IconButton
-            label="最大化或还原"
+            label={t('maximize')}
             icon="maximize"
             onClick={() => window.tugou.window("maximize")}
           />
           <IconButton
-            label="关闭窗口"
+            label={t('close')}
             icon="close"
             onClick={() => window.tugou.window("close")}
           />
-        </div>
+        </div>}
       </header>
         <nav className="workspace-rail" aria-label="工作区">
           {[
@@ -155,9 +156,9 @@ export function StudioHeader({
           ].map(([id, label]) => (
             <Button
               key={id}
-              aria-label={label}
+              aria-label={t(id)}
               icon={['prompts','fonts'].includes(id)?'text':id}
-              title={label}
+              title={t(id)}
               aria-current={workspace === id ? "page" : undefined}
               onClick={() => setWorkspace(id)}
               onDragOver={event=>{
@@ -167,9 +168,9 @@ export function StudioHeader({
               }}
               onDragLeave={()=>{clearTimeout(dragTimer.current);dragTimer.current=null;}}
               onDrop={()=>{clearTimeout(dragTimer.current);dragTimer.current=null;}}
-            ><span>{({prompts:"提示词",canvas:"画布",layers:"合成",tools:"工具",assets:"素材",fonts:"字体"})[id]}</span></Button>
+            ><span>{t(id)}</span></Button>
           ))}
-          <div className="rail-bottom">          <IconButton
+          <div className="rail-bottom"><IconButton label={t('settings')} className={['available','ready'].includes(update?.status)?'has-update':''} icon="settings" aria-current={workspace==='settings'?'page':undefined} onClick={()=>setWorkspace('settings')}/><IconButton
             label={theme.mode === "dark" ? "切换浅色主题" : "切换深色主题"}
             icon={theme.mode === "dark" ? "sun" : "moon"}
             onClick={theme.toggle}

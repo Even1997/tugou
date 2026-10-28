@@ -1,5 +1,6 @@
 import {shapePoints} from '../core/shapes.cjs';
 import {loadTextFont,textFontFamily} from './font-face.js';
+import {textFontWeight} from '../core/font-weights.cjs';
 import {ImageCache} from '../core/image-cache.cjs';
 import {
   matrix,
@@ -173,7 +174,7 @@ function textLines(ctx, text, width) {
   return lines;
 }
 function paintText(ctx, l) {
-  ctx.font = `${l.fontStyle || "normal"} ${l.fontSize || 32}px "${textFontFamily(l).replace(/["\\]/g, "")}"`;
+  ctx.font = `${l.fontStyle?.includes('italic')?'italic':'normal'} ${textFontWeight(l)} ${l.fontSize || 32}px "${textFontFamily(l).replace(/["\\]/g, "")}"`;
   ctx.fillStyle = l.color || "#222222";
   ctx.textBaseline = "alphabetic";
   ctx.letterSpacing = `${l.letterSpacing || 0}px`;
@@ -295,14 +296,19 @@ export class Compositor {
     this.warp?.dispose();
   }
   async content(l, doc, scale) {
-    if(l.kind==='text')await loadTextFont(l);
+    const face=l.kind==='text'?await loadTextFont(l):null;
     if (l.kind === "image")
       return this.image(l.bitmap || doc.assets.find((a) => a.id === l.assetId));
     const resolution = Math.min(4, Math.max(0.01, scale)),
       c = surface(l.width * resolution, l.height * resolution),
       ctx = c.getContext("2d", { willReadFrequently: true });
     ctx.scale(c.width / l.width, c.height / l.height);
-    if (l.kind === "text") paintText(ctx, l);
+    if (l.kind === "text") {
+      // Another concurrent preview may evict this face while the load is awaited.
+      const cached=!face||document.fonts.has(face);
+      if(face&&!cached)document.fonts.add(face);
+      try{paintText(ctx,l);}finally{if(face&&!cached)document.fonts.delete(face);}
+    }
     if (l.kind === "shape") paintShape(ctx, l);
     return c;
   }

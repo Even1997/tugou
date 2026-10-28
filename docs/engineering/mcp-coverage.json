@@ -1,6 +1,8 @@
 {
   "scope": "独立桌面 app 的业务 IPC 与主要编辑动作；不包含历史 web 项目、第三方模型内部功能和每个视觉控件",
   "ipc": [
+    {"area":"开发预览编辑现场", "status":"internal", "handlers":["devPreview"], "commands":[], "note":"仅未打包开发模式启用，保存内存检查点和应用界面构建，不向 MCP 暴露"},
+    {"area":"本机设置与应用更新", "status":"uiOnly", "handlers":["settings","update"], "commands":[], "note":"用户在设置页管理语言、存储、MCP 开关与安装更新；不向 AI 暴露退出安装或修改更新源"},
     {"area":"独立字体项目与图集工作台", "status":"covered", "handlers":["fontCommand","fontImport","fontExport"], "commands":["font.status","font.library","font.face","font.publish","font.project.create","font.project.list","font.project.get","font.atlas.plan","font.atlas.import","font.atlas.preview","font.atlas.recognize","font.atlas.review","font.atlas.process","font.revision.apply","font.glyph.query","font.glyph.preview","font.review.record","font.build","font.outline.refine","font.job.get","font.artifact.preview","font.artifact.export"], "note":"字体单独保存；支持任意字数导入、本地 OCR 默认保留与独立复核草稿；显式模板工具兼容旧工程，merge 合并已应用字形；原生文件对话框对应 MCP 交换目录"},
     {"area":"字体运行环境目录选择", "status":"uiOnly", "handlers":["fontConfigure"], "commands":["font.status"], "note":"仅选择已安装环境；MCP 可查询状态，不自动安装依赖"},
     {"area":"工程", "status":"covered", "handlers":["list","create","open","save"], "commands":["project.list","project.create","project.open","project.save"]},

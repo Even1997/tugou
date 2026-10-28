@@ -6,7 +6,8 @@ test('delete intent distinguishes selection, mask, empty mask and layers',()=>{
 });
 test('composition shortcuts use PS semantics with platform delete',()=>{
   for(const mod of ['ctrlKey','metaKey']){
-    assert.equal(editorShortcut({key:'d',[mod]:true}),'deselect');assert.equal(editorShortcut({key:'J',[mod]:true}),'duplicate');assert.equal(editorShortcut({key:'I',[mod]:true,shiftKey:true}),'inverse');
+    const platform=mod==='metaKey'?'darwin':'win32';
+    assert.equal(editorShortcut({key:'d',[mod]:true},platform),'deselect');assert.equal(editorShortcut({key:'J',[mod]:true},platform),'duplicate');assert.equal(editorShortcut({key:'I',[mod]:true,shiftKey:true},platform),'inverse');
   }
   assert.equal(editorShortcut({key:'x'}),'swapMaskInk');assert.equal(editorShortcut({key:'Backspace'},'win32'),null);assert.equal(editorShortcut({key:'Backspace'},'darwin'),'delete');assert.equal(editorShortcut({key:'Delete'},'win32'),'delete');assert.equal(editorShortcut({key:'d',ctrlKey:true,altKey:true}),null);
 });

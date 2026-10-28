@@ -5,9 +5,17 @@ title: TODO
 description: 当前项目后续值得处理的事项
 ---
 
+## 开发预览后续验证
+
+可编辑快捷键已移入 pending-test；待 Mac 真机检查 Command/Option、原生菜单、输入法和 Fn 功能键，Windows 上的 Mac 模拟检查不作为整套 macOS 应用验收。
+
+开发预览与编辑现场保护已移入 pending-test。待补 Mac、64 MiB 以上编辑现场和长时高频更新压力验证；后端更新仍需保存后重启。字体/工具与合成编辑使用暂缓策略，尚非全组件 Fast Refresh。
+
 当前以[交付状态](../studio-evidence/atelier-delivery-status.md)为准：精细主体识别已进入第十四批候选，柔光口径已明确。两款云端模型均未通过2K输出；正式安装、真实薄纱/更多类别及低显存验收未完成。下方各批记录为历史，不代表当前仍需重复执行。
 
 # TODO
+
+- 霞鹜文楷及 OSFCC 精选 9 款常规体内置已移入 pending-test；待用户在新版选择确认，补 Mac 上的本地协议字体加载、合成与导出实测，以及多字体长时内存占用验证。OSFCC 其余目录条目尚未收录，扩展前逐项核验原始授权与可分发文件。
 
 - 乱序图集本地 OCR 与映射核对已移入 pending-test；继续验证书法、粘连、复杂背景，提升单字大小写及相似符号识别率。自由导入、快速复核、一键保存及真实字形预览已落地，草稿自动保存；当前不保证全自动识字正确。继续压缩600字以上大图OCR耗时，补完整字库长时内存、复杂矢量轮廓预览与窄窗口复核体验。
 
@@ -250,4 +258,16 @@ description: 当前项目后续值得处理的事项
 
 - 土狗改名及Logo替换已完成Windows构建与15项桌面验收。待保存关闭当前窗口后打开新版；后续验收Mac实机、安装器交互、多DPI及小尺寸图标轮廓。详见pending-test的2026-10-28品牌记录。
 
-- 设置页方案待确认：通用、存储、更新与关于；GitHub Releases自动检查、下载进度及保存后安装。实施前统一版本来源，明确Windows安装版与Mac签名/ZIP发布要求。
+- 设置中心与 Windows 本地自动更新闭环已移至 pending-test。待仓库公开并发布签名安装包后验收 GitHub 真实升级；补 Mac 签名／公证／DMG+ZIP 实机、多 DPI、系统通知权限与长期压力检查。
+- 补专业编辑器、模型管理和原生提示的五语言覆盖；原型中的定时多份恢复快照、密度预设、快捷键自定义及细分 MCP 权限仍待，当前没有展示无效开关。
+- 首轮安装测试同名进程风险已修复并验证不强制结束进程；用户需核对原工程是否存在未保存内容损失，详见 settings-update-implementation.md。
+
+- 设置页默认模型直选与通用 MCP 配置已移入 pending-test；后续补常用第三方客户端实际导入 / 重连验收和 macOS，当前仅承诺支持本机 stdio 的客户端，不支持 URL-only 接入。
+
+- 画布文字页签已移入 pending-test；本轮无新增功能待办。
+
+- 字体粗细、55 家族 / 141 字重及 Windows 桌面包验收已移至 pending-test。后续：完成 CATALOG.md 中 41 条暂缓来源/授权/兼容性核验；补未打包上游字重、HanaMinB/Seto 扩展字面、macOS 本机字体枚举与实机验收、低内存长时间切换；不要把 99 条目录视为全部收录。
+- macOS 双端一致性：源码修正与 Windows / Mac renderer 模拟回归已完成，见 engineering/mac-windows-parity.md。仍需 Apple Silicon / Intel 真机覆盖本地字体与字重、字体运行环境/POSIX 链接、原生菜单和输入法、交通灯/全屏、本地 AI、MCP / Keychain，以及签名公证后的升级；不得按模拟结果标为已支持全部原生行为。
+
+
+- 排查节点真实拖拽时原有 ResizeObserver undelivered notifications；旧样式对照可复现，本轮伸展验收仍偶发 1 次，布局及保存正常。证据 app/test-results/node-resize-layout；不要通过屏蔽浏览器错误隐藏原因。

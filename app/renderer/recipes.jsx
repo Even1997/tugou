@@ -17,6 +17,7 @@ import {
   IconButton,
   Icon,
   PanelHeader,
+  EmptyState,
   Input,
   TextArea,
   ToolPopover,
@@ -169,7 +170,7 @@ export function RecipeWorkbench({
   return (
     <aside className="recipe-editor recipe-sidebar">
       <PanelHeader title="配方">
-        <IconButton label="新建配方" icon="add" onClick={add} />
+        {selected && <IconButton label="新建配方" icon="add" onClick={add} />}
       </PanelHeader>
       {selected ? (
         <>
@@ -360,7 +361,7 @@ export function RecipeWorkbench({
           </div>
           <div className="recipe-generation-controls" onFocus={refreshModel}>
             <Button icon="model" className="generation-model" aria-label="配方共享模型" onClick={openConnection}><span className="control-copy"><strong>{sharedModel||'选择模型'}</strong><small>共享模型 · 点击配置连接</small></span><Icon name="collapse" className="control-chevron"/></Button>
-            <ToolPopover label={sizeDescription(selected.size)} description={(selected.size||'auto').replace('auto','自动').replace('x',' × ')} icon="selection" showLabel triggerClassName="generation-size" className="desk-popover"><h3>输出规格</h3><GenerationChoice kind="size" mode="image" aria-label="输出尺寸" value={selected.size} onChange={size=>patch({size})}/></ToolPopover>
+            <ToolPopover downward label={sizeDescription(selected.size)} description={(selected.size||'auto').replace('auto','自动').replace('x',' × ')} icon="selection" showLabel triggerClassName="generation-size" className="desk-popover"><h3>输出规格</h3><GenerationChoice kind="size" mode="image" aria-label="输出尺寸" value={selected.size} onChange={size=>patch({size})}/></ToolPopover>
           </div>
           <div className="recipe-footer editor-heading">
             <Button
@@ -384,12 +385,11 @@ export function RecipeWorkbench({
           </div>
         </>
       ) : (
-        <div className="empty-small">
-          <p>组合模块，保存为可复用配方。</p>
-          <Button primary onClick={add}>
+        <EmptyState compact className="recipe-empty" icon="prompts" title="还没有配方" description="组合提示词模块，保存后重复使用。">
+          <Button primary icon="add" onClick={add}>
             新建配方
           </Button>
-        </div>
+        </EmptyState>
       )}
     </aside>
   );

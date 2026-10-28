@@ -1,17 +1,10 @@
 import {Select} from './select.jsx';
 import React,{useState} from 'react';
 import {Input,Button,ToolPopover} from './components.jsx';
+import {imageRatios,ratioOf,sizeOptions} from './generation-sizes.js';
+export {sizeDescription} from './generation-sizes.js';
 
-const imageSizes=['1024x1024','1024x1536','1536x1024','2048x2048','2048x3072','3072x2048','4096x4096'];
-const videoSizes=['1280x720','720x1280','1920x1080','1080x1920','3840x2160','2160x3840'];
 const qualities=[['auto','自动'],['low','低'],['medium','中'],['high','高'],['standard','标准'],['hd','高清']];
-
-export function sizeDescription(value){
-  if(!value||value==='auto')return '自动尺寸';
-  const [w,h]=value.split('x').map(Number);
-  const ratio=w===h?'1:1':w*3===h*2?'2:3':w*2===h*3?'3:2':w*9===h*16?'16:9':w*16===h*9?'9:16':'自定义';
-  return `${ratio} · ${w===h?'方图':w<h?'竖图':'横图'}`;
-}
 
 export function ModelChoice({value,shared,disabled,onChange,openConnection}){
   const [mode,setMode]=useState(value?'custom':'shared'),[draft,setDraft]=useState(value||'');
@@ -23,18 +16,17 @@ export function ModelChoice({value,shared,disabled,onChange,openConnection}){
   </ToolPopover>;
 }
 
-export function GenerationChoice({kind,mode,value,disabled,onChange,'aria-label':label}){
+export function GenerationChoice({kind,value,disabled,onChange,'aria-label':label}){
   const [custom,setCustom]=useState(false),size=kind==='size',current=value||'auto';
-  const options=size?[['auto','自动'],...(mode==='video'?videoSizes:imageSizes).map(v=>[v,v.replace('x',' × ')])]:qualities;
-  const known=options.some(([v])=>v===current),editing=size&&(custom||!known);
-  const [w,h]=current.split('x').map(Number),ratio=current==='auto'?'auto':w===h?'square':w<h?'portrait':'landscape';
+  const options=size?sizeOptions(current).map(v=>[v,v==='auto'?'自动':v.replace('x',' × ')]):qualities;
+  const known=options.some(([v])=>v===current),ratio=ratioOf(current),editing=size&&(custom||ratio==='custom');
+  const dimensions=current.includes('x')?current.split('x'):['',''];
   return <div className="generation-choice" style={{display:'grid',gap:10}}>
-    {size&&<div className="ratio-choices" role="group" aria-label="画面比例" data-keep-open>{[['auto','自动',1,1],['square','1:1',1,1],['portrait',mode==='video'?'9:16':'2:3',2,3],['landscape',mode==='video'?'16:9':'3:2',3,2]].filter(([id])=>mode!=='video'||id!=='square').map(([id,text,rw,rh])=><button key={id} type="button" disabled={disabled} aria-pressed={!editing&&ratio===id} onClick={()=>{setCustom(false);onChange(id==='auto'?'auto':id==='square'?'1024x1024':mode==='video'?(id==='portrait'?'720x1280':'1280x720'):(id==='portrait'?'1024x1536':'1536x1024'));}}><i style={{width:Math.round(24*rw/Math.max(rw,rh)),height:Math.round(24*rh/Math.max(rw,rh))}}/><span>{text}</span></button>)}</div>}
-    <Select aria-label={label} disabled={disabled} value={editing?'custom':current} onChange={e=>{setCustom(e.target.value==='custom');if(e.target.value!=='custom')onChange(e.target.value);}}>
+    {size&&<div className="ratio-choices" role="group" aria-label="画面比例" data-keep-open>{[['auto',['auto']],...imageRatios,['custom',[]]].map(([id,sizes])=>{const [rw,rh]=id.includes(':')?id.split(':').map(Number):[1,1];return <button key={id} type="button" disabled={disabled} aria-pressed={editing?id==='custom':ratio===id} onClick={()=>{setCustom(id==='custom');if(id!=='custom')onChange(sizes[0]);else if(current==='auto')onChange('1024x1024');}}><i style={{width:Math.round(22*rw/Math.max(rw,rh)),height:Math.round(22*rh/Math.max(rw,rh))}}/><span>{id==='auto'?'自动':id==='custom'?'自定义':id}</span></button>;})}</div>}
+    {!editing&&<Select aria-label={label} disabled={disabled} value={current} onChange={e=>onChange(e.target.value)}>
       {options.map(([v,text])=><option key={v} value={v}>{text}</option>)}
       {!size&&!known&&<option value={current}>{current}（当前值）</option>}
-      {size&&<option value="custom">自定义尺寸</option>}
-    </Select>
-    {editing&&<Input aria-label={`${label}（自定义）`} disabled={disabled} value={value||''} placeholder="宽 × 高，例如 2048x3072" onChange={e=>onChange(e.target.value)}/>}
+    </Select>}
+    {editing&&<div className="generation-dimensions">{['宽度','高度'].map((name,index)=><div key={name}><span>{name}</span><Input aria-label={`${label}（${name}）`} type="number" min={1} max={99999} step={1} required suffix="px" disabled={disabled} value={dimensions[index]||''} onChange={e=>onChange(dimensions.map((v,i)=>i===index?e.target.value:v).join('x'))}/></div>)}</div>}
   </div>;
 }

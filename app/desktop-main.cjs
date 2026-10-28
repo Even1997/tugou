@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, safeStorage, protocol, nativeImage, clipboard, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, safeStorage, protocol, nativeImage, clipboard, Menu, autoUpdater } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { randomUUID } = require('node:crypto');
@@ -22,6 +22,7 @@ const {WorkflowService}=require('./core/workflow-service.cjs');
 const {saveMedia,importMedia,mediaResponse}=require('./core/media.cjs');
 
 app.setName('TugouIndependent');
+if(process.platform==='win32')app.setAppUserModelId('app.tugou.studio');
 app.setPath('userData', path.resolve(process.env.TUGOU_DATA_DIR || path.join(app.getPath('appData'), 'TugouIndependent')));
 protocol.registerSchemesAsPrivileged([{ scheme: 'tugou-media', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }]);
 const acquired = app.requestSingleInstanceLock();
@@ -34,11 +35,14 @@ else {
     if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); if(argv.includes('--reload')) window.webContents.send('tugou:reload-request'); }
   });
   app.on('before-quit',()=>{quitting=true;});
+  // Squirrel closes Mac windows before app.before-quit during an update.
+  autoUpdater.on('before-quit-for-update',()=>{quitting=true;});
   app.on('activate',()=>{if(window&&!window.isDestroyed()){if(window.isMinimized())window.restore();window.show();window.focus();}});
   app.whenReady().then(boot).catch((error) => { dialog.showErrorBox('土狗启动失败', error.message); app.quit(); });
 }
 
 async function boot() {
+  const preferences=new (require('./core/preferences.cjs').Preferences)(app.getPath('userData'));await preferences.init();
   app.setAboutPanelOptions({applicationName:'土狗',iconPath:path.join(__dirname,'assets/brand/icon.png')});
   const root = path.join(app.getPath('userData'), 'workspace');
   const projects = new ProjectStore(root);
@@ -66,6 +70,13 @@ async function boot() {
     try {
       const url = new URL(request.url);
       const name = url.pathname.slice(1);
+      if(url.hostname==='builtin-font'){
+        const font=require('./core/builtin-fonts.cjs').builtinFonts.flatMap(require('./core/font-weights.cjs').fontFaces).find(f=>f.id===name);
+        if(!font)return new Response(null,{status:404});
+        const bytes=await fs.readFile(path.join(__dirname,'assets/fonts',font.file));
+        if(bytes.length!==font.bytes||hash(bytes)!==font.sha256)throw Error('内置字体校验失败');
+        return new Response(bytes,{headers:{'Access-Control-Allow-Origin':'*','Content-Type':font.file.endsWith('.otf')?'font/otf':font.file.endsWith('.ttc')?'font/collection':'font/ttf','Cache-Control':'private, max-age=31536000'}});
+      }
       if (!['resource', 'original'].includes(url.hostname) || !resourcePattern.test(name)) return new Response(null, { status: 404 });
       const file = await safePath(root, 'resources', name);
       if(name.endsWith('.ttf')){
@@ -84,7 +95,7 @@ async function boot() {
     } catch { return new Response(null, { status: 404 }); }
   });
   window = new BrowserWindow({
-    title: '土狗 · 独立版本', width: 1380, height: 900, minWidth: 940, minHeight: 640, frame: false,
+    title: '土狗 · 独立版本', width: 1380, height: 900, minWidth: 940, minHeight: 640, ...require('./core/desktop-platform.cjs').windowChrome(process.platform),
     backgroundColor: '#15171c', show: false, icon: path.join(__dirname, 'assets/brand/icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
@@ -92,18 +103,52 @@ async function boot() {
   window.webContents.on('will-navigate', (event) => event.preventDefault());
   window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   window.webContents.session.setPermissionCheckHandler(() => false);
+  let activeOperations=0,settings;
   const handle = (name, action) => ipcMain.handle(`tugou:${name}`, async (event, ...args) => {
     if (window.isDestroyed() || event.sender.isDestroyed() || event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame || event.senderFrame.url !== entryUrl) {
       return { ok: false, error: '请求来源无效' };
     }
+    if(settings?.updates.state.status==='installing')return {ok:false,error:'UPDATE_INSTALLING'};
+    activeOperations++;
     try { return { ok: true, value: await action(...args) }; }
     catch (error) { return { ok: false, error: error.message }; }
+    finally { activeOperations--; }
+  });
+  let development;
+  if(!app.isPackaged&&process.env.TUGOU_DEV_PREVIEW==='1'&&process.env.TUGOU_BUILD_DIR){
+    const {DevPreview,buildPreview}=require('./core/dev-preview.cjs');
+    development=new DevPreview({root:__dirname,output:path.dirname(entry),build:output=>buildPreview(__dirname,output),emit:state=>{
+      if(!window.isDestroyed())window.webContents.send('tugou:dev-update',state);
+      // A failed replacement cannot acknowledge restoration. Keep its checkpoint and
+      // retry from it when a corrected build arrives, without reading from disk.
+      if(development?.restoring&&state.status==='pending'){
+        development.pending.css=false;
+        setImmediate(()=>development.apply(state.version,development.snapshot).then(result=>{if(result.applied&&!window.isDestroyed())window.webContents.reload();}).catch(()=>{}));
+      }
+    }});
+    development.start();window.once('closed',()=>development.close());
+    const marker=path.join(app.getPath('userData'),'dev-preview-running.json');
+    await fs.writeFile(marker,JSON.stringify({pid:process.pid,mode:'development'}));
+    window.once('closed',()=>fs.unlink(marker).catch(()=>{}));
+  }
+  handle('devPreview',async(action,payload)=>{
+    if(action==='restore')return {enabled:!!development,snapshot:development?.snapshot||null};
+    if(action==='status')return development?.status()||{enabled:false};
+    if(!development)throw Error('仅开发预览可用');
+    if(action==='ready'){development.restoring=false;return true;}
+    if(action==='apply'){
+      if(activeOperations>1||tasks.list().some(t=>['running','queued'].includes(t.status))||!!subjectController||!!(automation&&(await automation).isBusy()))return {applied:false};
+      const result=await development.apply(payload.version,payload.snapshot);
+      if(result.applied&&!result.css){development.restoring=true;dirty=!!payload.snapshot.dirty;setImmediate(()=>window.webContents.reload());}
+      return result;
+    }
+    throw Error('未知开发预览操作');
   });
   handle('list', () => projects.list());
   const fonts=await require('./core/font-desktop.cjs').registerFonts({root,tasks,handle,dialog,window});
   handle('create', (name) => projects.create(name));
-  handle('open', (id) => projects.read(id));
-  handle('save', (id, document, revision) => projects.save(id, document, revision));
+  handle('open', async(id) => {const record=await projects.read(id);await settings?.remember(record);return record;});
+  handle('save', async(id, document, revision) => {const record=await projects.save(id, document, revision);await settings?.remember(record);return record;});
   handle('import', async () => {
     const choice = await dialog.showOpenDialog(window, { title: '只读导入旧版工程', properties: ['openFile'], filters: [{ name: '土狗工程', extensions: ['json'] }] });
     return choice.canceled ? null : projects.importLegacy(choice.filePaths[0]);
@@ -215,7 +260,7 @@ async function boot() {
     if (process.platform === 'darwin' && !quitting) { window.hide(); return; }
     if (confirmingClose) return;
     confirmingClose = true;
-    if (dirty) {
+    if (dirty && preferences.value.confirmClose) {
       const choice = await dialog.showMessageBox(window, { type: 'question', message: '工程有未保存的修改', detail: '返回后可使用顶部保存按钮。', buttons: ['返回保存', '放弃修改并关闭'], defaultId: 0, cancelId: 0 });
       if (choice.response !== 1) { confirmingClose = false; quitting=false; return; }
     }
@@ -224,13 +269,13 @@ async function boot() {
     closing = true;
     window.close();
   });
-  if(process.platform==='darwin')Menu.setApplicationMenu(Menu.buildFromTemplate([
+  const refreshShortcuts=()=>{if(process.platform==='darwin')Menu.setApplicationMenu(Menu.buildFromTemplate([
     {label:'土狗',submenu:[{role:'about'},{type:'separator'},{role:'hide'},{role:'hideOthers'},{role:'unhide'},{type:'separator'},{role:'quit'}]},
-    {label:'编辑',submenu:[['undo','撤销','Cmd+Z'],['redo','重做','Cmd+Shift+Z'],['cut','剪切','Cmd+X'],['copy','复制','Cmd+C'],['paste','粘贴','Cmd+V'],['selectAll','全选','Cmd+A']].map(([command,label,accelerator])=>({label,accelerator,click:()=>window.webContents.send('tugou:command',command)}))},
+    {label:'编辑',submenu:require('./core/mac-menu.cjs').editMenu(preferences.value.shortcuts,command=>window.webContents.send('tugou:command',command))},
     {label:'窗口',submenu:[{label:'关闭窗口',accelerator:'Cmd+W',click:()=>window.close()},{role:'minimize'},{role:'zoom'},{role:'front'}]}
-  ]));
+  ]));};
+  refreshShortcuts();
   window.once('ready-to-show', () => window.show());
-  await window.loadFile(entry);
   let automation;
   enableAutomation=()=>automation||=(async()=>{
     await require('./core/automation-startup.cjs').automationEnabled(app.getPath('userData'),true);
@@ -238,5 +283,12 @@ async function boot() {
   })().catch(error=>{automation=null;throw error;});
   try{if(await require('./core/automation-startup.cjs').automationEnabled(app.getPath('userData'),mcpRequested))await enableAutomation();}
   catch(error){dialog.showErrorBox('MCP 启用失败',error.message);}
+  settings=await require('./core/settings-desktop.cjs').registerSettings({app,window,handle,preferences,projects,fonts,tasks,refreshShortcuts,
+    isDirty:()=>dirty,isBusy:async()=>activeOperations>1||!!subjectController||!!(automation&&(await automation).isBusy()),
+    enableMcp:enableAutomation,
+    prepareMcpUpdate:async()=>{if(automation){await (await automation).prepareUpdate();automation=null;await require('node:timers/promises').setTimeout(1500);}},
+    disableMcp:async()=>{if(automation){(await automation).close();automation=null;}await atomicWrite(path.join(app.getPath('userData'),'mcp-enabled.json'),JSON.stringify({enabled:false}));},
+    mcpStatus:()=>({enabled:!!automation}),updater:require('electron-updater').autoUpdater});
+  await window.loadFile(entry);
 }
 app.on('window-all-closed', () => app.quit());

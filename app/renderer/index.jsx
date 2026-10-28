@@ -28,7 +28,12 @@ import {extractDeskPrompts} from '../core/desk-prompts.cjs';
 import {useAutomation} from './automation.js';
 
 import {FontWorkspace} from './font-workspace.jsx';
+import {PreferencesProvider,usePreferences} from './preferences.jsx';
+import {commandFor,shortcutBlocked} from '../core/shortcuts.cjs';
+import {SettingsWorkspace} from './settings.jsx';
+import {useDevPreview} from './dev-preview.jsx';
 const api = window.tugou;
+let previewBootstrap={enabled:false,snapshot:null};
 function prepareRecord(record){
   if(!record)return record;
   const document=extractDeskPrompts(record.document);
@@ -36,20 +41,21 @@ function prepareRecord(record){
 }
 
 function App() {
+  const preferences=usePreferences();
   useEffect(()=>{
     const preventFileNavigation=event=>{if(event.dataTransfer?.types.includes('Files'))event.preventDefault();};
     window.addEventListener('dragover',preventFileNavigation);window.addEventListener('drop',preventFileNavigation);
     return()=>{window.removeEventListener('dragover',preventFileNavigation);window.removeEventListener('drop',preventFileNavigation);};
   },[]);
-  const [projects, setProjects] = useState([]);
-  const [record, setRecord] = useState(null);
-  const [workspace, setWorkspace] = useState("prompts");
+  const [projects, setProjects] = useState(previewBootstrap.snapshot?.projects||[]);
+  const [record, setRecord] = useState(previewBootstrap.snapshot?.record||null);
+  const [workspace, setWorkspace] = useState(previewBootstrap.snapshot?.workspace||"prompts");
 
-  const [recipeId, setRecipeId] = useState(null);
-  const [moduleId, setModuleId] = useState(null);
-  const [layerSelection,setLayerSelection]=useState([]);
-  const [dirty, setDirty] = useState(false);
-  const dirtyRef = useRef(false);
+  const [recipeId, setRecipeId] = useState(previewBootstrap.snapshot?.recipeId||null);
+  const [moduleId, setModuleId] = useState(previewBootstrap.snapshot?.moduleId||null);
+  const [layerSelection,setLayerSelection]=useState(previewBootstrap.snapshot?.layerSelection||[]);
+  const [dirty, setDirty] = useState(!!previewBootstrap.snapshot?.dirty);
+  const dirtyRef = useRef(!!previewBootstrap.snapshot?.dirty);
   const [busy, setBusy] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisSource,setAnalysisSource]=useState(null), [detailsSession,setDetailsSession]=useState(null);
@@ -59,8 +65,8 @@ function App() {
   const [notice, setNotice] = useState("");
   const [tasks, setTasks] = useState([]),
     [tasksOpen, setTasksOpen] = useState(false);
-  const seenResults = useRef(new Set());
-  const history = useRef({ past: [], future: [] });
+  const seenResults = useRef(new Set(previewBootstrap.snapshot?.seenResults||[]));
+  const history = useRef(previewBootstrap.snapshot?.history||{ past: [], future: [] });
   const present = useRef(record),
     busyRef = useRef(busy);
   present.current = record;
@@ -76,6 +82,7 @@ function App() {
   const refresh = async () => setProjects(await api.list());
   useEffect(() => {
     run(refresh);
+    if(!previewBootstrap.snapshot&&!sessionStorage.getItem('tugou-reload-view'))run(async()=>{const restored=prepareRecord(await api.settings('lastProject'));if(restored&&!present.current){present.current=restored;setRecord(restored);if(restored.promptsExtracted)markDirty(true);}});
   }, []);
   useEffect(() => {
     const raw = sessionStorage.getItem("tugou-reload-view");
@@ -90,7 +97,7 @@ function App() {
         if(next.promptsExtracted)markDirty(true);
       }
       if (
-        ["layers", "canvas", "prompts", "assets", "tools", "fonts"].includes(
+        ["layers", "canvas", "prompts", "assets", "tools", "fonts", "settings"].includes(
           view.workspace,
         )
       )
@@ -291,6 +298,7 @@ function App() {
     setBusy(false);
   };
   const hotReload = async () => {
+    if(previewBootstrap.enabled){setNotice('开发预览会在安全时机自动更新，无需手动刷新');return;}
     if (busyRef.current) return;
     window.document.activeElement?.blur();
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -325,6 +333,7 @@ function App() {
       run(() => api.editCommand(command));
       return;
     }
+    if(target?.closest('[role="dialog"]')||document.querySelector('[role="dialog"]'))return;
     if (command === "undo" || command === "redo") {
       if(workspace==='fonts')return;
       travel(command);
@@ -332,23 +341,23 @@ function App() {
     }
     const key = { copy: "c", cut: "x", paste: "v", selectAll: "a" }[command];
     const surface = workspace === "canvas" ? document.querySelector(".canvas-workspace") : target;
-    if (key && surface) surface.dispatchEvent(new KeyboardEvent("keydown", {key, metaKey: true, bubbles: true, cancelable: true}));
+    if (key && surface) surface.dispatchEvent(new KeyboardEvent("keydown", {key, code:'Key'+key.toUpperCase(), metaKey: api.platform==='darwin', ctrlKey:api.platform!=='darwin', bubbles: true, cancelable: true}));
   }));
   useEffect(() => {
     const handler = (event) => {
-      if (!(event.ctrlKey || event.metaKey)) return;
-      if (event.key.toLowerCase() === "s") {
+      if(shortcutBlocked(event)||busy)return;
+      const command=commandFor(event,api.platform,preferences.value.shortcuts);
+      if (command === 'save') {
         event.preventDefault();
         if(workspace==='fonts')return;
         save();
       }
       if (
-        event.key.toLowerCase() === "z" &&
-        !event.target.closest("input,textarea,[contenteditable]")
+        command==='undo'||command==='redo'
       ) {
         event.preventDefault();
         if(workspace==='fonts')return;
-        travel(event.shiftKey ? "redo" : "undo");
+        travel(command);
       }
     };
     window.addEventListener("keydown", handler);
@@ -380,6 +389,10 @@ function App() {
   useAutomation({present,history,seenResults,busyRef,dirtyRef,workspace,layerSelection,change,travel,markDirty,refresh,
     setRecord,setBusy,setWorkspace,setLayerSelection,
     resetPanels:()=>{setModuleId(null);setRecipeId(null);setToolSession(null);setDetailsSession(null);setAnalysisOpen(false);setAnalysisSource(null);}});
+  const preview=useDevPreview({enabled:previewBootstrap.enabled,initial:previewBootstrap.snapshot,
+    freeze:value=>{busyRef.current=value;setBusy(value);},
+    getSnapshot:()=>({record:present.current,projects,workspace,recipeId,moduleId,layerSelection,dirty:dirtyRef.current,history:history.current,seenResults:[...seenResults.current]}),
+    blockReason:()=>busyRef.current?'等待当前操作完成':['fonts','tools'].includes(workspace)?'请先完成当前编辑，再切换工作区应用更新':tasks.some(t=>['running','queued'].includes(t.status))?'等待任务完成':''});
   return (
     <div className={"app-shell workspace-" + workspace}>
       <StudioHeader
@@ -402,6 +415,7 @@ function App() {
         canUndo={Boolean(history.current.past.length)}
         canRedo={Boolean(history.current.future.length)}
       />
+      {preview}
       {error && (
         <div className="message error" role="alert">
           {error}
@@ -434,7 +448,7 @@ function App() {
               addToCanvas={addToCanvas} addToLayers={(...args)=>{if(!busyRef.current){addAssetLayer(...args);setToolSession(null);}}} />
           </div>
         </FormDialog>}
-        {workspace === "fonts" ? <FontWorkspace /> : record ? (
+        {workspace === 'settings' ? <SettingsWorkspace openModels={()=>setConnectionOpen(true)} modelsOpen={connectionOpen} /> : workspace === "fonts" ? <FontWorkspace /> : record ? (
           <>
             <div className="document-heading">
               <input
@@ -607,8 +621,12 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")).render(
-  <ThemeProvider>
+async function mount(){
+  previewBootstrap=await api.devPreview('restore');
+  createRoot(document.getElementById("root")).render(
+  <PreferencesProvider><ThemeProvider>
     <App />
-  </ThemeProvider>,
+  </ThemeProvider></PreferencesProvider>,
 );
+}
+mount().catch(()=>{document.getElementById('root').textContent='编辑现场暂时无法恢复，请保留窗口并修复开发代码后重试。';});

@@ -80,10 +80,11 @@ test('new commands have strict schemas and shared workflow fields are writable',
   assert.equal(listCommands().length,135);
   assert.throws(()=>validate('models.key.create',{providerId:'a',name:'b',apiKey:'c',settingsRevision:0,endpointId:'extra'}));
   assert.throws(()=>validate('generation.angle',{nodeId:'a',assetId:'b',requestId:'r',params:{horizontalAngle:61}}));
-  validate('canvas.update',{id:'n',properties:{camera:'近景',instructions:'温柔',firstFrameId:'start',lastFrameId:'end',generateAudio:true,watermark:false,videoOptions:'{}',excludeUpstreamText:true,inputRoles:{start:'首帧'}}});
+  validate('canvas.update',{id:'n',properties:{camera:'近景',excludeUpstreamText:true,inputRoles:{start:'主体'}}});
+  for(const [key,value] of Object.entries({instructions:'温柔',firstFrameId:'start',lastFrameId:'end',generateAudio:true,watermark:false,videoOptions:'{}'}))assert.throws(()=>validate('canvas.update',{id:'n',properties:{[key]:value}}));
 });
 test('coverage inventory accounts for every desktop business handler and names real commands',async()=>{
-  const inventory=require('../../docs/engineering/mcp-coverage.json'),source=(await Promise.all(['desktop-main.cjs','core/font-desktop.cjs'].map(file=>fs.readFile(path.join(__dirname,'..',file),'utf8')))).join('\n');
+  const inventory=require('../../docs/engineering/mcp-coverage.json'),source=(await Promise.all(['desktop-main.cjs','core/font-desktop.cjs','core/settings-desktop.cjs'].map(file=>fs.readFile(path.join(__dirname,'..',file),'utf8')))).join('\n');
   const handlers=[...source.matchAll(/^\s*handle\('([^']+)'/gm)].map(m=>m[1]),mapped=inventory.ipc.flatMap(row=>row.handlers);
   assert.equal(new Set(mapped).size,mapped.length);assert.deepEqual(mapped.sort(),handlers.sort());
   const names=new Set(listCommands().map(c=>c.name));

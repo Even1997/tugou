@@ -1,11 +1,13 @@
 import {Select} from './select.jsx';
-import { isDeleteKey } from "../core/shortcuts.cjs";
+import {usePreferences} from './preferences.jsx';
+import { commandFor,bindings,formatBinding,shortcutBlocked } from "../core/shortcuts.cjs";
 import {
   Button,
   Input,
   TextArea,
   Icon,
   SearchField,
+  EmptyState,
   useTheme,
   ToolPopover,
 } from "./components.jsx";
@@ -88,6 +90,7 @@ function CanvasWorkspace({
   analyzeImage,
 }) {
   const graph = document.tugouCanvas || emptyCanvas();
+  const preferences=usePreferences(),background=graph.background??preferences.value.grid;
   const [nodes, setNodes] = useState(graph.nodes);
   const [edges, setEdges] = useState(graph.edges);
   const displayedEdges=useMemo(()=>edges.map(edge=>({...edge,type:'default',interactionWidth:24})),[edges]);
@@ -213,7 +216,6 @@ function CanvasWorkspace({
     setCreateMenu(null);setInsertPoint(null);
     if(disabled)return;
     if(workflowTypes.includes(type))return add(type,undefined,point);
-    if(type==='media')return importMediaAt(point);
     if(type==='text')return add('text',undefined,point);
     if(type==='emptyImage')return add('asset',undefined,point);
     if(type==='import')return imageImport.openAt(point);
@@ -223,7 +225,7 @@ function CanvasWorkspace({
   };
   const canCreateLinked=type=>{
     const link=pendingLink.current;if(!link)return true;
-    if(type==='import'||type==='media')return false;
+    if(type==='import')return false;
     const candidate={id:'__new_canvas_node__',type:type==='emptyImage'?'asset':type};
     return canConnect({nodes:[...nodes,candidate],edges},link.type==='source'?link.id:candidate.id,link.type==='source'?candidate.id:link.id);
   };
@@ -380,7 +382,6 @@ function CanvasWorkspace({
     const added=assets.map((a,i)=>createNode(next,'asset',a.id,{x:position.x+i*280,y:position.y}));
     change({...next,tugouCanvas:{...graph,nodes:[...graph.nodes.map(n=>n.id===targetId&&updateOutput?{...n,data:{...n.data,outputAssetId:assets[0]?.id,outputAssetIds:assets.map(a=>a.id)}}:n),...added]}});
   };
-  const importMediaAt=(point,targetId)=>run(async()=>{const assets=await window.tugou.importMedia();if(mounted.current&&assets.length)addMediaAssets(assets,point,targetId);});
   const runNode=async id=>{
     if(disabled||pendingSubmissions.current.has(id)||tasks.some(t=>t.context?.nodeId===id&&['queued','running'].includes(t.status)))return;
     setNodeErrors(previous=>({...previous,[id]:''}));
@@ -431,6 +432,10 @@ function CanvasWorkspace({
         tabIndex={-1}
         onPointerDownCapture={event=>{if(event.target.closest('.react-flow')&&!event.target.closest('input,textarea,select,button,a,[contenteditable]'))event.currentTarget.focus({preventScroll:true});}}
         onKeyDown={(event) => {
+          if(shortcutBlocked(event)||disabled)return;
+          const shortcut=commandFor(event,window.tugou.platform,preferences.value.shortcuts);
+          if(shortcut==='group'||shortcut==='ungroup'){event.preventDefault();if(!event.repeat){if(shortcut==='ungroup')dissolveGroup();else createGroup();}return;}
+          if(shortcut==='delete'){event.preventDefault();remove();return;}
           if(event.key==='Tab'&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!disabled&&!createMenu&&
             (event.target===event.currentTarget||event.target.classList.contains('react-flow__node'))){
             event.preventDefault();
@@ -440,13 +445,9 @@ function CanvasWorkspace({
             return;
           }
           if (
-            (event.ctrlKey || event.metaKey) &&
+            (window.tugou.platform==='darwin'?event.metaKey&&!event.ctrlKey:event.ctrlKey&&!event.metaKey) && !event.shiftKey && !event.altKey &&
             !event.target.closest("input,textarea,select,[contenteditable]")
           ) {
-            if(event.key.toLowerCase()==='g'){
-              event.preventDefault();
-              if(!event.repeat&&!event.altKey){if(event.shiftKey)dissolveGroup();else createGroup();}
-            }
             if (["c", "x"].includes(event.key.toLowerCase())) {
               event.preventDefault();
               copy();
@@ -460,13 +461,6 @@ function CanvasWorkspace({
               event.preventDefault();
               setNodes(nodes.map((n) => ({ ...n, selected: true })));
             }
-          }
-          if (
-            isDeleteKey(event, window.tugou.platform) &&
-            !event.target.closest("input,textarea,select,[contenteditable]")
-          ) {
-            event.preventDefault();
-            remove();
           }
         }}
       >
@@ -492,7 +486,7 @@ function CanvasWorkspace({
                     : "生成中"
                   : submittingIds.has(node?.id)
                     ? "提交中"
-                  : node?.type==='config'?'开始生成':node?.type==='textgen'?'生成文本':node?.type==='video'?'生成视频':node?.type==='audio'?'生成语音':"生成图片"}
+                  : node?.type==='config'?'开始生成':node?.type==='textgen'?'生成文本':"生成图片"}
               </Button>
               {activeTask&&<Button iconOnly icon="stop" onClick={()=>run(async()=>{await window.tugou.cancelTask(activeTask.id);await refreshTasks();})}>取消生成</Button>}
               {node?.type==='director'&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>打开导演台</Button>}
@@ -532,8 +526,8 @@ function CanvasWorkspace({
                 复制
               </Button>
               <ToolPopover label="分组" icon="layers">
-                <Button disabled={disabled||!canGroup} title="Ctrl+G / ⌘G" onClick={createGroup}>创建分组</Button>
-                <Button disabled={disabled||node?.type!=='group'} title="Ctrl+Shift+G / ⌘⇧G" onClick={dissolveGroup}>解散分组</Button>
+                <Button disabled={disabled||!canGroup} title={formatBinding(bindings(window.tugou.platform,preferences.value.shortcuts).group,window.tugou.platform)} onClick={createGroup}>创建分组</Button>
+                <Button disabled={disabled||node?.type!=='group'} title={formatBinding(bindings(window.tugou.platform,preferences.value.shortcuts).ungroup,window.tugou.platform)} onClick={dissolveGroup}>解散分组</Button>
               </ToolPopover>
               <ToolPopover label="整理选中节点" icon="align" className="canvas-arrange-menu">
                 <small className="muted">{!layoutSameParent?'请选择同组节点，或选择整个组合':layoutNodes.length<2?'选择至少两个节点后整理':`整理 ${layoutNodes.length} 个节点 / 组合`}</small>
@@ -571,7 +565,7 @@ function CanvasWorkspace({
               </Button>
               <Select
                 aria-label="画布背景"
-                value={graph.background || "dots"}
+                value={background}
                 onChange={(e) =>
                   change({
                     ...document,
@@ -602,8 +596,6 @@ function CanvasWorkspace({
               ].map(([value, label]) => (
                 <Button
                   key={value}
-                  iconOnly
-                  icon={{node:"canvas",asset:"assets",module:"prompts",recipe:"layers"}[value]}
                   aria-pressed={palette === value}
                   onClick={() => {setPalette(value);setInsertPoint(null);}}
                 >
@@ -621,7 +613,7 @@ function CanvasWorkspace({
                 ? `画布元素 ${nodes.length}`
                 : "拖入画布，或点击添加"}
             </p>
-            {palette!=="node"&&!items.length&&<p className="muted">{query?'没有匹配内容':`暂无${{module:'模块，请先在提示词工作台创建',recipe:'配方，可通过“图片生成”新建',asset:'素材，请先导入图片'}[palette]}`}</p>}
+            {!items.length&&<EmptyState compact icon={query?'search':{node:'canvas',asset:'assets',module:'prompts',recipe:'prompts'}[palette]} title={query?'没有匹配内容':`暂无${{node:'画布元素',asset:'素材',module:'模块',recipe:'配方'}[palette]}`} description={query?'试试其他关键词。':{node:'使用上方工具添加图片或文本。',asset:'导入图片后，在这里添加到画布。',module:'在提示词工作台创建模块后即可使用。',recipe:'在提示词工作台创建配方后即可使用。'}[palette]}/>}
             {items.map((item) => (
               <Button
                 className="palette-item"
@@ -723,7 +715,7 @@ function CanvasWorkspace({
               selectionKeyCode={null}
               selectionOnDrag
               panOnDrag={false}
-              panActivationKeyCode="Space"
+              panActivationKeyCode={bindings(window.tugou.platform,preferences.value.shortcuts).pan}
               nodeDragThreshold={3}
               connectionDragThreshold={3}
               defaultEdgeOptions={{ type: "default", interactionWidth: 24 }}
@@ -789,9 +781,9 @@ function CanvasWorkspace({
                   ]);
               }}
             >
-              {graph.background !== "none" && (
+              {background !== "none" && (
                 <Background
-                  variant={graph.background === "lines" ? "lines" : "dots"}
+                  variant={background === "lines" ? "lines" : "dots"}
                   gap={24}
                   size={1}
                 />
@@ -858,7 +850,7 @@ function CanvasWorkspace({
                   </>
                 )}
                 {node.type==='group'&&<label>分组名称<Input aria-label="分组名称" disabled={disabled} value={node.data.name} onChange={e=>patchNode({name:e.target.value})}/></label>}
-                {workflowTypes.includes(node.type)&&<WorkflowSettings node={node} compiled={compiled?.result} document={{...document,tugouCanvas:{...graph,nodes,edges}}} patch={patchNode} disabled={disabled} task={tasks.filter(t=>t.context?.nodeId===node.id).at(-1)} run={run} importMedia={()=>importMediaAt(undefined,node.id)} openScene={()=>setSceneNode(node.id)} openPanorama={()=>setSceneNode(node.id)}/>}
+                {workflowTypes.includes(node.type)&&<WorkflowSettings node={node} compiled={compiled?.result} document={{...document,tugouCanvas:{...graph,nodes,edges}}} patch={patchNode} disabled={disabled} task={tasks.filter(t=>t.context?.nodeId===node.id).at(-1)} run={run} openScene={()=>setSceneNode(node.id)} openPanorama={()=>setSceneNode(node.id)}/>}
                 {workflowTypes.includes(node.type)&&node.type!=='director'&&(compiled.error?<p role="alert">{compiled.error}</p>:<details><summary>合成提示词</summary><PromptPreview document={document} result={compiled.result}/></details>)}
                 {node.type === "asset" && (
                   <label>
@@ -900,11 +892,7 @@ function CanvasWorkspace({
                 )}
               </>
             ) : (
-              <div className="empty-small">
-                {selected.length > 1
-                  ? `已选择 ${selected.length} 个节点，可一起移动或删除。`
-                  : "选择节点以编辑内容、查看引用状态。"}
-              </div>
+              <EmptyState compact icon="select" title={selected.length > 1 ? `已选择 ${selected.length} 个节点` : "未选择节点"} description={selected.length > 1 ? "可一起移动或删除。" : "选择节点以编辑内容、查看引用状态。"}/>
             )}
           </aside>
         </div>

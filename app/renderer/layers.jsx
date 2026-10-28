@@ -2,9 +2,11 @@ import {ColorControl} from './color-control.jsx';
 import {CanvasRulers,SelectionSizeBadge,CanvasSelection} from './canvas-chrome.jsx';
 import {Select} from './select.jsx';
 import {deleteTarget,editorShortcut} from '../core/editor-commands.cjs';
+import {commandFor,shortcutBlocked} from '../core/shortcuts.cjs';
+import {usePreferences} from './preferences.jsx';
 import {maskSelection,maskView} from './mask-view.js';
 import {useSubjectStatus} from './use-subject-status.js';
-import {Button, Icon, Input} from './components.jsx';
+import {Button, Icon, Input, EmptyState} from './components.jsx';
 import {Tooltip} from 'antd';
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -83,6 +85,7 @@ function Menu({ name, icon, children }) {
   );
 }
 export function LayerEditor({ projectId, document, change, disabled, selected, setSelected, workspace, editHistory }) {
+  const preferences=usePreferences();
   const [replacement,setReplacement]=useState(null);
   const [inspectorTab,setInspectorTab]=useState('properties'),[layerTab,setLayerTab]=useState('layers');
   const [layerQuery,setLayerQuery]=useState(''),[layerFilter,setLayerFilter]=useState('all'),[searchOpen,setSearchOpen]=useState(false);
@@ -379,18 +382,20 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   useEffect(() => {
     const key = (e) => {
       if (
-        e.target.closest("input,textarea,select,[contenteditable]") ||
+        shortcutBlocked(e) ||
         disabled
       )
         return;
       const v = latest.current;
-      const command=editorShortcut(e,window.tugou.platform);
+      const command=editorShortcut(e,window.tugou.platform,preferences.value.shortcuts);
       if(command){e.preventDefault();commands.current[command]?.();return;}
-      if(e.code==='Space'){e.preventDefault();spaceHeld.current=true;holder.current?.classList.add('space-pan');return}
-      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='g'){
-        e.preventDefault();action(()=>e.shiftKey?ungroupLayers(v.document.layers,v.selected[0]):groupLayers(v.document.layers,v.selected));return;
+      const shortcut=commandFor(e,window.tugou.platform,preferences.value.shortcuts);
+      if(shortcut==='pan'){e.preventDefault();spaceHeld.current=e.code||e.key;holder.current?.classList.add('space-pan');return}
+      if(shortcut==='group'||shortcut==='ungroup'){
+        e.preventDefault();action(()=>shortcut==='ungroup'?ungroupLayers(v.document.layers,v.selected[0]):groupLayers(v.document.layers,v.selected));return;
       }
-      if(!e.ctrlKey&&!e.metaKey&&!e.altKey){const tools={v:'select',h:'hand',b:'brush',e:'eraser',m:'rect',l:'lasso',u:'shape'};if(tools[e.key.toLowerCase()])setTool(tools[e.key.toLowerCase()]);}
+      const tools={toolMove:'select',toolHand:'hand',toolBrush:'brush',toolEraser:'eraser',toolSelection:'rect',toolLasso:'lasso',toolShape:'shape'};
+      if(tools[shortcut]){e.preventDefault();setTool(tools[shortcut]);return;}
       if (e.key === "Escape") {
         painting.cancel();
         setSourceArmed(false);
@@ -418,10 +423,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       }
     };
     window.addEventListener("keydown", key);
-    const release=e=>{if(!e||e.code==='Space'){spaceHeld.current=false;holder.current?.classList.remove('space-pan')}};
+    const release=e=>{if(!e||e.type==='blur'||(e.code||e.key)===spaceHeld.current){spaceHeld.current=false;holder.current?.classList.remove('space-pan')}};
     window.addEventListener('keyup',release);window.addEventListener('blur',release);
-    return () => {window.removeEventListener("keydown", key);window.removeEventListener('keyup',release);window.removeEventListener('blur',release)};
-  }, [disabled]);
+    return () => {release();window.removeEventListener("keydown", key);window.removeEventListener('keyup',release);window.removeEventListener('blur',release)};
+  }, [disabled,preferences.value.shortcuts]);
   const add = (kind, extra = {}) => {
     const layer = createLayer(kind, {
       x: document.width * 0.15,
@@ -1299,7 +1304,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     if(['clone','heal'].includes(tool)&&paintSource?.layerId===single.id)sourceMarker=geometry.world(paintSource.u,paintSource.v);
   }
   return (
-    <div className="layer-editor composition-editor">
+    <div className="layer-editor composition-editor" data-dev-update-blocked={painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||boardDraft||shapeDraft||polygon.length||tool!=='select'?'请先完成合成编辑，并切换到移动工具后更新':undefined}>
       <div className="composition-tools">
         <div className="composition-primary-tools">
           <Button icon="action" aria-pressed={tool==='select'&&!boardTool} onClick={()=>{setTool('select');setBoardTool(false)}}>移动</Button>
@@ -1309,7 +1314,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           <Button icon="brush" aria-pressed={tool==='brush'} onClick={()=>setTool('brush')}>画笔</Button>
           <ShapePicker active={tool==='shape'} options={shapeOptions} disabled={disabled} choose={options=>{setShapeOptions(options);setTool('shape');setBoardTool(false)}}/>
           <Button icon="assets" onClick={()=>imageImport.open()} disabled={imageImport.importing}>图片</Button>
-          <Button icon="text" onClick={()=>add('text',{name:'文字',text:'输入文字',fontSize:48,color:'#333333',fontFamily:'Microsoft YaHei',width:600,height:160})}>文字</Button>
+          <Button icon="text" onClick={()=>add('text',{name:'文字',text:'输入文字',fontSize:48,color:'#333333',width:600,height:160})}>文字</Button>
           <Button icon="select" aria-pressed={tool==='hand'} onClick={()=>setTool('hand')}>抓手</Button>
           <Button icon="zoomIn" onClick={()=>setView({...view,zoom:Math.min(8,view.zoom*1.25)})}>缩放</Button>
         </div>
@@ -1336,7 +1341,6 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
                     text: "输入文字",
                     fontSize: 40,
                     color: "#333333",
-                    fontFamily: "Microsoft YaHei",
                     width: 600,
                     height: 160,
                   })
@@ -1813,8 +1817,8 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
               ＋
             </Button>
           </div>
-          {!document.assets.length && (
-            <p className="empty-small">导入图片，或从画布生图后加入排版。</p>
+          {!document.assets.some(a=>!a.kind||a.kind==='image') && (
+            <EmptyState compact title="暂无图片素材" description="导入图片，或从画布生图后加入排版。" />
           )}
           {document.assets.filter(a=>!a.kind||a.kind==='image').map((asset) => (
             <Button

@@ -1,0 +1,1569 @@
+{
+  "date": "2026-10-28",
+  "source": "https://github.com/DrXie/OSFCC",
+  "entries": [
+    {
+      "index": 1,
+      "name": "思源黑体",
+      "family": "思源字体",
+      "links": [
+        {
+          "name": "思源黑体",
+          "url": "https://github.com/adobe-fonts/source-han-sans"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "思源黑体；OFL-1.1；7 个已内置字重。",
+      "fontId": "source-han-sans-regular",
+      "verifiedSource": "https://github.com/adobe-fonts/source-han-sans"
+    },
+    {
+      "index": 2,
+      "name": "思源宋体",
+      "family": "思源字体",
+      "links": [
+        {
+          "name": "思源宋体",
+          "url": "https://github.com/adobe-fonts/source-han-serif"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "思源宋体；OFL-1.1；7 个已内置字重。",
+      "fontId": "source-han-serif-regular",
+      "verifiedSource": "https://github.com/adobe-fonts/source-han-serif"
+    },
+    {
+      "index": 3,
+      "name": "思源等宽",
+      "family": "思源字体",
+      "links": [
+        {
+          "name": "思源等宽",
+          "url": "https://github.com/adobe-fonts/source-han-mono"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "思源等宽；OFL-1.1；1 个已内置字重。",
+      "fontId": "source-han-mono-regular",
+      "verifiedSource": "https://github.com/adobe-fonts/source-han-mono"
+    },
+    {
+      "index": 4,
+      "name": "台北黑体",
+      "family": "台北黑体",
+      "links": [
+        {
+          "name": "台北黑体",
+          "url": "https://sites.google.com/view/jtfoundry/zh-tw"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "台北黑体 · 繁体；OFL-1.1；3 个已内置字重。",
+      "fontId": "taipei-regular",
+      "verifiedSource": "https://sites.google.com/view/jtfoundry/zh-tw/downloads"
+    },
+    {
+      "index": 5,
+      "name": "昭明黑体",
+      "family": "昭明黑体",
+      "links": [
+        {
+          "name": "昭明黑体",
+          "url": "https://tamcy.github.io/chiron-sans-hk/"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "昭明黑体 · 港繁；OFL-1.1；1 个已内置字重。",
+      "fontId": "chiron-regular",
+      "verifiedSource": "https://github.com/chiron-fonts/chiron-hei-hk"
+    },
+    {
+      "index": 6,
+      "name": "更纱黑体",
+      "family": "Sarasa",
+      "links": [
+        {
+          "name": "更纱黑体",
+          "url": "https://github.com/be5invis/Sarasa-Gothic"
+        },
+        {
+          "name": "Belleve Invis",
+          "url": "https://github.com/be5invis"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "更纱黑体；OFL-1.1；5 个已内置字重。",
+      "fontId": "sarasa-gothic-regular",
+      "verifiedSource": "https://github.com/be5invis/Sarasa-Gothic"
+    },
+    {
+      "index": 7,
+      "name": "有爱黑体",
+      "family": "有爱字体",
+      "links": [
+        {
+          "name": "有爱黑体",
+          "url": "https://github.com/nowar-fonts/Nowar-Sans"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "有爱黑体；OFL-1.1；1 个已内置字重。",
+      "fontId": "nowar-sans-regular",
+      "verifiedSource": "https://github.com/nowar-fonts/Nowar-Sans"
+    },
+    {
+      "index": 8,
+      "name": "有爱锐方",
+      "family": "有爱字体",
+      "links": [
+        {
+          "name": "有爱锐方",
+          "url": "https://github.com/nowar-fonts/Nowar-CnC"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "有爱锐方；OFL-1.1；1 个已内置字重。",
+      "fontId": "nowar-cnc-regular",
+      "verifiedSource": "https://github.com/nowar-fonts/Nowar-CnC"
+    },
+    {
+      "index": 9,
+      "name": "有爱圆体",
+      "family": "有爱字体",
+      "links": [
+        {
+          "name": "有爱圆体",
+          "url": "https://github.com/nowar-fonts/Nowar-Rounded"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "有爱圆体；OFL-1.1；1 个已内置字重。",
+      "fontId": "nowar-rounded-regular",
+      "verifiedSource": "https://github.com/nowar-fonts/Nowar-Rounded"
+    },
+    {
+      "index": 10,
+      "name": "有爱新黑",
+      "family": "有爱字体",
+      "links": [
+        {
+          "name": "有爱新黑",
+          "url": "https://github.com/nowar-fonts/Nowar-Neo-Sans"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "有爱新黑；OFL-1.1；1 个已内置字重。",
+      "fontId": "nowar-neo-sans-regular",
+      "verifiedSource": "https://github.com/nowar-fonts/Nowar-Neo-Sans"
+    },
+    {
+      "index": 11,
+      "name": "源样明体",
+      "family": "ButTaiwan",
+      "links": [
+        {
+          "name": "源样明体",
+          "url": "https://github.com/ButTaiwan/genyo-font"
+        },
+        {
+          "name": "ButTaiwan",
+          "url": "https://github.com/ButTaiwan"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "源样明体 · 繁体；OFL-1.1；7 个已内置字重。",
+      "fontId": "genyo-regular",
+      "verifiedSource": "https://github.com/ButTaiwan/genyo-font"
+    },
+    {
+      "index": 12,
+      "name": "源流明体",
+      "family": "ButTaiwan",
+      "links": [
+        {
+          "name": "源流明体",
+          "url": "https://github.com/ButTaiwan/genryu-font"
+        },
+        {
+          "name": "ButTaiwan",
+          "url": "https://github.com/ButTaiwan"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "源流明体 · 繁体；OFL-1.1；7 个已内置字重。",
+      "fontId": "genryu-regular",
+      "verifiedSource": "https://github.com/ButTaiwan/genryu-font"
+    },
+    {
+      "index": 13,
+      "name": "源云明体",
+      "family": "ButTaiwan",
+      "links": [
+        {
+          "name": "源云明体",
+          "url": "https://github.com/ButTaiwan/genwan-font"
+        },
+        {
+          "name": "ButTaiwan",
+          "url": "https://github.com/ButTaiwan"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "源云明体 · 繁体；OFL-1.1；5 个已内置字重。",
+      "fontId": "genwan-regular",
+      "verifiedSource": "https://github.com/ButTaiwan/genwan-font"
+    },
+    {
+      "index": 14,
+      "name": "源样黑体",
+      "family": "ButTaiwan",
+      "links": [
+        {
+          "name": "源样黑体",
+          "url": "https://github.com/ButTaiwan/genyog-font"
+        },
+        {
+          "name": "ButTaiwan",
+          "url": "https://github.com/ButTaiwan"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "源样黑体 · 繁体；OFL-1.1；1 个已内置字重。",
+      "fontId": "genyog-regular",
+      "verifiedSource": "https://github.com/ButTaiwan/genyog-font"
+    },
+    {
+      "index": 15,
+      "name": "源石黑体",
+      "family": "ButTaiwan",
+      "links": [
+        {
+          "name": "源石黑体",
+          "url": "https://github.com/ButTaiwan/genseki-font"
+        },
+        {
+          "name": "ButTaiwan",
+          "url": "https://github.com/ButTaiwan"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "源石黑体 · 繁体；OFL-1.1；5 个已内置字重。",
+      "fontId": "genseki-regular",
+      "verifiedSource": "https://github.com/ButTaiwan/genseki-font"
+    },
+    {
+      "index": 16,
+      "name": "源泉圆体",
+      "family": "ButTaiwan",
+      "links": [
+        {
+          "name": "源泉圆体",
+          "url": "https://github.com/ButTaiwan/gensen-font"
+        },
+        {
+          "name": "ButTaiwan",
+          "url": "https://github.com/ButTaiwan"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "源泉圆体 · 繁体；OFL-1.1；6 个已内置字重。",
+      "fontId": "gensen-regular",
+      "verifiedSource": "https://github.com/ButTaiwan/gensen-font"
+    },
+    {
+      "index": 17,
+      "name": "NotoSerif+",
+      "family": "[简体中文完整字体包](https://github.com/Magisk-Modules-Grave/chinesesimplified-font-completion)",
+      "links": [
+        {
+          "name": "简体中文完整字体包",
+          "url": "https://github.com/Magisk-Modules-Grave/chinesesimplified-font-completion"
+        },
+        {
+          "name": "Magisk-Modules-Grave",
+          "url": "https://github.com/Magisk-Modules-Grave"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "暂缓",
+      "note": "原 Magisk 项目返回 404；尚未找到可验证的原版字体与完整版权声明。"
+    },
+    {
+      "index": 18,
+      "name": "Roboto+",
+      "family": "[简体中文完整字体包](https://github.com/Magisk-Modules-Grave/chinesesimplified-font-completion)",
+      "links": [
+        {
+          "name": "简体中文完整字体包",
+          "url": "https://github.com/Magisk-Modules-Grave/chinesesimplified-font-completion"
+        },
+        {
+          "name": "Magisk-Modules-Grave",
+          "url": "https://github.com/Magisk-Modules-Grave"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "暂缓",
+      "note": "原 Magisk 项目返回 404；尚未找到可验证的原版字体与完整版权声明。"
+    },
+    {
+      "index": 19,
+      "name": "Roboto Condensed+",
+      "family": "[简体中文完整字体包](https://github.com/Magisk-Modules-Grave/chinesesimplified-font-completion)",
+      "links": [
+        {
+          "name": "简体中文完整字体包",
+          "url": "https://github.com/Magisk-Modules-Grave/chinesesimplified-font-completion"
+        },
+        {
+          "name": "Magisk-Modules-Grave",
+          "url": "https://github.com/Magisk-Modules-Grave"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "暂缓",
+      "note": "原 Magisk 项目返回 404；尚未找到可验证的原版字体与完整版权声明。"
+    },
+    {
+      "index": 20,
+      "name": "花园明朝体",
+      "family": "[花园明朝体](http://fonts.jp/hanazono/)",
+      "links": [
+        {
+          "name": "花园明朝体",
+          "url": "http://fonts.jp/hanazono/"
+        }
+      ],
+      "license": "[Hanazono Font License & SIL Open Font License, Version 1.1](http://glyphwiki.org/wiki/Group:%E8%8A%B1%E5%9C%92%E3%83%95%E3%82%A9%E3%83%B3%E3%83%88-LICENSE)",
+      "status": "收录",
+      "note": "花园明朝；OFL-1.1 (dual-license option)；1 个已内置字重。",
+      "fontId": "hanazono-regular",
+      "verifiedSource": "https://glyphwiki.org/wiki/Group:花園フォント"
+    },
+    {
+      "index": 21,
+      "name": "GNU Unifont",
+      "family": "[GNU Unifont](http://unifoundry.com/unifont/index.html)",
+      "links": [
+        {
+          "name": "GNU Unifont",
+          "url": "http://unifoundry.com/unifont/index.html"
+        }
+      ],
+      "license": "[GNU GPLv2](http://unifoundry.com/LICENSE.txt)",
+      "status": "收录",
+      "note": "GNU Unifont；OFL-1.1 (dual-license option)；1 个已内置字重。",
+      "fontId": "unifont-regular",
+      "verifiedSource": "https://unifoundry.com/unifont/"
+    },
+    {
+      "index": 22,
+      "name": "文泉驿微米黑",
+      "family": "文泉驿",
+      "links": [
+        {
+          "name": "文泉驿微米黑",
+          "url": "http://wenq.org/wqy2/index.cgi?MicroHei"
+        }
+      ],
+      "license": "[GNU GPLv3 & Apache 2.0](https://www.gnu.org/licenses/gpl-3.0.en.html)",
+      "status": "收录",
+      "note": "文泉驿微米黑；Apache-2.0 (dual-license option)；1 个已内置字重。",
+      "fontId": "wqy-microhei-regular",
+      "verifiedSource": "https://sourceforge.net/projects/wqy/files/wqy-microhei/"
+    },
+    {
+      "index": 23,
+      "name": "文泉驿正黑",
+      "family": "文泉驿",
+      "links": [
+        {
+          "name": "文泉驿正黑",
+          "url": "http://wenq.org/wqy2/index.cgi?ZenHei"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Zen Hei 0.9.45 TTC 与 GPLv2+字体例外；对应可编辑源码及三字面拆分尚未完成发行核查。不能仅凭目录标注直接分发。"
+    },
+    {
+      "index": 24,
+      "name": "文泉驿点阵正黑",
+      "family": "文泉驿",
+      "links": [
+        {
+          "name": "文泉驿点阵正黑",
+          "url": "http://wenq.org/wqy2/index.cgi?ZenHei"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Zen Hei 0.9.45 TTC 与 GPLv2+字体例外；对应可编辑源码及三字面拆分尚未完成发行核查。不能仅凭目录标注直接分发。"
+    },
+    {
+      "index": 25,
+      "name": "文泉驿等宽正黑",
+      "family": "文泉驿",
+      "links": [
+        {
+          "name": "文泉驿等宽正黑",
+          "url": "http://wenq.org/enindex.cgi?ZenHei#nightly_build_NB"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Zen Hei 0.9.45 TTC 与 GPLv2+字体例外；对应可编辑源码及三字面拆分尚未完成发行核查。不能仅凭目录标注直接分发。"
+    },
+    {
+      "index": 26,
+      "name": "文泉驿点阵宋",
+      "family": "文泉驿",
+      "links": [
+        {
+          "name": "文泉驿点阵宋",
+          "url": "http://wenq.org/wqy2/index.cgi?BitmapSong"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "原发行以点阵 BDF/PCF 为主；当前 FontFace/画布链路不直接支持，转换及对应源码未验证。"
+    },
+    {
+      "index": 27,
+      "name": "文泉驿Unibit",
+      "family": "文泉驿",
+      "links": [
+        {
+          "name": "文泉驿Unibit",
+          "url": "http://wenq.org/enindex.cgi?Unibit"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "原发行以点阵 BDF/PCF 为主；当前 FontFace/画布链路不直接支持，转换及对应源码未验证。"
+    },
+    {
+      "index": 28,
+      "name": "Droid Sans Fallback",
+      "family": "Droid",
+      "links": [
+        {
+          "name": "Droid Sans Fallback",
+          "url": "https://github.com/jenskutilek/free-fonts/blob/master/Droid/Droid%20Sans%20Fallback/DroidSansFallback.ttf?raw=true"
+        }
+      ],
+      "license": "[Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)",
+      "status": "暂缓",
+      "note": "AOSP 原版下载成功，但 Chromium OTS 拒绝旧 glyf 标志；未将不能正常显示的字体放入列表。"
+    },
+    {
+      "index": 29,
+      "name": "AR PL UMing",
+      "family": "[CJKUnifonts](https://www.freedesktop.org/wiki/Software/CJKUnifonts/)",
+      "links": [
+        {
+          "name": "CJKUnifonts",
+          "url": "https://www.freedesktop.org/wiki/Software/CJKUnifonts/"
+        }
+      ],
+      "license": "[Arphic Public License (free)](http://ftp.gnu.org/non-gnu/chinese-fonts-truetype/LICENSE)",
+      "status": "收录",
+      "note": "AR PL UMing · 简体；Arphic Public License；1 个已内置字重。",
+      "fontId": "uming-regular",
+      "verifiedSource": "https://www.freedesktop.org/wiki/Software/CJKUnifonts/"
+    },
+    {
+      "index": 30,
+      "name": "AR PL UKai",
+      "family": "[CJKUnifonts](https://www.freedesktop.org/wiki/Software/CJKUnifonts/)",
+      "links": [
+        {
+          "name": "CJKUnifonts",
+          "url": "https://www.freedesktop.org/wiki/Software/CJKUnifonts/"
+        }
+      ],
+      "license": "[Arphic Public License (free)](http://ftp.gnu.org/non-gnu/chinese-fonts-truetype/LICENSE)",
+      "status": "收录",
+      "note": "AR PL UKai · 简体；Arphic Public License；1 个已内置字重。",
+      "fontId": "ukai-regular",
+      "verifiedSource": "https://www.freedesktop.org/wiki/Software/CJKUnifonts/"
+    },
+    {
+      "index": 31,
+      "name": "全字库楷体",
+      "family": "[CNS11643中文标准交换码全字库](https://data.gov.tw/dataset/5961)",
+      "links": [
+        {
+          "name": "CNS11643中文标准交换码全字库",
+          "url": "https://data.gov.tw/dataset/5961"
+        }
+      ],
+      "license": "[Open Government Data License, version 1.0](https://data.gov.tw/license#eng)",
+      "status": "暂缓",
+      "note": "官方 data.cns11643.gov.tw 字体 ZIP 下载超时，未取得可校验二进制；不是认定项目永久失效。"
+    },
+    {
+      "index": 32,
+      "name": "全字库宋体",
+      "family": "[CNS11643中文标准交换码全字库](https://data.gov.tw/dataset/5961)",
+      "links": [
+        {
+          "name": "CNS11643中文标准交换码全字库",
+          "url": "https://data.gov.tw/dataset/5961"
+        }
+      ],
+      "license": "[Open Government Data License, version 1.0](https://data.gov.tw/license#eng)",
+      "status": "暂缓",
+      "note": "官方 data.cns11643.gov.tw 字体 ZIP 下载超时，未取得可校验二进制；不是认定项目永久失效。"
+    },
+    {
+      "index": 33,
+      "name": "全字库说文解字字形",
+      "family": "[CNS11643中文标准交换码全字库](https://data.gov.tw/dataset/5961)",
+      "links": [
+        {
+          "name": "全字库说文解字字形",
+          "url": "http://www.cns11643.gov.tw/AIDB/download.do?name=%E5%AD%97%E5%9E%8B%E4%B8%8B%E8%BC%89"
+        },
+        {
+          "name": "CNS11643中文标准交换码全字库",
+          "url": "https://data.gov.tw/dataset/5961"
+        }
+      ],
+      "license": "[CC BY-NC-SA 3.0 TW](https://creativecommons.org/licenses/by-nc-sa/3.0/tw/deed.en)",
+      "status": "排除",
+      "note": "目录及原授权明确为非商用（NC）版本，不随应用分发。"
+    },
+    {
+      "index": 34,
+      "name": "教育部标准楷书",
+      "family": "[教育部标准字体](https://github.com/Jiehong/TW-fonts)",
+      "links": [
+        {
+          "name": "教育部标准字体",
+          "url": "https://github.com/Jiehong/TW-fonts"
+        }
+      ],
+      "license": "[CC-BY-ND 3.0](https://creativecommons.org/licenses/by-nd/3.0/)",
+      "status": "暂缓",
+      "note": "现行教育部页面允许 BY-ND 原样使用，但未指定完整版本；禁止改作与署名要求需单独落实，未按 OFL 处理。"
+    },
+    {
+      "index": 35,
+      "name": "教育部标准宋体",
+      "family": "[教育部标准字体](https://github.com/Jiehong/TW-fonts)",
+      "links": [
+        {
+          "name": "教育部标准字体",
+          "url": "https://github.com/Jiehong/TW-fonts"
+        }
+      ],
+      "license": "[CC-BY-ND 3.0](https://creativecommons.org/licenses/by-nd/3.0/)",
+      "status": "暂缓",
+      "note": "现行教育部页面允许 BY-ND 原样使用，但未指定完整版本；禁止改作与署名要求需单独落实，未按 OFL 处理。"
+    },
+    {
+      "index": 36,
+      "name": "IPAex明朝",
+      "family": "[IPA](http://ipafont.ipa.go.jp/#jp)",
+      "links": [
+        {
+          "name": "IPA",
+          "url": "http://ipafont.ipa.go.jp/#jp"
+        }
+      ],
+      "license": "[IPA Font License Agreement V1.0](http://ipafont.ipa.go.jp/ipa_font_license_v1-html#jp)",
+      "status": "收录",
+      "note": "IPAex 明朝 · 日文；IPA Font License 1.0；1 个已内置字重。",
+      "fontId": "ipaexm-regular",
+      "verifiedSource": "https://moji.or.jp/ipafont/ipaex00401/"
+    },
+    {
+      "index": 37,
+      "name": "IPAexゴシック",
+      "family": "[IPA](http://ipafont.ipa.go.jp/#jp)",
+      "links": [
+        {
+          "name": "IPA",
+          "url": "http://ipafont.ipa.go.jp/#jp"
+        }
+      ],
+      "license": "[IPA Font License Agreement V1.0](http://ipafont.ipa.go.jp/ipa_font_license_v1-html#jp)",
+      "status": "收录",
+      "note": "IPAex 哥特 · 日文；IPA Font License 1.0；1 个已内置字重。",
+      "fontId": "ipaexg-regular",
+      "verifiedSource": "https://moji.or.jp/ipafont/ipaex00401/"
+    },
+    {
+      "index": 38,
+      "name": "jf open 粉圆",
+      "family": "[jf open 粉圆](https://github.com/justfont/open-huninn-font)",
+      "links": [
+        {
+          "name": "jf open 粉圆",
+          "url": "https://github.com/justfont/open-huninn-font"
+        },
+        {
+          "name": "jf open 粉圆",
+          "url": "https://github.com/justfont/open-huninn-font"
+        },
+        {
+          "name": "justfont",
+          "url": "https://justfont.com/"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "粉圆 · 繁体；OFL-1.1；1 个已内置字重。",
+      "fontId": "huninn-regular",
+      "verifiedSource": "https://github.com/justfont/open-huninn-font"
+    },
+    {
+      "index": 39,
+      "name": "I.明体",
+      "family": "I.字坊",
+      "links": [
+        {
+          "name": "I.字坊",
+          "url": "https://github.com/ichitenfont"
+        }
+      ],
+      "license": "[IPA Font License Agreement V1.0](http://ipafont.ipa.go.jp/ipa_font_license_v1-html#jp)",
+      "status": "收录",
+      "note": "一點明体 · 传承字形；IPA Font License 1.0；1 个已内置字重。",
+      "fontId": "iming-regular",
+      "verifiedSource": "https://github.com/ichitenfont/I.Ming"
+    },
+    {
+      "index": 40,
+      "name": "I.颜体",
+      "family": "I.字坊",
+      "links": [
+        {
+          "name": "I.颜体",
+          "url": "http://founder.acgvlyric.org/iu/doku.php/%E9%80%A0%E5%AD%97:%E9%96%8B%E6%BA%90%E5%AD%97%E5%9E%8B_i.%E9%A1%8F%E9%AB%94"
+        },
+        {
+          "name": "I.字坊",
+          "url": "https://github.com/ichitenfont"
+        }
+      ],
+      "license": "[GNU GPLv2+](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "原作者页面访问失败；未核验对应字体文件、GPL 版本与完整源文件。"
+    },
+    {
+      "index": 41,
+      "name": "I.钢笔鹤体",
+      "family": "I.字坊",
+      "links": [
+        {
+          "name": "I.钢笔鹤体",
+          "url": "http://founder.acgvlyric.org/iu/doku.php/%E9%80%A0%E5%AD%97:%E9%96%8B%E6%BA%90%E5%AD%97%E5%9E%8B_i.%E9%8B%BC%E7%AD%86%E9%B6%B4%E9%AB%94"
+        },
+        {
+          "name": "I.字坊",
+          "url": "https://github.com/ichitenfont"
+        }
+      ],
+      "license": "[GNU GPLv2+](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "原作者页面访问失败；未核验对应字体文件、GPL 版本与完整源文件。"
+    },
+    {
+      "index": 42,
+      "name": "瀨戸フォント",
+      "family": "[瀨戸フォント](https://osdn.net/projects/setofont/)",
+      "links": [
+        {
+          "name": "瀨戸フォント",
+          "url": "https://osdn.net/projects/setofont/"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "濑户字体 · 日文；OFL-1.1；1 个已内置字重。",
+      "fontId": "seto-regular",
+      "verifiedSource": "https://osdn.net/projects/setofont/"
+    },
+    {
+      "index": 43,
+      "name": "cwTeX中明体",
+      "family": "cwTeX",
+      "links": [
+        {
+          "name": "L10n Taiwan",
+          "url": "http://l10n.tw/"
+        }
+      ],
+      "license": "[GNU GPLv2+ & SIL Open Font License, Version 1.1](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "收录",
+      "note": "cwTeX Q 明体 · 繁体；OFL-1.1；1 个已内置字重。",
+      "fontId": "cwming-regular",
+      "verifiedSource": "https://github.com/l10n-tw/cwtex-q-fonts-TTFs"
+    },
+    {
+      "index": 44,
+      "name": "cwTeX中楷体",
+      "family": "cwTeX",
+      "links": [
+        {
+          "name": "L10n Taiwan",
+          "url": "http://l10n.tw/"
+        }
+      ],
+      "license": "[GNU GPLv2+ & SIL Open Font License, Version 1.1](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "收录",
+      "note": "cwTeX Q 楷体 · 繁体；OFL-1.1；1 个已内置字重。",
+      "fontId": "cwkai-regular",
+      "verifiedSource": "https://github.com/l10n-tw/cwtex-q-fonts-TTFs"
+    },
+    {
+      "index": 45,
+      "name": "cwTeX中圆体",
+      "family": "cwTeX",
+      "links": [
+        {
+          "name": "L10n Taiwan",
+          "url": "http://l10n.tw/"
+        }
+      ],
+      "license": "[GNU GPLv2+ & SIL Open Font License, Version 1.1](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "收录",
+      "note": "cwTeX Q 圆体 · 繁体；OFL-1.1；1 个已内置字重。",
+      "fontId": "cwyuan-regular",
+      "verifiedSource": "https://github.com/l10n-tw/cwtex-q-fonts-TTFs"
+    },
+    {
+      "index": 46,
+      "name": "cwTeX中仿宋",
+      "family": "cwTeX",
+      "links": [
+        {
+          "name": "L10n Taiwan",
+          "url": "http://l10n.tw/"
+        }
+      ],
+      "license": "[GNU GPLv2+ & SIL Open Font License, Version 1.1](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "收录",
+      "note": "cwTeX Q 仿宋 · 繁体；OFL-1.1；1 个已内置字重。",
+      "fontId": "cwfangsong-regular",
+      "verifiedSource": "https://github.com/l10n-tw/cwtex-q-fonts-TTFs"
+    },
+    {
+      "index": 47,
+      "name": "cwTeX粗黑体",
+      "family": "cwTeX",
+      "links": [
+        {
+          "name": "L10n Taiwan",
+          "url": "http://l10n.tw/"
+        }
+      ],
+      "license": "[GNU GPLv2+ & SIL Open Font License, Version 1.1](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "收录",
+      "note": "cwTeX Q 黑体 · 繁体；OFL-1.1；1 个已内置字重。",
+      "fontId": "cwhei-regular",
+      "verifiedSource": "https://github.com/l10n-tw/cwtex-q-fonts-TTFs"
+    },
+    {
+      "index": 48,
+      "name": "王汉宗超明体",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 49,
+      "name": "王汉宗特明体标准",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 50,
+      "name": "王汉宗细新宋简体",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 51,
+      "name": "王汉宗特黑体",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 52,
+      "name": "王汉宗细黑体",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 53,
+      "name": "王汉宗粗黑体实阴",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 54,
+      "name": "王汉宗仿宋标准",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 55,
+      "name": "王汉宗颜楷体",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 56,
+      "name": "王汉宗中魏碑简体",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 57,
+      "name": "王汉宗标楷体空心",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 58,
+      "name": "王汉宗粗圆体双空",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 59,
+      "name": "王汉宗粗钢体标准",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 60,
+      "name": "王汉宗钢笔行楷",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 61,
+      "name": "王汉宗超黑俏皮动物",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 62,
+      "name": "王汉宗波浪体",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 63,
+      "name": "王汉宗波卡体空阴",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 64,
+      "name": "王汉宗海报体半天水",
+      "family": "[王汉宗自由字体](https://code.google.com/archive/p/wangfonts/)",
+      "links": [
+        {
+          "name": "王汉宗自由字体",
+          "url": "https://code.google.com/archive/p/wangfonts/"
+        }
+      ],
+      "license": "[GNU GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)",
+      "status": "暂缓",
+      "note": "取得 Google Code 归档 wangfonts 1.3.0（32 TTF + GPL）；嵌入标志为 fsType=4，部分目录字面未在归档内，对应修改源码与发行条件仍未核清。"
+    },
+    {
+      "index": 65,
+      "name": "AR PL BaoSong2GBK",
+      "family": "文鼎开放字体",
+      "links": [],
+      "license": "[Arphic Public License (non-commercial)](https://web.archive.org/web/20110707164354/http://www.arphic.com/tw/download/public_license.rar)",
+      "status": "排除",
+      "note": "目录及原授权明确为非商用（NC）版本，不随应用分发。"
+    },
+    {
+      "index": 66,
+      "name": "AR PL MingU20-L",
+      "family": "文鼎开放字体",
+      "links": [],
+      "license": "[Arphic Public License (non-commercial)](https://web.archive.org/web/20110707164354/http://www.arphic.com/tw/download/public_license.rar)",
+      "status": "排除",
+      "note": "目录及原授权明确为非商用（NC）版本，不随应用分发。"
+    },
+    {
+      "index": 67,
+      "name": "AR PL Mingti2L Big5",
+      "family": "文鼎开放字体",
+      "links": [],
+      "license": "[Arphic Public License (free)](http://ftp.gnu.org/non-gnu/chinese-fonts-truetype/LICENSE)",
+      "status": "收录",
+      "note": "文鼎 PL 细上海宋 · 繁体；Arphic Public License；1 个已内置字重。",
+      "fontId": "bsmi00lp-regular",
+      "verifiedSource": "https://ftp.gnu.org/non-gnu/chinese-fonts-truetype/"
+    },
+    {
+      "index": 68,
+      "name": "AR PL SungtiL GB",
+      "family": "文鼎开放字体",
+      "links": [],
+      "license": "[Arphic Public License (free)](http://ftp.gnu.org/non-gnu/chinese-fonts-truetype/LICENSE)",
+      "status": "收录",
+      "note": "文鼎 PL 简报宋；Arphic Public License；1 个已内置字重。",
+      "fontId": "gbsn00lp-regular",
+      "verifiedSource": "https://ftp.gnu.org/non-gnu/chinese-fonts-truetype/"
+    },
+    {
+      "index": 69,
+      "name": "AR PL KaitiM Big5",
+      "family": "文鼎开放字体",
+      "links": [],
+      "license": "[Arphic Public License (free)](http://ftp.gnu.org/non-gnu/chinese-fonts-truetype/LICENSE)",
+      "status": "收录",
+      "note": "文鼎 PL 中楷 · 繁体；Arphic Public License；1 个已内置字重。",
+      "fontId": "bkai00mp-regular",
+      "verifiedSource": "https://ftp.gnu.org/non-gnu/chinese-fonts-truetype/"
+    },
+    {
+      "index": 70,
+      "name": "AR PL KaitiM GB",
+      "family": "文鼎开放字体",
+      "links": [],
+      "license": "[Arphic Public License (free)](http://ftp.gnu.org/non-gnu/chinese-fonts-truetype/LICENSE)",
+      "status": "收录",
+      "note": "文鼎 PL 简中楷；Arphic Public License；1 个已内置字重。",
+      "fontId": "gkai00mp-regular",
+      "verifiedSource": "https://ftp.gnu.org/non-gnu/chinese-fonts-truetype/"
+    },
+    {
+      "index": 71,
+      "name": "自由香港楷书",
+      "family": "自由香港字型",
+      "links": [],
+      "license": "[CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)",
+      "status": "收录",
+      "note": "自由香港楷书 · 繁体；CC-BY-4.0；1 个已内置字重。",
+      "fontId": "freehkkai-regular",
+      "verifiedSource": "https://github.com/freehkfonts/freehkkai/tree/download"
+    },
+    {
+      "index": 72,
+      "name": "M+ P Type-1",
+      "family": "[M+Fonts](http://mplus-fonts.osdn.jp/)",
+      "links": [
+        {
+          "name": "M+Fonts",
+          "url": "http://mplus-fonts.osdn.jp/"
+        }
+      ],
+      "license": "[M+Fonts License](http://mplus-fonts.osdn.jp/about.html#license)",
+      "status": "收录",
+      "note": "M+ 1p · 日文；M+ Fonts permissive license；7 个已内置字重。",
+      "fontId": "mplus-1p-regular",
+      "verifiedSource": "https://mplus-fonts.osdn.jp/"
+    },
+    {
+      "index": 73,
+      "name": "M+ P Type-2",
+      "family": "[M+Fonts](http://mplus-fonts.osdn.jp/)",
+      "links": [
+        {
+          "name": "M+Fonts",
+          "url": "http://mplus-fonts.osdn.jp/"
+        }
+      ],
+      "license": "[M+Fonts License](http://mplus-fonts.osdn.jp/about.html#license)",
+      "status": "收录",
+      "note": "M+ 2p · 日文；M+ Fonts permissive license；7 个已内置字重。",
+      "fontId": "mplus-2p-regular",
+      "verifiedSource": "https://mplus-fonts.osdn.jp/"
+    },
+    {
+      "index": 74,
+      "name": "M+ C Type-1",
+      "family": "[M+Fonts](http://mplus-fonts.osdn.jp/)",
+      "links": [
+        {
+          "name": "M+Fonts",
+          "url": "http://mplus-fonts.osdn.jp/"
+        }
+      ],
+      "license": "[M+Fonts License](http://mplus-fonts.osdn.jp/about.html#license)",
+      "status": "收录",
+      "note": "M+ 1c · 日文；M+ Fonts permissive license；7 个已内置字重。",
+      "fontId": "mplus-1c-regular",
+      "verifiedSource": "https://mplus-fonts.osdn.jp/"
+    },
+    {
+      "index": 75,
+      "name": "M+ C Type-2",
+      "family": "[M+Fonts](http://mplus-fonts.osdn.jp/)",
+      "links": [
+        {
+          "name": "M+Fonts",
+          "url": "http://mplus-fonts.osdn.jp/"
+        }
+      ],
+      "license": "[M+Fonts License](http://mplus-fonts.osdn.jp/about.html#license)",
+      "status": "收录",
+      "note": "M+ 2c · 日文；M+ Fonts permissive license；7 个已内置字重。",
+      "fontId": "mplus-2c-regular",
+      "verifiedSource": "https://mplus-fonts.osdn.jp/"
+    },
+    {
+      "index": 76,
+      "name": "M+ M Type-1",
+      "family": "[M+Fonts](http://mplus-fonts.osdn.jp/)",
+      "links": [
+        {
+          "name": "M+Fonts",
+          "url": "http://mplus-fonts.osdn.jp/"
+        }
+      ],
+      "license": "[M+Fonts License](http://mplus-fonts.osdn.jp/about.html#license)",
+      "status": "收录",
+      "note": "M+ 1m · 日文；M+ Fonts permissive license；5 个已内置字重。",
+      "fontId": "mplus-1m-regular",
+      "verifiedSource": "https://mplus-fonts.osdn.jp/"
+    },
+    {
+      "index": 77,
+      "name": "M+ M Type-2",
+      "family": "[M+Fonts](http://mplus-fonts.osdn.jp/)",
+      "links": [
+        {
+          "name": "M+Fonts",
+          "url": "http://mplus-fonts.osdn.jp/"
+        }
+      ],
+      "license": "[M+Fonts License](http://mplus-fonts.osdn.jp/about.html#license)",
+      "status": "收录",
+      "note": "M+ 2m · 日文；M+ Fonts permissive license；5 个已内置字重。",
+      "fontId": "mplus-2m-regular",
+      "verifiedSource": "https://mplus-fonts.osdn.jp/"
+    },
+    {
+      "index": 78,
+      "name": "M+ MN Type-1",
+      "family": "[M+Fonts](http://mplus-fonts.osdn.jp/)",
+      "links": [
+        {
+          "name": "M+Fonts",
+          "url": "http://mplus-fonts.osdn.jp/"
+        }
+      ],
+      "license": "[M+Fonts License](http://mplus-fonts.osdn.jp/about.html#license)",
+      "status": "收录",
+      "note": "M+ 1mn · 日文；M+ Fonts permissive license；5 个已内置字重。",
+      "fontId": "mplus-1mn-regular",
+      "verifiedSource": "https://mplus-fonts.osdn.jp/"
+    },
+    {
+      "index": 79,
+      "name": "851ゴチカクット",
+      "family": "[851](https://pm85122.onamae.jp/85122font.html)",
+      "links": [
+        {
+          "name": "851ゴチカクット",
+          "url": "https://pm85122.onamae.jp/851Gkktt.html"
+        },
+        {
+          "name": "851",
+          "url": "https://pm85122.onamae.jp/85122font.html"
+        }
+      ],
+      "license": "自由修改分发，可商用，保留著作权",
+      "status": "收录",
+      "note": "851 电机文字 · 日文；851 author terms；1 个已内置字重。",
+      "fontId": "jp-851gkktt-regular",
+      "verifiedSource": "https://pm85122.onamae.jp/851fontTerm.html"
+    },
+    {
+      "index": 80,
+      "name": "851手書き雑フォント",
+      "family": "[851](https://pm85122.onamae.jp/85122font.html)",
+      "links": [
+        {
+          "name": "851手書き雑フォント",
+          "url": "https://pm85122.onamae.jp/851fontpage.html"
+        },
+        {
+          "name": "851",
+          "url": "https://pm85122.onamae.jp/85122font.html"
+        }
+      ],
+      "license": "自由修改分发，可商用，保留著作权",
+      "status": "收录",
+      "note": "851 手写杂字体 · 日文；851 author terms；1 个已内置字重。",
+      "fontId": "jp-851fontpage-regular",
+      "verifiedSource": "https://pm85122.onamae.jp/851fontTerm.html"
+    },
+    {
+      "index": 81,
+      "name": "851チカラヅヨク",
+      "family": "[851](https://pm85122.onamae.jp/85122font.html)",
+      "links": [
+        {
+          "name": "851チカラヅヨク",
+          "url": "https://pm85122.onamae.jp/851ch-dz.html"
+        },
+        {
+          "name": "851",
+          "url": "https://pm85122.onamae.jp/85122font.html"
+        }
+      ],
+      "license": "自由修改分发，可商用，保留著作权",
+      "status": "收录",
+      "note": "851 强力手写 · 日文；851 author terms；1 个已内置字重。",
+      "fontId": "jp-851ch-dz-regular",
+      "verifiedSource": "https://pm85122.onamae.jp/851fontTerm.html"
+    },
+    {
+      "index": 82,
+      "name": "851チカラヨワク",
+      "family": "[851](https://pm85122.onamae.jp/85122font.html)",
+      "links": [
+        {
+          "name": "851チカラヨワク",
+          "url": "https://pm85122.onamae.jp/851ch-yw.html"
+        },
+        {
+          "name": "851",
+          "url": "https://pm85122.onamae.jp/85122font.html"
+        }
+      ],
+      "license": "自由修改分发，可商用，保留著作权",
+      "status": "收录",
+      "note": "851 柔和手写 · 日文；851 author terms；1 个已内置字重。",
+      "fontId": "jp-851ch-yw-regular",
+      "verifiedSource": "https://pm85122.onamae.jp/851fontTerm.html"
+    },
+    {
+      "index": 83,
+      "name": "851テガキカクット",
+      "family": "[851](https://pm85122.onamae.jp/85122font.html)",
+      "links": [
+        {
+          "name": "851テガキカクット",
+          "url": "https://pm85122.onamae.jp/851H_kktt.html"
+        },
+        {
+          "name": "851",
+          "url": "https://pm85122.onamae.jp/85122font.html"
+        }
+      ],
+      "license": "自由修改分发，可商用，保留著作权",
+      "status": "收录",
+      "note": "851 角角体 · 日文；851 author terms；1 个已内置字重。",
+      "fontId": "jp-851h_kktt-regular",
+      "verifiedSource": "https://pm85122.onamae.jp/851fontTerm.html"
+    },
+    {
+      "index": 84,
+      "name": "851マカポップ",
+      "family": "[851](https://pm85122.onamae.jp/85122font.html)",
+      "links": [
+        {
+          "name": "851マカポップ",
+          "url": "https://pm85122.onamae.jp/851mkpop.html"
+        },
+        {
+          "name": "851",
+          "url": "https://pm85122.onamae.jp/85122font.html"
+        }
+      ],
+      "license": "自由修改分发，可商用，保留著作权",
+      "status": "收录",
+      "note": "851 麦克笔 POP · 日文；851 author terms；1 个已内置字重。",
+      "fontId": "jp-851mkpop-regular",
+      "verifiedSource": "https://pm85122.onamae.jp/851fontTerm.html"
+    },
+    {
+      "index": 85,
+      "name": "851マカポップ",
+      "family": "[851](https://pm85122.onamae.jp/85122font.html)",
+      "links": [
+        {
+          "name": "851マカポップ",
+          "url": "https://pm85122.onamae.jp/851mkpop.html"
+        },
+        {
+          "name": "851",
+          "url": "https://pm85122.onamae.jp/85122font.html"
+        }
+      ],
+      "license": "自由修改分发，可商用，保留著作权",
+      "status": "重复",
+      "note": "与第 84 条是同一 851 麦克笔 POP 项目，不重复收录。"
+    },
+    {
+      "index": 86,
+      "name": "Kazesawa",
+      "family": "[Kazesawa](https://kazesawa.github.io/)",
+      "links": [
+        {
+          "name": "Kazesawa",
+          "url": "https://kazesawa.github.io/"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "收录",
+      "note": "风泽 · 日文；OFL-1.1 + M+ permissive；6 个已内置字重。",
+      "fontId": "kazesawa-regular",
+      "verifiedSource": "https://github.com/kazesawa/kazesawa"
+    },
+    {
+      "index": 87,
+      "name": "装甲明朝",
+      "family": "FLOP DESIGN",
+      "links": [
+        {
+          "name": "装甲明朝",
+          "url": "https://flopdesign.com/blog/font/5228/"
+        },
+        {
+          "name": "FLOP DESIGN",
+          "url": "https://www.flopdesign.com/"
+        }
+      ],
+      "license": "[SIL Open Font License, Version 1.1](http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL)",
+      "status": "暂缓",
+      "note": "原 FLOP 页面返回访问错误；未从作者渠道取得可核验的原字体包。"
+    },
+    {
+      "index": 88,
+      "name": "Sazanami ゴシック",
+      "family": "[Sazanami](https://ja.osdn.net/projects/efont/)",
+      "links": [
+        {
+          "name": "Sazanami",
+          "url": "https://ja.osdn.net/projects/efont/"
+        }
+      ],
+      "license": "BSD",
+      "status": "暂缓",
+      "note": "OSDN 原下载未恢复，尚无可核验的 BSD 字体及完整原版权声明。"
+    },
+    {
+      "index": 89,
+      "name": "Sazanami 明朝",
+      "family": "[Sazanami](https://ja.osdn.net/projects/efont/)",
+      "links": [
+        {
+          "name": "Sazanami",
+          "url": "https://ja.osdn.net/projects/efont/"
+        }
+      ],
+      "license": "BSD",
+      "status": "暂缓",
+      "note": "OSDN 原下载未恢复，尚无可核验的 BSD 字体及完整原版权声明。"
+    },
+    {
+      "index": 90,
+      "name": "UnBatang",
+      "family": "[Un Fonts](http://kldp.net/unfonts/)",
+      "links": [
+        {
+          "name": "Un Fonts",
+          "url": "http://kldp.net/unfonts/"
+        }
+      ],
+      "license": "[GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html)",
+      "status": "暂缓",
+      "note": "原站源码下载超时；Debian 原始包有部分 TTF，但与目录字面及 GPL 版本/对应源码关系尚未核清。"
+    },
+    {
+      "index": 91,
+      "name": "UnDotum",
+      "family": "[Un Fonts](http://kldp.net/unfonts/)",
+      "links": [
+        {
+          "name": "Un Fonts",
+          "url": "http://kldp.net/unfonts/"
+        }
+      ],
+      "license": "[GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html)",
+      "status": "暂缓",
+      "note": "原站源码下载超时；Debian 原始包有部分 TTF，但与目录字面及 GPL 版本/对应源码关系尚未核清。"
+    },
+    {
+      "index": 92,
+      "name": "UnShinmun",
+      "family": "[Un Fonts](http://kldp.net/unfonts/)",
+      "links": [
+        {
+          "name": "Un Fonts",
+          "url": "http://kldp.net/unfonts/"
+        }
+      ],
+      "license": "[GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html)",
+      "status": "暂缓",
+      "note": "原站源码下载超时；Debian 原始包有部分 TTF，但与目录字面及 GPL 版本/对应源码关系尚未核清。"
+    },
+    {
+      "index": 93,
+      "name": "UnYetgul",
+      "family": "[Un Fonts](http://kldp.net/unfonts/)",
+      "links": [
+        {
+          "name": "Un Fonts",
+          "url": "http://kldp.net/unfonts/"
+        }
+      ],
+      "license": "[GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html)",
+      "status": "暂缓",
+      "note": "原站源码下载超时；Debian 原始包有部分 TTF，但与目录字面及 GPL 版本/对应源码关系尚未核清。"
+    },
+    {
+      "index": 94,
+      "name": "UnGungseo",
+      "family": "[Un Fonts](http://kldp.net/unfonts/)",
+      "links": [
+        {
+          "name": "Un Fonts",
+          "url": "http://kldp.net/unfonts/"
+        }
+      ],
+      "license": "[GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html)",
+      "status": "暂缓",
+      "note": "原站源码下载超时；Debian 原始包有部分 TTF，但与目录字面及 GPL 版本/对应源码关系尚未核清。"
+    },
+    {
+      "index": 95,
+      "name": "さわらびゴシック",
+      "family": "[Sazanami](http://sawarabi-fonts.osdn.jp/)",
+      "links": [
+        {
+          "name": "Sazanami",
+          "url": "http://sawarabi-fonts.osdn.jp/"
+        }
+      ],
+      "license": "[CC BY 3.0](https://creativecommons.org/licenses/by/3.0/deed.ja)",
+      "status": "收录",
+      "note": "早蕨黑体 · 日文；OFL-1.1；1 个已内置字重。",
+      "fontId": "sawarabigothic-regular",
+      "verifiedSource": "https://github.com/google/fonts/tree/main/ofl/sawarabigothic"
+    },
+    {
+      "index": 96,
+      "name": "さわらび明朝",
+      "family": "[Sazanami](http://sawarabi-fonts.osdn.jp/)",
+      "links": [
+        {
+          "name": "Sazanami",
+          "url": "http://sawarabi-fonts.osdn.jp/"
+        }
+      ],
+      "license": "[CC BY 3.0](https://creativecommons.org/licenses/by/3.0/deed.ja)",
+      "status": "收录",
+      "note": "早蕨明朝 · 日文；OFL-1.1；1 个已内置字重。",
+      "fontId": "sawarabimincho-regular",
+      "verifiedSource": "https://github.com/google/fonts/tree/main/ofl/sawarabimincho"
+    },
+    {
+      "index": 97,
+      "name": "こころ明朝体",
+      "family": "Typing Art开源字体",
+      "links": [
+        {
+          "name": "こころ明朝体",
+          "url": "http://typingart.net/?p=46"
+        },
+        {
+          "name": "中井良尚",
+          "url": "https://twitter.com/typingart"
+        }
+      ],
+      "license": "[IPA Font License Agreement V1.0](http://ipafont.ipa.go.jp/ipa_font_license_v1-html#jp)",
+      "status": "收录",
+      "note": "心明朝 · 假名；OFL-1.1；1 个已内置字重。",
+      "fontId": "kokoro-regular",
+      "verifiedSource": "https://github.com/google/fonts/tree/main/ofl/kokoro"
+    },
+    {
+      "index": 98,
+      "name": "はんなり明朝",
+      "family": "Typing Art开源字体",
+      "links": [
+        {
+          "name": "はんなり明朝",
+          "url": "http://typingart.net/?p=44"
+        },
+        {
+          "name": "中井良尚",
+          "url": "https://twitter.com/typingart"
+        }
+      ],
+      "license": "[IPA Font License Agreement V1.0](http://ipafont.ipa.go.jp/ipa_font_license_v1-html#jp)",
+      "status": "收录",
+      "note": "Hannari · 假名；OFL-1.1；1 个已内置字重。",
+      "fontId": "hannari-regular",
+      "verifiedSource": "https://github.com/google/fonts/tree/main/ofl/hannari"
+    },
+    {
+      "index": 99,
+      "name": "こども丸ゴシック",
+      "family": "Typing Art开源字体",
+      "links": [
+        {
+          "name": "こども丸ゴシック",
+          "url": "http://typingart.net/?p=51"
+        },
+        {
+          "name": "中井良尚",
+          "url": "https://twitter.com/typingart"
+        }
+      ],
+      "license": "[IPA Font License Agreement V1.0](http://ipafont.ipa.go.jp/ipa_font_license_v1-html#jp)",
+      "status": "暂缓",
+      "note": "原作者页面 404；未核验当前 IPA 授权文件及原始字库。"
+    }
+  ]
+}

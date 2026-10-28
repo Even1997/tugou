@@ -11,6 +11,7 @@ const output = process.env.TUGOU_BUILD_DIR || 'dist';
   await bundle({ entryPoints: ['renderer/index.jsx'], bundle: true, outfile: path.join(output,'ui.js'), platform: 'browser', format: 'iife', minify: true, define: { 'process.env.NODE_ENV': '"production"' } });
   await fs.mkdir(path.join(output,'brand'),{recursive:true});
   await fs.copyFile('assets/brand/logo.png',path.join(output,'brand/logo.png'));
+  await fs.copyFile('assets/brand/wordmark.png',path.join(output,'brand/wordmark.png'));
   await fs.copyFile('renderer/index.html', path.join(output,'index.html'));
   await fs.copyFile('renderer/tool-host.html', path.join(output,'tool-host.html'));
   await bundle({entryPoints:['renderer/tool-host.js'],bundle:true,outfile:path.join(output,'tool-host.js'),platform:'browser',format:'iife',minify:true});

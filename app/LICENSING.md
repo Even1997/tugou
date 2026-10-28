@@ -16,4 +16,6 @@
 
 用户数据、API 密钥及私人参考图不因本文件获得公开或再分发授权。示例图片未授权作为公共模板分发。
 
+随应用内置字体不适用本项目 Apache-2.0 许可。逐字体适用 OFL 1.1、IPA Font License、Arphic Public License、M+ 许可、CC-BY-4.0、851 作者条款或 Apache-2.0，详见 assets/fonts/CATALOG.md、各字体的 LICENSE.txt / OFL.txt 与 SOURCE.md。多数字体保持上游原始字节。三款 TTC 提取首个字面、两款旧文鼎字体修复 cmap 序列化，保留原文件并嵌入修改声明；经验证字形轮廓、字符映射及字宽不变，不裁剪字符。真实字重单独加载。原版权、完整许可证和必要署名一并包含于构建生成的 THIRD_PARTY_NOTICES.txt。851 字体允许商业嵌入，但禁止未经许可单卖字体；IPA、CC-BY 等附加条件仍适用。OSFCC 是索引，不是字体的统一许可方。未核清来源、再分发条件或对应源码，以及非商用和本轮无法取得可验证文件的项目没有纳入；逐项原因见目录审查表。
+
 仓库根目录 THIRD-PARTY-NOTICES.md 及 docs/licenses/retired 保存历史第三方／AGPL 声明。历史版本、Git 历史和仍受其他许可约束的内容不因此改为 Apache-2.0。仅替换 LICENSE 不构成源码权属审核，逐模块来源及发行合规复核仍待完成；未核清部分不得据此声称已获重新授权。

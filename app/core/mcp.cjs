@@ -35,6 +35,7 @@ async function bridgeOnce(session,method,args,{signal,onProgress}={}){
   if(signal?.aborted)throw Object.assign(Error('已取消等待；任务不会因此取消'),{code:'CANCELLED'});
   const config=JSON.parse(await fs.readFile(session,'utf8'));
   if(!config||config.version!==1||!Number.isInteger(config.port)||config.port<1||config.port>65535||!/^[a-f0-9]{64}$/.test(config.token))throw Object.assign(Error('会话描述文件无效'),{code:'INVALID_SESSION'});
+  if(config.updating)throw Object.assign(Error('土狗正在安装更新，请重启后重新连接'),{code:'SESSION_UPDATING'});
   return new Promise((resolve,reject)=>{
     const socket=net.createConnection({host:'127.0.0.1',port:config.port});let buffer='',bytes=0,done=false;
     const finish=(error,value)=>{if(done)return;done=true;signal?.removeEventListener('abort',cancel);socket.destroy();error?reject(error):resolve(value);};
@@ -83,6 +84,8 @@ async function main(){
   server.setRequestHandler(ListPromptsRequestSchema,()=>({prompts:Object.entries(prompts).map(([name,description])=>({name,description}))}));
   server.setRequestHandler(GetPromptRequestSchema,({params})=>{if(!Object.hasOwn(prompts,params.name))throw Error('未知模板');return {messages:[{role:'user',content:{type:'text',text:prompts[params.name]}}]};});
   await server.connect(new StdioServerTransport());
+  // Cooperatively release the installed executable before an explicitly requested update.
+  const maintenance=setInterval(async()=>{try{const state=JSON.parse(await fs.readFile(session,'utf8'));if(state.updating===true){clearInterval(maintenance);await server.close();process.exit(0);}}catch{}},500);maintenance.unref();
 }
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exitCode=1;});
 module.exports={main,bridge,sessionDiagnostic};

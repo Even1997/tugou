@@ -1,6 +1,6 @@
 # 土狗设置页与更新方案（待确认）
 
-本轮只提出方案，尚未实现设置页或自动更新。
+本文为历史方案。已按后续确认的七分区原型落地；实际实现、验证证据与剩余边界见 [settings-update-implementation.md](settings-update-implementation.md)。
 
 ## 页面结构
 

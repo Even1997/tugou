@@ -8,12 +8,12 @@ function register(define,{string,object,enumeration}) {
   write('models.provider.update','修改供应商名称或唯一 URL；地址变化清空其模型和默认用途',{id:string,patch:object({name,baseUrl:url})},['id','patch']);
   write('models.provider.delete','删除供应商及其全部 Key，清空受影响默认用途',{id:string},['id']);
   write('models.key.create','在供应商下添加 Key；密钥仅写入，不返回或写入请求日志',{providerId:string,name,apiKey:secret},['providerId','name','apiKey']);
-  write('models.key.update','修改 Key 名称或密钥；密钥变化清空模型和默认用途',{id:string,patch:object({name,apiKey:secret,clearKey:{type:'boolean'},textApiMode:enumeration('chat','responses'),videoProtocol:enumeration('json','multipart','sora')})},['id','patch']);
+  write('models.key.update','修改 Key 名称或密钥；密钥变化清空模型和默认用途',{id:string,patch:object({name,apiKey:secret,clearKey:{type:'boolean'},textApiMode:enumeration('chat','responses')})},['id','patch']);
   write('models.key.delete','删除单个 Key，清空受影响默认用途',{id:string},['id']);
   const lookup={id:string,settingsRevision:revision};
   define('models.test','使用已保存 Key 测试模型列表接口，不调用生成、不返回密钥',lookup,['id','settingsRevision'],'network');
   define('models.fetch','按已保存 Key 获取模型 ID；不自动保存或猜测用途，之后使用 models.set',lookup,['id','settingsRevision'],'network');
-  write('models.set','设置单个 Key 的模型及用途；可手填模型，移除模型会清空受影响默认用途',{id:string,models:{type:'array',maxItems:10000,items:object({id:{type:'string',minLength:1,maxLength:256},purposes:{type:'array',maxItems:5,uniqueItems:true,items:enumeration(...purposes.map(p=>p[0]))}},['id','purposes'])}},['id','models']);
+  write('models.set','设置单个 Key 的模型及用途；可手填模型，移除模型会清空受影响默认用途',{id:string,models:{type:'array',maxItems:10000,items:object({id:{type:'string',minLength:1,maxLength:256},purposes:{type:'array',maxItems:purposes.length,uniqueItems:true,items:enumeration(...purposes.map(p=>p[0]))}},['id','purposes'])}},['id','models']);
   write('models.assign','按用途选择已分类的 Key 和模型；不传 keyId/modelId 则清除此用途',{purpose:enumeration(...purposes.map(p=>p[0])),keyId:string,modelId:{type:'string',minLength:1,maxLength:256}},['purpose']);
 }
 

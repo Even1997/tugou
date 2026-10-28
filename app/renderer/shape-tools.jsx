@@ -4,6 +4,8 @@ import React from 'react';
 import {Button,Icon} from './components.jsx';
 import {NumberField} from './number-field.jsx';
 import {shapes,shapePoints} from '../core/shapes.cjs';
+import {usePreferences} from './preferences.jsx';
+import {bindings,formatBinding} from '../core/shortcuts.cjs';
 
 export const shapeDefaults={shape:'rect',color:'#b0bff2',fill:true,stroke:'#333333',strokeWidth:0,radius:0};
 export function ShapePath({shape,width,height,radius=0,...props}) {
@@ -14,9 +16,10 @@ export function ShapePath({shape,width,height,radius=0,...props}) {
   return <rect width={width} height={height} rx={Math.min(radius,width/2,height/2)} {...props}/>;
 }
 export function ShapePicker({active,options,choose,disabled}) {
+  const {value}=usePreferences(),shortcut=formatBinding(bindings(window.tugou.platform,value.shortcuts).toolShape,window.tugou.platform);
   return <details className="shape-picker">
     <summary aria-label="形状" aria-pressed={active}><span className="shape-trigger-icon"><svg viewBox="-2 -2 24 24" aria-hidden="true"><ShapePath shape={options.shape} width={20} height={20} radius={options.radius?4:0} fill="none" stroke="currentColor" strokeWidth={1.5}/></svg></span><span>形状</span><Icon name="collapse"/></summary>
-    <div className="shape-picker-menu"><div className="shape-picker-title">绘制形状 <span>U</span></div><div className="shape-picker-grid">{shapes.map(([shape,label])=><Button key={shape} disabled={disabled} aria-pressed={options.shape===shape} onClick={e=>{choose({...options,shape,radius:shape==='rounded'?24:0});e.currentTarget.closest('details').open=false}}><span className="shape-option-icon"><svg viewBox="-2 -2 24 24" aria-hidden="true"><ShapePath shape={shape} width={20} height={20} radius={shape==='rounded'?4:0} fill="none" stroke="currentColor" strokeWidth={1.5}/></svg></span><span>{label}</span></Button>)}</div><small>拖拽绘制 · Shift 等比 · Esc 取消</small></div>
+    <div className="shape-picker-menu"><div className="shape-picker-title">绘制形状 <span>{shortcut}</span></div><div className="shape-picker-grid">{shapes.map(([shape,label])=><Button key={shape} disabled={disabled} aria-pressed={options.shape===shape} onClick={e=>{choose({...options,shape,radius:shape==='rounded'?24:0});e.currentTarget.closest('details').open=false}}><span className="shape-option-icon"><svg viewBox="-2 -2 24 24" aria-hidden="true"><ShapePath shape={shape} width={20} height={20} radius={shape==='rounded'?4:0} fill="none" stroke="currentColor" strokeWidth={1.5}/></svg></span><span>{label}</span></Button>)}</div><small>拖拽绘制 · Shift 等比 · Esc 取消</small></div>
   </details>;
 }
 export function ShapeOptions({options,change,disabled}) {

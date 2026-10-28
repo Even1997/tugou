@@ -1,18 +1,25 @@
 const fs=require('node:fs/promises'),path=require('node:path');
 const {execFile}=require('node:child_process'),{promisify}=require('node:util');
 const {safePath,atomicWrite,hash}=require('./storage.cjs');
+const {builtinFonts,findBuiltinFont}=require('./builtin-fonts.cjs');
+const {fontFaces}=require('./font-weights.cjs');
 let cached,expires=0;
 function normalizeFonts(items){
   const seen=new Set();return items.filter(item=>{
     if(!item||typeof item.family!=='string'||!item.family.trim()||/[\p{C}]/u.test(item.family))return false;
     const key=item.family.toLowerCase();if(seen.has(key))return false;seen.add(key);return true;
-  }).map(f=>({family:f.family,name:f.name||f.family,aliases:Array.isArray(f.aliases)?f.aliases:[]})).sort((a,b)=>a.name.localeCompare(b.name,'zh-CN'));
+  }).map(f=>({family:f.family,name:f.name||f.family,aliases:Array.isArray(f.aliases)?f.aliases:[],weights:[...new Set((Array.isArray(f.weights)?f.weights:[400]).filter(w=>Number.isInteger(w)&&w>=1&&w<=1000))].sort((a,b)=>a-b)})).sort((a,b)=>a.name.localeCompare(b.name,'zh-CN'));
 }
 async function localFonts(){
   if(cached&&Date.now()<expires)return cached;
   cached=(async()=>{
-    if(process.platform!=='win32')throw Error('当前本机字体枚举仅支持 Windows');
-    const script="[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); Add-Type -AssemblyName System.Drawing; $fonts=[System.Drawing.Text.InstalledFontCollection]::new(); try { @($fonts.Families | ForEach-Object { @{family=$_.GetName(1033); name=$_.GetName(2052); aliases=@($_.Name,$_.GetName(1033),$_.GetName(2052))} }) | ConvertTo-Json -Compress -Depth 3 } finally {$fonts.Dispose()}";
+    if(process.platform==='darwin'){
+      const {script,macFonts}=require('./mac-fonts.cjs');
+      const {stdout}=await promisify(execFile)('/usr/bin/osascript',['-l','JavaScript','-e',script],{timeout:15000,maxBuffer:8*1024*1024,encoding:'utf8'});
+      return normalizeFonts(macFonts(JSON.parse(stdout)));
+    }
+    if(process.platform!=='win32')throw Error('当前本机字体枚举支持 Windows 和 macOS');
+    const script="[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); Add-Type -AssemblyName PresentationCore; @([System.Windows.Media.Fonts]::SystemFontFamilies | ForEach-Object { $names=$_.FamilyNames; $name=$names[[System.Windows.Markup.XmlLanguage]::GetLanguage('zh-cn')]; if(!$name){$name=$_.Source}; @{family=$_.Source; name=$name; aliases=@($names.Values); weights=@($_.GetTypefaces() | Where-Object {$_.Style -eq [System.Windows.FontStyles]::Normal} | ForEach-Object {$_.Weight.ToOpenTypeWeight()} | Sort-Object -Unique)} }) | ConvertTo-Json -Compress -Depth 3";
     const {stdout}=await promisify(execFile)(path.join(process.env.SystemRoot||'C:\\Windows','System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,timeout:15000,maxBuffer:2*1024*1024,encoding:'utf8'});
     return normalizeFonts(JSON.parse(stdout.replace(/^\uFEFF/,'')));
   })();expires=Date.now()+60000;
@@ -26,7 +33,7 @@ async function fontLibrary(service){
   }
   let system=[],warning;
   try{system=await localFonts();}catch{warning='本机字体读取失败，可重新打开下拉重试';}
-  return {custom:custom.sort((a,b)=>a.name.localeCompare(b.name,'zh-CN')),system,warning};
+  return {custom:custom.sort((a,b)=>a.name.localeCompare(b.name,'zh-CN')),builtin:builtinFonts.map(f=>({id:f.id,family:f.family,name:f.name,aliases:f.aliases,version:f.version,weights:fontFaces(f).map(v=>v.weight).sort((a,b)=>a-b)})),system:system.filter(f=>!findBuiltinFont(f.family)),warning};
 }
 async function fontFace(service,{projectId,jobId},allowUnpublished=false){
   const p=await service.load(projectId);

@@ -57,6 +57,7 @@ export function PromptWorkbench({
         </PanelHeader>
         <SearchField label="搜索模块" value={query} onChange={setQuery} />
         <div className="module-items">
+          {query && !document.modules.some(m=>`${m.name} ${m.text}`.includes(query)) && <EmptyState compact icon="search" title="没有匹配的模块" description="试试其他关键词。" />}
           {document.modules
             .filter((m) => `${m.name} ${m.text}`.includes(query))
             .map((m) => (
@@ -184,6 +185,7 @@ export function PromptWorkbench({
           </>
         ) : (
           <EmptyState
+            icon="prompts"
             title="从一个模块开始"
             description="人物、动作、画风分别编辑，组合为配方。"
           >

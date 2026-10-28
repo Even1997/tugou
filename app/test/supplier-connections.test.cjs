@@ -47,7 +47,7 @@ test('one supplier accepts many Keys but rejects zero or multiple URLs atomicall
 test('model catalogs accept 5000 bounded entries and strip extraneous model fields',async t=>{
  const {store}=await fixture(t);const m=await setup(store);m.connections[0].models.push(...Array.from({length:5000},(_,i)=>({id:`catalog-${i}`,purposes:['image'],apiKey:'must-not-persist'})));await store.saveManager(m);const saved=await store.listSuppliers();assert.equal(saved.connections[0].models.length,5005);assert.ok(!JSON.stringify(saved).includes('must-not-persist'));
 });
-test('grouped supplier workflow image/text/video/audio and vision requests reach their assigned URL with matching Key and model',async t=>{
+test('grouped supplier workflow image/text and vision requests reach their assigned URL with matching Key and model',async t=>{
  const {root,store}=await fixture(t),requests=[];const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==';
  const media=require('./workflow-fixtures.cjs');
  async function provider(name){const server=http.createServer(async(req,res)=>{let raw='';for await(const chunk of req)raw+=chunk;const body=raw?JSON.parse(raw):{};requests.push({provider:name,url:req.url,auth:req.headers.authorization,body});
@@ -63,8 +63,8 @@ test('grouped supplier workflow image/text/video/audio and vision requests reach
  const {ProjectStore}=require('../core/storage.cjs'),{TaskQueue}=require('../core/tasks.cjs'),{WorkflowService}=require('../core/workflow-service.cjs'),{workflowNode}=require('../core/workflow-nodes.cjs');
  const projects=new ProjectStore(root);await projects.init();const record=await projects.create('路由验收'),tasks=new TaskQueue(root);await tasks.init();t.after(()=>tasks.shutdown());
  const service=new WorkflowService(projects,store,tasks,()=>({width:1,height:1}));
- for(const [type,route,provider,model] of [['image','/images/generations','a','image-a'],['textgen','/chat/completions','b','text-b'],['video','/videos','b','video-b'],['audio','/audio/speech','a','audio-a']]){
-  const node=workflowNode(type,{x:0,y:0});node.data.prompt='测试';if(type==='audio')node.data.format='wav';
+ for(const [type,route,provider,model] of [['image','/images/generations','a','image-a'],['textgen','/chat/completions','b','text-b']]){
+  const node=workflowNode(type,{x:0,y:0});node.data.prompt='测试';
   const doc={...record.document,tugouCanvas:{version:1,nodes:[node],edges:[],viewport:{x:0,y:0,zoom:1}}};const task=await service.start(record.id,doc,node.id);await tasks.execution;
   assert.equal(tasks.list().find(t=>t.id===task.id).status,'completed');const request=requests.filter(r=>r.url.endsWith(route)).at(-1);assert.equal(request.provider,provider);assert.equal(request.auth,`Bearer key-${provider}`);assert.equal(request.body.model,model);
  }

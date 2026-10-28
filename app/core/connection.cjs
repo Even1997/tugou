@@ -54,6 +54,7 @@ class ConnectionStore {
     } catch (error) { if (error.code === 'ENOENT') return {revision:0,activeId:null,routes:{},connections:[]}; throw error; }
   }
   async readPrivate(purpose) {
+    if(['video','audio'].includes(purpose))throw Error('视频和音频生成已移除');
     return selectedConnection(await this.readDatabase(),purpose);
   }
   async list() {

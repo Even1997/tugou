@@ -1,6 +1,7 @@
 import {ColorControl} from './color-control.jsx';
 import {Select} from './select.jsx';
 import {FontPicker} from './font-picker.jsx';
+import {requestedWeight} from '../core/font-weights.cjs';
 import React, {useState} from "react";
 import { Button, Input, TextArea } from "./components.jsx";
 import { NumberField } from "./number-field.jsx";
@@ -191,10 +192,7 @@ export function LayerProperties({ layer, patch, document, change, maskEditing, m
                 onChange={(e) => patch({ text: e.target.value })}
               />
             </label>
-            <label>
-              字体
-              <FontPicker key={layer.id} layer={layer} onChange={patch}/>
-            </label>
+            <FontPicker key={layer.id} layer={layer} onChange={patch}/>
             <div className="property-grid">
               <NumberField
                 label="字号"
@@ -231,14 +229,12 @@ export function LayerProperties({ layer, patch, document, change, maskEditing, m
               字形
               <Select
                 aria-label="文字字形"
-                value={layer.fontStyle || "normal"}
-                onChange={(e) => patch({ fontStyle: e.target.value })}
+                value={layer.fontStyle?.includes('italic')?'italic':'normal'}
+                onChange={(e) => patch({ fontStyle: e.target.value, fontWeight: requestedWeight(layer) })}
               >
                 {[
                   ["normal", "常规"],
-                  ["bold", "粗体"],
                   ["italic", "斜体"],
-                  ["bold italic", "粗斜体"],
                 ].map(([v, t]) => (
                   <option key={v} value={v}>
                     {t}

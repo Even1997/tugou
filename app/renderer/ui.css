@@ -150,6 +150,7 @@ textarea {
 .studio-header .project-menu {
   -webkit-app-region: no-drag;
 }
+.studio-header[data-platform="darwin"] { padding-left:92px; padding-right:16px; }
 .brand {
   font-size: 17px;
   font-weight: 650;
@@ -159,8 +160,8 @@ textarea {
   white-space: nowrap;
 }
 .brand > .brand-logo {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
 }
 .project-menu {
@@ -492,23 +493,43 @@ main {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   padding: 32px;
   text-align: center;
   min-height: 240px;
   height: 100%;
   color: var(--muted);
+  min-width: 0;
+  flex: 1;
 }
 .empty > .anticon {
-  font-size: 32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:52px;
+  height:52px;
+  flex-shrink:0;
+  border-radius:14px;
+  background:var(--surface);
+  font-size:24px;
+  margin-bottom:4px;
 }
 .empty h2 {
-  font-size: 18px;
+  font-size: 16px;
+  font-weight:600;
+  line-height:1.5;
+  margin:0;
   color: var(--text);
 }
 .empty p {
   max-width: 360px;
+  margin:0;
+  font-size:12px;
+  line-height:1.7;
 }
+.empty > .ant-btn { margin-top:8px; }
+.empty-compact { height:auto; min-height:180px; padding:24px 8px; }
+.empty-compact h2 { font-size:14px; }
 .empty-small {
   font-size: 12px;
   color: var(--muted);
@@ -724,7 +745,7 @@ main {
   .studio-header { gap: 8px; padding-left: 12px; }
   .workspace-title, .header-save-state { display:none; }
   .brand { gap: 6px; font-size: 15px; }
-  .brand > .brand-logo { width: 28px; height: 28px; }
+  .brand > .brand-logo { width: 32px; height: 32px; }
   .project-menu .studio-select { width: 110px; }
   .toolbar nav { gap: 0; }
   .toolbar-end .icon-button, .project-menu .ant-btn { width: 30px; min-width: 30px; padding: 0; }
@@ -774,6 +795,7 @@ main {
 .library-filters { display:flex; gap:8px; padding:16px 24px 0; }
 .library-filters [aria-pressed=true] { color:var(--accent); background:var(--accent-bg); }
 .library-content { flex:1; display:flex; min-height:0; }
+.library-content > .empty { flex:1; min-width:0; }
 .library-details { flex:0 0 280px; padding:24px; background:var(--shell); border-left:1px solid var(--line); overflow:auto; display:flex; flex-direction:column; gap:18px; }
 .library-details .material-preview { height:200px; background:var(--surface); border-radius:10px; }
 .library-details h3 { margin:0; font-size:14px; overflow-wrap:anywhere; }

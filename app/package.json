@@ -1,12 +1,13 @@
 {
   "name": "tugou-app",
-  "version": "0.1.0",
+  "version": "0.8.2",
   "private": true,
   "description": "土狗独立桌面实现",
   "main": "main.cjs",
   "scripts": {
     "build": "node build.cjs",
     "start": "npm run build && electron .",
+    "dev": "node scripts/dev-preview.cjs",
     "test": "node --test test/*.test.cjs",
     "pack:dir": "npm run build && electron-builder --config electron-builder.cjs --dir",
     "dist:win": "npm run build && electron-builder --config electron-builder.cjs --win --x64",
@@ -16,6 +17,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
     "ajv": "8.20.0",
+    "electron-updater": "6.8.11",
     "sharp": "0.35.5",
     "tar": "7.5.22",
     "yauzl": "3.4.0"

@@ -46,10 +46,10 @@ test('generation desk source trace matches used snapshots globals references and
   d.tugouCanvas.edges=d.tugouCanvas.edges.filter(e=>e.source!=='photo-node');assert.ok(!compileWorkflow(d,desk.id).sources.some(s=>s.assetId==='photo'));
 });
 test('workflow input order, mentions, roles, config and panorama projection',()=>{
-  const d=base(),a={id:'a',type:'text',data:{text:'第一段'}},b={id:'b',type:'text',data:{text:'第二段'}},c=workflowNode('config',{x:0,y:0}),n=workflowNode('video',{x:0,y:0});
-  Object.assign(c.data,{count:3,model:'configured',seconds:8,size:'1280x720'});n.data.prompt='镜头';
+  const d=base(),a={id:'a',type:'text',data:{text:'第一段'}},b={id:'b',type:'text',data:{text:'第二段'}},c=workflowNode('config',{x:0,y:0}),n=workflowNode('image',{x:0,y:0});
+  Object.assign(c.data,{count:3,model:'configured',size:'1280x720'});n.data.prompt='镜头';
   d.tugouCanvas.nodes=[a,b,c,n];d.tugouCanvas.edges=[{source:'a',target:c.id},{source:'b',target:c.id},{source:c.id,target:n.id}];c.data.inputOrder=['b','a'];
-  let compiled=compileWorkflow(d,n.id);assert.equal(compiled.parameterSourceId,c.id);assert.equal(compiled.model,'configured');assert.equal(compiled.seconds,8);assert.ok(compiled.prompt.indexOf('第二段')<compiled.prompt.indexOf('第一段'));
+  let compiled=compileWorkflow(d,n.id);assert.equal(compiled.parameterSourceId,c.id);assert.equal(compiled.model,'configured');assert.equal(compiled.count,3);assert.ok(compiled.prompt.indexOf('第二段')<compiled.prompt.indexOf('第一段'));
   n.data.prompt='@[node:a] 然后 @[node:b]';compiled=compileWorkflow(d,n.id);assert.match(compiled.prompt,/第一段 然后 第二段/);
   n.data.prompt='@[node:missing]';assert.throws(()=>compileWorkflow(d,n.id),/未连接/);
   n.type='panorama';n.data.prompt='花园';compiled=compileWorkflow(d,n.id);assert.equal(compiled.size,'2048x1024');assert.match(compiled.prompt,/360/);
@@ -82,7 +82,7 @@ test('media range response supports seeks and rejects malformed ranges',async()=
   assert.equal((await mediaResponse(file,'bytes=999999-')).status,416);assert.equal((await mediaResponse(file,'bytes=-10')).headers.get('content-length'),'10');
   await assert.rejects(saveMedia(profile,Buffer.from('not valid audio'),'bad.mp3'));
 });
-test('all generation modes: parameters, result persistence, cancellation and explicit retry',async t=>{
+test('image and text generation: parameters, result persistence, cancellation and explicit retry',async t=>{
   await fs.mkdir(root,{recursive:true});const profile=await fs.mkdtemp(path.join(root,'tasks-')),projects=new ProjectStore(profile);await projects.init();
   const record=await projects.create('完整节点测试'),tasks=new TaskQueue(profile);await tasks.init();const requests=[];let hold=false,release;
   const png=await encode({width:32,height:16,data:Buffer.alloc(32*16*4,255)}),video=await fs.readFile(path.join(root,'sample.mp4')),audio=await fs.readFile(path.join(root,'sample.wav'));
@@ -97,7 +97,7 @@ test('all generation modes: parameters, result persistence, cancellation and exp
   const settings={baseUrl:`http://127.0.0.1:${server.address().port}/v1`,apiKey:'private-fixture',model:'image',textModel:'text',videoModel:'video',audioModel:'audio'};
   const service=new WorkflowService(projects,{readPrivate:async()=>settings},tasks,()=>({width:32,height:16}));
   let document={...record.document,tugouCanvas:{version:1,nodes:[],edges:[],viewport:{x:0,y:0,zoom:1}}};
-  for(const type of ['textgen','image','video','audio','panorama','config']){
+  for(const type of ['textgen','image','panorama','config']){
     const node=workflowNode(type,{x:0,y:0});Object.assign(node.data,{prompt:'测试生成',format:'wav',count:2});document.tugouCanvas.nodes.push(node);
     const task=await service.start(record.id,document,node.id);await tasks.execution;
     assert.equal(tasks.list().find(t=>t.id===task.id).status,'completed',type);
@@ -107,8 +107,7 @@ test('all generation modes: parameters, result persistence, cancellation and exp
     assert.ok(!(await fs.readFile(path.join(profile,'requests',task.id+'.json'),'utf8')).includes(settings.apiKey));
   }
   assert.equal(JSON.parse(requests.find(r=>r.url.endsWith('/images/generations')).raw).n,2);
-  assert.equal(JSON.parse(requests.find(r=>r.url.endsWith('/audio/speech')).raw).response_format,'wav');
-  assert.ok(requests.some(r=>r.url==='/v1/videos/remote-1/content'));
+  assert.ok(!requests.some(r=>/audio|videos/.test(r.url)));
   const node=workflowNode('textgen',{x:0,y:0});node.data.prompt='取消';document.tugouCanvas.nodes.push(node);hold=true;
   const task=await service.start(record.id,document,node.id);while(!release)await new Promise(r=>setTimeout(r,10));
   await assert.rejects(service.start(record.id,document,node.id),/已有任务/);await tasks.cancel(task.id);release();await tasks.execution;

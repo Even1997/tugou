@@ -375,7 +375,7 @@ export function ImageTools({
               </Button>
             ))
           ) : (
-            <p className="empty-small">处理后的素材将显示在这里。</p>
+            <EmptyState compact icon="assets" title="暂无处理结果" description="处理后的素材将显示在这里。" />
           )}
         </details>
       </aside>

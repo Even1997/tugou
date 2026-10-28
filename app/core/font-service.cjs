@@ -16,13 +16,10 @@ class FontService {
   async runtime(){
     let location=process.env.TUGOU_FONT_RUNTIME;
     if(!location){try{location=JSON.parse(await fs.readFile(await safePath(this.root,'font-runtime.json'),'utf8')).directory;}catch(e){if(e.code!=='ENOENT')throw e;}}
-    if(!location)return {ready:false,reason:'请运行 scripts/setup-font-runtime.ps1 配置独立字体环境'};
+    if(!location)return {ready:false,reason:require('./font-environment.cjs').setupHint()};
     try{
-      const runtime=JSON.parse(await fs.readFile(await safePath(location,'runtime.json'),'utf8'));
-      const python=await safePath(location,runtime.python),potrace=await safePath(location,runtime.potrace);
-      await fs.access(python);await fs.access(potrace);
-      return {ready:true,python,potrace,versions:runtime.versions};
-    }catch{return {ready:false,reason:'字体运行环境不完整，请重新运行配置脚本'};}
+      return await require('./font-environment.cjs').fontEnvironment(location);
+    }catch{return {ready:false,reason:'字体运行环境不完整或系统不匹配；'+require('./font-environment.cjs').setupHint()};}
   }
   async result(p,id){const job=p.jobs.find(j=>j.id===id);if(!job)fail('NOT_FOUND','字体任务不属于此工程');const dir=await safePath(await this.directory(p.id),'jobs',id);
     let result;try{result=JSON.parse(await fs.readFile(await safePath(dir,'result.json'),'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}

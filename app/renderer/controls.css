@@ -1,6 +1,7 @@
 .studio-select { display:inline-flex;min-width:0;max-width:100%;vertical-align:middle;height:38px; }
 .font-picker { display:block;min-width:0; }
-.font-picker > .studio-select { width:100%; }
+.font-picker > label { display:grid;gap:6px;margin-bottom:10px; }
+.font-picker .studio-select { width:100%; }
 .font-picker > small { display:block;color:var(--muted);margin-top:6px; }
 .studio-select > .ant-select { width:100%;min-width:0;height:100%;font:inherit;text-align:left; }
 .studio-select .ant-select-selector { min-width:0; }

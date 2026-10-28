@@ -52,6 +52,7 @@
   background: var(--shell);
   padding: 24px 24px 0;
 }
+.recipe-empty { padding-bottom:48px; }
 .recipe-choice {
   display: flex;
   gap: 6px;
@@ -182,8 +183,11 @@
   min-height: 34px;
 }
 .recipe-footer > .ant-btn-primary { flex:1; width:auto; height:44px; padding:0 16px; }
-.generation-choice .ratio-choices { display:flex; gap:8px; }
-.ratio-choices button { flex:1; min-width:0; height:76px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--muted); font-size:12px; }
+.generation-choice .ratio-choices { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+.generation-dimensions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.generation-dimensions > div { min-width:0; display:grid; gap:6px; }
+.generation-dimensions .ant-input-suffix { color:var(--muted); font-size:12px; }
+.ratio-choices button { min-width:0; height:62px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--muted); font-size:12px; }
 .ratio-choices button[aria-pressed=true] { color:var(--accent); border-color:var(--accent); background:var(--accent-bg); }
 .ratio-choices button:disabled { opacity:.6; cursor:default; }
 .ratio-choices i { display:block; border:1.5px solid currentColor; border-radius:3px; }
@@ -249,16 +253,22 @@
   display: flex;
   gap: 3px;
   margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
 }
 .palette-tabs .ant-btn {
+  flex: 1;
+  min-width: 0;
   font-size: 12px;
-  padding: 4px 6px;
+  padding: 4px 2px;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
 }
 .palette-tabs button[aria-pressed="true"] {
   color: var(--accent);
-  background: var(--surface);
+  border-bottom-color: var(--accent);
+  background: transparent;
 }
-.canvas-palette p {
+.canvas-palette > p {
   font-size: 11px;
   color: var(--muted);
   margin: 14px 0;

@@ -218,6 +218,7 @@ function createLayer(kind, patch = {}) {
     flipX: false,
     flipY: false,
     blend: "source-over",
+    ...(kind==='text'?{fontFamily:'Source Han Sans SC'}:{}),
     ...patch,
   };
 }
@@ -489,6 +490,7 @@ function validateLayers(layers) {
     if (!l || typeof l.id !== "string" || ids.has(l.id))
       throw new Error("图层标识重复或无效");
     ids.add(l.id);
+    if(l.fontWeight!==undefined&&(!Number.isInteger(l.fontWeight)||l.fontWeight<1||l.fontWeight>1000))throw Error('文字粗细无效');
     if(l.fontResource&&(l.kind!=='text'||!/^[a-f0-9]{64}\.ttf$/.test(l.fontResource.resource)||typeof l.fontResource.projectId!=='string'||typeof l.fontResource.jobId!=='string'))throw Error('文字字体资源无效');
     if (l.kind === 'adjustment') require('./adjustments.cjs').validateAdjustment(l.adjustment);
     if(l.effects!==undefined){

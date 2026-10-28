@@ -14,15 +14,15 @@ function optionsOf(children) {
 }
 
 // Keep native-select string values and event callbacks at existing call sites.
-export function Select({children,value,onChange,disabled,className='',...props}) {
+export function Select({children,value,onChange,disabled,className='',showSearch,notFoundContent='没有匹配的选项',...props}) {
   const host=useRef(null),[inheritedDisabled,setInheritedDisabled]=useState(false);
   const options=useMemo(()=>optionsOf(children),[children]);
   useLayoutEffect(()=>{setInheritedDisabled(!!host.current?.closest('fieldset:disabled'))});
   return <span ref={host} className={`studio-select ${className}`} data-value={String(value??'')} data-option-count={options.length} onKeyDown={event=>event.stopPropagation()}>
     <AntSelect {...props} value={String(value??'')} options={options} disabled={disabled||inheritedDisabled}
-      showSearch={options.length>=8?{optionFilterProp:'label'}:false}
+      showSearch={showSearch??(options.length>=8?{optionFilterProp:'label'}:false)}
       classNames={{popup:{root:'studio-select-popup'}}}
-      notFoundContent="没有匹配的选项" virtual={options.length>50}
+      notFoundContent={notFoundContent} virtual={options.length>50}
       optionRender={option=><span data-option-value={option.value}>{option.label}</span>}
       onChange={next=>onChange?.({target:{value:next},currentTarget:{value:next}})}/>
   </span>;

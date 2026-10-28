@@ -1,12 +1,11 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path'),http=require('node:http');
 const {ProjectStore,validateDocument}=require('../core/storage.cjs'),{TaskQueue}=require('../core/tasks.cjs'),{WorkflowService}=require('../core/workflow-service.cjs');
 const {workflowNode}=require('../core/workflow-nodes.cjs'),{sceneFrame}=require('../core/scene-animation.cjs'),{saveImage}=require('../core/generation.cjs'),{encode}=require('../core/cloud-pixels.cjs');
-const {video}=require('./workflow-fixtures.cjs');
-test('Responses and three video protocols preserve real references, first/last frames and protected fields',async t=>{
+test('Responses preserves image references; retired modes fail before provider requests',async t=>{
   const root=path.resolve(__dirname,'../test-results/workflow-nodes');await fs.mkdir(root,{recursive:true});const profile=await fs.mkdtemp(path.join(root,'protocol-')),projects=new ProjectStore(profile);await projects.init();const record=await projects.create('协议验收'),tasks=new TaskQueue(profile);await tasks.init();
   const requests=[];const server=http.createServer(async(req,res)=>{const bytes=[];for await(const c of req)bytes.push(c);requests.push({url:req.url,headers:req.headers,raw:Buffer.concat(bytes).toString()});
     if(req.url.endsWith('/responses'))res.end(JSON.stringify({output:[{content:[{type:'output_text',text:'Responses 文本'}]}]}));
-    else if(req.url.endsWith('/content'))res.end(video);else res.end(JSON.stringify({id:'v',status:'completed'}));
+    else{res.statusCode=404;res.end();}
   });await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>{server.closeAllConnections();server.close();});
   const settings={baseUrl:`http://127.0.0.1:${server.address().port}/v1`,apiKey:'fixture',model:'img',textModel:'txt',videoModel:'vid',textApiMode:'responses'};
   const service=new WorkflowService(projects,{readPrivate:async()=>settings},tasks,()=>({width:2,height:2})),asset={...await saveImage(profile,await encode({width:2,height:2,data:Buffer.alloc(16,255)}),()=>({width:2,height:2})),id:'picture'};
@@ -14,11 +13,12 @@ test('Responses and three video protocols preserve real references, first/last f
   const document={...record.document,assets:[asset],tugouCanvas:{version:1,nodes:[source,node],edges:[{id:'edge',source:source.id,target:node.id}],viewport:{x:0,y:0,zoom:1}}};
   const execute=async()=>{const task=await service.start(record.id,document,node.id);await tasks.execution;assert.equal(tasks.list().find(t=>t.id===task.id).status,'completed');return requests.filter(r=>r.url.endsWith('/videos')||r.url.endsWith('/responses')).at(-1);};
   let request=await execute(),body=JSON.parse(request.raw);assert.equal(body.input[0].content[1].type,'input_image');assert.match(body.input[0].content[1].image_url,/^data:image\/png;base64,/);
-  node.type='video';node.data.firstFrameId='input';node.data.size='1280x720';node.data.seconds=8;node.data.generateAudio=true;node.data.videoOptions='{"seed":42,"model":"do-not-use","seconds":99}';
-  request=await execute();body=JSON.parse(request.raw);assert.equal(body.model,'vid');assert.equal(body.seconds,'8');assert.equal(body.seed,42);assert.equal(body.generate_audio,true);assert.match(body.first_frame_url,/^data:image\/png/);
-  settings.videoProtocol='multipart';request=await execute();assert.match(request.headers['content-type'],/^multipart\/form-data/);assert.match(request.raw,/name="first_frame_url"; filename="reference.png"/);assert.match(request.raw,/name="seed"\r\n\r\n42/);
-  settings.videoProtocol='sora';request=await execute();assert.match(request.raw,/name="input_reference"; filename="frame.png"/);assert.ok(!request.raw.includes('name="first_frame_url"'));
-  node.data.lastFrameId='input';const before=requests.length,failed=await service.start(record.id,document,node.id);await tasks.execution;assert.equal(tasks.list().find(t=>t.id===failed.id).status,'failed');assert.equal(requests.length,before);
+  const before=requests.length;
+  for(const mode of ['video','audio']){
+    node.type=mode;await assert.rejects(service.start(record.id,document,node.id),/已移除/);
+    await assert.rejects(service.submit({compiled:{mode}}),/已移除/);
+  }
+  assert.equal(requests.length,before);
 });
 test('scene keyframes interpolate shortest rotation and reject corrupt output and animation',()=>{
   const n=workflowNode('director',{x:0,y:0}),scene=n.data.scene,object={id:'actor',kind:'character',position:[0,0,0],rotation:[0,3,0],scale:[1,1,1]};

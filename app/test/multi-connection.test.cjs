@@ -13,7 +13,7 @@ test('existing single encrypted connection is preserved and moved into named man
 });
 test('purpose routing and public defaults choose correct profiles without exposing any key',async t=>{
  const {store}=await fixture(t);await setup(store);
- for(const [purpose,id] of Object.entries({image:'a',analysis:'b',text:'b',video:'b',audio:'a'}))assert.equal((await store.readPrivate(purpose)).apiKey,`key-${id}`);
+ for(const [purpose,id] of Object.entries({image:'a',analysis:'b',text:'b'}))assert.equal((await store.readPrivate(purpose)).apiKey,`key-${id}`);
  const publicSettings=await store.publicSettings();assert.equal(publicSettings.model,'image-a');assert.equal(publicSettings.analysisModel,'vision-b');assert.equal(publicSettings.textModel,'text-b');assert.equal(JSON.stringify(await store.list()).includes('key-'),false);
 });
 test('blank edits keep only their own Key; new connections cannot borrow an existing Key even at the same URL',async t=>{
@@ -32,7 +32,7 @@ test('deleting profiles removes keys; no default means unassigned purposes remai
  assert.equal((await store.readPrivate('image')).apiKey,'');assert.equal((await store.readPrivate('analysis')).apiKey,'key-b');
  const empty=await store.list();empty.connections=[];empty.routes={};await store.saveManager(empty);assert.equal((await store.list()).connections.length,0);assert.equal((await store.readPrivate()).apiKey,'');
 });
-test('actual workflow image/text/video/audio and vision requests reach their assigned URL with matching Key and model',async t=>{
+test('actual workflow image/text and vision requests reach their assigned URL with matching Key and model',async t=>{
  const {root,store}=await fixture(t),requests=[];const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==';
  const media=require('./workflow-fixtures.cjs');
  async function provider(name){const server=http.createServer(async(req,res)=>{let raw='';for await(const chunk of req)raw+=chunk;const body=raw?JSON.parse(raw):{};requests.push({provider:name,url:req.url,auth:req.headers.authorization,body});
@@ -48,8 +48,8 @@ test('actual workflow image/text/video/audio and vision requests reach their ass
  const {ProjectStore}=require('../core/storage.cjs'),{TaskQueue}=require('../core/tasks.cjs'),{WorkflowService}=require('../core/workflow-service.cjs'),{workflowNode}=require('../core/workflow-nodes.cjs');
  const projects=new ProjectStore(root);await projects.init();const record=await projects.create('路由验收'),tasks=new TaskQueue(root);await tasks.init();t.after(()=>tasks.shutdown());
  const service=new WorkflowService(projects,store,tasks,()=>({width:1,height:1}));
- for(const [type,route,provider,model] of [['image','/images/generations','a','image-a'],['textgen','/chat/completions','b','text-b'],['video','/videos','b','video-b'],['audio','/audio/speech','a','audio-a']]){
-  const node=workflowNode(type,{x:0,y:0});node.data.prompt='测试';if(type==='audio')node.data.format='wav';
+ for(const [type,route,provider,model] of [['image','/images/generations','a','image-a'],['textgen','/chat/completions','b','text-b']]){
+  const node=workflowNode(type,{x:0,y:0});node.data.prompt='测试';
   const doc={...record.document,tugouCanvas:{version:1,nodes:[node],edges:[],viewport:{x:0,y:0,zoom:1}}};const task=await service.start(record.id,doc,node.id);await tasks.execution;
   assert.equal(tasks.list().find(t=>t.id===task.id).status,'completed');const request=requests.filter(r=>r.url.endsWith(route)).at(-1);assert.equal(request.provider,provider);assert.equal(request.auth,`Bearer key-${provider}`);assert.equal(request.body.model,model);
  }

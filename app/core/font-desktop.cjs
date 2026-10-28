@@ -1,4 +1,4 @@
-const fs=require('node:fs/promises'),path=require('node:path');
+const path=require('node:path');
 const {FontService}=require('./font-service.cjs');
 const {RequestJournal}=require('./automation-host.cjs');
 const {validate}=require('./automation-commands.cjs');
@@ -31,8 +31,7 @@ async function registerFonts({root,tasks,handle,dialog,window}){
   });
   handle('fontConfigure',async()=>{
     const choice=await dialog.showOpenDialog(window,{title:'选择已安装的字体运行环境',properties:['openDirectory']});if(choice.canceled)return null;
-    const dir=choice.filePaths[0],manifest=JSON.parse(await fs.readFile(await safePath(dir,'runtime.json'),'utf8'));
-    await fs.access(await safePath(dir,manifest.python));await fs.access(await safePath(dir,manifest.potrace));
+    const dir=choice.filePaths[0];await require('./font-environment.cjs').fontEnvironment(dir);
     await atomicWrite(await safePath(root,'font-runtime.json'),JSON.stringify({directory:dir}));return fonts.execute('font.status',{}, {journal});
   });
   return fonts;

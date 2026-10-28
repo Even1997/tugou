@@ -3,7 +3,7 @@ function register(define,{string,object,enumeration}) {
   const project={projectId:string}, revision={...project,fontRevision:{type:'integer',minimum:0}}, request={requestId:string};
   const list={type:'array',minItems:1,maxItems:512,uniqueItems:true,items:string};
   define('font.status','字体运行环境和边界；不安装依赖',{},[],'read');
-  define('font.library','列出本机字体和已发布的自定义字体；未发布的项目不进入字体选择列表',{},[],'read');
+  define('font.library','列出内置字体、本机字体及可用 weights 和已发布的自定义字体；用 family、fontWeight 设置文字图层。内置字体选择最接近的真实字重，未发布的项目不进入列表',{},[],'read');
   define('font.face','取得已发布自定义字体的工程内资源引用；把结果传给文字图层属性即可使用，不安装系统字体',{projectId:string,jobId:string},['projectId','jobId'],'read');
   define('font.publish','将基于当前字形源的已完成build/refine发布到土狗字体列表；不公开上传，不改变已有文字的字体版本。尚无编译产物时先font.build并等待完成',{...revision,...request,jobId:string},['projectId','fontRevision','requestId','jobId'],'file');
   define('font.project.create','新建独立字体工程，字符顺序去重；返回 fontRevision',{name:{type:'string',minLength:1,maxLength:64},characters:{type:'string',maxLength:131066},...request},['name','characters','requestId'],'file');

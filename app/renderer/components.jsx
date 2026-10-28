@@ -2,7 +2,9 @@ import React, {
   createContext,
   useContext,
   useLayoutEffect,
+  useEffect,
   useState,
+  useRef,
 } from "react";
 import {
   Button as AntButton,
@@ -84,6 +86,14 @@ import {
   DeploymentUnitOutlined,
   AlignLeftOutlined,
 } from "@ant-design/icons";
+import {usePreferences} from './preferences.jsx';
+import {messages} from './settings-messages.js';
+import zhCN from 'antd/locale/zh_CN';
+import zhTW from 'antd/locale/zh_TW';
+import enUS from 'antd/locale/en_US';
+import jaJP from 'antd/locale/ja_JP';
+import koKR from 'antd/locale/ko_KR';
+const commonLabels=Object.fromEntries(Object.entries(messages['zh-CN']).map(([key,label])=>[label,key]));
 
 const icons = {
   edit: EditOutlined,
@@ -164,9 +174,10 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 export function ThemeProvider({ children }) {
-  const [mode, setMode] = useState(() =>
-    localStorage.getItem("tugou-theme") === "light" ? "light" : "dark",
-  );
+  const {value,save,locale}=usePreferences();
+  const [systemDark,setSystemDark]=useState(()=>matchMedia('(prefers-color-scheme: dark)').matches);
+  useEffect(()=>{const media=matchMedia('(prefers-color-scheme: dark)'),change=()=>setSystemDark(media.matches);media.addEventListener('change',change);return()=>media.removeEventListener('change',change);},[]);
+  const mode=value.theme==='system'?(systemDark?'dark':'light'):value.theme;
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = mode;
     localStorage.setItem("tugou-theme", mode);
@@ -174,9 +185,10 @@ export function ThemeProvider({ children }) {
   const dark = mode === "dark";
   return (
     <ThemeContext.Provider
-      value={{ mode, toggle: () => setMode(dark ? "light" : "dark") }}
+      value={{ mode, toggle: () => save({theme:dark ? "light" : "dark"}).catch(()=>{}) }}
     >
       <ConfigProvider
+        locale={{'zh-CN':zhCN,'zh-TW':zhTW,en:enUS,ja:jaJP,ko:koKR}[locale]}
         csp={{ nonce: "tugou-ui" }}
         button={{ autoInsertSpace: false }}
         theme={{
@@ -217,6 +229,9 @@ export function Button({
   children,
   ...props
 }) {
+  const preferences=usePreferences();
+  const translated=typeof children==='string'&&commonLabels[children];
+  if(translated&&preferences)children=preferences.t(translated);
   const label = props["aria-label"] || (typeof children === "string" ? children : title);
   const button = (
     <AntButton
@@ -253,10 +268,10 @@ export function PanelHeader({ title, count, children }) {
     </div>
   );
 }
-export function EmptyState({ title, description, children }) {
+export function EmptyState({ title, description, children, icon = "assets", compact = false, className = "" }) {
   return (
-    <div className="empty">
-      <Icon name="assets" />
+    <div className={`empty${compact ? " empty-compact" : ""}${className ? ` ${className}` : ""}`}>
+      <Icon name={icon} />
       <h2>{title}</h2>
       {description && <p>{description}</p>}
       {children}
@@ -314,8 +329,17 @@ export function ToolPopover({
   description,
   triggerClassName = "",
   onOpenChange,
+  downward = false,
 }) {
   const [open, setOpen] = useState(false);
+  const trigger=useRef(null),[availableHeight,setAvailableHeight]=useState();
+  useLayoutEffect(()=>{
+    if(!open||!downward)return;
+    let frame;
+    const measure=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{const rect=trigger.current?.getBoundingClientRect();if(rect)setAvailableHeight(Math.max(0,Math.min(innerHeight*.65,innerHeight-rect.bottom-36)));});};
+    measure();window.addEventListener('resize',measure);window.addEventListener('scroll',measure,true);window.addEventListener('wheel',measure,{passive:true});window.addEventListener('pointerup',measure);
+    return()=>{cancelAnimationFrame(frame);window.removeEventListener('resize',measure);window.removeEventListener('scroll',measure,true);window.removeEventListener('wheel',measure);window.removeEventListener('pointerup',measure);};
+  },[open,downward]);
   useLayoutEffect(()=>{
     if(!open)return;
     const close=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setOpen(false);onOpenChange?.(false);}};
@@ -328,9 +352,13 @@ export function ToolPopover({
       onOpenChange={value=>{setOpen(value);onOpenChange?.(value);}}
       trigger="click"
       placement="bottomLeft"
+      autoAdjustOverflow={!downward}
+      align={downward?{overflow:{adjustX:true,adjustY:false}}:undefined}
+      arrow={downward?false:undefined}
       content={
         <div
           className={`tool-popover ${className}`}
+          style={downward?{maxHeight:availableHeight}:undefined}
           onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();setOpen(false);}}}
           onClick={(e) => {
             if (
@@ -344,7 +372,7 @@ export function ToolPopover({
         </div>
       }
     >
-      {showLabel ? <Button className={triggerClassName} icon={icon} aria-label={label} aria-expanded={open}>{description ? <span className="control-copy"><strong>{label}</strong><small>{description}</small></span> : label}{description && <Icon name="collapse" className="control-chevron"/>}</Button> : <IconButton className={triggerClassName} label={label} icon={icon} aria-expanded={open} />}
+      {showLabel ? <Button ref={trigger} className={triggerClassName} icon={icon} aria-label={label} aria-expanded={open}>{description ? <span className="control-copy"><strong>{label}</strong><small>{description}</small></span> : label}{description && <Icon name="collapse" className="control-chevron"/>}</Button> : <IconButton ref={trigger} className={triggerClassName} label={label} icon={icon} aria-expanded={open} />}
     </Popover>
   );
 }

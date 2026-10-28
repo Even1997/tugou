@@ -264,6 +264,6 @@ async function startAutomationHost({window,ipcMain,app,entryUrl,...services}){
   }catch(error){ipcMain.removeListener('tugou:automation-reply',reply);for(const socket of sockets)socket.destroy();server.close();throw error;}
   const close=()=>{if(disposed)return;disposed=true;ipcMain.removeListener('tugou:automation-reply',reply);for(const r of pending.values()){clearTimeout(r.timer);r.reject(Error('会话已关闭'));}pending.clear();for(const s of sockets)s.destroy();server.close();};
   app.once('before-quit',close);window.once('closed',close);
-  return {descriptor,close};
+  return {descriptor,close,isBusy:()=>queued>0||pending.size>0,prepareUpdate:async()=>{await atomicWrite(descriptor,JSON.stringify({version:1,port:server.address().port,token,pid:process.pid,filesRoot,updating:true}));close();}};
 }
 module.exports={startAutomationHost,createDispatcher,RequestJournal,toolSchemas,MAX_BYTES};

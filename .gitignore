@@ -20,4 +20,5 @@ typecheck.log
 __pycache__/
 *.pyc
 /app/mcp-client.json
+/app/.dev-preview/
 /assets/studio-demo/

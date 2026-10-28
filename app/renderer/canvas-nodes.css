@@ -40,6 +40,9 @@
 .image-node-tools .ant-btn+.ant-btn { border-left:1px solid var(--line); border-radius:0; }
 .generation-desk { display:flex; flex-direction:column; gap:12px; padding:0 18px 16px; font-size:12px; min-height:0; border-radius:12px; }
 .canvas-card-sized .generation-desk { flex:1; overflow:auto; }
+.canvas-card-sized .generation-desk:not(.panorama-desk) > * { flex-shrink:0; }
+.canvas-card-sized .generation-desk:not(.panorama-desk) > .desk-prompt { flex:1 0 44px; min-height:44px; }
+.canvas-card-sized .generation-desk:not(.panorama-desk) > small.desk-hint { margin-top:auto; }
 .desk-heading { min-height:56px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .desk-heading>.anticon { font-size:18px; }
 .desk-heading>strong { font-size:15px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

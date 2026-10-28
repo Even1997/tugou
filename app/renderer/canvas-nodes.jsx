@@ -1,8 +1,7 @@
-import {Select} from './select.jsx';
 import React,{createContext,useContext,useMemo,useRef,useState,memo} from 'react';
 import {Handle,Position,NodeResizer} from '@xyflow/react';
 import {Button,Icon,IconButton,Input,TextArea,ToolPopover} from './components.jsx';
-import {types,labels,nodeName,modeOf,compileWorkflow,nodeWidth,inputsOf} from '../core/workflow-nodes.cjs';
+import {types,retiredMode,labels,nodeName,modeOf,compileWorkflow,nodeWidth,inputsOf} from '../core/workflow-nodes.cjs';
 import {nodeStatus} from '../core/prompts.cjs';
 import {analysisKinds} from '../core/analysis-draft.cjs';
 import {MediaPreview} from './media-preview.jsx';
@@ -11,9 +10,9 @@ import {GenerationProgress,GenerationOutput} from './generation-progress.jsx';
 import './canvas-nodes.css';
 
 export const CanvasContext=createContext(null);
-const modes=[['image','生图','assets'],['text','文本','text'],['video','视频','video'],['audio','音频','audio']];
+const modes=[['image','生图','assets'],['text','文本','text']];
 const taskLabels={queued:'排队中',running:'生成中',completed:'已完成',failed:'生成失败',cancelled:'已取消',interrupted:'已中断'};
-const numericLimits={count:{min:1,max:15,step:1},seconds:{min:1,max:120,step:1},speed:{min:.25,max:4,step:.05}};
+const numericLimits={count:{min:1,max:15,step:1}};
 
 export function GroupNode({id,data}){
   const {patch,disabled}=useContext(CanvasContext),[editing,setEditing]=useState(false);
@@ -71,7 +70,7 @@ function GenerationDesk({node}){
   const inherited=compiled.result?.parameterSourceId,settings=inherited?compiled.result:d;
   const shared=connection?.[`${mode}Model`]||(mode==='image'?connection?.model:mode==='text'?connection?.analysisModel:'');
   const locked=disabled||busy,hasModel=!!(settings.model||shared),sizeLabel=(panorama?'2048x1024':settings.size||'auto').replace('auto','自动').replace('x',' × ');
-  const parameterLabel=mode==='image'?`${sizeLabel} · ${settings.count??1} 张`:mode==='video'?`${settings.seconds??5} 秒 · ${sizeLabel}`:mode==='audio'?`${settings.voice||'alloy'} · ${settings.speed??1}×`:'更多参数';
+  const parameterLabel=mode==='image'?`${sizeLabel} · ${settings.count??1} 张`:'更多参数';
   const field=(label,key,type='text')=><label>{label}<Input aria-label={`生成台${label}`} type={type} {...numericLimits[key]} disabled={locked||!!inherited||(panorama&&key==='size')} value={panorama&&key==='size'?'2048x1024':settings[key]??''} placeholder={key==='size'?'auto 或 1024x1536':undefined} onChange={e=>patch(id,{[key]:type==='number'?Number(e.target.value):e.target.value})}/></label>;
   const choice=(label,key)=><label>{label}<GenerationChoice kind={key} mode={mode} aria-label={`生成台${label}`} disabled={locked||!!inherited} value={settings[key]} onChange={value=>patch(id,{[key]:value})}/></label>;
   const error=nodeErrors[id]||(task?.status==='failed'?task.message:'');
@@ -80,6 +79,7 @@ function GenerationDesk({node}){
   const resultNode=document.tugouCanvas.nodes.find(n=>n.data.generationTaskId===task?.id&&n.data.sourceNodeId===id)||document.tugouCanvas.nodes.find(n=>n.type==='asset'&&n.data.assetId===d.outputAssetId);
   const prompt=<TextArea className="desk-prompt nodrag" aria-label={assembling?'生成台补充要求':'节点内提示词'} rows={panorama?2:1} value={d.prompt||''} disabled={locked} placeholder={panorama?'描述环绕场景、光线与地平线…':assembling?'补充本次要求，上游内容会自动拼入…':'描述你想生成的内容，或连接提示词节点…'} onChange={e=>patch(id,{prompt:e.target.value})}/>;
   const generate=<Button primary={!busy&&!panorama} className="desk-run nodrag" icon={submitting?'loading':active?'stop':error?'sync':'generate'} disabled={disabled||submitting||(!active&&!!compiled.error)} onClick={()=>active?cancelNode(id):runNode(id)}>{submitting?'提交中':active?(task.status==='queued'?'取消排队':'取消生成'):error?'重新生成':panorama?(output?'重新生成':'生成全景'):'开始生成'}</Button>;
+  if(retiredMode(node))return <div className="generation-desk nowheel"><header className="desk-heading"><strong>{nodeName(node)||labels[node.type]}</strong></header><p className="desk-hint">视频和音频生成已移除，已有结果仍可查看。</p>{(d.outputAssetId||d.outputAssetIds?.length)?<NodeResults node={node} disabled={disabled}/>:null}</div>;
   return <div className={`generation-desk nowheel ${panorama?'panorama-desk':''}`} data-mode={mode}>
     <header className="desk-heading"><Icon name={panorama?'camera':'generate'}/><strong title={nodeName(node)}>{nodeName(node)||labels[node.type]}</strong><div className={`node-status ${error?'node-warning':''}`} role="status"><span className={`node-status-dot ${busy?'is-active':task?.status==='completed'||(!task&&output)?'is-complete':''}`}/>{submitting?'正在提交':error?'生成失败':taskLabels[task?.status]||(output?'已有结果':readiness?'待完善':'就绪')}{active&&Number.isFinite(task.progress)?` · ${task.progress}%`:''}</div><div className="nodrag"><ToolPopover label={panorama?'全景设置':'节点选项'} className="desk-popover">
       {assembling&&<><h3>生成类型</h3><div role="tablist" aria-label="生成模式" className="desk-modes nodrag">{modes.map(([key,label,icon])=><Button iconOnly icon={icon} key={key} role="tab" aria-selected={mode===key} disabled={locked} onClick={()=>patch(id,{mode:key,model:''})}>{label}</Button>)}</div></>}
@@ -92,15 +92,13 @@ function GenerationDesk({node}){
     {panorama?<div className="panorama-view"><small>{output?`${output.width} × ${output.height}`:'2:1 · 2048 × 1024 请求尺寸'}</small><div>{output&&<Button iconOnly icon="camera" onClick={()=>openNodeScene(id)}>环视全景</Button>}{generate}</div></div>:<div className="desk-controls nodrag" onFocus={refreshConnection}>
       <ModelChoice value={settings.model} shared={shared} disabled={locked||!!inherited} onChange={model=>patch(id,{model})} openConnection={openConnection}/>
       <div className="desk-output-row">
-        <ToolPopover label={['image','video'].includes(mode)?sizeDescription(settings.size):parameterLabel} description={['image','video'].includes(mode)?sizeLabel:'输出设置'} icon="selection" showLabel triggerClassName="generation-size" className="desk-popover">
+        <ToolPopover downward label={(mode==='image')?sizeDescription(settings.size):parameterLabel} description={(mode==='image')?sizeLabel:'输出设置'} icon="selection" showLabel triggerClassName="generation-size" className="desk-popover">
           <h3>输出规格</h3>
-          {['image','video'].includes(mode)&&<>{choice('尺寸','size')}{choice('质量','quality')}</>}
-          {mode==='video'&&field('时长（秒）','seconds','number')}
-          {mode==='audio'&&<>{field('音色','voice')}{field('语速','speed','number')}<label>格式<Select aria-label="生成台音频格式" value={settings.format||'mp3'} disabled={locked||!!inherited} onChange={e=>patch(id,{format:e.target.value})}>{['mp3','wav','opus','flac'].map(v=><option key={v}>{v}</option>)}</Select></label></>}
+          {(mode==='image')&&<>{choice('尺寸','size')}{choice('质量','quality')}</>}
           {mode==='text'&&field('负面提示词','negativePrompt')}
         </ToolPopover>
         {mode==='image'&&<ToolPopover label={String(settings.count??1)+' 张'} description="生成数量" icon="layers" showLabel triggerClassName="generation-count" className="desk-popover">{field('数量','count','number')}</ToolPopover>}
-        <ToolPopover label="更多生成参数" icon="settings" className="desk-popover">{field('负面提示词','negativePrompt')}{mode==='audio'&&field('语音指令','instructions')}</ToolPopover>
+        <ToolPopover label="更多生成参数" icon="settings" className="desk-popover">{field('负面提示词','negativePrompt')}</ToolPopover>
       </div>
       {generate}
     </div>}

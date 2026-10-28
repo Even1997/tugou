@@ -1,4 +1,4 @@
-import { Button, FormDialog } from "./components.jsx";
+import { Button, FormDialog, EmptyState } from "./components.jsx";
 import React, { useState } from "react";
 import { CloudReview } from "./cloud-review.jsx";
 const labels = {
@@ -31,7 +31,7 @@ export function TaskPanel({ tasks, close, refresh, openProject }) {
       >
         {error && <p role="alert">{error}</p>}
         {!tasks.length && (
-          <p className="empty-small">生成、分析和图像处理任务会显示在这里。</p>
+          <EmptyState compact icon="tasks" title="暂无任务" description="生成、分析和图像处理任务会显示在这里。" />
         )}
         <div className="task-list">
           {[...tasks].reverse().map((task) => (

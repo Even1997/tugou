@@ -1,36 +1,64 @@
-# 土狗独立桌面实现
+# 土狗桌面应用开发说明
 
-从需求与数据协议重新实现的本地入口。现阶段可运行工程管理、只读导入、模块/配方编辑、引用同步、画布编排、生图任务、结果入库、旧画布迁移、图层编辑、高级选区、素材浏览和共享模型连接。当前工作树仅保留独立入口；旧版源码及同级归档已移除，不参与构建。功能边界与验收以 docs/engineering 下最新记录为准。
+安装使用见[项目首页](../README.md)，版本变更见[发布说明](../docs/releases/v0.8.2.md)。`app/` 是当前源码入口，Electron、React、Ant Design 与本地工具共用工程格式，无需旧 Web/Go 服务。
 
-```powershell
+## 开发
+
+需要 Node.js 22 LTS 或兼容更新版本，依赖由 package-lock.json 锁定。
+
+```sh
 cd app
 npm ci
-npm start
+npm run dev
 ```
 
-- 数据目录：Windows 为 `%APPDATA%/TugouIndependent/workspace`；macOS 为 `~/Library/Application Support/TugouIndependent/workspace`，与旧版 `CanvasStudio` 隔离。
-- 旧工程导入：选择旧 `projects` 中的工程 JSON，同目录 `resources` 一起读取；原文件不修改。重复导入同一文件不会覆盖新版本中的编辑。
-- 原始 JSON 留档、未知字段、图层/蒙版/选区/任务记录原样保存。旧画布由顶部“⋯ → 迁移旧画布”只读迁入，每个画布独立打开，原始快照与工程关联保留。
-- 模型连接：支持导入旧版 `credentials.enc`，须保留同目录 `Local State`；隔离进程在同一 Windows 账户下读取原系统密钥并重新加密保存，原配置不变，明文只在主进程与临时迁移进程的 IPC 中传递，不落盘、不回传页面。主进程直接调用兼容 Images API，所有工作区共用连接。
-- 保存：Windows Ctrl+S、Mac ⌘S 或顶部保存。并发旧版本写入被拒绝；损坏工程可从上次备份恢复，需用户检查后保存。
-- 画布选中配方后点击顶部“生成图片”；底部“任务”查看状态及取消。结果独立落盘并进入素材库/画布；任务中断后不自动重复请求，供应商尺寸不符会明确提示。
-- 配方与引用：模块列表、编辑器、配方在工作台三列同时显示；修改公共定义后，使用“更新引用”同步旧版。本地冲突需明确保留本地或采用新版，删除来源仍保留快照。
-- 无限画布：左侧模块、配方、素材可拖入；连线接到配方节点参与提示词合成，右侧可复制。Shift多选，拖动空白平移，滚轮缩放，顶部撤销/重做，保存后保留位置和视口。配方节点的定义在工作台编辑，单次覆盖可通过连入的模块节点完成。
-- 图层合成：顶部添加图片/文字/形状，编组、合并、排版、透视、选区/蒙版和原尺寸 PNG 导出；右侧修改属性，左侧共用素材库。拖动移动，右下角缩放，上方圆点旋转；Shift 多选/等比缩放，方向键微移，Ctrl+D 复制。排版菜单可设置网格吸附与可拖动参考线；选区裁切和合并均可撤销。
-- 渲染：原图合成、透明背景、16种标准混合及组隔离；导出支持单边32767、总量一亿像素，实际4K测试已通过，100MP复杂场景尚未压力验收。单张素材文件当前限制64MiB。不支持的旧调整/特效及混合模式保留数据并提示，禁止不完整导出。
+开发预览见[安全热更新](../docs/engineering/dev-preview.md)。界面修改保留工程、撤销及未保存状态；繁忙时延迟应用，主进程/preload 修改仍需重启。`npm start` 是构建后运行，不带开发预览管理器。
 
-验证：`npm test`。真实旧工程只读导入脚本为 `test/import-existing.cjs`；桌面验收必须使用独立的 `TUGOU_DATA_DIR`，脚本见 `test/desktop-smoke.cjs`、`test/desktop-restart.cjs`。
+## 测试
 
-运行代码不导入旧 `web/`、Go 服务或原画布实现。基础依赖为 Electron、React、React DOM、React Flow、Ant Design 与 Ant Design Icons；构建使用 esbuild，版本锁定于 `package-lock.json`。项目自有代码采用 [Apache-2.0](LICENSE)，Copyright (c) 2026 Even，来源见 [NOTICE](NOTICE)。商用通知完全自愿，不构成许可条件；第三方及历史内容保留原许可，范围见 [LICENSING.md](LICENSING.md)。源码来源与发行依赖审核仍须完成。
+```sh
+npm test
+# 高核数或资源紧张的机器可限制并发
+node --test --test-concurrency=4 test/*.test.cjs
+```
 
-本机已迁入2个旧工程、3个旧画布和原模型连接。双击 `启动土狗.cmd` 打开独立预览；顶部“⋯ → 保存并热更新”保存当前工程并重载界面、恢复工作区。主进程代码更新仍需正常关闭重开；热更新不保留撤销历史。
+Electron 脚本位于 `test/*-desktop.cjs`，运行前查看脚本的构建和数据目录。必须使用独立 `TUGOU_DATA_DIR`，不要把真实用户工程作为可写夹具。测试输出在 `test-results/`，不提交。Mac renderer 模拟不等于 Mac 真机验收。
 
-高级选区：顶部“选区”支持多边形、魔棒、颜色范围、扩展/收缩、羽化、填充和清除；“蒙版”可把选区转成图层蒙版。图层树支持折叠、拖动排序/移组，顶部“图层 → 移入分组”提供另一入口。带透明度、蒙版或混合效果的跨组移动会提示，避免静默改变合成结果。验证见 `../docs/engineering/independent-selection-hierarchy-acceptance.md`。
+## 字体环境
 
-界面全面对齐进行中：共用组件、单行导航、五工作区、深浅主题及固定顶部工具已接入；素材库支持搜索/预览/改名/PNG 导出，图像工具支持本地插值缩放、旋转、镜像、透明扩边与结果入库。插值缩放不是 AI 超分。完整差项与证据见 [界面对齐清单](../docs/engineering/independent-ui-parity.md)。
+普通排版及本机/内置字体无需 Python。图集导入、OCR、校正、描图和字体导出需要匹配当前系统/芯片的 Python 3.12，以及 Potrace 发行目录（含可执行文件、COPYING、README、AUTHORS）。
 
-双端目标：Windows x64、macOS Apple Silicon / Intel，共用业务代码和工程格式。当前仅 Windows 验证通过，Mac 尚未验收，不能作为正式支持声明。构建与门禁见[双端验收](../docs/engineering/independent-platforms.md)。
+```sh
+node scripts/setup-font-runtime.cjs "<Python3.12可执行文件>" "<Potrace目录>" "<新建字体环境目录>" "<实际workspace目录>"
+```
 
-参考图分析：在工作台顶部选择参考图，使用统一连接的视觉分析模型，审阅草稿后追加模块/配方；可保存草稿、撤销导入和取消任务。协议、桌面及更新证据见[分析验收](../docs/engineering/independent-analysis-acceptance.md)，真实模型效果仍待验。
+脚本建立 venv、安装锁定依赖、验证 OCR 并写入环境清单。第四个参数把环境绑定到工作区；也可用 `TUGOU_FONT_RUNTIME` 指定。不要跨平台复制 venv，不要提交本机环境或用户字体数据。Python 依赖与 Potrace 按各自许可使用/分发，不能视为项目 Apache-2.0 许可的一部分。
 
-新版画布节点：外置标题、文本双击编辑、空图片节点导入。生成台内切换生图／文本／视频／音频，设置模型、参数和镜头；“编辑提示词”查看上游人物／动作／画风／参考图来源并补充要求，再直接生成。原节点 ID、曲线连线、引用与工程格式保留。见[本批验收](../docs/engineering/independent-node-redesign.md)。
+## 构建与发布
+
+```sh
+npm run dist:win
+# 在 Mac 主机上执行，配置自己的签名及公证凭证
+npm run dist:mac
+```
+
+更新源在 `electron-builder.cjs` 固定为 `Even1997/tugou`。Windows 稳定 Release 必须同时包含安装 EXE、对应 `.blockmap` 和 `latest.yml`，版本、文件名、大小与 SHA512 必须匹配；另附 `SHA256SUMS.txt` 供用户核对。只有安装器而没有 latest.yml，应用不能正确发现更新。
+
+Mac 更新需要签名、公证、真机验证后的 DMG/ZIP 和更新清单。本次 v0.8.2 仅发布 Windows x64；构建配置不代表已通过 Mac 真机验收。
+
+发布前同步根 VERSION、package.json/package-lock.json，整理 CHANGELOG 和版本说明；检查测试、许可、敏感文件及更新资源。正式 Release 应为稳定版而非 draft/prerelease。私有仓库不能供不携带 GitHub 凭证的公共客户端自动更新，禁止把发布令牌打入应用。
+
+安装版和开发预览可能使用不同数据目录，实际路径以「设置 → 文件与存储」为准。安装器不会强制结束未保存工程，也不会在普通退出时自动安装更新。
+
+## 代码入口
+
+| 目录/文件 | 职责 |
+|---|---|
+| desktop-main.cjs / preload.cjs | 生命周期、IPC 与系统能力 |
+| renderer/ | 画布、合成、字体、模型和设置 UI |
+| core/ | 存储、任务、模型、MCP、字体与更新服务 |
+| runtime/ | 图像/字体处理脚本与依赖清单 |
+| assets/fonts/ | 内置字体、原始许可及来源 |
+| test/ | 逻辑回归与隔离桌面验收 |
+
+历史文档可能描述已移除入口；使用方式以根 README 和当前 Release 为准。许可范围见 [LICENSING.md](LICENSING.md)。

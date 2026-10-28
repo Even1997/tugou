@@ -1,0 +1,2 @@
+.dev-preview-notice{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:72px;padding:6px 18px;border-bottom:1px solid var(--line);background:var(--shell);color:var(--muted);font-size:12px;flex-shrink:0}
+.dev-preview-notice>span:first-child{color:var(--accent)}.dev-preview-notice.dev-error,.dev-preview-notice.dev-restart{color:var(--danger)}.dev-preview-notice details{margin-left:auto}.dev-preview-notice pre{white-space:pre-wrap;max-height:150px;overflow:auto;font-size:11px}

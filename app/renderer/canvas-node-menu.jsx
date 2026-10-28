@@ -8,14 +8,7 @@ const entries = [
   ['config', '生成台', 'tools', '生成 生图 generator'],
   ['textgen', '文本生成', 'text', '文案 text'],
   ['image', '图片生成', 'tools', '生图 image'],
-  ['video', '视频生成', 'video', 'video'],
-  ['audio', '音频参考', 'audio', 'audio'],
-  ['director', '3D 导演台', 'layers', '场景 camera'],
-  ['module', '引用模块', 'prompts', 'module'],
-  ['recipe', '引用配方', 'other', 'recipe'],
-  ['asset', '从素材库选择', 'assets', '素材 图片 library asset'],
   ['import', '导入图片', 'import', '上传 image upload'],
-  ['media', '导入视频或音频', 'import', 'video audio upload'],
 ];
 
 export function CanvasNodeMenu({ position, close, choose, disabled, canChoose }) {
