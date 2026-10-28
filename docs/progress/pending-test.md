@@ -700,3 +700,9 @@ Mac 原生交通灯与顶部留白、弹窗原生复制粘贴、系统字体/字
 ## v0.8.2 发布准备
 
 Windows x64 正式包已构建，版本与 GitHub 更新源、latest.yml、EXE SHA512/大小和 blockmap 已核对。348 项 Node 回归通过、1 项 POSIX 检查跳过；包内设置 32 项与隔离实际安装升级 11 项通过，验证未保存拦截、工程/资源/设置保留和 MCP 重连。详见 docs/engineering/release-v0.8.2.md。README 和版本说明已重写；用户明确授权后仓库已公开，v0.8.2 为最新稳定 Release，4 个附件已上传。匿名 Electron 更新客户端可发现新版，清单、blockmap、安装器区间下载通过。未重启用户实例，Mac 真机、签名和长期压力等现有 todo 保留，无新增产品功能待办。
+
+## v0.8.2 macOS 补充发行
+
+新增原生 macOS arm64 / x64 发布流水线，各提供 DMG、ZIP 和 SHA256 校验。包内检查每个架构 16 项，覆盖原生菜单、sharp、字体枚举、编辑撤销、保存重载、设置、窗口恢复与 MCP，均无渲染错误。单独启动最终应用包并检查 MCP，使用真实路径的隔离临时目录，不操作用户数据；详见 engineering/release-v0.8.2-mac.md。
+
+本批为 ad-hoc 临时签名手动安装包，没有 Developer ID 签名、公证或 Mac 自动更新清单。待用户在实体 Mac 验证拖入 Applications、Gatekeeper 提示、输入法及日常创作；签名公证、真实升级与长期压力继续保留在 todo。README 与 Release 明确架构选择、数据目录和更新边界。

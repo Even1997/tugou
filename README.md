@@ -22,15 +22,20 @@
 
 ## 下载安装
 
-在 [Releases](https://github.com/Even1997/tugou/releases) 下载 `tugou-0.8.2-win-x64.exe`，保存并关闭正在运行的土狗，再运行安装程序。首次使用无需克隆源码或启动 Web 服务。
+在 [Releases](https://github.com/Even1997/tugou/releases/tag/v0.8.2) 按系统下载，保存并关闭正在运行的土狗，再安装。首次使用无需克隆源码或启动 Web 服务。
 
 | 平台 | 当前发行范围 |
 |---|---|
-| Windows x64 | 本次提供 NSIS 安装包，支持应用内检查、下载和安装更新 |
-| macOS 13+ · Apple Silicon / Intel | 源码具备适配及 DMG/ZIP 配置；签名、公证和真机升级待验收，本次不提供正式 Mac 包 |
+| Windows x64 | `tugou-0.8.2-win-x64.exe`；支持应用内检查、下载和安装更新 |
+| macOS 13+ · Apple Silicon（M 系列） | `tugou-0.8.2-mac-arm64.dmg`，另提供同架构 ZIP |
+| macOS 13+ · Intel | `tugou-0.8.2-mac-x64.dmg`，另提供同架构 ZIP |
 | Linux | 当前没有正式支持或安装包 |
 
 当前 Windows 包未代码签名，系统可能提示未知发布者，请核对下载仓库及 Release 附带的 SHA256 校验文件。安装包包含完整内置字库，下载和安装需要较多空间。
+
+Mac：打开对应芯片的 DMG，将 `Tugou.app`（土狗）拖入 Applications 后运行。Mac 包目前只有临时签名（ad-hoc），没有 Apple Developer ID 签名和公证，系统可能阻止首次打开。确认下载来源和校验值后，可按 macOS「系统设置 → 隐私与安全性」显示的选项允许打开；不需要关闭全局安全保护。若系统没有提供允许选项或设备受组织管理，请勿绕过策略。
+
+当前 Mac 版本采用手动下载安装更新，不承诺自动安装；请保存并退出后替换应用，保留原用户数据目录。Mac CI 原生运行检查不等于所有实体 Mac、输入法和系统权限场景均已验收。
 
 ## 第一次生成图片
 
@@ -65,7 +70,7 @@ MCP 覆盖工程、画布与连线、图层/画板、选区/蒙版、图片工�
 
 ## 自动更新
 
-安装版通过 `Even1997/tugou` 的公开 GitHub Releases 获取稳定版：
+Windows 安装版通过 `Even1997/tugou` 的公开 GitHub Releases 获取稳定版；本批 Mac 临时签名包使用手动更新，不发布自动更新清单：
 
 此功能要求仓库及稳定版附件可公开访问。仓库仍为私有时，授权成员可以在 GitHub 手动下载，但普通客户端无法自动检查/下载；应用不会内置 GitHub 发布令牌。
 
@@ -80,7 +85,7 @@ MCP 覆盖工程、画布与连线、图层/画板、选区/蒙版、图片工�
 工程、资源、字体项目和任务保存在本机。安装版默认工作区：
 
 - Windows：`%APPDATA%\TugouIndependent\workspace`
-- macOS 源码运行：`~/Library/Application Support/TugouIndependent/workspace`
+- macOS：`~/Library/Application Support/TugouIndependent/workspace`
 
 可在「设置 → 文件与存储」打开实际目录；开发预览使用独立数据目录，以界面显示为准。备份时先保存并退出，再复制整个用户数据目录，不要只复制工程 JSON。
 
@@ -103,7 +108,7 @@ npm run dev
 npm start          # 构建并运行普通源码版
 npm test           # Node 回归
 npm run dist:win   # Windows x64 安装包，在 Windows 构建
-npm run dist:mac   # Mac DMG/ZIP，须在 Mac 配置签名后验收
+npm run dist:mac   # Mac DMG/ZIP，须在 Mac 构建；正式自动升级另需签名、公证与验收
 ```
 
 前端产物默认在 `app/dist`，安装包在 `app/release`。不要提交用户数据、API Key、测试产物或本地运行环境。[开发和发布细节](app/README.md) · [已知待办](docs/progress/todo.md)

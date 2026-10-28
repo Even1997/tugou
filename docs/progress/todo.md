@@ -258,7 +258,7 @@ description: 当前项目后续值得处理的事项
 
 - 土狗改名及Logo替换已完成Windows构建与15项桌面验收。待保存关闭当前窗口后打开新版；后续验收Mac实机、安装器交互、多DPI及小尺寸图标轮廓。详见pending-test的2026-10-28品牌记录。
 
-- 设置中心与 Windows 本地自动更新闭环已移至 pending-test。待仓库公开并发布签名安装包后验收 GitHub 真实升级；补 Mac 签名／公证／DMG+ZIP 实机、多 DPI、系统通知权限与长期压力检查。
+- 设置中心与 Windows 本地自动更新闭环已移至 pending-test；仓库已公开，匿名 GitHub 更新元数据和下载入口已验证，完整真实 GitHub 升级及 Windows 签名仍待。Mac 双架构 DMG/ZIP 的原生 CI 检查移至 pending-test，继续补 Developer ID 签名／公证、Gatekeeper 首次安装、真实升级、多 DPI、系统通知权限与长期压力检查。
 - 补专业编辑器、模型管理和原生提示的五语言覆盖；原型中的定时多份恢复快照、密度预设、快捷键自定义及细分 MCP 权限仍待，当前没有展示无效开关。
 - 首轮安装测试同名进程风险已修复并验证不强制结束进程；用户需核对原工程是否存在未保存内容损失，详见 settings-update-implementation.md。
 
@@ -267,7 +267,7 @@ description: 当前项目后续值得处理的事项
 - 画布文字页签已移入 pending-test；本轮无新增功能待办。
 
 - 字体粗细、55 家族 / 141 字重及 Windows 桌面包验收已移至 pending-test。后续：完成 CATALOG.md 中 41 条暂缓来源/授权/兼容性核验；补未打包上游字重、HanaMinB/Seto 扩展字面、macOS 本机字体枚举与实机验收、低内存长时间切换；不要把 99 条目录视为全部收录。
-- macOS 双端一致性：源码修正与 Windows / Mac renderer 模拟回归已完成，见 engineering/mac-windows-parity.md。仍需 Apple Silicon / Intel 真机覆盖本地字体与字重、字体运行环境/POSIX 链接、原生菜单和输入法、交通灯/全屏、本地 AI、MCP / Keychain，以及签名公证后的升级；不得按模拟结果标为已支持全部原生行为。
+- macOS 双端一致性：源码修正与 Windows / Mac renderer 模拟回归已完成，见 engineering/mac-windows-parity.md；双架构原生 CI 已覆盖包内菜单、字体枚举、编辑保存、窗口恢复、MCP 和系统加密可用性，见 engineering/release-v0.8.2-mac.md。仍需实体 Mac 验证字重渲染、字体运行环境、输入法、全屏、多显示器、本地 AI、Keychain 凭证跨版本行为，以及签名公证后的升级；不能把 CI 检查当作全部原生场景验收。
 
 
 - 排查节点真实拖拽时原有 ResizeObserver undelivered notifications；旧样式对照可复现，本轮伸展验收仍偶发 1 次，布局及保存正常。证据 app/test-results/node-resize-layout；不要通过屏蔽浏览器错误隐藏原因。

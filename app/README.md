@@ -44,7 +44,9 @@ npm run dist:mac
 
 更新源在 `electron-builder.cjs` 固定为 `Even1997/tugou`。Windows 稳定 Release 必须同时包含安装 EXE、对应 `.blockmap` 和 `latest.yml`，版本、文件名、大小与 SHA512 必须匹配；另附 `SHA256SUMS.txt` 供用户核对。只有安装器而没有 latest.yml，应用不能正确发现更新。
 
-Mac 更新需要签名、公证、真机验证后的 DMG/ZIP 和更新清单。本次 v0.8.2 仅发布 Windows x64；构建配置不代表已通过 Mac 真机验收。
+Mac 构建由 `.github/workflows/release-mac.yml` 手动触发，分别在原生 arm64 / x64 runner 构建 DMG、ZIP，检查包体、原生模块、界面与 MCP 后附加到已有稳定 Release。工作流检查应用代码与发布标签一致，仅允许许可证收集和发布验收脚本存在明确差异。两个架构全部通过才上传，不覆盖现有 Windows 附件。
+
+当前 Mac 包只有 ad-hoc 签名，无 Developer ID 签名和公证，供手动安装更新；附各架构 SHA256 校验文件，不上传 `latest-mac.yml`，避免宣称具备可信自动升级链路。正式 Mac 自动更新仍需稳定开发者签名、公证及真实升级验收；CI 原生桌面检查不等于全部实体设备验收。
 
 发布前同步根 VERSION、package.json/package-lock.json，整理 CHANGELOG 和版本说明；检查测试、许可、敏感文件及更新资源。正式 Release 应为稳定版而非 draft/prerelease。私有仓库不能供不携带 GitHub 凭证的公共客户端自动更新，禁止把发布令牌打入应用。
 
