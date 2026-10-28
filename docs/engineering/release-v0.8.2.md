@@ -17,6 +17,8 @@
 
 正式产物在 app/release/v0.8.2，Windows x64 安装包约 909 MiB，须同时发布 EXE、blockmap、latest.yml 与 SHA256SUMS.txt。更新源固定为 GitHub Even1997/tugou，不包含测试 feed 或发布凭证。
 
+发布结果：v0.8.2 已推送标签并设为 GitHub 最新稳定 Release（非草稿、非预发布），4 个附件均为 uploaded；GitHub 返回的 SHA256 摘要与本地安装器、blockmap 和 latest.yml 一致。地址：https://github.com/Even1997/tugou/releases/tag/v0.8.2 。仓库仍为私有，未擅自更改可见性；公开自动更新尚待用户明确同意开放仓库。
+
 升级测试使用独立 appId、程序名、安装目录和用户数据，通过本机 HTTP 提供真实 NSIS 包，未操作用户开发预览。公开 GitHub 下载验证与本机升级测试是不同环节。仓库私有时匿名客户端不能读取更新，必须取得用户同意公开仓库，或明确仅作内部发行。
 
 质量自评：功能/代码/UI/UX/美术 9.5；性能 9.3（大字库体积、高并发测试波动、长期压力及既有 ResizeObserver 通知待改进）；安全 9.3（固定源、哈希和安装拦截通过，Windows 签名与 Mac 签名公证仍缺失）。按明确的 Windows 范围可交付，不宣称全平台完备。Mac 真机、历史来源复核及字体许可暂缓项继续保留。
