@@ -65,14 +65,15 @@ jobs:
         run: node_modules/.bin/electron test/mac-release-desktop.cjs
       - name: Launch actual packaged executable with isolated profile
         run: |
-          export TUGOU_DATA_DIR="$(mktemp -d)"
+          # macOS /var is a symlink; the app deliberately rejects linked data paths.
+          export TUGOU_DATA_DIR="$(node -e "const fs=require('fs'),os=require('os'),path=require('path');console.log(fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'tugou-release-'))))")"
           "release/${{ matrix.bundle }}/Tugou.app/Contents/MacOS/Tugou" --mcp-enable > test-results/mac-release/launch.log 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           node <<'JS'
           const {bridge}=require('./core/mcp.cjs');
           const path=require('node:path');
-          (async()=>{let last;for(let i=0;i<60;i++){try{const r=await bridge(path.join(process.env.TUGOU_DATA_DIR,'mcp-session.json'),'get_state',{});if(!r.ok)throw Error(JSON.stringify(r.error));console.log('Packaged executable MCP ready:',r.value.capabilities.commands);return;}catch(e){last=e;await new Promise(r=>setTimeout(r,1000));}}throw last;})().catch(e=>{console.error(e);process.exitCode=1;});
+          (async()=>{let last;const end=Date.now()+90000;while(Date.now()<end){try{const r=await bridge(path.join(process.env.TUGOU_DATA_DIR,'mcp-session.json'),'get_state',{},{reconnectTimeoutMs:0,signal:AbortSignal.timeout(5000)});if(!r.ok)throw Error(JSON.stringify(r.error));console.log('Packaged executable MCP ready:',r.value.capabilities.commands);return;}catch(e){last=e;await new Promise(r=>setTimeout(r,1000));}}throw last;})().catch(e=>{console.error(e);process.exitCode=1;});
           JS
       - name: Prepare checksums
         run: |
