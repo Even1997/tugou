@@ -14,6 +14,13 @@ module.exports = async function writeNotices(output = 'dist', bundledInputs = []
     for (const file of files) if ((await fs.stat(path.join(folder,file))).isFile()) texts.push(await fs.readFile(path.join(folder,file),'utf8'));
     if (!texts.length && folder === 'node_modules/@ant-design/icons-svg') texts.push(await fs.readFile('node_modules/@ant-design/icons/LICENSE','utf8'));
     if (!texts.length && folder === 'node_modules/lazy-val') texts.push(await fs.readFile('scripts/licenses/lazy-val.txt','utf8'));
+    // libvips binary packages publish their component licensing in README.md.
+    if (folder.startsWith('node_modules/@img/sharp-libvips-')) {
+      const readme = await fs.readFile(path.join(folder,'README.md'),'utf8');
+      const start = readme.indexOf('## Licensing');
+      if (start < 0) throw new Error(`依赖缺少组件许可声明：${folder}`);
+      texts.push(readme.slice(start));
+    }
     if (!texts.length && folder === 'node_modules/is-mobile') {
       const readme = await fs.readFile(path.join(folder,'README.md'),'utf8');
       if (readme.includes('## License')) texts.push(readme.slice(readme.indexOf('## License')));
