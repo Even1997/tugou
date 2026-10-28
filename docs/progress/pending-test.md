@@ -699,4 +699,4 @@ Mac 原生交通灯与顶部留白、弹窗原生复制粘贴、系统字体/字
 
 ## v0.8.2 发布准备
 
-Windows x64 正式包已构建，版本与 GitHub 更新源、latest.yml、EXE SHA512/大小和 blockmap 已核对。348 项 Node 回归通过、1 项 POSIX 检查跳过；包内设置 32 项与隔离实际安装升级 11 项通过，验证未保存拦截、工程/资源/设置保留和 MCP 重连。详见 docs/engineering/release-v0.8.2.md。README 和版本说明已重写；更新对外可用仍需公开仓库及在线资源验收，不把私有 Release 当作匿名可用更新源。未重启用户实例，Mac 真机、签名和长期压力等现有 todo 保留，无新增产品功能待办。
+Windows x64 正式包已构建，版本与 GitHub 更新源、latest.yml、EXE SHA512/大小和 blockmap 已核对。348 项 Node 回归通过、1 项 POSIX 检查跳过；包内设置 32 项与隔离实际安装升级 11 项通过，验证未保存拦截、工程/资源/设置保留和 MCP 重连。详见 docs/engineering/release-v0.8.2.md。README 和版本说明已重写；用户明确授权后仓库已公开，v0.8.2 为最新稳定 Release，4 个附件已上传。匿名 Electron 更新客户端可发现新版，清单、blockmap、安装器区间下载通过。未重启用户实例，Mac 真机、签名和长期压力等现有 todo 保留，无新增产品功能待办。
