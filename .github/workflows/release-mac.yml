@@ -50,7 +50,7 @@ jobs:
         run: npm run dist:mac -- dmg zip --${{ matrix.arch }} --publish never -c.mac.identity=-
       - name: Verify native binaries and bundle signature
         run: |
-          BUNDLE="release/${{ matrix.bundle }}/土狗.app"
+          BUNDLE="release/${{ matrix.bundle }}/Tugou.app"
           grep -q '@img/sharp-libvips-darwin-' dist/THIRD_PARTY_NOTICES.txt
           grep -q 'any later version' dist/THIRD_PARTY_NOTICES.txt
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$BUNDLE/Contents/Info.plist")" = "${RELEASE_TAG#v}"
@@ -61,12 +61,12 @@ jobs:
           unzip -tq release/*.zip
       - name: Test packaged renderer, native image module, fonts, editing and MCP
         env:
-          TUGOU_MAC_QA_BUNDLE: release/${{ matrix.bundle }}/土狗.app
+          TUGOU_MAC_QA_BUNDLE: release/${{ matrix.bundle }}/Tugou.app
         run: node_modules/.bin/electron test/mac-release-desktop.cjs
       - name: Launch actual packaged executable with isolated profile
         run: |
           export TUGOU_DATA_DIR="$(mktemp -d)"
-          "release/${{ matrix.bundle }}/土狗.app/Contents/MacOS/Tugou" --mcp-enable > test-results/mac-release/launch.log 2>&1 &
+          "release/${{ matrix.bundle }}/Tugou.app/Contents/MacOS/Tugou" --mcp-enable > test-results/mac-release/launch.log 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           node <<'JS'
