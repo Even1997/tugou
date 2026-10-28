@@ -1,0 +1,118 @@
+name: Publish macOS packages
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing stable release tag
+        required: true
+        default: v0.8.2
+permissions:
+  contents: read
+concurrency:
+  group: mac-release-${{ inputs.tag }}
+  cancel-in-progress: false
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+            bundle: mac-arm64
+          - arch: x64
+            runner: macos-15-intel
+            bundle: mac
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Verify version and tagged application source
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$RELEASE_TAG" = "v$(node -p "require('./package.json').version")"
+          git fetch --depth=1 origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          git diff --exit-code "$RELEASE_TAG" -- . ':!test/mac-release-desktop.cjs'
+      - run: npm ci
+      - name: Build native DMG and ZIP (ad-hoc signature, no notarization)
+        run: npm run dist:mac -- --${{ matrix.arch }} --publish never -c.mac.identity=-
+      - name: Verify native binaries and bundle signature
+        run: |
+          BUNDLE="release/${{ matrix.bundle }}/土狗.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$BUNDLE/Contents/Info.plist")" = "${RELEASE_TAG#v}"
+          file "$BUNDLE/Contents/MacOS/Tugou"
+          lipo -archs "$BUNDLE/Contents/MacOS/Tugou" | grep -x '${{ matrix.arch == 'x64' && 'x86_64' || 'arm64' }}'
+          codesign --verify --deep --strict "$BUNDLE"
+          hdiutil verify release/*.dmg
+          unzip -tq release/*.zip
+      - name: Test packaged renderer, native image module, fonts, editing and MCP
+        env:
+          TUGOU_MAC_QA_BUNDLE: release/${{ matrix.bundle }}/土狗.app
+        run: node_modules/.bin/electron test/mac-release-desktop.cjs
+      - name: Launch actual packaged executable with isolated profile
+        run: |
+          export TUGOU_DATA_DIR="$(mktemp -d)"
+          "release/${{ matrix.bundle }}/土狗.app/Contents/MacOS/Tugou" --mcp-enable > test-results/mac-release/launch.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          node <<'JS'
+          const {bridge}=require('./core/mcp.cjs');
+          const path=require('node:path');
+          (async()=>{let last;for(let i=0;i<60;i++){try{const r=await bridge(path.join(process.env.TUGOU_DATA_DIR,'mcp-session.json'),'get_state',{});if(!r.ok)throw Error(JSON.stringify(r.error));console.log('Packaged executable MCP ready:',r.value.capabilities.commands);return;}catch(e){last=e;await new Promise(r=>setTimeout(r,1000));}}throw last;})().catch(e=>{console.error(e);process.exitCode=1;});
+          JS
+      - name: Prepare checksums
+        run: |
+          cd release
+          shasum -a 256 *.dmg *.zip > SHA256SUMS-mac-${{ matrix.arch }}.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mac-${{ matrix.arch }}
+          path: |
+            app/release/*.dmg
+            app/release/*.zip
+            app/release/SHA256SUMS-mac-*.txt
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: mac-evidence-${{ matrix.arch }}
+          path: |
+            app/test-results/mac-release/*.json
+            app/test-results/mac-release/*.png
+            app/test-results/mac-release/*.log
+          retention-days: 14
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: mac-*
+          merge-multiple: true
+          path: packages
+      - name: Add verified packages to existing stable release
+        run: |
+          gh release view "$RELEASE_TAG" --json isDraft,isPrerelease --jq 'select(.isDraft == false and .isPrerelease == false)' | grep -q false
+          cd packages
+          shasum -a 256 -c SHA256SUMS-mac-arm64.txt
+          shasum -a 256 -c SHA256SUMS-mac-x64.txt
+          gh release upload "$RELEASE_TAG" ./*.dmg ./*.zip ./SHA256SUMS-mac-*.txt
+          # No latest-mac.yml: ad-hoc builds do not provide a trusted automatic upgrade chain.
