@@ -6,7 +6,7 @@ async function root(t){const dir=await fs.mkdtemp(path.join(os.tmpdir(),'tugou-s
 test('command discovery defaults to compact summaries and supports focused schemas',async t=>{
  const dir=await root(t),dispatch=await createDispatcher({root:dir});
  const summary=await dispatch('list_commands',{}),full=await dispatch('list_commands',{schemas:true});
- assert.equal(summary.total,135);assert.equal(summary.schemaMode,'summary');assert.ok(summary.commands.every(c=>!c.inputSchema&&Array.isArray(c.required)));assert.ok(JSON.stringify(summary).length<JSON.stringify(full).length*.5);
+ assert.equal(summary.total,136);assert.equal(summary.schemaMode,'summary');assert.ok(summary.commands.every(c=>!c.inputSchema&&Array.isArray(c.required)));assert.ok(JSON.stringify(summary).length<JSON.stringify(full).length*.5);
  const cameras=await dispatch('list_commands',{domain:'scene.camera'});assert.equal(cameras.total,4);assert.ok(cameras.commands.every(c=>c.inputSchema));
  const found=await dispatch('list_commands',{search:'mask fill'});assert.deepEqual(found.commands.map(c=>c.name),['mask.fill']);
  assert.equal((await dispatch('list_commands',{search:'no-such-command'})).total,0);

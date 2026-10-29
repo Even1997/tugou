@@ -3,13 +3,13 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing release tag (draft or stable)
-        required: true
-        default: v0.8.3
+        description: Existing release tag; leave empty to build and verify without publishing
+        required: false
+        default: ''
 permissions:
   contents: read
 concurrency:
-  group: mac-release-${{ inputs.tag }}
+  group: mac-release-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 jobs:
   build:
@@ -39,6 +39,7 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - name: Verify version and tagged application source
+        if: inputs.tag != ''
         run: |
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
           test "$RELEASE_TAG" = "v$(node -p "require('./package.json').version")"
@@ -47,7 +48,7 @@ jobs:
           git diff --exit-code "$RELEASE_TAG" -- . ':!README.md' ':!test/mac-release-desktop.cjs' ':!test/mac-dmg-native.cjs' ':!scripts/third-party-notices.cjs'
       - run: npm ci
       - name: Test DMG update controller
-        run: node --test test/mac-dmg-update.test.cjs
+        run: node --test test/mac-dmg-update.test.cjs test/font-downloads.test.cjs
       - name: Build native DMG and ZIP (ad-hoc signature, no notarization)
         run: npm run dist:mac -- dmg zip --${{ matrix.arch }} --publish never -c.mac.identity=-
       - name: Verify native binaries and bundle signature
@@ -55,7 +56,7 @@ jobs:
           BUNDLE="release/${{ matrix.bundle }}/Tugou.app"
           grep -q '@img/sharp-libvips-darwin-' dist/THIRD_PARTY_NOTICES.txt
           grep -q 'any later version' dist/THIRD_PARTY_NOTICES.txt
-          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$BUNDLE/Contents/Info.plist")" = "${RELEASE_TAG#v}"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$BUNDLE/Contents/Info.plist")" = "$(node -p "require('./package.json').version")"
           file "$BUNDLE/Contents/MacOS/Tugou"
           lipo -archs "$BUNDLE/Contents/MacOS/Tugou" | grep -x '${{ matrix.arch == 'x64' && 'x86_64' || 'arm64' }}'
           codesign --verify --deep --strict "$BUNDLE"
@@ -65,6 +66,11 @@ jobs:
         env:
           TUGOU_MAC_QA_BUNDLE: release/${{ matrix.bundle }}/Tugou.app
         run: node_modules/.bin/electron test/mac-release-desktop.cjs
+      - name: Test packaged cloud fonts, progress, weights and offline export
+        env:
+          TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+          TUGOU_FONT_QA_OUT: test-results/font-downloads-native
+        run: node_modules/.bin/electron test/font-downloads-desktop.cjs
       - name: Launch actual packaged executable with isolated profile
         run: |
           # macOS /var is a symlink; the app deliberately rejects linked data paths.
@@ -102,8 +108,11 @@ jobs:
             app/test-results/mac-release/*.json
             app/test-results/mac-release/*.png
             app/test-results/mac-release/*.log
+            app/test-results/font-downloads-native/*.json
+            app/test-results/font-downloads-native/*.png
           retention-days: 14
   publish:
+    if: inputs.tag != ''
     needs: build
     runs-on: ubuntu-latest
     permissions:

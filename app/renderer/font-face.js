@@ -25,7 +25,7 @@ export async function loadTextFont(layer) {
     const url=builtin?`tugou-media://builtin-font/${builtin.id}?v=${builtin.sha256}`:`tugou-media://original/${layer.fontResource.resource}`;
     const entry={bytes:builtin?.bytes||32*1024*1024,face:null};
     faces.set(key,entry);trimFonts(key);
-    entry.promise=new FontFace(family,`url("${url}")`,{weight:String(builtin?.weight||400)}).load().then(face=>{entry.face=face;document.fonts.add(face);trimFonts(key);return face;}).catch(error=>{faces.delete(key);throw error;});
+    entry.promise=(async()=>{if(builtin)await window.tugou.fontCommand('font.download',{id:builtin.id});return new FontFace(family,`url("${url}")`,{weight:String(builtin?.weight||400)}).load();})().then(face=>{entry.face=face;document.fonts.add(face);trimFonts(key);return face;}).catch(error=>{faces.delete(key);throw error;});
   }
   const entry=faces.get(key);faces.delete(key);faces.set(key,entry);
   return entry.promise;

@@ -44,7 +44,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   const step=(name,command,args={})=>({name,command,args}),ref=name=>({$ref:name+'.id'});
   await run('project.save');
   const summary=await value('list_commands'),full=await value('list_commands',{schemas:true});report.discoverySummaryBytes=Buffer.byteLength(JSON.stringify(summary));report.discoveryFullBytes=Buffer.byteLength(JSON.stringify(full));
-  check('compact discovery retains all commands with fewer schema tokens',summary.total===135&&!summary.commands[0].inputSchema&&report.discoverySummaryBytes<report.discoveryFullBytes/2);
+  check('compact discovery retains all commands with fewer schema tokens',summary.total===136&&!summary.commands[0].inputSchema&&report.discoverySummaryBytes<report.discoveryFullBytes/2);
   const focused=await value('list_commands',{domain:'scene.camera',search:'activate',schemas:true});check('command search returns focused schema on demand',focused.commands.length===1&&focused.commands[0].name==='scene.camera.activate'&&!!focused.commands[0].inputSchema);
   check('SDK initializes actual stdio MCP and discovers tools',(await client.listTools()).tools.length===7);
   check('resources and task templates discoverable',(await client.listResources()).resources.length===2&&(await client.listPrompts()).prompts.length===3);

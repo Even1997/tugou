@@ -8,7 +8,7 @@ const uuid=/^[a-f0-9-]{36}$/;
 const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])])):value;
 
 class FontService {
-  constructor(root,tasks){this.root=root;this.tasks=tasks;this.pending=Promise.resolve();}
+  constructor(root,tasks){this.root=root;this.tasks=tasks;this.pending=Promise.resolve();this.downloads=require('./font-downloads.cjs').fontDownloads(root);}
   async directory(id){if(!uuid.test(id))fail('INVALID_ARGUMENT','字体工程 ID 无效');return safePath(this.root,'fonts',id);}
   async load(id){try{return JSON.parse(await fs.readFile(await safePath(await this.directory(id),'project.json'),'utf8'));}catch(e){if(e.code==='ENOENT')fail('NOT_FOUND','字体工程不存在');throw e;}}
   async save(p){await atomicWrite(await safePath(await this.directory(p.id),'project.json'),JSON.stringify(p));return this.summary(p);}
@@ -28,6 +28,7 @@ class FontService {
   }
   async current(p){if(!p.current)fail('NO_FONT_SOURCE','请先处理图集并应用候选');const r=await this.result(p,p.current);if(!r.result?.report||r.task?.status!=='completed')fail('NOT_READY','字体源尚未就绪');return r;}
   async execute(name,a,access){
+    if(name==='font.download')return this.downloads.ensure(a.id);
     // Includes asynchronous completions only through immutable job files; metadata has a single writer.
     const operation=()=>this.dispatch(name,a,access);
     const next=this.pending.then(operation);this.pending=next.catch(()=>{});return next;

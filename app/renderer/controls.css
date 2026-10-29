@@ -3,6 +3,12 @@
 .font-picker > label { display:grid;gap:6px;margin-bottom:10px; }
 .font-picker .studio-select { width:100%; }
 .font-picker > small { display:block;color:var(--muted);margin-top:6px; }
+.font-option-label { display:flex;align-items:center;gap:8px;min-width:0;width:100%; }
+.font-option-label > span:first-child { flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis; }
+.font-option-label > :last-child:not(:first-child) { flex:none;display:inline-flex;align-items:center; }
+.font-cloud { color:var(--muted);font-size:15px;border:0;background:transparent;padding:2px;cursor:pointer; }
+.font-cloud:hover { color:var(--text); }
+.font-picker .ant-select-disabled .font-option-label { color:var(--text); }
 .studio-select > .ant-select { width:100%;min-width:0;height:100%;font:inherit;text-align:left; }
 .studio-select .ant-select-selector { min-width:0; }
 .studio-select .ant-select-suffix .anticon,.studio-select .ant-select-arrow .anticon { font-size:var(--disclosure-size); }

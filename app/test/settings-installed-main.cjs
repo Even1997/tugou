@@ -18,7 +18,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
    const preferences=await js(`window.tugou.settings('get')`),restored=await js(`window.tugou.settings('lastProject')`);
    check('new executable really starts at version 0.8.2',preferences.version==='0.8.2');check('installed update retains project and preferences',restored?.document.name==='升级保留工程'&&preferences.preferences.sounds===true);
    check('installed update preserves original resources',fs.readFileSync(path.join(process.env.TUGOU_DATA_DIR,'workspace','resources','upgrade-sentinel.txt'),'utf8')==='KEEP');
-   const {client}=await connect();const state=await client.callTool({name:'get_state',arguments:{}});check('MCP reconnects to upgraded application',!state.isError&&JSON.parse(state.content[0].text).capabilities.commands===135);await client.close();
+   const {client}=await connect();const state=await client.callTool({name:'get_state',arguments:{}});check('MCP reconnects to upgraded application',!state.isError&&JSON.parse(state.content[0].text).capabilities.commands===136);await client.close();
    await js(`document.querySelector('.rail-bottom [aria-label="设置"]').click()`);await wait(`!!document.querySelector('[data-settings-tab="updates"]')`);await js(`document.querySelector('[data-settings-tab="updates"]').click()`);await delay(300);await capture('installed-after');report.complete=true;fs.writeFileSync(file,JSON.stringify(report,null,2));clearTimeout(timeout);app.exit(0);return;
  }
  check('old installed version is 0.8.1',app.getVersion()==='0.8.1');check('updater detects real installed NSIS build',(await js(`window.tugou.update('status')`)).supported===true);

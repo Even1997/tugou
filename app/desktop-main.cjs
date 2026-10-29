@@ -73,7 +73,9 @@ async function boot() {
       if(url.hostname==='builtin-font'){
         const font=require('./core/builtin-fonts.cjs').builtinFonts.flatMap(require('./core/font-weights.cjs').fontFaces).find(f=>f.id===name);
         if(!font)return new Response(null,{status:404});
-        const bytes=await fs.readFile(path.join(__dirname,'assets/fonts',font.file));
+        const file=await require('./core/font-downloads.cjs').fontDownloads(root).file(font.id);
+        if(!file)return new Response(null,{status:404});
+        const bytes=await fs.readFile(file);
         if(bytes.length!==font.bytes||hash(bytes)!==font.sha256)throw Error('内置字体校验失败');
         return new Response(bytes,{headers:{'Access-Control-Allow-Origin':'*','Content-Type':font.file.endsWith('.otf')?'font/otf':font.file.endsWith('.ttc')?'font/collection':'font/ttf','Cache-Control':'private, max-age=31536000'}});
       }

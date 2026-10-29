@@ -9,7 +9,7 @@ module.exports = {
   publish: [{provider:'github',owner:'Even1997',repo:'tugou',releaseType:'release'}],
   electronDist: process.platform === 'win32' && process.arch === 'x64' ? 'node_modules/electron/dist' : undefined,
   directories: { output: process.env.TUGOU_PACKAGE_DIR || 'release' },
-  files: ['LICENSE', 'NOTICE', 'LICENSING.md', 'main.cjs', 'desktop-main.cjs', 'preload.cjs', 'core/**/*', 'runtime/**/*', 'scripts/extract-builtin-ttc.py', 'assets/brand/icon.png', 'assets/fonts/**/*', {from:process.env.TUGOU_BUILD_DIR || 'dist',to:'dist',filter:['**/*']}, 'package.json'],
+  files: ['LICENSE', 'NOTICE', 'LICENSING.md', 'main.cjs', 'desktop-main.cjs', 'preload.cjs', 'core/**/*', 'runtime/**/*', 'scripts/extract-builtin-ttc.py', 'assets/brand/icon.png', 'assets/fonts/**/*', '!assets/fonts/**/*.{ttf,otf,ttc,woff,woff2}', {from:process.env.TUGOU_BUILD_DIR || 'dist',to:'dist',filter:['**/*']}, 'package.json'],
   asarUnpack: ['node_modules/sharp/**/*', 'node_modules/@img/**/*', 'runtime/font-*.py'],
   artifactName: 'tugou-${version}-${os}-${arch}.${ext}',
   win: { icon: 'assets/brand/icon.ico', target: [{ target: 'nsis', arch: ['x64'] }] },

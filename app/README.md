@@ -26,6 +26,8 @@ Electron 脚本位于 `test/*-desktop.cjs`，运行前查看脚本的构建和�
 
 ## 字体环境
 
+开发版已将字体改为按需下载，详见[字体下载与缓存](../docs/engineering/font-downloads.md)。安装包保留完整目录、字重和许可；首次使用需要联网，下载后离线使用，不安装到系统字体目录。正式 v0.8.3 仍是完整字体包，候选构建不替换其发布附件。
+
 普通排版及本机/内置字体无需 Python。图集导入、OCR、校正、描图和字体导出需要匹配当前系统/芯片的 Python 3.12，以及 Potrace 发行目录（含可执行文件、COPYING、README、AUTHORS）。
 
 ```sh

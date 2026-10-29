@@ -6,6 +6,8 @@ const {safePath,atomicWrite}=require('./storage.cjs');
 
 async function registerFonts({root,tasks,handle,dialog,window}){
   const fonts=new FontService(root,tasks),journal=new RequestJournal(await safePath(root,'font-ui-requests.json'));await journal.init();
+  const progress=state=>{if(!window.isDestroyed())window.webContents.send('tugou:font-download',state);};
+  fonts.downloads.on('progress',progress);window.once('closed',()=>fonts.downloads.off('progress',progress));
   const denied=()=>{throw Error('请使用文件选择器');};
   const execute=(name,args,access={})=>{validate(name,args);return fonts.execute(name,args,{journal,filePath:denied,writeNew:denied,...access});};
   handle('fontCommand',(name,args={})=>{

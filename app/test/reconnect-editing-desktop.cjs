@@ -29,7 +29,7 @@ async function main(){
  const preview=async(board,extra={})=>{const r=await call('preview',{artboardId:board,maxSize:128,...extra});return Buffer.from(r.content.find(c=>c.type==='image').data,'base64');};
  const pixels=async png=>sharp(png).ensureAlpha().raw().toBuffer();
  check('actual SDK discovers 7 tools',(await client.listTools()).tools.length===7);
- check('new command catalog is complete',(await value('list_commands')).total===135);
+ check('new command catalog is complete',(await value('list_commands')).total===136);
  await run('project.create',{name:'重连和编辑验收'});const project=(await state()).projectId;
  await run('project.save');const descriptor=JSON.parse(await fs.readFile(session,'utf8'));
  check('opt-in persisted on explicit launch',JSON.parse(await fs.readFile(path.join(profile,'mcp-enabled.json'),'utf8')).enabled);

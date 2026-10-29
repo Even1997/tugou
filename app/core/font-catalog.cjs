@@ -33,7 +33,8 @@ async function fontLibrary(service){
   }
   let system=[],warning;
   try{system=await localFonts();}catch{warning='本机字体读取失败，可重新打开下拉重试';}
-  return {custom:custom.sort((a,b)=>a.name.localeCompare(b.name,'zh-CN')),builtin:builtinFonts.map(f=>({id:f.id,family:f.family,name:f.name,aliases:f.aliases,version:f.version,weights:fontFaces(f).map(v=>v.weight).sort((a,b)=>a-b)})),system:system.filter(f=>!findBuiltinFont(f.family)),warning};
+  const builtin=await Promise.all(builtinFonts.map(async f=>({id:f.id,family:f.family,name:f.name,aliases:f.aliases,version:f.version,weights:fontFaces(f).map(v=>v.weight).sort((a,b)=>a-b),faces:await Promise.all(fontFaces(f).map(async face=>({id:face.id,weight:face.weight,bytes:face.bytes,...(service.downloads?await service.downloads.status(face.id):{status:'cloud'})})))})));
+  return {custom:custom.sort((a,b)=>a.name.localeCompare(b.name,'zh-CN')),builtin,system:system.filter(f=>!findBuiltinFont(f.family)),warning};
 }
 async function fontFace(service,{projectId,jobId},allowUnpublished=false){
   const p=await service.load(projectId);
