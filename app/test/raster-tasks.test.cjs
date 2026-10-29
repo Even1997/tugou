@@ -47,6 +47,39 @@ async function fixture(execute) {
     service: new ImageTaskService(projects, q, inspect, execute),
   };
 }
+test("cutout model survives task snapshot, retry and result metadata", async () => {
+  const f = await fixture();
+  const models = [];
+  let attempt = 0;
+  f.service.localAI = {
+    resolveRuntime: async (settings) => {
+      models.push(settings.model);
+      return { folder: f.root, cutoutFolder: f.root, provider: "CPUExecutionProvider" };
+    },
+    execute: async (job, runtime, signal, id, part) => {
+      assert.equal(job.settings.model, "u2netp");
+      assert.equal(job.settings.edgeShrink, 2);
+      assert.equal(job.settings.edgeFeather, 0.5);
+      if (++attempt === 1) throw new Error("retry fixture");
+      await part({ inputIndex: 0, index: 0, count: 1, bytes: f.bytes });
+    },
+  };
+  try {
+    const task = await f.service.start(f.id, f.document, ["a"], { operation: "cutout", model: "u2netp", edgeShrink: 2, edgeFeather: 0.5 });
+    await f.q.execution;
+    assert.equal(f.q.tasks[0].status, "failed");
+    const retried = await f.service.retry(task.id);
+    await f.q.execution;
+    assert.deepEqual(models, ["u2netp", "u2netp"]);
+    const result = JSON.parse(await fs.readFile(path.join(f.root, "results", retried.id + ".json")));
+    assert.equal(result.assets[0].toolResult.model, "u2netp");
+    assert.equal(result.assets[0].toolResult.edgeShrink, 2);
+    assert.equal(result.assets[0].toolResult.edgeFeather, 0.5);
+    await assert.rejects(f.service.start(f.id, f.document, ["a"], { operation: "cutout", model: "unknown" }));
+  } finally {
+    await fs.rm(f.root, { recursive: true, force: true });
+  }
+});
 test("batch commits complete ordered results from immutable whitelisted snapshots", async () => {
   let captured;
   const f = await fixture(async (job, signal, part, progress) => {

@@ -1,0 +1,16 @@
+{
+  "birefnet": {
+    "name": "精细主体 · BiRefNet",
+    "file": "birefnet-general-fp16.onnx",
+    "sha256": "3654c741eb80bd926ada8fed1713b506ccf8d30eb1f6487e87eb9f234f33df09",
+    "availableGiB": 2,
+    "commitGiB": 14
+  },
+  "u2netp": {
+    "name": "轻量主体 · U²-NetP（CPU）",
+    "file": "u2netp.onnx",
+    "sha256": "309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8",
+    "availableGiB": 1,
+    "commitGiB": 2
+  }
+}

@@ -166,11 +166,15 @@ test("cloud extension retains transparent source pixels at exact offset and only
           output.data.subarray(i, i + 4),
           src.data.subarray(j, j + 4),
         );
-      } else
+      } else {
+        const sx=Math.max(0,Math.min(5,x-3)),sy=Math.max(0,Math.min(3,y-2)),j=(sy*6+sx)*4;
+        assert.equal(frame.data[i+3],255);
+        for(let k=0;k<3;k++) assert.ok(Math.abs(frame.data[i+k]-(src.data[j+k]*src.data[j+3]/255+255-src.data[j+3]))<=1);
         assert.deepEqual(
           [...output.data.subarray(i, i + 4)],
           [200, 20, 8, 255],
         );
+      }
     }
 });
 test("cloud enhancement retains original alpha and upscale retains uniform alpha analytically", async () => {
@@ -231,6 +235,19 @@ test("fit requires explicit choice, larger same-aspect output, never fabricates 
       finish(src, await encode(flat(w, h, [1, 2, 3, 255])), s, true),
       /原始图已保留/,
     );
+});
+test('EXIF-oriented returned images are aligned by displayed dimensions before compositing', async () => {
+  const source = await encode(fixture(4, 6));
+  const generated = await sharp(await encode(flat(6, 4, [200, 30, 80, 255])))
+    .jpeg().withMetadata({orientation:6}).toBuffer();
+  const settings = {operation:'cloudEdit',instruction:'test',left:1,top:2,width:2,height:2};
+  const result = await decode(await finish(source, generated, settings));
+  const original = await decode(source);
+  assert.deepEqual([result.width,result.height],[4,6]);
+  for(let y=0;y<6;y++) for(let x=0;x<4;x++) {
+    const i=(y*4+x)*4;
+    if(x<1||x>=3||y<2||y>=4) assert.deepEqual(result.data.subarray(i,i+4),original.data.subarray(i,i+4));
+  }
 });
 test("EXIF rotation is normalized before masking and unsupported sizes are rejected", async () => {
   const jpeg = await sharp(await encode(fixture(6, 4)))

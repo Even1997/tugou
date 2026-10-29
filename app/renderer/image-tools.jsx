@@ -9,6 +9,7 @@ import {
 import { pngBytes } from "./selection.js";
 import { sourceSelection } from "./selection-source.js";
 import { CloudMaskPreview } from "./cloud-mask-preview.jsx";
+import { CloudMaskEditor } from './cloud-mask-editor.jsx';
 import { SemanticControls } from "./semantic-controls.jsx";
 import { semanticItems } from "../core/semantic-plan.cjs";
 import "./image-tools.css";
@@ -20,6 +21,7 @@ import {
 } from "../core/image-tools.cjs";
 import { ImageToolControls } from "./image-tool-controls.jsx";
 import { LocalAIControls } from "./local-ai-controls.jsx";
+import { localToolReadiness } from "../core/local-readiness.cjs";
 import {
   compositionNames,
   compositionDefaults,
@@ -29,8 +31,13 @@ import { ToolBatchDialog } from "./tool-batch-dialog.jsx";
 import { GeometryControls } from "./geometry-controls.jsx";
 import { CloudControls } from "./cloud-controls.jsx";
 import { cloudNames, cloudDefaults } from "../core/cloud-settings.cjs";
+import { cloudToolReadiness } from "../core/cloud-readiness.cjs";
+import { ConnectionDialog } from "./connection.jsx";
+import { useImageImport } from './use-image-import.js';
+import { ImageComparison } from './image-comparison.jsx';
 const operations = {
-  ...cloudNames,
+  cloudEdit: cloudNames.cloudEdit,
+  cloudExtend: cloudNames.cloudExtend,
   ...rasterOperations,
   ...compositionNames,
   upscale: "AI 超分辨率",
@@ -38,17 +45,16 @@ const operations = {
 };
 const defaults = {
   ...cloudDefaults,
+  cloudEdit: { ...cloudDefaults.cloudEdit, maskMode: 'asset' },
   ...rasterDefaults,
   ...compositionDefaults,
   upscale: { model: "general", scale: 4 },
-  cutout: {},
+  cutout: { model: 'u2netp', edgeShrink: 0, edgeFeather: 0 },
 };
 const regionOperations = ["texture", "crop", "extract", "patch", "cloudEdit"];
-function sourceParameters(parameters, source, operation) {
+function sourceParameters(parameters, source) {
   if (!source) return parameters;
-  const keys = operation
-    ? [operation]
-    : [...regionOperations, "resize", "extend", "cloudExtend"];
+  const keys = [...regionOperations, "resize", "extend", "cloudExtend"];
   return {
     ...parameters,
     ...Object.fromEntries(
@@ -58,6 +64,7 @@ function sourceParameters(parameters, source, operation) {
           ...parameters[key],
           width: source.width,
           height: source.height,
+          ...(key === 'cloudEdit' ? {maskId:''} : {}),
           ...(key !== "resize" ? { left: 0, top: 0 } : {}),
           ...(key === "cloudExtend"
             ? {
@@ -86,7 +93,7 @@ export function ImageTools({
   const imageAssets=document.assets.filter(a=>!a.kind||a.kind==='image');
   const initialSource = imageAssets.find(a=>a.id===initialSourceIds[0]) || imageAssets[0];
   const [sourceId, setSourceId] = useState(initialSource?.id || ""),
-    [operation, setOperation] = useState(initialOperation),
+    [operation, setOperation] = useState(operations[initialOperation] ? initialOperation : 'cloudEdit'),
     [scale, setScale] = useState(2),
     [padding, setPadding] = useState(128),
     [resultId, setResultId] = useState(null),
@@ -98,9 +105,13 @@ export function ImageTools({
   const [parameters, setParameters] = useState(() =>
     sourceParameters(structuredClone(defaults), initialSource),
   );
+  const [aiStatus, setAIStatus] = useState(null);
+  const [paintOpen, setPaintOpen] = useState(false);
   const latest = useRef(document),
     mounted = useRef(true);
   const selectionController = useRef(null);
+  const settingsPanel = useRef(null);
+  useEffect(() => { if(settingsPanel.current) settingsPanel.current.scrollTop=0; setView(v=>v==='edit'&&!regionOperations.includes(operation)?'original':v); }, [operation]);
   latest.current = document;
   const context = useRef({ sourceId, operation });
   context.current = { sourceId, operation };
@@ -126,11 +137,32 @@ export function ImageTools({
         ? result.toolResult.source
         : undefined);
   const isCloud = Boolean(cloudNames[operation]);
+  const [connections, setConnections] = useState(null),
+    [connectionError, setConnectionError] = useState(''),
+    [connectionOpen, setConnectionOpen] = useState(false),
+    [connectionRefresh, setConnectionRefresh] = useState(0);
+  useEffect(() => {
+    if (!isCloud) return;
+    let active = true, version = 0;
+    const refresh = async () => {
+      const current = ++version;
+      setConnections(null); setConnectionError('');
+      try {
+        const value = await window.tugou.listConnections();
+        if (active && current === version) setConnections(value);
+      } catch { if (active && current === version) setConnectionError('无法读取模型配置，请刷新重试'); }
+    };
+    refresh();
+    window.addEventListener('tugou-connection-changed', refresh);
+    return () => { active = false; window.removeEventListener('tugou-connection-changed', refresh); };
+  }, [isCloud, connectionRefresh]);
   const mask =
     document.assets.find((a) => a.id === parameters.cloudEdit.maskId) ||
     (result?.toolResult?.mask?.id === parameters.cloudEdit.maskId
       ? result.toolResult.mask
       : undefined);
+  const cloudReady = isCloud ? cloudToolReadiness(connections, { operation, ...parameters[operation] }, source, mask) : null;
+  const analysisReady = cloudToolReadiness(connections, {}, source, null, 'analysis');
   const [selectionLayerId, setSelectionLayerId] = useState("");
   const selectionLayers = document.layers.filter(l => l.kind === 'image' && l.assetId === sourceId && !l.bitmap);
   const selectionLayer = selectionLayers.find(l => l.id === selectionLayerId);
@@ -169,6 +201,15 @@ export function ImageTools({
     )
     .at(-1);
   const disabled = working || Boolean(activeTask);
+  const imageImport = useImageImport(added => {
+    if(change({...latest.current, assets:[...latest.current.assets,...added]}) === false)
+      throw Error('工程正在保存，请稍后重新导入');
+    setSourceId(added[0].id);
+    setResultId(null);
+    setView('original');
+    setParameters(p=>sourceParameters(p,added[0]));
+    setStatus(`已导入 ${added.length} 张图片${added.length>1?'，已选中第一张，可使用批量处理':''}`);
+  },setStatus,disabled);
   const analysis = tasks
     .filter(
       (t) =>
@@ -188,9 +229,10 @@ export function ImageTools({
       if (asset && !observed.current.has(task.id)) {
         observed.current.add(task.id);
         setResultId(asset.id);
+        if (asset.toolResult.operation === operation) setView("compare");
       }
     }
-  }, [tasks, document.assets, sourceId]);
+  }, [tasks, document.assets, sourceId, operation]);
   const history = document.assets
     .filter((a) => a.toolResult)
     .slice()
@@ -329,8 +371,16 @@ export function ImageTools({
 
   return (
     <section className="image-tools">
+      {paintOpen && source && <CloudMaskEditor source={source} mask={parameters.cloudEdit.maskMode==='asset'?mask:null} settings={parameters.cloudEdit} close={()=>setPaintOpen(false)} apply={async bytes=>{
+        const snapshot=latest.current,id=source.id;
+        const asset=await window.tugou.storeRaster(bytes,`修改区域 · ${source.name}`);
+        if(!mounted.current||latest.current!==snapshot||context.current.sourceId!==id)throw Error('画面已变化，请重新应用修改区域');
+        if(change({...snapshot,assets:[...snapshot.assets,asset]})===false)throw Error('工程正在保存，请稍后应用');
+        setParameters(p=>({...p,cloudEdit:{...p.cloudEdit,maskMode:'asset',maskId:asset.id,maskChannel:'alpha',invertMask:false}}));
+        setView('original');setStatus('修改区域已保存，请填写修改要求后提交');
+      }}/>}
       <aside className="tools-navigation"><PanelHeader title="图像工具"/><SearchField label="搜索工具" value={toolQuery} onChange={setToolQuery}/>
-        {[["基础处理",rasterOperations],["图像合成",compositionNames],["智能工具",{...cloudNames,upscale:"AI 超分辨率",cutout:"主体抠图"}]].map(([title,entries])=><section key={title}><h3>{title}</h3>{Object.entries(entries).filter(([id,label])=>label.toLowerCase().includes(toolQuery.toLowerCase())).map(([id,label])=><Button key={id} aria-pressed={operation===id} disabled={working} onClick={()=>{setOperation(id);setStatus('');if(source)setParameters(p=>sourceParameters(p,source,id));}}>{label}</Button>)}</section>)}
+        {[["基础处理",rasterOperations],["图像合成",compositionNames],["智能工具",{cloudEdit:cloudNames.cloudEdit,cloudExtend:cloudNames.cloudExtend,upscale:"AI 超分辨率",cutout:"主体抠图"}]].map(([title,entries])=><section key={title}><h3>{title}</h3>{Object.entries(entries).filter(([id,label])=>label.toLowerCase().includes(toolQuery.toLowerCase())).map(([id,label])=><Button key={id} aria-pressed={operation===id} disabled={working} onClick={()=>{setOperation(id);setStatus('');}}>{label}</Button>)}</section>)}
                 <details className="processing-history"><summary>处理记录 · {history.length}</summary>
           <PanelHeader title="处理记录" count={history.length} />
           {history.length ? (
@@ -341,6 +391,7 @@ export function ImageTools({
                 onClick={() => {
                   setResultId(a.id);
                   setSourceId(a.toolResult.sourceId);
+                  setParameters(p=>sourceParameters(p,a.toolResult.source||document.assets.find(item=>item.id===a.toolResult.sourceId)));
                   if (operations[a.toolResult.operation]) {
                     setOperation(a.toolResult.operation);
                     const {
@@ -362,7 +413,7 @@ export function ImageTools({
                     if (options.scale !== undefined) setScale(options.scale);
                     if (options.padding !== undefined)
                       setPadding(options.padding);
-                  }
+                  } else { setOperation('resize'); setView('result'); }
                 }}
               >
                 <img src={assetUrl(a)} alt="" />
@@ -379,46 +430,16 @@ export function ImageTools({
           )}
         </details>
       </aside>
-      <aside className="tools-settings" aria-label="输出设置"><PanelHeader title="输出设置"/>{source&&<p className="muted">原尺寸 {source.width} × {source.height} px</p>}
-        <div className="tools-setting-fields">        {operation === "resize" && parameters.resize.sizeMode !== "size" && (
-          <label>
-            倍率
-            <Select
-              aria-label="缩放倍率"
-              value={scale}
-              disabled={working}
-              onChange={(e) => setScale(Number(e.target.value))}
-            >
-              {[0.25, 0.5, 1, 2, 4].map((n) => (
-                <option key={n} value={n}>
-                  {n}×
-                </option>
-              ))}
-            </Select>
-          </label>
-        )}
-        {operation === "extend" && parameters.extend.sizeMode !== "size" && (
-          <label>
-            扩边
-            <input
-              aria-label="扩边像素"
-              type="number"
-              min="0"
-              max="5000"
-              step="1"
-              value={padding}
-              disabled={working}
-              onChange={(e) => setPadding(Number(e.target.value))}
-            />
-            px
-          </label>
-        )}
+      <aside className="tools-settings" aria-label="输出设置">
+        <header className="tools-settings-heading"><span className="muted">{isCloud ? '云端 AI' : isAI ? '本地 AI' : isComposition ? '图像合成' : '基础处理'}</span><h2>{operations[operation]}</h2><p>{source ? `原尺寸 ${source.width} × ${source.height} px` : '选择素材后开始处理'}</p></header>
+        <div className="tools-setting-fields" ref={settingsPanel}>
       {operation === "cloudSplit" ? (
         <SemanticControls
           plan={parameters.cloudSplit.instruction}
           disabled={working || !source}
           analysis={analysis}
           canRead={Boolean(readableAnalysis)}
+          analysisReady={analysisReady}
           update={(instruction) =>
             setParameters((p) => ({ ...p, cloudSplit: { instruction } }))
           }
@@ -490,6 +511,7 @@ export function ImageTools({
                 selectionLayerId={selectionLayerId}
                 setSelectionLayerId={setSelectionLayerId}
           captureSelection={captureSelection}
+          paintMask={()=>setPaintOpen(true)}
           update={(patch) =>
             setParameters((p) => ({
               ...p,
@@ -499,6 +521,7 @@ export function ImageTools({
         />
       ) : ["resize", "extend"].includes(operation) ? (
         <GeometryControls
+          scale={scale} setScale={setScale} padding={padding} setPadding={setPadding}
           operation={operation}
           value={parameters[operation]}
           source={source}
@@ -527,6 +550,8 @@ export function ImageTools({
         />
       ) : isAI ? (
         <LocalAIControls
+          onStatus={setAIStatus}
+          source={source}
           operation={operation}
           value={parameters[operation]}
           disabled={working}
@@ -554,10 +579,17 @@ export function ImageTools({
           importLut={importLut}
         />
       )}
-</div><div className="tools-submit">        <Button
+      {isCloud && <div className="cloud-tool-status">
+        <p role="status">{connectionError || cloudReady.reason}</p>
+        <Button onClick={() => setConnectionOpen(true)}>配置模型</Button>
+        <Button icon="refresh" aria-label="刷新云端工具状态" onClick={() => setConnectionRefresh(n => n + 1)}>刷新</Button>
+        <p className="muted">提交后可能产生费用；已配置不代表供应商支持编辑或当前尺寸。</p>
+      </div>}
+      {connectionOpen && <ConnectionDialog close={() => setConnectionOpen(false)} />}
+</div><div className="tools-submit"><p className="muted">{!source ? "请先在上方选择处理素材" : "生成新素材，原图保留"}</p><Button
           primary
           icon="generate"
-          disabled={!source || disabled}
+          disabled={!source || disabled || imageImport.importing || (isCloud && !cloudReady.ready) || (isAI && !localToolReadiness(aiStatus, {operation, ...parameters[operation]}, source).ready)}
           onClick={process}
         >
           {disabled ? "处理中" : isCloud ? "提交云端" : "开始处理"}
@@ -578,7 +610,8 @@ export function ImageTools({
         />
       )}
       <div className="image-tools-toolbar">
-        <strong>图像工具</strong>
+        <strong>素材预览</strong>
+        <Button icon="import" disabled={disabled || imageImport.importing} onClick={imageImport.open}>{imageImport.importing ? '导入中…' : '上传图片'}</Button>
         <Select
           aria-label="处理来源"
           value={sourceId}
@@ -601,30 +634,8 @@ export function ImageTools({
             </option>
           ))}
         </Select>
-        <Select
-          aria-label="处理方式"
-          value={operation}
-          disabled={working}
-          onChange={(e) => {
-            setOperation(e.target.value);
-            setStatus("");
-            if (
-              [...regionOperations, "resize", "extend", "cloudExtend"].includes(
-                e.target.value,
-              ) &&
-              source
-            )
-              setParameters((p) => sourceParameters(p, source, e.target.value));
-          }}
-        >
-          {Object.entries(operations).map(([id, label]) => (
-            <option key={id} value={id}>
-              {label}
-            </option>
-          ))}
-        </Select>
         {operation !== 'cloudSplit' && (
-          <Button iconOnly icon="layers"
+          <Button icon="layers"
             disabled={working || !document.assets.length}
             onClick={() => setBatchOpen(true)}
           >
@@ -655,9 +666,11 @@ export function ImageTools({
           value={view}
           onChange={(e) => setView(e.target.value)}
         >
-          <option value="compare">原图与结果</option>
+          <option value="compare" disabled={!result}>并排对比</option>
+          <option value="swipe" disabled={!result}>滑动对比</option>
           <option value="original">原图</option>
-          <option value="result">结果</option>
+          <option value="result" disabled={!result}>结果</option>
+          {result&&regionOperations.includes(operation)&&<option value="edit">编辑区域</option>}
         </Select>
         <ToolPopover label="工具说明" icon="info">
           <p>
@@ -681,6 +694,7 @@ export function ImageTools({
                     ? "模型处理中"
                     : "本地处理中"
                   : "本地处理结束"))}
+          {activeTask && Number.isFinite(activeTask.progress) && <progress className="tool-task-progress" aria-label="图像处理进度" max="100" value={activeTask.progress} />}
         </div>
       )}
       <div className="image-tools-body">
@@ -688,8 +702,10 @@ export function ImageTools({
           {!source ? (
             <EmptyState
               title="选择一张素材"
-              description="处理结果会进入共享素材库，原图保留。"
-            />
+              description="上传本地 PNG、JPEG、WebP，或从上方素材库选择。"
+            ><Button primary icon="import" disabled={disabled || imageImport.importing} onClick={imageImport.open}>{imageImport.importing ? '导入中…' : '上传图片'}</Button></EmptyState>
+          ) : result && view !== 'edit' ? (
+            <ImageComparison key={`${source.id}:${result.id}`} source={source} result={result} mode={view}/>
           ) : (
             <>
               {view !== "result" && (
@@ -734,12 +750,12 @@ export function ImageTools({
                   )}
                 </figure>
               )}
-              {view !== "original" && (
+              {view !== "original" && view !== 'edit' && (
                 <figure>
                   <figcaption>
                     处理结果
                     {result?.toolResult &&
-                      ` · ${operations[result.toolResult.operation] || result.toolResult.operation}`}
+                      ` · ${operations[result.toolResult.operation] || cloudNames[result.toolResult.operation] || result.toolResult.operation}`}
                     <span>
                       {result
                         ? `${result.width} × ${result.height}`
@@ -767,7 +783,7 @@ export function ImageTools({
             ? `${source.name} · 原尺寸 ${source.width} × ${source.height}`
             : "来源：共享素材库"}
         </span>
-        <Button iconOnly icon="layers" disabled={!result} onClick={() => addToLayers(result)}>
+        <Button icon="layers" disabled={!result} onClick={() => addToLayers(result)}>
           加入画面
         </Button>
         {result?.toolResult?.operation === "cloudSplit" && document.layers.some(l=>l.kind==="image"&&l.assetId===result.toolResult.sourceId) && (
@@ -781,14 +797,14 @@ export function ImageTools({
         {resultGroup.length > 1 && (
           <Button iconOnly icon="layers" onClick={() => addToLayers(resultGroup)}>本组加入画面</Button>
         )}
-        <Button iconOnly icon="canvas"
+        <Button icon="canvas"
           disabled={!result}
           onClick={() => addToCanvas("asset", result.id)}
         >
           加入画布
         </Button>
         {resultGroup.length > 1 && <Button iconOnly icon="canvas" onClick={()=>addToCanvas("asset",resultGroup.map(a=>a.id))}>本组加入画布</Button>}
-        <Button iconOnly
+        <Button
           icon="export"
           disabled={!result}
           onClick={() =>

@@ -1,14 +1,15 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const os = require("node:os");
+const sharp = require("sharp");
 const { atomicWrite, safePath } = require("./storage.cjs");
 const { hashFile } = require("./runtime-files.cjs");
 const { referenceBytes } = require("./generation.cjs");
 const { dimensions } = require("./image-tools.cjs");
 const { runProcess } = require("./local-process.cjs");
+const { localToolReadiness } = require("./local-readiness.cjs");
 
-const modelHash =
-  "3654c741eb80bd926ada8fed1713b506ccf8d30eb1f6487e87eb9f234f33df09";
+const cutoutModels = require('../runtime/cutout-models.json');
 const models = {
   general: "realesrgan-x4plus",
   illustration: "realesrgan-x4plus-anime",
@@ -23,7 +24,11 @@ function validateLocalSettings(settings, size) {
   const value =
     operation === "upscale"
       ? { operation, model: settings.model, scale: settings.scale }
-      : { operation };
+      : { operation, model: settings.model || 'birefnet', edgeShrink: settings.edgeShrink ?? 0, edgeFeather: settings.edgeFeather ?? 0 };
+  if (operation === 'cutout' && !Object.hasOwn(cutoutModels, value.model))
+    throw failure('抠图模型无效');
+  if (operation === 'cutout' && (!Number.isInteger(value.edgeShrink) || value.edgeShrink < 0 || value.edgeShrink > 4 || !Number.isFinite(value.edgeFeather) || value.edgeFeather < 0 || value.edgeFeather > 4))
+    throw failure('边缘收缩须为 0–4 px 整数，向内羽化须为 0–4 px');
   if (
     operation === "upscale" &&
     (!Object.hasOwn(models, value.model) ||
@@ -44,13 +49,14 @@ class LocalAIService {
       file,
       await fs.readFile(path.join(__dirname, "../runtime/image-worker.py")),
     );
+    await atomicWrite(await safePath(this.root, 'runtime', 'cutout-models.json'), JSON.stringify(cutoutModels));
     return file;
   }
-  async inspect(folder, provider, signal) {
+  async inspect(folder, provider, signal, cutoutFolder = folder) {
     if (typeof folder !== "string" || !path.isAbsolute(folder))
       throw failure("请选择本地组件目录");
     const pythonDirectory = await safePath(
-      folder,
+      cutoutFolder,
       "segment-python",
       process.platform === "win32" ? "Scripts" : "bin",
     );
@@ -60,15 +66,21 @@ class LocalAIService {
       pythonDirectory,
       process.platform === "win32" ? "python.exe" : "python3",
     );
-    if (!(await fs.stat(await fs.realpath(python))).isFile())
-      throw failure("本地 Python 组件无效");
-    await fs.access(python);
-    const output = await runProcess(
-      python,
-      ["-I", "-u", await this.worker(), "probe"],
-      { timeout: 30000, signal },
-    );
-    const probe = JSON.parse(output.trim().split("\n").at(-1));
+    let probe = { providers: [], memory: null }, cutoutReason = "";
+    try {
+      if (!(await fs.stat(await fs.realpath(python))).isFile())
+        throw failure("本地 Python 组件无效");
+      await fs.access(python);
+      const output = await runProcess(
+        python,
+        ["-I", "-u", await this.worker(), "probe"],
+        { timeout: 30000, signal },
+      );
+      probe = JSON.parse(output.trim().split("\n").at(-1));
+    } catch (e) {
+      signal?.throwIfAborted();
+      cutoutReason = "抠图运行环境缺失或不可用，请安装抠图组件";
+    }
     const selected =
       provider ||
       (probe.providers.includes("DmlExecutionProvider")
@@ -84,18 +96,17 @@ class LocalAIService {
       ].includes(selected) ||
       !probe.providers.includes(selected)
     )
-      throw failure("所选计算设备不可用");
-    const model = await safePath(
-      folder,
-      "segmentation",
-      "birefnet-general-fp16.onnx",
-    );
-    let cutout = false;
-    try {
-      cutout = (await hashFile(model, signal)) === modelHash;
-    } catch (e) {
-      if (e.code !== "ENOENT") throw e;
+      cutoutReason ||= "所选抠图计算设备不可用，请改为自动选择或 CPU";
+    const modelPaths = {}, availableCutoutModels = [];
+    for (const [key, profile] of Object.entries(cutoutModels)) {
+      const file = await safePath(cutoutFolder, 'segmentation', profile.file);
+      modelPaths[key] = file;
+      try {
+        if (!cutoutReason && (await hashFile(file, signal)) === profile.sha256) availableCutoutModels.push(key);
+      } catch (e) { if (e.code !== 'ENOENT') throw e; }
     }
+    const cutout = availableCutoutModels.length > 0;
+    if (!cutout) cutoutReason ||= "主体模型缺失或校验失败，请重新安装抠图组件";
     let executable;
     for (const name of ["realesrgan", "realesrgan-20220424"]) {
       const candidate = await safePath(
@@ -133,10 +144,14 @@ class LocalAIService {
       }
     return {
       folder,
+      cutoutFolder,
       python,
       executable,
-      model,
+      model: modelPaths.birefnet,
+      modelPaths,
+      availableCutoutModels,
       cutout,
+      cutoutReason,
       memory:probe.memory,
       availableModels,
       provider: selected,
@@ -161,17 +176,25 @@ class LocalAIService {
     return this.publicRuntime(runtime);
   }
   publicRuntime(r) {
-    return {
+    const status = {
       configured: true,
       memory:r.memory,
       folder: r.folder,
+      cutoutFolder: r.cutoutFolder,
       cutout: r.cutout,
+      cutoutModels: r.availableCutoutModels,
+      cutoutReason: r.cutoutReason,
       models: r.availableModels,
       provider: r.provider,
       providers: r.providers,
     };
+    return { ...status, readiness: {
+      upscale: localToolReadiness(status, {operation:'upscale', model:'general'}),
+      cutout: localToolReadiness(status, {operation:'cutout'}),
+      cutoutLight: localToolReadiness(status, {operation:'cutout', model:'u2netp'}),
+    } };
   }
-  async runtime() {
+  async runtime(provider) {
     let saved;
     try {
       saved = JSON.parse(
@@ -184,34 +207,31 @@ class LocalAIService {
       if (e.code === "ENOENT") throw failure("请先选择本地组件目录");
       throw e;
     }
-    return this.inspect(saved.folder, saved.provider);
+    return this.inspect(saved.folder, provider || saved.provider, undefined, saved.cutoutFolder);
   }
   status() {
     // Share only in-flight probes; memory and component state stay fresh on refresh.
     this.statusRequest ??= this.runtime().then(runtime=>this.publicRuntime(runtime)).catch(e=>({
         configured: false,
         message: e.safeMessage || "本地组件不可用，请重新选择目录",
-      })).finally(()=>{this.statusRequest=null;});
+      })).then(status=>({...status,downloadFolder:path.join(path.dirname(this.root),'components','tugou-components')})).finally(()=>{this.statusRequest=null;});
     return this.statusRequest;
   }
-  async resolveRuntime(settings, snapshot) {
+  async resolveRuntime(settings, snapshot, size) {
+    const provider = settings.operation === 'cutout' && settings.model === 'u2netp' ? 'CPUExecutionProvider' : undefined;
     const runtime = snapshot
-      ? await this.inspect(snapshot.folder, snapshot.provider)
-      : await this.runtime();
-    if (
-      settings.operation === "cutout"
-        ? !runtime.cutout
-        : !runtime.availableModels.includes(settings.model)
-    )
-      throw failure("所需模型缺失或校验失败，请检查本地组件");
+      ? await this.inspect(snapshot.folder, provider || snapshot.provider, undefined, snapshot.cutoutFolder)
+      : await this.runtime(provider);
+    const ready = localToolReadiness(this.publicRuntime(runtime), settings, size);
+    if (!ready.ready) throw failure(ready.reason);
     return runtime;
   }
   async execute(job, runtime, signal, id, onPart, onProgress) {
     for (let inputIndex = 0; inputIndex < job.inputs.length; inputIndex++) {
       signal.throwIfAborted();
-      const stage = (message) =>
+      const stage = (message, percent = 0) =>
         onProgress(
-          Math.floor((inputIndex * 100) / job.inputs.length),
+          Math.floor((inputIndex * 100 + percent) / job.inputs.length),
           inputIndex + 1 + "/" + job.inputs.length + " · " + message,
         );
       const bytes = await this.processInput(
@@ -235,12 +255,15 @@ class LocalAIService {
       output: path.join(job, "output.png"),
       rgb: path.join(job, "rgb.png"),
       enhanced: path.join(job, "enhanced.png"),
-      model: runtime.model,
+      model: settings.operation === 'cutout' ? runtime.modelPaths?.[settings.model || 'birefnet'] || runtime.model : runtime.model,
+      cutoutModel: settings.model || 'birefnet',
+      edgeShrink: settings.edgeShrink ?? 0,
+      edgeFeather: settings.edgeFeather ?? 0,
       provider: runtime.provider,
       scale: settings.scale,
     };
     const specFile = path.join(job, "job.json"),
-      script = await this.worker();
+      script = settings.operation === "cutout" ? await this.worker() : null;
     const onLine = (line) => {
       try {
         const value = JSON.parse(line);
@@ -266,9 +289,13 @@ class LocalAIService {
       await atomicWrite(specFile, JSON.stringify(spec));
       if (settings.operation === "cutout") await invoke("cutout");
       else {
-        stage("准备原图");
-        await invoke("prepare");
-        stage("超分处理中");
+        stage("准备原图", 2);
+        const source = await sharp(spec.input, { limitInputPixels: 100000000 }).rotate().ensureAlpha().png().toBuffer();
+        const metadata = await sharp(source).metadata();
+        dimensions(metadata.width * settings.scale, metadata.height * settings.scale);
+        await sharp(source).removeAlpha().png().toFile(spec.rgb);
+        signal.throwIfAborted();
+        stage("超分处理中", 5);
         await runProcess(
           runtime.executable,
           [
@@ -283,16 +310,25 @@ class LocalAIService {
             "-s",
             String(settings.scale),
             "-t",
-            "256",
+            "0",
             "-j",
             "1:1:1",
             "-f",
             "png",
           ],
-          { cwd: job, signal },
+          { cwd: job, signal, onStderrLine: line => {
+            const match = /^\s*(\d+(?:\.\d+)?)%\s*$/.exec(line);
+            if (match && !signal.aborted) stage(`超分处理中 · ${Math.min(100, Number(match[1]))}%`, 5 + Math.min(100, Number(match[1])) * 0.85);
+          } },
         );
-        stage("恢复透明通道");
-        await invoke("finish");
+        signal.throwIfAborted();
+        stage("恢复透明通道", 92);
+        const width = metadata.width * settings.scale, height = metadata.height * settings.scale;
+        const enhanced = await sharp(spec.enhanced).metadata();
+        if (enhanced.width !== width || enhanced.height !== height) throw failure("超分输出尺寸不正确，未导入结果");
+        const alpha = await sharp(source).extractChannel('alpha').resize(width, height, { fit: 'fill' }).raw().toBuffer();
+        const rgb = await sharp(spec.enhanced).removeAlpha().toColourspace('srgb').raw().toBuffer();
+        await sharp(rgb, { raw: { width, height, channels: 3 } }).joinChannel(alpha, { raw: { width, height, channels: 1 } }).png().toFile(spec.output);
       }
       signal.throwIfAborted();
       return await fs.readFile(spec.output);
@@ -301,12 +337,14 @@ class LocalAIService {
         for (const line of e.output.split("\n"))
           try {
             const value = JSON.parse(line);
-            if (value.error?.startsWith("精细抠图可用内存不足"))
+            if (value.error === '抠图可用内存不足，请关闭占用内存的应用后重试')
               throw failure(value.error);
           } catch (error) {
             if (error.safeMessage) throw error;
           }
       }
+      if (settings.operation === 'upscale' && e.safeMessage === '本地组件运行失败，请检查模型、显卡和可用内存')
+        throw failure('超分引擎运行失败，请检查显卡驱动是否支持 Vulkan；也可使用分辨率调整进行普通缩放');
       throw e;
     } finally {
       // Remove only files owned by this input, after its process tree has stopped.

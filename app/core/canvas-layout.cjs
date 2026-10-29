@@ -1,4 +1,5 @@
 const {nodeWidth}=require('./workflow-nodes.cjs');
+const {fitGroups}=require('./canvas-groups.cjs');
 
 function layoutSelection(nodes,ids){
   const selected=new Set(ids),byId=new Map(nodes.map(n=>[n.id,n]));
@@ -68,13 +69,7 @@ function arrangeNodes(nodes,ids,mode,edges=[]){
     for(const block of blocks){for(const n of block.rects)positions.set(n.id,{x:x+n.x,y:top+center-block.center+n.y});x+=block.width+112;}
   }else throw Error('未知整理方式');
   let next=nodes.map(n=>{const p=positions.get(n.id);return p&&(p.x!==n.position.x||p.y!==n.position.y)?{...n,position:p}:n;});
-  const parentId=selected[0].parentId,parent=nodes.find(n=>n.id===parentId);
-  if(parent){
-    const children=next.filter(n=>n.parentId===parentId);
-    const width=Math.max(parent.width||parent.measured?.width||0,...children.map(n=>n.position.x+(n.width||n.measured?.width||nodeWidth(n.type))+24));
-    const height=Math.max(parent.height||parent.measured?.height||0,...children.map(n=>n.position.y+(n.height||n.measured?.height||400)+24));
-    if(width!==parent.width||height!==parent.height)next=next.map(n=>n.id===parentId?{...n,width,height,style:{...n.style,width,height}}:n);
-  }
+  if(selected[0].parentId)next=fitGroups(next);
   return next.every((n,i)=>n===nodes[i])?nodes:next;
 }
 module.exports={layoutSelection,arrangeNodes};

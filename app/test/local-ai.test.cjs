@@ -19,10 +19,12 @@ test("AI settings use supported actual model scales and bound output pixels", ()
   );
   assert.deepEqual(
     validateLocalSettings({ operation: "cutout", scale: 99 }, size),
-    { operation: "cutout" },
+    { operation: "cutout", model: "birefnet", edgeShrink: 0, edgeFeather: 0 },
   );
   for (const settings of [
     { operation: "bad" },
+    ...[-1, 5, 0.5, NaN, '1'].map(edgeShrink => ({operation:'cutout',edgeShrink})),
+    ...[-1, 5, NaN, Infinity, '1'].map(edgeFeather => ({operation:'cutout',edgeFeather})),
     { operation: "upscale", model: "general", scale: 2 },
     { operation: "upscale", model: "__proto__", scale: 4 },
     { operation: "upscale", model: "anime", scale: 0 },

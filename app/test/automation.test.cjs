@@ -5,6 +5,13 @@ const base=()=>({id:'p',name:'MCP',width:128,height:128,background:'#ffffff',mod
 const step=(name,command,args={})=>({name,command,args});
 const ref=name=>({$ref:name+'.id'});
 const apply=(d,command,args)=>batch(d,[step('one',command,args)]);
+
+test('cutout edge schema exposes source-pixel bounds and rejects invalid requests',()=>{
+ const args={ids:['a'],requestId:'edge-test',settings:{operation:'cutout',model:'u2netp',edgeShrink:1,edgeFeather:0.5}};
+ assert.doesNotThrow(()=>validate('image.process',args));
+ for(const settings of [{edgeShrink:1.5},{edgeShrink:5},{edgeFeather:-1},{edgeFeather:5}])
+  assert.throws(()=>validate('image.process',{...args,settings:{...args.settings,...settings}}));
+});
 test('catalog has schemas, effects, and no executable escape hatch',()=>{const c=listCommands();assert.ok(c.length>=60);for(const x of c){assert.equal(x.inputSchema.additionalProperties,false);assert.ok(x.effect);}assert.throws(()=>validate('eval',{code:'x'}));assert.throws(()=>validate('layer.update',{id:'a',patch:{bitmap:{url:'https://bad'}}}));});
 test('batch refs create connected graph; failures do not mutate original',()=>{
  const d=base(),result=batch(d,[step('text','canvas.create',{type:'text',position:{x:0,y:0},properties:{text:'a cat'}}),step('desk','canvas.create',{type:'config',position:{x:400,y:0}}),step('edge','canvas.connect',{source:ref('text'),target:ref('desk')})]);

@@ -177,7 +177,7 @@ app.on("browser-window-created", (_, w) => {
         );
         await reload();
         await select("处理方式", "upscale");
-        await click("本地组件");
+        await click("管理本地组件");
         await wait(
           '[...document.querySelectorAll("button")].some(b=>b.textContent==="选择组件目录"&&!b.disabled)',
         );

@@ -46,7 +46,7 @@ import {CanvasContext,ContentNode,GroupNode} from './canvas-nodes.jsx';
 import {WorkflowSettings} from './workflow-settings.jsx';
 import {MediaPreview} from './media-preview.jsx';
 import {SceneView} from './scene-view.jsx';
-import {groupNodes,ungroupNodes} from '../core/canvas-groups.cjs';
+import {groupNodes,ungroupNodes,fitGroups} from '../core/canvas-groups.cjs';
 import {layoutSelection,arrangeNodes} from '../core/canvas-layout.cjs';
 import {MediaTools} from './media-tools.jsx';
 import { ReferenceEditor, PromptPreview, statusLabels } from "./recipes.jsx";
@@ -153,12 +153,12 @@ function CanvasWorkspace({
   useEffect(() => {
     const addedId=selectAfterAdd.current;
     setNodes((previous) =>
-      graph.nodes.map((node) => ({
+      fitGroups(graph.nodes.map((node) => ({
         ...node,
         measured: node.width && node.height ? {width:node.width,height:node.height} : previous.find(entry=>entry.id===node.id)?.measured,
         selected:
           addedId ? node.id===addedId : previous.find((entry) => entry.id === node.id)?.selected || false,
-      })),
+      }))),
     );
     selectAfterAdd.current=null;
     setEdges((previous) =>
@@ -172,7 +172,7 @@ function CanvasWorkspace({
       flow.setViewport(graph.viewport);
   }, [document.tugouCanvas]);
   const commit = (nextNodes, nextEdges, viewport, history = true, source = current.current.document) => {
-    const clean = nextNodes.map(
+    const clean = fitGroups(nextNodes).map(
       ({ selected, dragging, measured, resizing, ...node }) => node,
     );
     change(
@@ -732,7 +732,11 @@ function CanvasWorkspace({
               connectionRadius={32}
               connectOnClick
               onNodesChange={(changes) =>
-                setNodes((previous) => applyNodeChanges(changes, previous))
+                setNodes((previous) => {
+                  const next=applyNodeChanges(changes,previous);
+                  // Reconcile late content measurements without changing document history.
+                  return changes.some(c=>c.type==='dimensions')&&!next.some(n=>n.dragging||n.resizing)?fitGroups(next):next;
+                })
               }
               onEdgesChange={(changes) =>
                 setEdges((previous) => applyEdgeChanges(changes, previous))

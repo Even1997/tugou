@@ -3,12 +3,14 @@ import { Button, Checkbox } from "./components.jsx";
 
 export function RuntimeInstallControls({
   provider,
+  operation = "upscale",
   onInstalled,
   onActive,
   children,
 }) {
   const [task, setTask] = useState(null),
-    [cutout, setCutout] = useState(true),
+    [cutout, setCutout] = useState(operation === "cutout"),
+    [upscale, setUpscale] = useState(operation === "upscale"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const callbacks = useRef({ onInstalled, onActive }),
@@ -66,12 +68,13 @@ export function RuntimeInstallControls({
         disabled={busy || running}
         onChange={(e) => setCutout(e.target.checked)}
       >
-        同时安装主体抠图模型
+        主体抠图组件
       </Checkbox>
+      <Checkbox checked={upscale} disabled={busy || running} onChange={e => setUpscale(e.target.checked)}>AI 超分组件</Checkbox>
       <p className="muted">
         {cutout
-          ? "下载约 700 MB，安装位置需预留 3 GB。"
-          : "下载约 200 MB，安装位置需预留 2 GB。"}
+          ? "包含独立运行环境、轻量与精细两种模型，需预留 3 GB；模型合计约 495 MB。"
+          : "超分组件约 46–52 MB，需预留 256 MB，无需 Python。"}
         安装完成后自动启用。
       </p>
       {task && (
@@ -95,9 +98,9 @@ export function RuntimeInstallControls({
         {children}
         <Button
           primary
-          disabled={busy || running}
+          disabled={busy || running || (!cutout && !upscale)}
           onClick={() =>
-            act(() => window.tugou.installLocalTools({ cutout, provider }))
+            act(() => window.tugou.installLocalTools({ cutout, upscale, provider }))
           }
         >
           选择位置并安装

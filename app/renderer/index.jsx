@@ -31,6 +31,7 @@ import {FontWorkspace} from './font-workspace.jsx';
 import {PreferencesProvider,usePreferences} from './preferences.jsx';
 import {commandFor,shortcutBlocked} from '../core/shortcuts.cjs';
 import {SettingsWorkspace} from './settings.jsx';
+import {UpdatePrompt} from './update-prompt.jsx';
 import {useDevPreview} from './dev-preview.jsx';
 import * as pages from '../core/pages.cjs';
 import {PageTabs} from './page-tabs.jsx';
@@ -670,6 +671,7 @@ async function mount(){
   createRoot(document.getElementById("root")).render(
   <PreferencesProvider><ThemeProvider>
     <App />
+    <UpdatePrompt />
   </ThemeProvider></PreferencesProvider>,
 );
 }

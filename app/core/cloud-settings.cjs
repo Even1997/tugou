@@ -74,8 +74,8 @@ function cloudSettings(options, source) {
       integer("top", 0, height - 1);
       integer("width", 1, width - s.left);
       integer("height", 1, height - s.top);
-      integer("feather", 0, 1000);
     }
+    integer("feather", 0, 1000);
   }
   if (s.operation === "cloudExtend") {
     integer("width", width, 30000);
@@ -101,7 +101,7 @@ function cloudPrompt(s, size) {
     cloudEdit:
       "Edit only the transparent area of the supplied PNG mask. Opaque mask pixels are protected. Keep all protected content unchanged.",
     cloudExtend:
-      "Continue the image naturally into the transparent area of the PNG mask. The existing image is protected. Match its style, perspective and lighting.",
+      "Continue the image naturally into the transparent area of the PNG mask. The existing image is protected. Padding contains stretched edge colors only as a starting guide: replace these stretches with natural scene continuation, not repeated strips or borders. Match the original background, style, perspective and lighting.",
   }[s.operation];
   return `${purpose}\nReturn exactly ${size.width} x ${size.height} pixels.${s.instruction ? "\nUser requirement: " + s.instruction : ""}`;
 }

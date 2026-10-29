@@ -199,7 +199,7 @@ app.on("browser-window-created", (_, window) => {
           "missing local runtime produces actionable error without a task",
           (await js("tugou.tasks()")).length === 0,
         );
-        await click("本地组件");
+        await click("管理本地组件");
         await wait(
           '[...document.querySelectorAll("button")].some(b=>b.textContent==="选择组件目录"&&!b.disabled)',
         );

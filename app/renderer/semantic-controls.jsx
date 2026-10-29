@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Input, ToolPopover } from "./components.jsx";
+import { Button, Input } from "./components.jsx";
 export function SemanticControls({
   plan,
   update,
@@ -8,6 +8,7 @@ export function SemanticControls({
   read,
   analysis,
   canRead,
+  analysisReady,
   disabled,
 }) {
   return (
@@ -16,7 +17,7 @@ export function SemanticControls({
       disabled={disabled}
       aria-label="类别拆分参数"
     >
-      <ToolPopover label="类别方案" showLabel>
+      <div className="tool-primary-input">
         <div className="image-tool-detail">
           <Input.TextArea
             aria-label="类别方案"
@@ -31,14 +32,16 @@ export function SemanticControls({
             每类各请求一次模型。只提取原图可见像素，不补画遮挡内容；类别可能重叠，请逐层预览。
           </p>
         </div>
-      </ToolPopover>
+      </div>
       <span>{plan.split(/\r?\n/).filter((s) => s.trim()).length} 个对象</span>
       <Button
-        disabled={disabled || ["queued", "running"].includes(analysis?.status)}
+        disabled={disabled || !analysisReady.ready || ["queued", "running"].includes(analysis?.status)}
+        title={analysisReady.reason}
         onClick={analyze}
       >
         识别类别
       </Button>
+      {!analysisReady.ready && <p className="muted">{analysisReady.reason}；也可直接填写对象。</p>}
       <Button
         disabled={disabled || !canRead}
         onClick={read}

@@ -197,7 +197,7 @@ test("AI cancellation between inputs prevents publication and shutdown preserves
   await f.tasks.execution;
   assert.equal(f.tasks.tasks[0].status, "cancelled");
   await assert.rejects(f.result(task.id), { code: "ENOENT" });
-  assert.deepEqual(f.events[0].settings, { operation: "cutout" });
+  assert.deepEqual(f.events[0].settings, { operation: "cutout", model: "birefnet", edgeShrink: 0, edgeFeather: 0 });
 });
 test("AI incorrect output size is rejected and unavailable snapshot runtime prevents retry", async () => {
   const f = await fixture();
@@ -221,7 +221,9 @@ test("AI cutout batch retains dimensions and validates every output before publi
   const f = await fixture(),
     task = await f.service.start(f.r.id, f.document, ["a", "b"], {
       operation: "cutout",
-      model: "ignored",
+      model: "u2netp",
+      edgeShrink: 1,
+      edgeFeather: 0.5,
       scale: 4,
     });
   await f.tasks.execution;
@@ -233,7 +235,6 @@ test("AI cutout batch retains dimensions and validates every output before publi
       [3, 2],
     ],
   );
-  assert.ok(
-    f.events.every((e) => Object.keys(e.settings).join() === "operation"),
-  );
+  for (const event of f.events)
+    assert.deepEqual(event.settings, { operation: "cutout", model: "u2netp", edgeShrink: 1, edgeFeather: 0.5 });
 });

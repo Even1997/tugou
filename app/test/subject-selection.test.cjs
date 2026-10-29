@@ -6,6 +6,7 @@ test('subject selection validates input, reuses local worker, saves result and o
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'tugou-subject-')),inspect=()=>({width:1,height:1});
   let calls=0;const stages=[];
   const engine={root,resolveRuntime:async()=>({provider:'test'}),processInput:async(input,settings,runtime,signal,id,stage)=>{calls++;assert.equal(settings.operation,'cutout');assert.equal(input.width,1);assert.match(id,/^[a-f0-9-]{36}$/);signal.throwIfAborted();stage('加载主体模型');return png}};
+  engine.status=async()=>({configured:true,cutout:true,cutoutModels:['u2netp'],memory:{available:4*1024**3,commitAvailable:4*1024**3}});
   try{
     const source=await saveImage(root,png,inspect),signal=new AbortController().signal;
     assert.equal((await selectSubject(engine,source,inspect,signal,s=>stages.push(s))).resource,source.resource);assert.equal(calls,1);assert.deepEqual(stages,['检查模型与资源','加载主体模型']);

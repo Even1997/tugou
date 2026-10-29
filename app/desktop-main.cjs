@@ -194,6 +194,11 @@ async function boot() {
   handle('cancelSubject',()=>subjectController?.abort());
   app.on('before-quit',()=>subjectController?.abort());
   handle('installLocalTools', async options => {
+    if (options?.destination === 'default') {
+      const parent=path.join(app.getPath('userData'),'components');
+      await fs.mkdir(parent,{recursive:true});
+      return installer.start(parent,options);
+    }
     const choice = await dialog.showOpenDialog(window, { title: '选择组件安装位置', properties: ['openDirectory','createDirectory'] });
     return choice.canceled ? null : installer.start(choice.filePaths[0],options);
   });

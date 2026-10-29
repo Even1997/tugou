@@ -1,3 +1,4 @@
+const {localToolReadiness}=require('./local-readiness.cjs');
 function subjectReadiness(status,size,available,platform=process.platform){
   if(!status.configured||!status.cutout)return {ready:false,reason:(status.message?status.message+'；':'主体模型未就绪；')+'请到工具页配置本地 AI 组件'};
   const {width,height}=size||{};
@@ -6,8 +7,13 @@ function subjectReadiness(status,size,available,platform=process.platform){
   if(available<minimum)return {ready:false,reason:'可用内存不足，请关闭占用内存的应用后刷新'};
   if(platform==='win32'){
     if(!status.memory)return {ready:false,reason:'无法确认主体识别的内存状态，请刷新检查'};
-    if(status.memory.available<2*1024**3+pixels*20||status.memory.commitAvailable<14*1024**3+pixels*20)return {ready:false,reason:'主体识别内存不足，请关闭占用内存的应用后刷新'};
   }
-  return {ready:true,reason:'本地主体模型已就绪',provider:status.provider};
+  const precise=localToolReadiness(status,{operation:'cutout',model:'birefnet'},size);
+  if(precise.ready)return {...precise,model:'birefnet',provider:status.provider};
+  if(status.cutoutModels?.includes('u2netp')){
+    const light=localToolReadiness(status,{operation:'cutout',model:'u2netp'},size);
+    return {...light,model:'u2netp',provider:'CPUExecutionProvider'};
+  }
+  return precise;
 }
 module.exports={subjectReadiness};

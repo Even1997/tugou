@@ -82,6 +82,8 @@ class RuntimeInstaller {
       throw fail("当前系统暂不支持自动安装，请选择已安装的组件目录");
     if (
       typeof options.cutout !== "boolean" ||
+      (options.upscale !== undefined && typeof options.upscale !== "boolean") ||
+      (options.upscale === false && !options.cutout) ||
       ![
         "",
         undefined,
@@ -93,12 +95,13 @@ class RuntimeInstaller {
       throw fail("组件安装选项无效");
     const root = await installRoot(parent),
       space = await fs.statfs(root);
-    if (space.bavail * space.bsize < (options.cutout ? 3 : 2) * 1024 ** 3)
-      throw fail(`安装位置至少需要 ${options.cutout ? 3 : 2} GB 可用空间`);
+    if (space.bavail * space.bsize < (options.cutout ? 3 : 0.25) * 1024 ** 3)
+      throw fail(`安装位置至少需要 ${options.cutout ? 3 : 0.25} GB 可用空间`);
     const job = {
       id: randomUUID(),
       root,
       cutout: options.cutout,
+      upscale: options.upscale !== false,
       provider: options.provider || undefined,
       version: manifest.version,
       platform: process.platform,
@@ -144,7 +147,9 @@ class RuntimeInstaller {
     const task = await this.tasks.start(
       "安装本地组件",
       (signal, id) => this.execute(job, signal, id),
-      { kind: "runtime-install", installId: job.id },
+      { kind: "runtime-install", installId: job.id, components: [
+        ...(job.cutout ? ['cutout'] : []), ...(job.upscale !== false ? ['upscale'] : []),
+      ] },
     );
     return { id: task.id };
   }
@@ -178,8 +183,8 @@ class RuntimeInstaller {
       )
         throw fail("组件安装位置失效，请重新选择");
       const space = await fs.statfs(job.root);
-      if (space.bavail * space.bsize < 2 * 1024 ** 3)
-        throw fail("组件安装位置空间不足，请释放至少 2 GB 后重试");
+      if (space.bavail * space.bsize < (job.cutout ? 2 : 0.25) * 1024 ** 3)
+        throw fail("组件安装位置空间不足，请释放空间后重试");
       unlock = await lockRoot(job.root);
       config = await safePath(this.root, "local-runtime.json");
       before = await readOptional(config);
@@ -199,88 +204,92 @@ class RuntimeInstaller {
           )?.catch(() => {});
         });
       };
-      const bootstrap = await download(uv, "下载运行环境", 0, 10),
-        bootstrapFolder = await safePath(release, "bootstrap");
-      await extractArchive(bootstrap, bootstrapFolder, uv, signal);
-      const uvExe = await safePath(bootstrapFolder, uv.only);
-      if (process.platform !== "win32") await fs.chmod(uvExe, 0o755);
-      const env = runtimeEnvironment(job.root),
-        run = async (args) => {
-          try {
-            return await runProcess(uvExe, args, { env, signal, cwd: release });
-          } catch (e) {
-            if (signal.aborted) throw e;
-            throw fail(
-              `${stage}失败，请检查网络、磁盘空间或组件文件后继续安装`,
-            );
-          }
-        };
-      await phase("安装独立 Python", 12);
-      await run([
-        "python",
-        "install",
-        manifest.python,
-        "--no-bin",
-        "--no-registry",
-        "--no-config",
-      ]);
-      await phase("创建组件环境", 20);
-      const venv = await safePath(release, "segment-python");
-      const python = path.join(
-        venv,
-        process.platform === "win32" ? "Scripts/python.exe" : "bin/python3",
-      );
-      try {
-        await fs.access(path.join(venv, "pyvenv.cfg"));
-        await fs.access(python);
-      } catch (e) {
-        if (e.code !== "ENOENT") throw e;
+      if (job.cutout) {
+        const bootstrap = await download(uv, "下载运行环境", 0, 10),
+          bootstrapFolder = await safePath(release, "bootstrap");
+        await extractArchive(bootstrap, bootstrapFolder, uv, signal);
+        const uvExe = await safePath(bootstrapFolder, uv.only);
+        if (process.platform !== "win32") await fs.chmod(uvExe, 0o755);
+        const env = runtimeEnvironment(job.root),
+          run = async (args) => {
+            try {
+              return await runProcess(uvExe, args, { env, signal, cwd: release });
+            } catch (e) {
+              if (signal.aborted) throw e;
+              throw fail(
+                `${stage}失败，请检查网络、磁盘空间或组件文件后继续安装`,
+              );
+            }
+          };
+        await phase("安装独立 Python", 12);
         await run([
-          "venv",
-          venv,
-          "--allow-existing",
-          "--python",
+          "python",
+          "install",
           manifest.python,
-          "--managed-python",
-          "--no-python-downloads",
+          "--no-bin",
+          "--no-registry",
           "--no-config",
         ]);
-      }
-      await phase("安装并校验图像依赖", 25);
-      // Copy out of app.asar before passing a path to a native child process.
-      const requirements = await safePath(release, "requirements.txt");
-      await atomicWrite(
-        requirements,
-        await fs.readFile(path.join(__dirname, "../runtime", uv.requirements)),
-      );
-      await run([
-        "pip",
-        "sync",
-        requirements,
-        "--python",
-        python,
-        "--require-hashes",
-        "--only-binary",
-        ":all:",
-        "--no-config",
-        "--default-index",
-        "https://pypi.org/simple",
-      ]);
-      const archive = await download(upscale, "下载超分组件", 40, 55);
-      await phase("解压超分组件", 56);
-      await extractArchive(
-        archive,
-        await safePath(release, "realesrgan"),
-        upscale,
-        signal,
-      );
-      if (process.platform !== "win32")
-        await fs.chmod(
-          await safePath(release, "realesrgan", "realesrgan-ncnn-vulkan"),
-          0o755,
+        await phase("创建组件环境", 20);
+        const venv = await safePath(release, "segment-python");
+        const python = path.join(
+          venv,
+          process.platform === "win32" ? "Scripts/python.exe" : "bin/python3",
         );
+        try {
+          await fs.access(path.join(venv, "pyvenv.cfg"));
+          await fs.access(python);
+        } catch (e) {
+          if (e.code !== "ENOENT") throw e;
+          await run([
+            "venv",
+            venv,
+            "--allow-existing",
+            "--python",
+            manifest.python,
+            "--managed-python",
+            "--no-python-downloads",
+            "--no-config",
+          ]);
+        }
+        await phase("安装并校验图像依赖", 25);
+        // Copy out of app.asar before passing a path to a native child process.
+        const requirements = await safePath(release, "requirements.txt");
+        await atomicWrite(
+          requirements,
+          await fs.readFile(path.join(__dirname, "../runtime", uv.requirements)),
+        );
+        await run([
+          "pip",
+          "sync",
+          requirements,
+          "--python",
+          python,
+          "--require-hashes",
+          "--only-binary",
+          ":all:",
+          "--no-config",
+          "--default-index",
+          "https://pypi.org/simple",
+        ]);
+      }
+      if (job.upscale !== false) {
+        const archive = await download(upscale, "下载超分组件", job.cutout ? 40 : 0, job.cutout ? 55 : 88);
+        await phase("解压超分组件", job.cutout ? 56 : 90);
+        await extractArchive(
+          archive,
+          await safePath(release, "realesrgan"),
+          upscale,
+          signal,
+        );
+        if (process.platform !== "win32")
+          await fs.chmod(
+            await safePath(release, "realesrgan", "realesrgan-ncnn-vulkan"),
+            0o755,
+          );
+      }
       if (job.cutout) {
-        const model = await download(manifest.cutout, "下载主体模型", 60, 90);
+        const model = await download(manifest.cutout, "下载精细主体模型", 60, 86);
         const destination = await safePath(
           release,
           "segmentation",
@@ -288,6 +297,8 @@ class RuntimeInstaller {
         );
         await fs.mkdir(path.dirname(destination), { recursive: true });
         await fs.copyFile(model, destination);
+        const light = await download(manifest.cutoutLight, '下载轻量主体模型', 87, 90);
+        await fs.copyFile(light, await safePath(release, 'segmentation', 'u2netp.onnx'));
       }
       await phase("验证组件", 94);
       const notices = path.join(__dirname, "../runtime/component-notices");
@@ -298,8 +309,8 @@ class RuntimeInstaller {
         );
       const runtime = await this.localAI.inspect(release, job.provider, signal);
       if (
-        runtime.availableModels.length !== 3 ||
-        (job.cutout && !runtime.cutout)
+        (job.upscale !== false && runtime.availableModels.length !== 3) ||
+        (job.cutout && (!runtime.cutout || !['birefnet', 'u2netp'].every(key => runtime.availableCutoutModels?.includes(key))))
       )
         throw fail("组件验证未通过，原配置已保留");
       await atomicWrite(
@@ -317,9 +328,11 @@ class RuntimeInstaller {
         throw fail(
           "安装期间组件配置发生变化，已保留当前配置；可选择新组件目录启用",
         );
+      const previous = before ? JSON.parse(before) : {};
       const value = JSON.stringify({
-        folder: release,
-        provider: runtime.provider,
+        folder: job.upscale !== false ? release : previous.folder || release,
+        cutoutFolder: job.cutout ? release : previous.cutoutFolder || previous.folder || release,
+        provider: job.cutout ? runtime.provider : previous.provider || runtime.provider,
       });
       await atomicWrite(config, value);
       installedConfig = value;

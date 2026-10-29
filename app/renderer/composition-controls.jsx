@@ -16,6 +16,7 @@ export function CompositionControls({
   const number = (key, label, min, max) => (
     <NumberField
       label={label}
+      shortLabel={key === "strength" ? `${label}（%）` : undefined}
       value={value[key]}
       min={min}
       max={max}
@@ -61,14 +62,13 @@ export function CompositionControls({
           {operation === "texture" ? (
             <>
               {number("strength", "强度", 0, 100)}
-              <span className="muted">%</span>
             </>
           ) : (
             <span>
               {value.width} × {value.height} px
             </span>
           )}
-          <ToolPopover label="框选参数" icon="fit">
+          <ToolPopover className="tools-parameter-popover" showLabel label="框选参数" icon="fit">
             <div className="image-tool-detail">
               {number(
                 "left",
@@ -103,7 +103,7 @@ export function CompositionControls({
         </>
       )}
       {operation === "mattePair" && (
-        <ToolPopover label="边缘参数">
+        <ToolPopover className="tools-parameter-popover" icon="settings" showLabel label="边缘参数">
           <div className="image-tool-detail">
             {number("shrink", "收缩", 0, 32)}
             {number("feather", "内侧羽化", 0, 32)}
@@ -133,7 +133,7 @@ export function CompositionControls({
           )}
         </>
       )}
-      <ToolPopover label="组合工具说明">
+      <ToolPopover className="tools-parameter-popover" icon="info" showLabel label="组合工具说明">
         <div className="image-tool-detail">
           <p>
             {operation === "mattePair"

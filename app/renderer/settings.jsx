@@ -11,7 +11,7 @@ import {useUiView} from './ui-view.js';
 const tabs=[['general','settings'],['appearance','style'],['storage','open'],['models','model'],['mcp','transform'],['shortcuts','text'],['updates','sync']];
 const keys={general:['language','followSystemLanguage','restoreProject','confirmClose','notifyTasks','sounds'],appearance:['theme','zoom','grid'],storage:['dataDir','cache','backup'],models:['image','analysis','text'],mcp:['mcpEnabled','copyConfig'],shortcuts:Object.keys(definitions),updates:['autoCheck','autoDownload','check','download','install']};
 export function SettingsWorkspace({openModels,modelsOpen}){
-  const {value,save,status,error,ready,t,locale,update,setUpdate}=usePreferences();
+  const {value,save,status,error,ready,t,locale,update,setUpdate,requestUpdatePrompt}=usePreferences();
   const [tab,setTab]=useState('general'),[query,setQuery]=useState(''),[info,setInfo]=useState(null),[storage,setStorage]=useState(null),[models,setModels]=useState(null),[mcp,setMcp]=useState(null),[busy,setBusy]=useState(false),[failure,setFailure]=useState(''),[notice,setNotice]=useState(''),[confirm,setConfirm]=useState(null);
   const perform=async action=>{setBusy(true);setFailure('');setNotice('');try{await action();}catch(e){setFailure(t(e.message)||e.message);}finally{setBusy(false);}};
   const patch=p=>perform(()=>save(p));
@@ -24,7 +24,7 @@ export function SettingsWorkspace({openModels,modelsOpen}){
   useUiView('settings',{get:()=>({tab,query}),restore:v=>{setTab(v.tab);setQuery(v.query);},navigate:a=>{setQuery('');open(a.settingsTab);},blocked:()=>busy?'设置正在保存，请稍后导航':null});
   const current=update||{status:'idle'};
   const manualDmg=current.installMode==='dmg';
-  const checkUpdate=action=>perform(async()=>setUpdate(await window.tugou.update(action)));
+  const checkUpdate=action=>perform(async()=>{const next=await window.tugou.update(action);setUpdate(next);if(action==='check'&&['available','downloading','ready'].includes(next.status))requestUpdatePrompt();});
   return <div className="settings-workspace">
     <aside className="settings-nav"><h1>{t('settings')}</h1><div className="settings-search"><Icon name="search"/><Input aria-label={t('searchSettings')} placeholder={t('searchSettings')} value={query} onChange={e=>setQuery(e.target.value)} /></div>
       <nav aria-label={t('settings')}>{filtered.map(([id,icon])=><Button key={id} icon={icon} aria-current={tab===id?'page':undefined} onClick={()=>open(id)} data-settings-tab={id}>{t(id)}</Button>)}{!filtered.length&&<p>{t('noResults')}</p>}</nav>

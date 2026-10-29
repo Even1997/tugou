@@ -27,8 +27,11 @@ app.on('browser-window-created',(_,w)=>{
     await wait(`!document.querySelector('.settings-version button').disabled`);await button('检查更新');await wait(`document.body.textContent.includes('下载 DMG')`);
     check('real settings IPC selects the DMG update mode',(await js(`window.tugou.update('status')`)).installMode==='dmg');
     check('available state exposes DMG download and manual replacement instructions',await js(`document.body.textContent.includes('安装由你手动完成')&&!document.body.textContent.includes('重启并安装')`));
+    await wait(`!!document.querySelector('.update-prompt')`);await js(`Array.from(document.querySelectorAll('.update-prompt button')).find(b=>b.textContent==='稍后提醒').click()`);await wait(`!document.querySelector('.update-prompt')`);
     await button('下载 DMG');await wait(`!!document.querySelector('progress')&&document.querySelector('progress').value>0`);await capture('downloading');check('streamed download renders actual progress',true);
-    await wait(`document.body.textContent.includes('安装包已下载')`);check('verified download never opens or quits automatically',opened.length===0);await button('打开安装包');await wait(`!document.querySelector('.settings-update-status button').disabled`);
+    await wait(`document.body.textContent.includes('安装包已下载')`);check('verified download never opens or quits automatically',opened.length===0);
+    await wait(`!!document.querySelector('.update-prompt')`);await js(`Array.from(document.querySelectorAll('.update-prompt button')).find(b=>b.textContent==='稍后提醒').click()`);await wait(`!document.querySelector('.update-prompt')`);
+    await button('打开安装包');await wait(`!document.querySelector('.settings-update-status button').disabled`);
     check('open button uses verified DMG and keeps app running',opened.length===1&&fs.readFileSync(opened[0]).equals(bytes)&&!w.isDestroyed());
     check('manual replacement explicitly preserves save and quit decision',await js(`document.body.textContent.includes('先保存并退出土狗')&&!document.querySelector('.ant-modal')`));
     check('old install action cannot invoke automatic replacement',await js(`window.tugou.update('install').then(()=>false,()=>true)`));

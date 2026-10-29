@@ -19,7 +19,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
     await js('console.error("installer-sentinel")');check('console capture verified',report.errors.includes('installer-sentinel'));report.errors=[];
     report.id=prior?.id||await js('(async()=>{const r=await tugou.create("组件安装验收");await tugou.save(r.id,{...r.document,unknownInstallerField:{keep:true}},r.revision);return r.id})()');
     await js(`sessionStorage.setItem('tugou-reload-view',JSON.stringify({id:${JSON.stringify(report.id)},workspace:'tools'}))`);const loaded=new Promise(r=>w.webContents.once('did-finish-load',r));w.webContents.reload();await loaded;await wait('document.querySelector(".image-tools")');
-    await js(`{const e=document.querySelector('select[aria-label="处理方式"]');e.value='upscale';e.dispatchEvent(new Event('change',{bubbles:true}))}`);await delay(120);await click('本地组件');await wait('document.body.textContent.includes("尚未安装本地组件")||document.body.textContent.includes("D:/测试组件")');
+    await js(`{const e=document.querySelector('select[aria-label="处理方式"]');e.value='upscale';e.dispatchEvent(new Event('change',{bubbles:true}))}`);await delay(120);await click("管理本地组件");await wait('document.body.textContent.includes("尚未安装本地组件")||document.body.textContent.includes("D:/测试组件")');
     if(restart){
       check('installed status restores on restart',await js('document.body.textContent.includes("D:/测试组件")'));
       check('restart never resumes installation automatically',calls===0);
@@ -30,7 +30,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
       check('provider and existing-folder selection disabled while installing',await js('document.querySelector("select[aria-label=抠图计算设备]").disabled&&[...document.querySelectorAll("button")].find(b=>b.textContent.trim()==="使用已安装的组件").disabled'));
       await click('取消安装');await wait('[...document.querySelectorAll("button")].some(b=>b.textContent.trim()==="继续安装")');check('cancelled installer leaves runtime inactive',!fs.existsSync(path.join(profile,'workspace/ui-installed.json')));
       await click('关闭本地组件');await click('任务');await click('继续安装');await wait('document.body.textContent.includes("安装中")');check('retry available from unified task panel',calls===2);release();await wait('document.body.textContent.includes("已安装")');check('installer is not mislabeled as image result',true);await click('关闭任务');
-      await click('本地组件');await wait('document.body.textContent.includes("D:/测试组件")');check('completed installation refreshes runtime',true);
+      await click("管理本地组件");await wait('document.body.textContent.includes("D:/测试组件")');check('completed installation refreshes runtime',true);
     }
     w.setSize(960,720);await delay(250);await w.capturePage();await delay(100);fs.writeFileSync(path.join(out,restart?'installer-restored-960.png':'installer-960.png'),(await w.capturePage()).toPNG());
     check('dialog controls fit narrow desktop',await js('[...document.querySelectorAll("[role=dialog] button")].every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})'));

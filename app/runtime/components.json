@@ -1,5 +1,5 @@
 {
-  "version": "local-ai-1",
+  "version": "local-ai-2",
   "python": "3.12.12",
   "uv": {
     "win32-x64": {
@@ -45,6 +45,11 @@
       "format": "zip",
       "strip": 0
     }
+  },
+  "cutoutLight": {
+    "url": "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx",
+    "sha256": "309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8",
+    "bytes": 4574861
   },
   "cutout": {
     "url": "https://huggingface.co/onnx-community/BiRefNet-ONNX/resolve/534d3c82d3bb8b2f0867db6dfbc3a525b8e42f67/onnx/model_fp16.onnx",

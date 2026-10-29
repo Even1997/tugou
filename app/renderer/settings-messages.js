@@ -50,4 +50,12 @@ shortcutFixedHint:['复制、剪切、粘贴、全选及 Esc 沿用系统习惯�
 inverse:['反向选区','反向選取','Invert selection','選択範囲を反転','선택 반전'],swapMaskInk:['切换蒙版黑白','切換遮色片黑白','Swap mask black/white','マスクの白黒を切り替え','마스크 흑백 전환'],
 toolMove:['移动工具','移動工具','Move tool','移動ツール','이동 도구'],toolHand:['抓手工具','抓手工具','Hand tool','手のひらツール','손 도구'],toolBrush:['画笔工具','筆刷工具','Brush tool','ブラシツール','브러시 도구'],toolEraser:['橡皮擦工具','橡皮擦工具','Eraser tool','消しゴムツール','지우개 도구'],toolSelection:['矩形选区','矩形選取','Rectangular selection','長方形選択','사각형 선택'],toolLasso:['套索工具','套索工具','Lasso tool','投げなわツール','올가미 도구'],toolShape:['形状工具','形狀工具','Shape tool','シェイプツール','도형 도구'],
 });
+Object.assign(rows,{
+updateFoundTitle:['发现新版本','發現新版本','Update available','新しいバージョンがあります','새 버전이 있습니다'],
+updateReadyTitle:['新版本已下载','新版本已下載','Update downloaded','ダウンロード完了','업데이트 다운로드 완료'],
+updateLater:['稍后提醒','稍後提醒','Remind me later','後で通知','나중에 알림'],
+updateBackground:['后台下载','背景下載','Download in background','バックグラウンドで続行','백그라운드 다운로드'],
+updateNoNotes:['此版本未提供更新说明。','此版本未提供更新說明。','No release notes provided.','リリースノートはありません。','릴리스 노트가 없습니다.'],
+updateLaterHint:['稍后提醒将在 24 小时后的下次检查时再次提示，也可随时到设置中更新。','稍後提醒會在 24 小時後的下次檢查再次提示，也可隨時至設定更新。','Reminders resume on the next check after 24 hours. You can also update anytime in Settings.','24 時間後の次回チェックで再通知します。設定からいつでも更新できます。','24시간 후 다음 확인 시 다시 알립니다. 설정에서 언제든 업데이트할 수 있습니다.'],
+});
 export const messages=Object.fromEntries(Object.keys(languages).map((locale,i)=>[locale,Object.fromEntries(Object.entries(rows).map(([key,value])=>[key,value[i]]))]));

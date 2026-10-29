@@ -15,6 +15,7 @@ export function CloudControls({
   selectionLayerId,
   setSelectionLayerId,
   captureSelection,
+  paintMask,
 }) {
   const number = (key, label, min = 0, max = 30000) => (
     <NumberField
@@ -32,6 +33,18 @@ export function CloudControls({
       aria-label="云端参数"
       disabled={disabled}
     >
+      {operation === "cloudEdit" && <Button primary disabled={disabled || !source} onClick={paintMask}>涂画修改区域</Button>}
+        <label className="tool-primary-input">
+          修改要求{operation === 'cloudEdit' ? '（必填）' : '（可选）'}
+          <Input.TextArea
+            aria-label="云端修改要求"
+            value={value.instruction}
+            maxLength={4000}
+            rows={4}
+            placeholder={operation === 'cloudEdit' ? '例如：去掉选区内的杂物，补全背景' : '描述需要保留或补充的内容'}
+            onChange={(e) => update({ instruction: e.target.value })}
+          />
+        </label>
       {operation === "cloudUpscale" && (
         <label>
           倍率
@@ -62,7 +75,7 @@ export function CloudControls({
             </Select>
           </label>
           {value.maskMode === "rectangle" ? (
-            <ToolPopover label="修改区域">
+            <ToolPopover className="tools-parameter-popover" icon="settings" label="修改区域" showLabel>
               <div className="image-tool-detail">
                 {number("left", "选区左侧")}
                 {number("top", "选区顶部")}
@@ -91,8 +104,10 @@ export function CloudControls({
                   ))}
                 </Select>
               </label>
-            <ToolPopover label="蒙版规则" className="cloud-mask-rules">
+            <ToolPopover icon="settings" label="蒙版规则" showLabel className="tools-parameter-popover cloud-mask-rules">
                 <div className="image-tool-detail">
+                  {number("feather", "蒙版向内羽化（px）", 0, 1000)}
+                  <p>默认 0；增大可柔化修改边缘，不会扩大涂画范围。过大可能保留原有内容。</p>
                   <label>
                     读取
                     <Select
@@ -120,7 +135,7 @@ export function CloudControls({
               </ToolPopover>
             </>
           )}
-          <ToolPopover label="选区映射" showLabel>
+          <ToolPopover className="tools-parameter-popover" icon="settings" label="选区映射" showLabel>
             <label>映射到来源
               <Select aria-label="选区映射图层" value={selectionLayerId} onChange={e => setSelectionLayerId(e.target.value)}>
                 <option value="">画布原坐标（同尺寸）</option>
@@ -142,7 +157,7 @@ export function CloudControls({
         <>
           {number("width", "扩图宽度", 1)}
           {number("height", "扩图高度", 1)}
-          <ToolPopover label="原图位置">
+          <ToolPopover className="tools-parameter-popover" icon="settings" label="原图位置" showLabel>
             <div className="image-tool-detail">
               {number("left", "原图左侧")}
               {number("top", "原图顶部")}
@@ -165,18 +180,6 @@ export function CloudControls({
           </ToolPopover>
         </>
       )}
-      <ToolPopover label={value.instruction ? "修改要求 · 已填写" : "修改要求"}>
-        <label>
-          要求
-          <Input.TextArea
-            aria-label="云端修改要求"
-            value={value.instruction}
-            maxLength={4000}
-            rows={4}
-            onChange={(e) => update({ instruction: e.target.value })}
-          />
-        </label>
-      </ToolPopover>
       <span className="muted">原图和要求将发送至已配置模型</span>
     </fieldset>
   );

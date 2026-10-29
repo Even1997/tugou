@@ -22,7 +22,7 @@ const {
   validateComposition,
 } = require("./image-composition.cjs");
 const aiNames = { upscale: "AI 超分辨率", cutout: "主体抠图" };
-const aiDefaults = { upscale: { model: "general", scale: 4 }, cutout: {} };
+const aiDefaults = { upscale: { model: "general", scale: 4 }, cutout: { model: 'birefnet', edgeShrink: 0, edgeFeather: 0 } };
 const names = { ...operations, ...compositionNames, ...aiNames };
 const fail = (message) =>
   Object.assign(new Error(message), { safeMessage: message });
@@ -120,8 +120,8 @@ class ImageTaskService {
     validateJob(job);
     let runtime;
     if (Object.hasOwn(aiNames, settings.operation)) {
-      runtime = await this.localAI.resolveRuntime(settings);
-      job.runtime = { folder: runtime.folder, provider: runtime.provider };
+      runtime = await this.localAI.resolveRuntime(settings, undefined, inputs.reduce((a,b) => a.width*a.height>b.width*b.height ? a : b));
+      job.runtime = { folder: runtime.folder, cutoutFolder: runtime.cutoutFolder, provider: runtime.provider };
     }
     const requestId = randomUUID();
     await atomicWrite(
@@ -161,7 +161,7 @@ class ImageTaskService {
       ...(job.secondary ? [job.secondary] : []),
     ]);
     const runtime = Object.hasOwn(aiNames, job.settings.operation)
-      ? await this.localAI.resolveRuntime(job.settings, job.runtime)
+      ? await this.localAI.resolveRuntime(job.settings, job.runtime, job.inputs.reduce((a,b) => a.width*a.height>b.width*b.height ? a : b))
       : undefined;
     return this.enqueue(job, requestId, id, runtime);
   }

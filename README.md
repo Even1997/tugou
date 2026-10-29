@@ -2,7 +2,7 @@
 
 面向图片创作的本地桌面工作台。把提示词、参考图、AI 生图、无限画布、图层合成和字体设计放在同一个工程里，也让外部 AI Agent 通过 MCP 操作这些工具。
 
-**当前版本：v0.8.4** · [下载安装](https://github.com/Even1997/tugou/releases) · [版本说明](docs/releases/v0.8.4.md) · [开发文档](app/README.md)
+**当前版本：v0.8.5** · [下载安装](https://github.com/Even1997/tugou/releases) · [版本说明](docs/releases/v0.8.5.md) · [开发文档](app/README.md)
 
 ## 功能
 
@@ -18,17 +18,18 @@
 - 专注图片创作，保留视觉分析和文本辅助；不再提供视频/音频生成入口，旧工程已有媒体仍保留。
 - 图片生成支持 9 种固定比例与对应分辨率、自定义宽高；节点放大时提示词输入区随之伸展。
 - 画板提供 41 个预设，分为常用、社交、网页、手机/平板、印刷、照片，支持搜索和自定义。
+- 工具页支持本地上传，结果默认并排对比，也可滑动对比；两图同步缩放与定位。本地 AI 组件需手动点击下载，校验后可离线使用，首次获取需要联网。
 - 字体下拉支持搜索本机字体、内置字体和已发布自定义字体，以及可用字重。提供 55 个家族、141 个字重的下载目录，许可与覆盖范围见[字体目录](app/assets/fonts/CATALOG.md)。
 
 ## 下载安装
 
-在 [Releases](https://github.com/Even1997/tugou/releases/tag/v0.8.4) 按系统下载，保存并关闭正在运行的土狗，再安装。首次使用无需克隆源码或启动 Web 服务。
+在 [Releases](https://github.com/Even1997/tugou/releases/tag/v0.8.5) 按系统下载，保存并关闭正在运行的土狗，再安装。首次使用无需克隆源码或启动 Web 服务。
 
 | 平台 | 当前发行范围 |
 |---|---|
-| Windows x64 | `tugou-0.8.4-win-x64.exe`；支持应用内检查、下载和安装更新 |
-| macOS 13+ · Apple Silicon（M 系列） | `tugou-0.8.4-mac-arm64.dmg`，另提供同架构 ZIP |
-| macOS 13+ · Intel | `tugou-0.8.4-mac-x64.dmg`，另提供同架构 ZIP |
+| Windows x64 | `tugou-0.8.5-win-x64.exe`；支持应用内检查、下载和安装更新 |
+| macOS 13+ · Apple Silicon（M 系列） | `tugou-0.8.5-mac-arm64.dmg`，另提供同架构 ZIP |
+| macOS 13+ · Intel | `tugou-0.8.5-mac-x64.dmg`，另提供同架构 ZIP |
 | Linux | 当前没有正式支持或安装包 |
 
 当前 Windows 包未代码签名，系统可能提示未知发布者，请核对下载仓库及 Release 附带的 SHA256 校验文件。字体文件按需下载，安装包保留完整目录和授权；下载后可离线使用。

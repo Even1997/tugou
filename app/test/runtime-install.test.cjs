@@ -73,6 +73,7 @@ async function setup(t, inspect) {
         provider: "CPUExecutionProvider",
         availableModels: ["general", "illustration", "anime"],
         cutout: true,
+        availableCutoutModels: ['birefnet', 'u2netp'],
       })),
   };
   const installer = new RuntimeInstaller(local, tasks),
@@ -133,6 +134,37 @@ test("installer failure and explicit retry preserve config then activate", async
   await restarted.init();
   assert.equal(restarted.list().at(-1).status, "completed");
 });
+test("upscale-only installation skips Python and retains existing cutout location", async t => {
+  behavior = "ok"; calls.length = 0;
+  const f = await setup(t);
+  await f.installer.enqueue({ ...f.job, cutout: false, upscale: true });
+  await f.tasks.execution;
+  assert.equal(f.tasks.list().at(-1).status, "completed");
+  assert.equal(calls.length, 0);
+  const saved = JSON.parse(await fs.readFile(f.config, 'utf8'));
+  assert.equal(saved.cutoutFolder, 'original');
+  assert.ok(saved.folder.endsWith(f.job.id));
+  assert.deepEqual(f.tasks.list().at(-1).context.components, ['upscale']);
+});
+test("cutout-only installation retains existing upscale location", async t => {
+  behavior = "ok";
+  const f = await setup(t, async folder => ({ folder, cutout: true, availableCutoutModels: ['birefnet', 'u2netp'], availableModels: [], provider: 'CPUExecutionProvider' }));
+  await f.installer.enqueue({ ...f.job, cutout: true, upscale: false });
+  await f.tasks.execution;
+  assert.equal(f.tasks.list().at(-1).status, "completed");
+  const saved = JSON.parse(await fs.readFile(f.config, 'utf8'));
+  assert.equal(saved.folder, 'original');
+  assert.ok(saved.cutoutFolder.endsWith(f.job.id));
+  assert.deepEqual(f.tasks.list().at(-1).context.components, ['cutout']);
+  await fs.access(path.join(saved.cutoutFolder, 'segmentation', 'u2netp.onnx'));
+  await fs.access(path.join(saved.cutoutFolder, 'licenses', 'U2Net-APACHE.txt'));
+  await assert.rejects(fs.access(path.join(saved.cutoutFolder, 'realesrgan')));
+});
+test('missing lightweight model cannot activate a partially installed cutout bundle',async t=>{
+ const f=await setup(t,async folder=>({folder,cutout:true,availableCutoutModels:['birefnet'],availableModels:['general','illustration','anime']}));
+ const before=await fs.readFile(f.config,'utf8');await f.installer.enqueue(f.job);await f.tasks.execution;
+ assert.equal(f.tasks.list().at(-1).status,'failed');assert.equal(await fs.readFile(f.config,'utf8'),before);
+});
 test("cancel waits for owned installer process and does not activate", async (t) => {
   behavior = "wait";
   const f = await setup(t),
@@ -164,6 +196,7 @@ test("verification failure and concurrent configuration changes cannot activate"
       folder,
       availableModels: ["general", "illustration", "anime"],
       cutout: true,
+      availableCutoutModels: ['birefnet', 'u2netp'],
       provider: "CPUExecutionProvider",
     };
   };
@@ -203,6 +236,18 @@ test("installer strips external Python and package-index environment", () => {
   delete process.env.UV_INDEX_URL;
   delete process.env.PIP_EXTRA_INDEX_URL;
   delete process.env.PYTHONPATH;
+});
+
+test('restarting with an interrupted download never resumes until explicit retry', async t => {
+  behavior='ok';const f=await setup(t),before=calls.length;
+  await fs.writeFile(path.join(f.root,'tasks.json'),JSON.stringify([{id:'interrupted-install',status:'running',context:{kind:'runtime-install',installId:f.job.id,components:['cutout','upscale']}}]));
+  const restarted=new TaskQueue(f.root);await restarted.init();
+  assert.equal(restarted.list()[0].status,'interrupted');
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(calls.length,before);
+  const installer=new RuntimeInstaller(f.installer.localAI,restarted);
+  await installer.retry('interrupted-install');await restarted.execution;
+  assert.equal(restarted.list().at(-1).status,'completed');assert.ok(calls.length>before);
+  await restarted.shutdown();
 });
 test("low disk fails before submitting work and active releases are not modified", async (t) => {
   behavior = "ok";

@@ -5,7 +5,7 @@ const path = require("node:path");
 function runProcess(
   file,
   args,
-  { cwd, signal, onLine, timeout = 900000, env } = {},
+  { cwd, signal, onLine, onStderrLine, timeout = 900000, env } = {},
 ) {
   signal?.throwIfAborted();
   return new Promise((resolve, reject) => {
@@ -59,7 +59,14 @@ function runProcess(
       pending = lines.pop();
       for (const line of lines) onLine?.(line);
     });
-    child.stderr.on("data", () => {}); // Runtime diagnostics can contain local paths; never expose them in task records.
+    let stderrPending = "";
+    child.stderr.on("data", bytes => {
+      // Only the caller's parser receives diagnostics; never retain them in task records.
+      if (!onStderrLine) return;
+      const lines = (stderrPending + bytes).slice(-32768).split(/\r\n|\r|\n/);
+      stderrPending = lines.pop();
+      for (const line of lines) onStderrLine(line);
+    });
     let spawnError;
     child.on("error", (error) => {
       spawnError = error;

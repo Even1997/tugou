@@ -12,9 +12,10 @@ export function ImageToolControls({
   importLut,
   disabled,
 }) {
-  const number = (key, label, min, max, step = 1) => (
+  const number = (key, label, min, max, step = 1, unit) => (
     <NumberField
       label={label}
+      shortLabel={unit ? `${label}（${unit}）` : undefined}
       value={value[key]}
       min={min}
       max={max}
@@ -23,7 +24,7 @@ export function ImageToolControls({
       onChange={(n) => update({ [key]: n })}
     />
   );
-  if (!value) return null;
+  if (!value) return <div className="tool-operation-note"><strong>无需设置参数</strong><p>{operation === 'mirror' ? '沿水平方向翻转整张图片，保留尺寸和透明度。' : '将整张图片顺时针旋转 90°，宽高互换。'}</p></div>;
   return (
     <fieldset
       className="image-tool-parameters"
@@ -32,9 +33,8 @@ export function ImageToolControls({
     >
       {operation === "enhance" && (
         <>
-          {number("strength", "质感强度", 0, 100)}
-          <span className="muted">%</span>
-          <ToolPopover label="质感调整说明">
+          {number("strength", "质感强度", 0, 100, 1, "%")}
+          <ToolPopover className="tools-parameter-popover" icon="info" showLabel label="质感调整说明">
             <p>
               增强局部细节与饱和度，保留原尺寸和透明度。强度为 0
               时不改变像素；可对照检查细线与半透明边缘。
@@ -46,7 +46,7 @@ export function ImageToolControls({
         <>
           {number("width", "输出宽度", 1, 30000)}
           {number("height", "输出高度", 1, 30000)}
-          <ToolPopover label="图片平铺说明">
+          <ToolPopover className="tools-parameter-popover" icon="info" showLabel label="图片平铺说明">
             <p>
               从左上角按原尺寸重复排列，末行末列按输出边界裁切。透明区域保留；缩放、镜像和间距可在“重复图案”中设置。
             </p>
@@ -55,10 +55,8 @@ export function ImageToolControls({
       )}
       {operation === "alpha" && (
         <>
-          {number("shrink", "收缩", 0, 32)}
-          <span className="muted">px</span>
-          {number("feather", "内侧羽化", 0, 32)}
-          <span className="muted">px</span>
+          {number("shrink", "收缩", 0, 32, 1, "px")}
+          {number("feather", "内侧羽化", 0, 32, 1, "px")}
           <label>
             去底色
             <Select
@@ -71,7 +69,7 @@ export function ImageToolControls({
               <option value="black">去黑边</option>
             </Select>
           </label>
-          <ToolPopover label="透明边缘说明">
+          <ToolPopover className="tools-parameter-popover" icon="info" showLabel label="透明边缘说明">
             <p>
               处理已有透明轮廓，保留孔洞和半透明层次。收缩与羽化向内作用；去底色只处理半透明像素。原图保留，可对照检查细发丝与薄纱。
             </p>
@@ -105,9 +103,8 @@ export function ImageToolControls({
               }}
             />
           </label>
-          {number("strength", "强度", 0, 100)}
-          <span className="muted">%</span>
-          <ToolPopover label="LUT 说明">
+          {number("strength", "强度", 0, 100, 1, "%")}
+          <ToolPopover className="tools-parameter-popover" icon="info" showLabel label="LUT 说明">
             <p>
               支持独立 1D（2–65536 点）和 3D（2–65 点）Cube，含输入域与插值。LUT
               随工程保存，结果引用同一份预设。当前处理 8 位
@@ -129,8 +126,7 @@ export function ImageToolControls({
               <option value="directional">方向光</option>
             </Select>
           </label>
-          {number("exposure", "曝光", -4, 4, 0.1)}
-          <span className="muted">EV</span>
+          {number("exposure", "曝光", -4, 4, 0.1, "EV")}
           <label>
             光色
             <ColorControl
@@ -139,7 +135,7 @@ export function ImageToolControls({
               onChange={(e) => update({ color: e.target.value })}
             />
           </label>
-          <ToolPopover label="光源位置">
+          <ToolPopover className="tools-parameter-popover" icon="settings" showLabel label="光源位置">
             <div className="image-tool-detail">
               {number("centerX", "水平位置", 0, 100)}
               {number("centerY", "垂直位置", 0, 100)}
@@ -169,7 +165,7 @@ export function ImageToolControls({
           </label>
           {number("width", "输出宽度", 1, 30000)}
           {number("height", "输出高度", 1, 30000)}
-          <ToolPopover label="图案参数">
+          <ToolPopover className="tools-parameter-popover" icon="settings" showLabel label="图案参数">
             <div className="image-tool-detail">
               {number("motifScale", "图案倍率", 0.01, 4, 0.01)}
               {number("gap", "间距", 0, 5000)}

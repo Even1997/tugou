@@ -76,12 +76,12 @@ app.on("browser-window-created", (_, window) => {
         `{const e=document.querySelector('select[aria-label="处理方式"]');e.value='upscale';e.dispatchEvent(new Event('change',{bubbles:true}))}`,
       );
       await delay(60);
-      await click("本地组件");
+      await click("管理本地组件");
       await inspect("本地组件");
       await click("切换浅色主题");
       window.setSize(960, 720);
       await delay(100);
-      await click("本地组件");
+      await click("管理本地组件");
       check(
         "modal receives pointer hits above workspace",
         await js(

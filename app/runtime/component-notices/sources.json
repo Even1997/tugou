@@ -1,5 +1,15 @@
 [
   {
+    "name": "U2Net-APACHE.txt",
+    "url": "https://raw.githubusercontent.com/xuebinqin/U-2-Net/ac7e1c817ecab7c7dff5ce6b1abba61cd213ff29/LICENSE",
+    "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  },
+  {
+    "name": "rembg-MIT.txt",
+    "url": "https://raw.githubusercontent.com/danielgatis/rembg/c5b48b0417a0254df7d461efa14573597f369a83/LICENSE.txt",
+    "sha256": "90a3215072968fd304669c5389f04f1274a587abdd0507d99dead0f5511f8999"
+  },
+  {
     "name": "BiRefNet.txt",
     "url": "https://raw.githubusercontent.com/ZhengPeng7/BiRefNet/97e4f35d74043427b0e9ba935ca10991853a36bc/LICENSE",
     "sha256": "92a7089e0915fc32bc40067560b398f1e6a7a5958abd7d04eda393629a5acefb"

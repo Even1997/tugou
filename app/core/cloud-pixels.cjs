@@ -1,6 +1,7 @@
 const sharp = require("sharp");
 const os = require("node:os");
 const { cloudSettings, coverage, maskValue } = require("./cloud-settings.cjs");
+const { featherMask } = require('./mask-feather.cjs');
 sharp.cache(false);
 sharp.concurrency(1);
 const inputOptions = {
@@ -8,6 +9,9 @@ const inputOptions = {
   failOn: "warning",
   sequentialRead: true,
 };
+const displayedSize = meta => meta.orientation >= 5
+  ? { width: meta.height, height: meta.width }
+  : { width: meta.width, height: meta.height };
 async function decode(bytes) {
   const meta = await sharp(bytes, inputOptions).metadata();
   if ((meta.pages || 1) !== 1) throw Error("请使用静态图片");
@@ -34,7 +38,7 @@ function memory(source, size, hasMask = false) {
   if (
     os.freemem() <
     512 * 1024 * 1024 +
-      source.width * source.height * (hasMask ? 13 : 8) +
+      source.width * source.height * (hasMask ? 18 : 8) +
       size.width * size.height * 12
   )
     throw Error("本地合成可用内存不足，请关闭占用内存的应用后重试");
@@ -67,15 +71,13 @@ async function editMask(bytes, source, settings) {
     any ||= alpha[i] > 0;
   }
   if (!any) throw Error("蒙版没有可修改区域，未请求模型");
-  return alpha;
+  const feathered = featherMask(alpha, mask.width, mask.height, settings.feather);
+  if (!feathered.some(value => value > 0)) throw Error('羽化后没有可修改区域，请减小羽化');
+  return feathered;
 }
 async function prepare(bytes, options, maskBytes) {
   const meta = await sharp(bytes, inputOptions).metadata();
-  const orientation = meta.orientation || 1;
-  const sourceSize =
-    orientation >= 5
-      ? { width: meta.height, height: meta.width }
-      : { width: meta.width, height: meta.height };
+  const sourceSize = displayedSize(meta);
   const { settings: s, size } = cloudSettings(options, sourceSize);
   memory(sourceSize, size, s.maskMode === "asset");
   const source = await decode(bytes),
@@ -90,6 +92,13 @@ async function prepare(bytes, options, maskBytes) {
       data: Buffer.alloc(size.width * size.height * 4),
     };
     if (s.operation === "cloudExtend") {
+      // Give providers color context instead of transparent black padding.
+      // The independent mask still controls edits; original RGBA is restored below and at finish.
+      frame.data = await sharp(canonical, inputOptions)
+        .flatten({ background: '#ffffff' })
+        .extend({ left: s.left, top: s.top, right: size.width - s.left - source.width,
+          bottom: size.height - s.top - source.height, extendWith: 'copy' })
+        .ensureAlpha().raw().toBuffer();
       copyRows(source, frame, s.left, s.top);
       image = await encode(frame);
       frame.data.fill(0);
@@ -126,9 +135,9 @@ async function finish(
   fit = false,
   maskBytes,
 ) {
-  const meta = await sharp(sourceBytes, inputOptions).metadata(),
+  const meta = displayedSize(await sharp(sourceBytes, inputOptions).metadata()),
     { settings: s, size } = cloudSettings(options, meta);
-  const actual = await sharp(generatedBytes, inputOptions).metadata();
+  const actual = displayedSize(await sharp(generatedBytes, inputOptions).metadata());
   memory(meta, size, s.maskMode === "asset");
   if (actual.width !== size.width || actual.height !== size.height) {
     if (
@@ -141,6 +150,7 @@ async function finish(
         `模型返回 ${actual.width}×${actual.height}，请求 ${size.width}×${size.height}；原始图已保留`,
       );
     generatedBytes = await sharp(generatedBytes, inputOptions)
+      .rotate()
       .resize(size.width, size.height, {
         kernel: "lanczos3",
         withoutEnlargement: true,
