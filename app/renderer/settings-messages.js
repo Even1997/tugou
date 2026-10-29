@@ -1,6 +1,11 @@
 // Every settings string has an explicit translation; stable IDs are also used by tests.
 export const languages={'zh-CN':'简体中文','zh-TW':'繁體中文',en:'English',ja:'日本語',ko:'한국어'};
 const rows={
+downloadDmg:['下载 DMG','下載 DMG','Download DMG','DMG をダウンロード','DMG 다운로드'],
+openInstaller:['打开安装包','開啟安裝包','Open installer','インストーラーを開く','설치 파일 열기'],
+dmgReady:['安装包已下载','安裝包已下載','Installer downloaded','ダウンロード完了','설치 파일 다운로드 완료'],
+dmgUpdateHint:['自动检查并下载对应芯片的 DMG，安装由你手动完成。','自動檢查並下載對應晶片的 DMG，由你手動安裝。','Checks for updates and downloads the DMG for your architecture. Installation is manual.','更新を確認し、対応するチップの DMG をダウンロードします。インストールは手動です。','업데이트를 확인하고 칩에 맞는 DMG를 다운로드합니다. 설치는 수동입니다.'],
+dmgInstallHint:['打开后，先保存并退出土狗，再将 Tugou.app 拖入 Applications 替换。不会自动退出应用；未公证版本仍可能出现系统安全提示。','開啟後，先儲存並結束土狗，再將 Tugou.app 拖入 Applications 取代。不會自動結束應用程式；未公證版本仍可能出現系統安全提示。','Open the DMG, save and quit Tugou, then drag Tugou.app into Applications to replace it. The app will not quit automatically. macOS may warn about this unnotarized build.','DMG を開き、保存して土狗を終了後、Tugou.app を Applications にドラッグして置き換えてください。自動終了しません。未公証のため macOS が警告する場合があります。','DMG를 연 뒤 저장하고 토구를 종료한 후 Tugou.app을 Applications로 드래그해 교체하세요. 앱은 자동 종료되지 않습니다. 공증되지 않아 macOS 경고가 표시될 수 있습니다.'],
 defaultModel:["默认模型","預設模型","Default model","既定モデル","기본 모델"],
 noPurposeModels:["暂无此用途模型，请先管理供应商与模型。","尚無此用途模型，請先管理供應商與模型。","No models for this purpose. Add them in provider management.","この用途のモデルがありません。プロバイダー管理で追加してください。","이 용도의 모델이 없습니다. 공급자 관리에서 추가하세요."],
 connectionInfo:["连接信息","連線資訊","Connection details","接続情報","연결 정보"],

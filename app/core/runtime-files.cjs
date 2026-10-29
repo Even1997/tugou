@@ -15,12 +15,12 @@ async function hashFile(file, signal) {
   }
   return hash.digest("hex");
 }
-async function verifiedDownload(item, folder, signal, progress = () => {}) {
+async function verifiedDownload(item, folder, signal, progress = () => {}, maxBytes = 1024 ** 3) {
   if (
     !/^[a-f0-9]{64}$/.test(item.sha256) ||
     !Number.isSafeInteger(item.bytes) ||
     item.bytes <= 0 ||
-    item.bytes > 1024 ** 3
+    item.bytes > maxBytes
   )
     throw Error("组件下载清单无效");
   const file = await safePath(folder, item.sha256),

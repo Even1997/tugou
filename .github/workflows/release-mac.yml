@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing stable release tag
+        description: Existing release tag (draft or stable)
         required: true
-        default: v0.8.2
+        default: v0.8.3
 permissions:
   contents: read
 concurrency:
@@ -33,6 +33,8 @@ jobs:
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.tag }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
@@ -46,6 +48,8 @@ jobs:
           # Only documentation, Mac licensing collection and release QA may differ from the app tag.
           git diff --exit-code "$RELEASE_TAG" -- . ':!README.md' ':!test/mac-release-desktop.cjs' ':!scripts/third-party-notices.cjs'
       - run: npm ci
+      - name: Test DMG update controller
+        run: node --test test/mac-dmg-update.test.cjs
       - name: Build native DMG and ZIP (ad-hoc signature, no notarization)
         run: npm run dist:mac -- dmg zip --${{ matrix.arch }} --publish never -c.mac.identity=-
       - name: Verify native binaries and bundle signature
@@ -75,6 +79,10 @@ jobs:
           const path=require('node:path');
           (async()=>{let last;const end=Date.now()+90000;while(Date.now()<end){try{const r=await bridge(path.join(process.env.TUGOU_DATA_DIR,'mcp-session.json'),'get_state',{},{reconnectTimeoutMs:0,signal:AbortSignal.timeout(5000)});if(!r.ok)throw Error(JSON.stringify(r.error));console.log('Packaged executable MCP ready:',r.value.capabilities.commands);return;}catch(e){last=e;await new Promise(r=>setTimeout(r,1000));}}throw last;})().catch(e=>{console.error(e);process.exitCode=1;});
           JS
+      - name: Verify full DMG download and native mount
+        env:
+          TUGOU_MAC_QA_BUNDLE: release/${{ matrix.bundle }}/Tugou.app
+        run: node_modules/.bin/electron test/mac-dmg-native.cjs
       - name: Prepare checksums
         run: |
           cd release
@@ -114,9 +122,9 @@ jobs:
           path: packages
       - name: Add verified packages to existing stable release
         run: |
-          gh release view "$RELEASE_TAG" --json isDraft,isPrerelease --jq 'select(.isDraft == false and .isPrerelease == false)' | grep -q false
+          gh release view "$RELEASE_TAG" --json isPrerelease --jq '.isPrerelease' | grep -x false
           cd packages
           shasum -a 256 -c SHA256SUMS-mac-arm64.txt
           shasum -a 256 -c SHA256SUMS-mac-x64.txt
           gh release upload "$RELEASE_TAG" ./*.dmg ./*.zip ./SHA256SUMS-mac-*.txt
-          # No latest-mac.yml: ad-hoc builds do not provide a trusted automatic upgrade chain.
+          # DMG updates use GitHub asset metadata; no Squirrel latest-mac.yml or automatic installation.

@@ -1,6 +1,6 @@
 # 土狗桌面应用开发说明
 
-安装使用见[项目首页](../README.md)，版本变更见[发布说明](../docs/releases/v0.8.2.md)。`app/` 是当前源码入口，Electron、React、Ant Design 与本地工具共用工程格式，无需旧 Web/Go 服务。
+安装使用见[项目首页](../README.md)，版本变更见[发布说明](../docs/releases/v0.8.3.md)。`app/` 是当前源码入口，Electron、React、Ant Design 与本地工具共用工程格式，无需旧 Web/Go 服务。
 
 ## 开发
 
@@ -44,9 +44,11 @@ npm run dist:mac
 
 更新源在 `electron-builder.cjs` 固定为 `Even1997/tugou`。Windows 稳定 Release 必须同时包含安装 EXE、对应 `.blockmap` 和 `latest.yml`，版本、文件名、大小与 SHA512 必须匹配；另附 `SHA256SUMS.txt` 供用户核对。只有安装器而没有 latest.yml，应用不能正确发现更新。
 
-Mac 构建由 `.github/workflows/release-mac.yml` 手动触发，分别在原生 arm64 / x64 runner 构建 DMG、ZIP，检查包体、原生模块、界面与 MCP 后附加到已有稳定 Release。工作流检查应用代码与发布标签一致，仅允许许可证收集和发布验收脚本存在明确差异。两个架构全部通过才上传，不覆盖现有 Windows 附件。
+Mac 构建由 `.github/workflows/release-mac.yml` 手动触发，从指定发布标签检出，分别在原生 arm64 / x64 runner 构建 DMG、ZIP，检查包体、原生模块、界面、MCP 和完整 DMG 下载/挂载后附加到已有草稿或稳定 Release。两个架构全部通过才上传，不覆盖现有 Windows 附件。新版本先建草稿，待 Windows 和两种 Mac 附件齐全、校验通过后再公开。
 
-当前 Mac 包只有 ad-hoc 签名，无 Developer ID 签名和公证，供手动安装更新；附各架构 SHA256 校验文件，不上传 `latest-mac.yml`，避免宣称具备可信自动升级链路。正式 Mac 自动更新仍需稳定开发者签名、公证及真实升级验收；CI 原生桌面检查不等于全部实体设备验收。
+当前 Mac 包只有 ad-hoc 签名，无 Developer ID 签名和公证，不上传 `latest-mac.yml`。本版更新逻辑改为直接读取公开 GitHub Releases 的最新稳定版，按应用架构选择 DMG，验证 asset 的 SHA256 digest 和大小；流式下载支持进度与断点续传，最大 4 GiB。默认自动检查、手动下载，可开启自动下载。下载后点击“打开安装包”，保存退出，再拖入 Applications 替换；应用不会自行退出、安装或移除系统隔离标记。首次包含该功能的版本需从旧版手动安装。
+
+发布 DMG 必须使用 `tugou-${version}-mac-${arch}.dmg`（arm64 / x64）命名，GitHub API 附件必须带 `sha256:` digest；缺失架构附件、摘要或下载失败均提示错误，不误报最新版。缓存放在用户数据目录 `updates/mac-dmg`，与工程目录分离。Mac 检查仍要求安装到 `/Applications` 或用户的 `Applications`。本地控制器与 renderer 检查不等于 Mac 原生挂载及手动替换验收；未来若要自动安装，再单独评估签名、公证和更新链路。
 
 发布前同步根 VERSION、package.json/package-lock.json，整理 CHANGELOG 和版本说明；检查测试、许可、敏感文件及更新资源。正式 Release 应为稳定版而非 draft/prerelease。私有仓库不能供不携带 GitHub 凭证的公共客户端自动更新，禁止把发布令牌打入应用。
 

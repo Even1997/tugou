@@ -2,7 +2,7 @@
 
 面向图片创作的本地桌面工作台。把提示词、参考图、AI 生图、无限画布、图层合成和字体设计放在同一个工程里，也让外部 AI Agent 通过 MCP 操作这些工具。
 
-**当前版本：v0.8.2** · [下载安装](https://github.com/Even1997/tugou/releases) · [版本说明](docs/releases/v0.8.2.md) · [开发文档](app/README.md)
+**当前版本：v0.8.3** · [下载安装](https://github.com/Even1997/tugou/releases) · [版本说明](docs/releases/v0.8.3.md) · [开发文档](app/README.md)
 
 ## 功能
 
@@ -22,20 +22,22 @@
 
 ## 下载安装
 
-在 [Releases](https://github.com/Even1997/tugou/releases/tag/v0.8.2) 按系统下载，保存并关闭正在运行的土狗，再安装。首次使用无需克隆源码或启动 Web 服务。
+在 [Releases](https://github.com/Even1997/tugou/releases/tag/v0.8.3) 按系统下载，保存并关闭正在运行的土狗，再安装。首次使用无需克隆源码或启动 Web 服务。
 
 | 平台 | 当前发行范围 |
 |---|---|
-| Windows x64 | `tugou-0.8.2-win-x64.exe`；支持应用内检查、下载和安装更新 |
-| macOS 13+ · Apple Silicon（M 系列） | `tugou-0.8.2-mac-arm64.dmg`，另提供同架构 ZIP |
-| macOS 13+ · Intel | `tugou-0.8.2-mac-x64.dmg`，另提供同架构 ZIP |
+| Windows x64 | `tugou-0.8.3-win-x64.exe`；支持应用内检查、下载和安装更新 |
+| macOS 13+ · Apple Silicon（M 系列） | `tugou-0.8.3-mac-arm64.dmg`，另提供同架构 ZIP |
+| macOS 13+ · Intel | `tugou-0.8.3-mac-x64.dmg`，另提供同架构 ZIP |
 | Linux | 当前没有正式支持或安装包 |
 
 当前 Windows 包未代码签名，系统可能提示未知发布者，请核对下载仓库及 Release 附带的 SHA256 校验文件。安装包包含完整内置字库，下载和安装需要较多空间。
 
 Mac：打开对应芯片的 DMG，将 `Tugou.app`（土狗）拖入 Applications 后运行。Mac 包目前只有临时签名（ad-hoc），没有 Apple Developer ID 签名和公证，系统可能阻止首次打开。确认下载来源和校验值后，可按 macOS「系统设置 → 隐私与安全性」显示的选项允许打开；不需要关闭全局安全保护。若系统没有提供允许选项或设备受组织管理，请勿绕过策略。
 
-当前 Mac 版本采用手动下载安装更新，不承诺自动安装；请保存并退出后替换应用，保留原用户数据目录。Mac CI 原生运行检查不等于所有实体 Mac、输入法和系统权限场景均已验收。
+Mac 支持自动检查和 DMG 下载，最后由用户保存退出后手动替换，保留原用户数据目录。Mac CI 原生运行检查不等于所有实体 Mac、输入法和系统权限场景均已验收。
+
+Mac 下载支持进度、断点续传及完整性校验，完成后点击“打开安装包”。v0.8.2 及更早版本没有此通道，首次升级到 v0.8.3 仍需手动安装。
 
 ## 第一次生成图片
 
@@ -70,13 +72,14 @@ MCP 覆盖工程、画布与连线、图层/画板、选区/蒙版、图片工�
 
 ## 自动更新
 
-Windows 安装版通过 `Even1997/tugou` 的公开 GitHub Releases 获取稳定版；本批 Mac 临时签名包使用手动更新，不发布自动更新清单：
+Windows 和 Mac 安装版均通过 `Even1997/tugou` 的公开 GitHub Releases 检查稳定版。Windows 使用更新清单自动安装；Mac 下载对应架构 DMG 后手动替换，不依赖 `latest-mac.yml`：
 
 此功能要求仓库及稳定版附件可公开访问。仓库仍为私有时，授权成员可以在 GitHub 手动下载，但普通客户端无法自动检查/下载；应用不会内置 GitHub 发布令牌。
 
 - 默认自动检查：启动后检查，以约 24 小时为间隔节流；也可在「设置 → 更新与关于」手动检查。
 - 默认不自动下载，可在设置中开启。下载显示进度，完成后由你确认安装。
-- 未保存工程或运行任务会阻止安装；安装前等待数据落盘，释放 MCP 连接后升级并重启。
+- Windows：未保存工程或运行任务会阻止安装；安装前等待数据落盘，释放 MCP 连接后升级并重启。
+- Mac：下载完成后打开 DMG，保存并退出土狗，再拖入 Applications 替换；不会自动退出或安装。
 - 源码开发版和未安装的解压运行目录不走安装更新，请更新源码或使用安装包。
 - 没有更新入口的旧版本需要先手动安装此版；GitHub 不可达时可从 Releases 手动下载。
 

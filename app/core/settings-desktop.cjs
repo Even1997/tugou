@@ -5,6 +5,7 @@ const {clientConfig,clientFormats}=require('./mcp-client-config.cjs');
 async function directorySize(directory){let total=0;try{for(const entry of await fs.readdir(directory,{withFileTypes:true})){if(entry.isSymbolicLink())continue;const file=path.join(directory,entry.name);if(entry.isDirectory())total+=await directorySize(file);else if(entry.isFile())total+=(await fs.stat(file)).size;}}catch(e){if(e.code!=='ENOENT')throw e;}return total;}
 async function registerSettings({app,window,handle,preferences,projects,fonts,tasks,isDirty,isBusy,enableMcp,disableMcp,mcpStatus,prepareMcpUpdate,updater,refreshShortcuts}){
   const {shell,Notification}=require('electron'),profile=app.getPath('userData'),root=path.join(profile,'workspace');
+  if(process.platform==='darwin')updater=new (require('./mac-dmg-updater.cjs').MacDmgUpdater)({profile,version:require('../package.json').version,openPath:file=>shell.openPath(file)});
   const installed=require('./desktop-platform.cjs').installedForUpdates({packaged:app.isPackaged,platform:process.platform,executable:app.getPath('exe'),home:app.getPath('home'),exists:require('node:fs').existsSync});
   const updates=new Updates({updater,profile,version:require('../package.json').version,supported:installed,
     guard:async()=>isDirty()?'unsaved':await isBusy()||tasks.list().some(t=>['queued','running'].includes(t.status))?'tasksBusy':null,
@@ -30,7 +31,7 @@ async function registerSettings({app,window,handle,preferences,projects,fonts,ta
     if(action==='lastProject'){try{const {id}=JSON.parse(await fs.readFile(path.join(profile,'last-project.json'),'utf8'));return preferences.value.restoreProject?await projects.read(id):null;}catch(e){if(e.code==='ENOENT')return null;throw e;}}
     throw Error('INVALID_SETTINGS_ACTION');
   });
-  handle('update',async action=>{if(action==='status')return updates.snapshot();if(action==='check')return updates.check({autoDownload:preferences.value.autoDownload});if(action==='download')return updates.download();if(action==='install')return updates.install();throw Error('INVALID_UPDATE_ACTION');});
+  handle('update',async action=>{if(action==='status')return updates.snapshot();if(action==='check')return updates.check({autoDownload:preferences.value.autoDownload});if(action==='download')return updates.download();if(action==='install')return updates.install();if(action==='openInstaller')return updates.openInstaller();throw Error('INVALID_UPDATE_ACTION');});
   window.webContents.on('did-start-loading',()=>window.webContents.setIgnoreMenuShortcuts(false));
   window.webContents.setZoomFactor(preferences.value.zoom/100);
   const automatic=()=>{if(preferences.value.autoCheck)updates.check({automatic:true,autoDownload:preferences.value.autoDownload}).catch(()=>{});};

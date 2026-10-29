@@ -21,13 +21,14 @@ export function SettingsWorkspace({openModels,modelsOpen}){
   const filtered=tabs.filter(([id])=>[id,t(id),...keys[id].map(t)].join(' ').toLowerCase().includes(query.toLowerCase()));
   const open=id=>{setTab(id);setFailure('');setNotice('');};
   const current=update||{status:'idle'};
+  const manualDmg=current.installMode==='dmg';
   const checkUpdate=action=>perform(async()=>setUpdate(await window.tugou.update(action)));
   return <div className="settings-workspace">
     <aside className="settings-nav"><h1>{t('settings')}</h1><div className="settings-search"><Icon name="search"/><Input aria-label={t('searchSettings')} placeholder={t('searchSettings')} value={query} onChange={e=>setQuery(e.target.value)} /></div>
       <nav aria-label={t('settings')}>{filtered.map(([id,icon])=><Button key={id} icon={icon} aria-current={tab===id?'page':undefined} onClick={()=>open(id)} data-settings-tab={id}>{t(id)}</Button>)}{!filtered.length&&<p>{t('noResults')}</p>}</nav>
       <footer><span className={status==='saveFailed'?'settings-error':''}>{t(status)}</span><small>Tugou {info?.version||''}</small></footer>
     </aside>
-    <section className="settings-content" aria-label={t(tab)}><header><div><h1>{t(tab)}</h1><p>{t(tab+'Desc')}</p></div><span className="settings-save">{t(busy?'saving':status)}</span></header>
+    <section className="settings-content" aria-label={t(tab)}><header><div><h1>{t(tab)}</h1><p>{t(tab+'Desc')}</p></div><span className="settings-save">{t(busy&&tab!=='updates'?'saving':status)}</span></header>
       {(failure||error)&&<div role="alert" className="settings-error">{failure||t('saveFailed')}</div>}{notice&&<p role="status" className="settings-success">{t(notice)}</p>}
       {tab==='general'&&<>
         {dropdown('language',Object.entries(languages),'languageHint',value.followSystemLanguage)}{toggle('followSystemLanguage')}
@@ -40,9 +41,10 @@ export function SettingsWorkspace({openModels,modelsOpen}){
       {tab==='shortcuts'&&<SettingsShortcuts/>}
       {tab==='updates'&&<>
         <div className="settings-version"><img src="brand/logo.png" alt=""/><div><h2>土狗 <span>Tugou</span></h2><p>v{current.currentVersion||info?.version} · {info?.platform==='darwin'?'macOS':'Windows'} {info?.arch}</p></div><Button disabled={busy||!current.supported||['checking','downloading','ready','installing'].includes(current.status)} onClick={()=>checkUpdate('check')} icon={current.status==='checking'?'loading':'sync'}>{t('check')}</Button></div>
-        <div className={'settings-update-status status-'+current.status} role="status"><Icon name={current.status==='error'?'info':current.status==='latest'?'check':current.status==='ready'?'download':'sync'}/><div><strong>{t(current.status)}{current.version?' · v'+current.version:''}</strong><p>{current.status==='portable'?t('portableHint'):current.error?t(current.error):current.status==='ready'?t('installHint'):''}</p>{current.status==='downloading'&&<><progress aria-label={t('downloading')} value={current.percent||0} max="100"/><small>{Math.round(current.percent||0)}% · {bytes(current.transferred||0)} / {bytes(current.total||0)}</small></>}{current.blocked&&<p className="settings-error">{t(current.blocked)}</p>}</div>
-          {current.status==='available'&&<Button primary disabled={busy} onClick={()=>checkUpdate('download')}>{t('download')}</Button>}{current.status==='ready'&&<Button primary disabled={busy} onClick={()=>setConfirm('install')}>{t('install')}</Button>}
+        <div className={'settings-update-status status-'+current.status} role="status"><Icon name={current.status==='error'?'info':current.status==='latest'?'check':current.status==='ready'?'download':'sync'}/><div><strong>{t(manualDmg&&current.status==='ready'?'dmgReady':current.status)}{current.version?' · v'+current.version:''}</strong><p>{current.status==='portable'?t('portableHint'):current.error?t(current.error):current.status==='ready'?t(manualDmg?'dmgInstallHint':'installHint'):''}</p>{current.status==='downloading'&&<><progress aria-label={t('downloading')} value={current.percent||0} max="100"/><small>{Math.round(current.percent||0)}% · {bytes(current.transferred||0)} / {bytes(current.total||0)}</small></>}{current.blocked&&<p className="settings-error">{t(current.blocked)}</p>}</div>
+          {current.status==='available'&&<Button primary disabled={busy} onClick={()=>checkUpdate('download')}>{t(manualDmg?'downloadDmg':'download')}</Button>}{current.status==='ready'&&<Button primary disabled={busy} onClick={()=>manualDmg?checkUpdate('openInstaller'):setConfirm('install')}>{t(manualDmg?'openInstaller':'install')}</Button>}
         </div>
+        {manualDmg&&current.status!=='ready'&&<p>{t('dmgUpdateHint')}</p>}
         {toggle('autoCheck','autoCheckHint')}{toggle('autoDownload','autoDownloadHint')}
         <Row label={t('lastCheck')}><span>{current.lastChecked?new Date(current.lastChecked).toLocaleString(locale):t('never')}</span></Row>
         {current.notes&&<details className="settings-notes"><summary>{t('releaseNotes')}</summary><pre>{current.notes}</pre></details>}
