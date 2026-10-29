@@ -258,7 +258,7 @@ description: 当前项目后续值得处理的事项
 
 - 土狗改名及Logo替换已完成Windows构建与15项桌面验收。待保存关闭当前窗口后打开新版；后续验收Mac实机、安装器交互、多DPI及小尺寸图标轮廓。详见pending-test的2026-10-28品牌记录。
 
-- 设置中心与 Windows 本地自动更新闭环已移至 pending-test；仓库已公开，匿名 GitHub 更新元数据和下载入口已验证，完整真实 GitHub 升级及 Windows 签名仍待。Mac 双架构 DMG/ZIP 的原生 CI 检查、自动检查与 DMG 下载逻辑已移至 pending-test；按当前确定的免费方案保留手动替换，待验证完整 DMG 下载/原生挂载、Gatekeeper 首次安装和替换后的数据保留，以及多 DPI、系统通知权限与长期压力。Developer ID 签名／公证不再是本轮交付前置条件。
+- 设置中心与 Windows 本地自动更新闭环已移至 pending-test；v0.8.3 已公开发布，匿名 Windows/Mac 更新发现、附件摘要和 Range 下载入口通过。完整真实 GitHub 升级及 Windows 签名仍待。Mac 双架构 DMG/ZIP 的原生 CI、包内编辑/MCP、完整 DMG 下载与原生挂载已通过；按当前确定的免费方案保留手动替换，待补实体 Mac Finder/Gatekeeper 首次安装和替换后的数据保留，以及多 DPI、系统通知权限与长期压力。Developer ID 签名／公证不再是本轮交付前置条件。见[发布验收](../engineering/release-v0.8.3.md)。
 - 补专业编辑器、模型管理和原生提示的五语言覆盖；原型中的定时多份恢复快照、密度预设、快捷键自定义及细分 MCP 权限仍待，当前没有展示无效开关。
 - 首轮安装测试同名进程风险已修复并验证不强制结束进程；用户需核对原工程是否存在未保存内容损失，详见 settings-update-implementation.md。
 
