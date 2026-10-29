@@ -17,7 +17,8 @@ app.whenReady().then(async()=>{
   await updater.checkForUpdates();check('packaged controller selects native architecture',updater.asset.name===name);
   await updater.downloadUpdate();check('full release DMG streams and verifies',progressed&&fs.statSync(updater.file).size===size&&(await hashFile(updater.file))===digest);
   check('download does not launch an installer',opened.length===0);await updater.openInstaller();check('open action receives only the verified DMG',opened[0]===updater.file);
-  const xml=execFileSync('hdiutil',['attach','-readonly','-nobrowse','-plist',updater.file],{timeout:120000});
+  // Hosted Intel runners can need several minutes to verify and mount the ~1 GiB image.
+  const xml=execFileSync('hdiutil',['attach','-readonly','-nobrowse','-plist',updater.file],{timeout:900000});
   const mounted=JSON.parse(execFileSync('plutil',['-convert','json','-o','-','-'],{input:xml,encoding:'utf8'}));
   mount=mounted['system-entities'].find(entry=>entry['mount-point'])?.['mount-point'];check('downloaded DMG mounts natively',!!mount);
   const plist=path.join(mount,'Tugou.app/Contents/Info.plist');

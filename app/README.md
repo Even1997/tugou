@@ -44,7 +44,7 @@ npm run dist:mac
 
 更新源在 `electron-builder.cjs` 固定为 `Even1997/tugou`。Windows 稳定 Release 必须同时包含安装 EXE、对应 `.blockmap` 和 `latest.yml`，版本、文件名、大小与 SHA512 必须匹配；另附 `SHA256SUMS.txt` 供用户核对。只有安装器而没有 latest.yml，应用不能正确发现更新。
 
-Mac 构建由 `.github/workflows/release-mac.yml` 手动触发，从指定发布标签检出，分别在原生 arm64 / x64 runner 构建 DMG、ZIP，检查包体、原生模块、界面、MCP 和完整 DMG 下载/挂载后附加到已有草稿或稳定 Release。两个架构全部通过才上传，不覆盖现有 Windows 附件。新版本先建草稿，待 Windows 和两种 Mac 附件齐全、校验通过后再公开。
+Mac 构建由 `.github/workflows/release-mac.yml` 手动触发，构建前核对应用源码与指定发布标签一致，仅允许文档、许可证收集及发布验收脚本存在明确差异。分别在原生 arm64 / x64 runner 构建 DMG、ZIP，检查包体、原生模块、界面、MCP 和完整 DMG 下载/挂载后附加到已有草稿或稳定 Release。两个架构全部通过才上传，不覆盖现有 Windows 附件。新版本先建草稿，待 Windows 和两种 Mac 附件齐全、校验通过后再公开。
 
 当前 Mac 包只有 ad-hoc 签名，无 Developer ID 签名和公证，不上传 `latest-mac.yml`。本版更新逻辑改为直接读取公开 GitHub Releases 的最新稳定版，按应用架构选择 DMG，验证 asset 的 SHA256 digest 和大小；流式下载支持进度与断点续传，最大 4 GiB。默认自动检查、手动下载，可开启自动下载。下载后点击“打开安装包”，保存退出，再拖入 Applications 替换；应用不会自行退出、安装或移除系统隔离标记。首次包含该功能的版本需从旧版手动安装。
 
