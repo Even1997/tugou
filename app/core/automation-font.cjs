@@ -9,6 +9,9 @@ function register(define,{string,object,enumeration}) {
   define('font.publish','将基于当前字形源的已完成build/refine发布到土狗字体列表；不公开上传，不改变已有文字的字体版本。尚无编译产物时先font.build并等待完成',{...revision,...request,jobId:string},['projectId','fontRevision','requestId','jobId'],'file');
   define('font.project.create','新建独立字体工程，字符顺序去重；返回 fontRevision',{name:{type:'string',minLength:1,maxLength:64},characters:{type:'string',maxLength:131066},...request},['name','characters','requestId'],'file');
   define('font.project.list','列出独立字体工程',{},[],'read');
+  define('font.project.delete','删除字体工程和发布入口，保留恢复副本及工程已使用的字体资源；有未结束任务时拒绝',{...revision,...request},['projectId','fontRevision','requestId'],'file');
+  define('font.unpublish','取消发布；已有工程的字体资源保持可用',{...revision,...request},['projectId','fontRevision','requestId'],'file');
+  define('font.atlas.remove','移除导入图集记录，保留已生成字形及处理记录依赖的原图',{...revision,...request,atlasId:string},['projectId','fontRevision','requestId','atlasId'],'file');
   define('font.project.get','读取字符覆盖、图集、当前版本和检查状态',project,['projectId'],'read');
   define('font.atlas.preview','读取本字体已导入的原图缩略图',{...project,atlasId:string,maxSize:{type:'integer',minimum:64,maximum:2048}},['projectId','atlasId'],'read');
   define('font.atlas.plan','创建分页模板及固定字符映射；grid256 为 16×16 无边框图集，1440×2560；默认 markers 保留定位标记',{...revision,...request,layout:enumeration('markers','grid256'),cellSize:{type:'integer',minimum:256,maximum:512}},['projectId','fontRevision','requestId'],'file');

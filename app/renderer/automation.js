@@ -9,6 +9,8 @@ import {worldMatrix} from '../core/layers.cjs';
 import {createStroke} from './painting.js';
 import {renderScene} from './scene-render.js';
 import {sceneNode,appendCapture} from '../core/automation-scene.cjs';
+import {inspectUi,navigateUi,prepareCapture,navigationGuard,leaveGuard} from './ui-automation.js';
+import {group as pageGroup} from '../core/pages.cjs';
 
 function failure(code,message){const e=new Error(message);e.code=code;throw e;}
 // Shares App's live document and history. Disk records are never used as an editing session.
@@ -31,12 +33,16 @@ export function useAutomation(context) {
       if(current().busyRef.current)failure('BUSY','界面正在处理操作，请稍后重试');
       if(request.expectedRevision!==revision())failure('CONFLICT','实时文档已变化，请重新读取状态后重试');
     };
-    const commit=doc=>{guard();if(!current().change(doc))failure('BUSY','界面正在处理操作');return state();};
+    const commit=doc=>{guard();if(['canvas','layers'].some(kind=>pageGroup(doc,kind).activeId!==pageGroup(current().present.current.document,kind).activeId))navigationGuard(current());if(!current().change(doc))failure('BUSY','界面正在处理操作');return state();};
     try {
       let value;const {action,args={}}=request;
       if(action==='snapshot')value=state();
+      else if(action==='ui.inspect')value=inspectUi(state(),args);
+      else if(action==='ui.prepareCapture')value=await prepareCapture(state(),args);
+      else if(action==='ui.navigate'||action==='ui.restore'){guard();const result=await navigateUi(action,args,current(),state());value={...result,...inspectUi(state())};}
       else if(action==='models.changed'){window.dispatchEvent(new Event('tugou-connection-changed'));value={notified:true};}
       else if(action==='commit')value=commit(args.document);
+      else if(action==='page.activate'){guard();const c=current();navigationGuard(c);leaveGuard(c,args.kind);c.activatePage(args.kind,args.id);value=state();}
       else if(action==='project.create'||action==='project.open'){
         guard();const c=current();if(c.dirtyRef.current)failure('UNSAVED_CHANGES','请先保存当前工程');
         c.busyRef.current=true;c.setBusy(true);
@@ -49,7 +55,7 @@ export function useAutomation(context) {
       }else if(action==='project.save'){
         guard();const c=current(),r=c.present.current;if(!r)failure('NO_PROJECT','请先打开工程');
         c.busyRef.current=true;c.setBusy(true);
-        try{const saved=await window.tugou.save(r.id,r.document,r.revision);c.present.current=saved;c.setRecord(saved);c.markDirty(false);await c.refresh();}
+        try{const saved=await window.tugou.save(r.id,c.pageDocument(),r.revision);c.present.current=saved;c.setRecord(saved);c.markDirty(false);await c.refresh();}
         finally{c.busyRef.current=false;c.setBusy(false);}
         value=state();
       }else if(action==='history.undo'||action==='history.redo'){

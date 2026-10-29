@@ -46,6 +46,19 @@ class FontService {
     const p=name==='font.project.create'?null:await this.load(a.projectId);
     if(mutate&&p&&p.fontRevision!==a.fontRevision)fail('FONT_CONFLICT','字体版本已改变，请重新读取 font.project.get');
     if(name==='font.project.get')return this.summary(p);
+    if(['font.project.delete','font.unpublish','font.atlas.remove'].includes(name)){
+      if(p.jobs.some(j=>this.tasks.list().some(t=>t.id===j.taskId&&(['queued','running'].includes(t.status)||this.tasks.completions?.has(t.id)))))fail('BUSY','字体仍有任务未结束，请等待完成后再操作');
+      if(name==='font.atlas.remove'&&!p.atlases.some(v=>v.id===a.atlasId))fail('NOT_FOUND','图集不属于此字体');
+      return journal.execute(key,payload,async()=>{
+        if(name==='font.project.delete'){
+          const source=await this.directory(p.id),target=await safePath(this.root,'deleted-fonts',p.id);
+          await fs.mkdir(path.dirname(target),{recursive:true});await fs.rename(source,target);return {id:p.id,deleted:true};
+        }
+        if(name==='font.unpublish')delete p.published;
+        else p.atlases=p.atlases.filter(v=>v.id!==a.atlasId);
+        p.fontRevision++;return this.save(p);
+      });
+    }
     if(name==='font.atlas.preview'){
       const atlas=p.atlases.find(v=>v.id===a.atlasId);if(!atlas)fail('NOT_FOUND','图集不属于此工程');
       const file=await safePath(await this.directory(p.id),'originals',atlas.sha256+'.'+atlas.format),bytes=await fs.readFile(file);

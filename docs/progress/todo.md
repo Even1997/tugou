@@ -5,7 +5,17 @@ title: TODO
 description: 当前项目后续值得处理的事项
 ---
 
+- 删除入口已补齐并移入 pending-test：后续补原生 Mac 同流程验收和超大项目列表压力测试，见 [删除入口验收](../engineering/removal-actions.md)。
+
+## 批次失败后的素材消失
+
+配方输入漏传修复已移入 pending-test。批次失败后素材与空配方消失尚未复现：后端失败不提交、已有数据及资源保留、并发冲突和保存重开回归通过；当前 MCP 离线，缺少原现场的批次参数、完整错误、工程 ID、实时 revision 与前后对象清单。待取得这些证据后在独立工程重放，继续检查桌面状态切换与异步回调；未修改现有提交逻辑。见 [排查证据](../engineering/recipe-workflow-fix.md)。
+
 ## 开发预览后续验证
+
+项目内多画布/多合成已进入 pending-test；待 Mac 真机切页、超过本轮页签规模的大工程内存与保存耗时验证。撤销为工程统一时间线，跨页撤销会自动定位，未新增每页独立历史。见 [多页面说明](../engineering/project-pages.md)。
+
+MCP 界面截图、检查和可恢复导航已移入 pending-test。待 macOS 原生窗口、超大 DOM/节点数与长时连续检查验收；当前不包含原生系统对话框或任意控件点击，也不宣称单张截图覆盖无限画布全部内容。见 [界面 MCP 边界与验收](../engineering/ui-mcp.md)。
 
 可编辑快捷键已移入 pending-test；待 Mac 真机检查 Command/Option、原生菜单、输入法和 Fn 功能键，Windows 上的 Mac 模拟检查不作为整套 macOS 应用验收。
 

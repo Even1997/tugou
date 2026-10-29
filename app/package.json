@@ -1,6 +1,6 @@
 {
   "name": "tugou-app",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "private": true,
   "description": "土狗独立桌面实现",
   "main": "main.cjs",

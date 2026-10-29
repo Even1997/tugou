@@ -97,7 +97,7 @@ async function boot() {
     } catch { return new Response(null, { status: 404 }); }
   });
   window = new BrowserWindow({
-    title: '土狗 · 独立版本', width: 1380, height: 900, minWidth: 940, minHeight: 640, ...require('./core/desktop-platform.cjs').windowChrome(process.platform),
+    title: '土狗', width: 1380, height: 900, minWidth: 940, minHeight: 640, ...require('./core/desktop-platform.cjs').windowChrome(process.platform),
     backgroundColor: '#15171c', show: false, icon: path.join(__dirname, 'assets/brand/icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
@@ -147,6 +147,7 @@ async function boot() {
     throw Error('未知开发预览操作');
   });
   handle('list', () => projects.list());
+  handle('deleteProject', (id, revision) => projects.remove(id, revision, tasks));
   const fonts=await require('./core/font-desktop.cjs').registerFonts({root,tasks,handle,dialog,window});
   handle('create', (name) => projects.create(name));
   handle('open', async(id) => {const record=await projects.read(id);await settings?.remember(record);return record;});

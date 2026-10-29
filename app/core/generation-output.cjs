@@ -18,7 +18,7 @@ function outputPosition(nodes,source){
 function outputEdge(edges,source,target){
   if(source&&!edges.some(e=>e.source===source.id&&e.target===target))edges.push({id:`output-${target}`,source:source.id,target});
 }
-function stageOutputs(document,tasks){
+function stageActive(document,tasks){
   const graph=document.tugouCanvas||emptyCanvas(),reserved=new Set(document.generationOutputNodeIds||[]),received=new Set(document.generationResultIds||[]);
   const nodes=[...graph.nodes],edges=[...graph.edges];let changed=false;
   for(const task of tasks){
@@ -34,4 +34,5 @@ function stageOutputs(document,tasks){
   }
   return changed?{...document,generationOutputNodeIds:[...reserved],tugouCanvas:{...graph,nodes,edges}}:document;
 }
+function stageOutputs(document,tasks){const pages=require('./pages.cjs');let next=document;for(const p of pages.list(document,'canvas'))next=pages.withCanvas(next,p.id,d=>stageActive(d,tasks));return next;}
 module.exports={stageOutputs,outputPosition,outputEdge};

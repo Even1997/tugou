@@ -1,4 +1,5 @@
 import {Select} from './select.jsx';
+import {useUiView} from './ui-view.js';
 import {usePreferences} from './preferences.jsx';
 import { commandFor,bindings,formatBinding,shortcutBlocked } from "../core/shortcuts.cjs";
 import {
@@ -132,9 +133,16 @@ function CanvasWorkspace({
   const refreshConnection=useCallback(()=>window.tugou.connection().then(setConnection).catch(()=>{}),[]);
   useEffect(()=>{refreshConnection();window.addEventListener('focus',refreshConnection);window.addEventListener('tugou-connection-changed',refreshConnection);return()=>{window.removeEventListener('focus',refreshConnection);window.removeEventListener('tugou-connection-changed',refreshConnection);};},[refreshConnection]);
   const flow = useReactFlow();
+  const uiMoving=useRef(false);
   const holder = useRef(null),
     current = useRef({ document, nodes, edges });
   current.current = { document, nodes, edges };
+  const moveUi=async action=>{uiMoving.current=true;try{await action();await new Promise(r=>setTimeout(r,0));}finally{uiMoving.current=false;}};
+  useUiView('canvas',{
+    get:()=>({viewport:flow.getViewport(),nodes:current.current.nodes.filter(n=>n.selected).map(n=>n.id),edges:current.current.edges.filter(e=>e.selected).map(e=>e.id),palette,query,minimap}),
+    restore:v=>moveUi(async()=>{setPalette(v.palette);setQuery(v.query);setMinimap(v.minimap);setNodes(ns=>ns.map(n=>({...n,selected:v.nodes.includes(n.id)})));setEdges(es=>es.map(e=>({...e,selected:v.edges.includes(e.id)})));await flow.setViewport(v.viewport);}),
+    navigate:a=>moveUi(async()=>{if(a.nodeId)setNodes(ns=>ns.map(n=>({...n,selected:n.id===a.nodeId})));await flow.fitView({...(a.nodeId?{nodes:[{id:a.nodeId}]}:{}),padding:.25,minZoom:.05,maxZoom:1,duration:0});})
+  });
   const fitCanvas=()=>{
     const visible=current.current.nodes.filter(n=>!n.parentId);
     if(!visible.length)return;
@@ -744,6 +752,7 @@ function CanvasWorkspace({
               }}
               onMoveEnd={(_event, viewport) => {
                 setZoom(viewport.zoom);
+                if(uiMoving.current)return;
                 const source = current.current.document.tugouCanvas;
                 if (
                   source &&

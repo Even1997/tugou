@@ -6,6 +6,7 @@ import {useImageImport,hasImageFiles} from './use-image-import.js';
 import { MaterialDetails } from "./material-details.jsx";
 import { MaterialGrid } from "./material-grid.jsx";
 import {MediaPreview} from './media-preview.jsx';
+import {useUiView} from './ui-view.js';
 
 import {
   Button,
@@ -24,6 +25,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
     [selected, setSelected] = useState([]),
     [density, setDensity] = useState("medium");
   const latest = useRef(document);
+  useUiView('assets',{get:()=>({source,shape,sort,query,focused,selected,density}),restore:v=>{setSource(v.source);setShape(v.shape);setSort(v.sort);setQuery(v.query);setFocused(v.focused);setSelected(v.selected);setDensity(v.density);}});
   latest.current = document;
   const run = async (operation) => {
     setError('');

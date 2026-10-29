@@ -1,4 +1,5 @@
 import {Select} from './select.jsx';
+import {useUiView} from './ui-view.js';
 import React, { useState } from "react";
 import {
   editModule,
@@ -32,6 +33,7 @@ export function PromptWorkbench({
   busy,
 }) {
   const [query, setQuery] = useState("");
+  useUiView('prompts',{get:()=>({query}),restore:v=>setQuery(v.query)});
   const selectedId = activeId ?? document.modules[0]?.id,
     selected = document.modules.find((m) => m.id === selectedId),
     recipe = document.recipes.find(

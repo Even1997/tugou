@@ -71,6 +71,11 @@ jobs:
           TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
           TUGOU_FONT_QA_OUT: test-results/font-downloads-native
         run: node_modules/.bin/electron test/font-downloads-desktop.cjs
+      - name: Test packaged pages and confirmation buttons
+        env:
+          TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+          TUGOU_PAGE_QA_OUT: test-results/pages-native
+        run: node_modules/.bin/electron test/pages-desktop.cjs
       - name: Launch actual packaged executable with isolated profile
         run: |
           # macOS /var is a symlink; the app deliberately rejects linked data paths.
@@ -110,6 +115,8 @@ jobs:
             app/test-results/mac-release/*.log
             app/test-results/font-downloads-native/*.json
             app/test-results/font-downloads-native/*.png
+            app/test-results/pages-native/*.json
+            app/test-results/pages-native/*.png
           retention-days: 14
   publish:
     if: inputs.tag != ''

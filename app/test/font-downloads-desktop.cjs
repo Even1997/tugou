@@ -28,7 +28,7 @@ setTimeout(()=>{report.failure='timeout';finish(1);},240000);
         await run('project.create',{name:'按需字体离线验收'});const board=(await run('artboard.create',{name:'字体',width:900,height:300})).id;
         const id=(await run('layer.create',{artboardId:board,kind:'text',properties:{text:'春日来信 ABC abc',fontFamily:process.platform==='darwin'?'Helvetica':'Arial',fontSize:52,width:850,height:200,x:20,y:30,fontWeight:400}})).id;
         await run('workspace.show',{workspace:'layers',layerIds:[id]});await wait(`!!document.querySelector('.font-picker')`);
-        await js(`document.querySelector('.font-picker [aria-label="字体"]').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
+        w.show();w.focus();await js(`document.querySelector('.font-picker').scrollIntoView({block:'center'})`);await delay(300);const point=await js(`(()=>{const r=document.querySelector('.font-picker .ant-select').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`);for(const type of ['mouseDown','mouseUp'])w.webContents.sendInputEvent({type,button:'left',clickCount:1,...point});await delay(250);
         await wait(`!!document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden) [data-font-id="lxgw-wenkai-regular"]')`);await shot('cloud');
         await js(`document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden) [data-font-id="lxgw-wenkai-regular"]').click()`);
         await wait(`Number(document.querySelector('.font-picker [role="progressbar"]')?.getAttribute('aria-valuenow'))>10`);check('cloud click displays circular download progress',true);await shot('progress');

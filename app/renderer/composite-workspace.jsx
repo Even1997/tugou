@@ -1,4 +1,5 @@
 import {ColorControl} from './color-control.jsx';
+import {useUiView} from './ui-view.js';
 import React, {useMemo, useRef, useState} from 'react';
 import {Modal} from 'antd';
 import {Button, Input, Icon} from './components.jsx';
@@ -19,13 +20,14 @@ function BoardInspector({board,patch,applySize,duplicate,remove,canRemove,disabl
     <div className="board-actions"><BoardSizeControl board={board} apply={applySize} disabled={disabled||board.locked}><Button className="board-size-trigger">尺寸预设</Button></BoardSizeControl><Button iconOnly icon="copy" onClick={duplicate} disabled={disabled}>复制画板</Button><Button iconOnly icon="delete" onClick={remove} disabled={disabled||!canRemove}>删除画板</Button></div>
   </fieldset>;
 }
-export function CompositeWorkspace({document,change,selected,setSelected,...props}) {
+export function CompositeWorkspace({document,change,selected,setSelected,initialPageView,onPageView,...props}) {
   const normalized=useMemo(()=>artboards.normalize(document),[document]);
   const list=artboards.boards(normalized);
   const [activeId,setActiveId]=useState(null),[dialog,setDialog]=useState(null),[error,setError]=useState('');
   const [maskId,setMaskId]=useState(null);
   const [scaleContent,setScaleContent]=useState(false);
-  const view=useRef(null), latest=useRef(null);
+  const view=useRef(initialPageView||null), latest=useRef(null);
+  useUiView('boards',{get:()=>({activeId,maskId,scaleContent,view:view.current}),restore:v=>{view.current=v.view;setActiveId(v.activeId);setMaskId(v.maskId);setScaleContent(v.scaleContent);}});
   const selectedOwner=selected.length ? artboards.owner(normalized,selected[0]) : null;
   const board=selectedOwner || list.find(b=>b.id===activeId) || list[0];
   const local=useMemo(()=>artboards.extract(normalized,board.id),[normalized,board.id]);
@@ -59,7 +61,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,...prop
       <BoardSizeControl board={board} creating apply={createBoard} disabled={props.disabled||board.locked}><Button icon="add">新建画板</Button></BoardSizeControl>
     </fieldset>,
     initialView:view.current ? {...view.current,x:view.current.x+board.x*view.current.zoom,y:view.current.y+board.y*view.current.zoom}:null,
-    onView:v=>{view.current={...v,x:v.x-board.x*v.zoom,y:v.y-board.y*v.zoom}},
+    onView:v=>{view.current={...v,x:v.x-board.x*v.zoom,y:v.y-board.y*v.zoom};onPageView?.(view.current)},
     compose:(edited,drag)=>{
       const rendered=artboards.display(normalized,board.id,edited);
       if(!drag)return rendered;

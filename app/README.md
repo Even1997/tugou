@@ -1,6 +1,6 @@
 # 土狗桌面应用开发说明
 
-安装使用见[项目首页](../README.md)，版本变更见[发布说明](../docs/releases/v0.8.3.md)。`app/` 是当前源码入口，Electron、React、Ant Design 与本地工具共用工程格式，无需旧 Web/Go 服务。
+安装使用见[项目首页](../README.md)，版本变更见[发布说明](../docs/releases/v0.8.4.md)。`app/` 是当前源码入口，Electron、React、Ant Design 与本地工具共用工程格式，无需旧 Web/Go 服务。
 
 ## 开发
 
@@ -26,7 +26,7 @@ Electron 脚本位于 `test/*-desktop.cjs`，运行前查看脚本的构建和�
 
 ## 字体环境
 
-开发版已将字体改为按需下载，详见[字体下载与缓存](../docs/engineering/font-downloads.md)。安装包保留完整目录、字重和许可；首次使用需要联网，下载后离线使用，不安装到系统字体目录。正式 v0.8.3 仍是完整字体包，候选构建不替换其发布附件。
+v0.8.4 已将字体改为按需下载，详见[字体下载与缓存](../docs/engineering/font-downloads.md)。安装包保留完整目录、字重和许可；首次使用需要联网，下载后离线使用，不安装到系统字体目录。旧版已下载的字体资源和工程保持不变。
 
 普通排版及本机/内置字体无需 Python。图集导入、OCR、校正、描图和字体导出需要匹配当前系统/芯片的 Python 3.12，以及 Potrace 发行目录（含可执行文件、COPYING、README、AUTHORS）。
 
@@ -46,7 +46,7 @@ npm run dist:mac
 
 更新源在 `electron-builder.cjs` 固定为 `Even1997/tugou`。Windows 稳定 Release 必须同时包含安装 EXE、对应 `.blockmap` 和 `latest.yml`，版本、文件名、大小与 SHA512 必须匹配；另附 `SHA256SUMS.txt` 供用户核对。只有安装器而没有 latest.yml，应用不能正确发现更新。
 
-Mac 构建由 `.github/workflows/release-mac.yml` 手动触发，构建前核对应用源码与指定发布标签一致，仅允许文档、许可证收集及发布验收脚本存在明确差异。分别在原生 arm64 / x64 runner 构建 DMG、ZIP，检查包体、原生模块、界面、MCP 和完整 DMG 下载/挂载后附加到已有草稿或稳定 Release。两个架构全部通过才上传，不覆盖现有 Windows 附件。新版本先建草稿，待 Windows 和两种 Mac 附件齐全、校验通过后再公开。
+Mac 构建由 `.github/workflows/release-mac.yml` 手动触发。tag 留空时仅构建和验收，产物保存为 Actions 附件，不修改 Release；填写已有发布标签时，构建前核对应用源码与标签一致，仅允许文档、许可证收集及发布验收脚本存在明确差异。分别在原生 arm64 / x64 runner 构建 DMG、ZIP，检查包体、原生模块、界面、MCP、字体下载/离线导出及完整 DMG 下载/挂载。发布模式在两个架构全部通过后才附加到已有草稿或稳定 Release，不覆盖现有 Windows 附件。新版本先建草稿，待 Windows 和两种 Mac 附件齐全、校验通过后再公开。
 
 当前 Mac 包只有 ad-hoc 签名，无 Developer ID 签名和公证，不上传 `latest-mac.yml`。本版更新逻辑改为直接读取公开 GitHub Releases 的最新稳定版，按应用架构选择 DMG，验证 asset 的 SHA256 digest 和大小；流式下载支持进度与断点续传，最大 4 GiB。默认自动检查、手动下载，可开启自动下载。下载后点击“打开安装包”，保存退出，再拖入 Applications 替换；应用不会自行退出、安装或移除系统隔离标记。首次包含该功能的版本需从旧版手动安装。
 
@@ -68,3 +68,7 @@ Mac 构建由 `.github/workflows/release-mac.yml` 手动触发，构建前核对
 | test/ | 逻辑回归与隔离桌面验收 |
 
 历史文档可能描述已移除入口；使用方式以根 README 和当前 Release 为准。许可范围见 [LICENSING.md](LICENSING.md)。
+
+开发版 MCP 界面验收：见 [截图、导航与原视图恢复](../docs/engineering/ui-mcp.md)，包含长列表、无限画布及覆盖范围说明。
+
+开发版多页面：同一工程管理多张画布和多份合成，详见 [项目页面与 MCP](../docs/engineering/project-pages.md)。

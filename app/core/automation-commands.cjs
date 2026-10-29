@@ -189,4 +189,6 @@ define('semantic.read','读取当前工程已完成的类别识别方案',{id:st
 define('semantic.generate','按已审阅的类别方案逐项生成蒙版并提取原图；可能收费',{assetId:string,plan:{type:'string',minLength:1,maxLength:6000},requestId:string},['assetId','plan','requestId'],'network');
 define('generation.angle','从图片节点生成新视角，保留来源关系；可能收费',{nodeId:string,assetId:string,requestId:string,params:object({horizontalAngle:{type:'integer',minimum:-60,maximum:60},pitchAngle:{type:'integer',minimum:-45,maximum:45},cameraDistance:{type:'number',minimum:1,maximum:10},wideAngle:bool})},['nodeId','assetId','requestId'],'network');
 define('analysis.review','保存分析草稿的人工审阅文本、选用和全局设置；之后用 analysis.apply 的 useReview 应用',{id:string,review:object({modules:{type:'array',minItems:1,maxItems:40,items:object({name:{type:'string',minLength:1,maxLength:120},kind:{type:'string',minLength:1,maxLength:40},text:{type:'string',minLength:1,maxLength:4000},enabled:bool,global:bool},['name','kind','text'])},createRecipe:bool,recipeName:{type:'string',maxLength:120},reference:bool},['modules'])},['id','review'],'file');
+require('./automation-ui.cjs').register({define,object,string,enumeration});
+require('./automation-pages.cjs').register({define,string,enumeration});
 module.exports={listCommands,validate,batch,fail,find,editable,object,string,ids,enumeration};

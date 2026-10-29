@@ -2,6 +2,7 @@ import {Select} from './select.jsx';
 import React, { useState, useRef, useEffect } from "react";
 import {materialMime} from './material-drag.js';
 import {usePreferences} from './preferences.jsx';
+import {ProjectManager} from './removal-dialog.jsx';
 import {
   Button,
   Icon,
@@ -31,15 +32,18 @@ export function StudioHeader({
   canUndo,
   canRedo,
   rename,
+  deleteProject,
 }) {
   const {t,update}=usePreferences();
   const dragTimer=useRef(null);
   useEffect(()=>()=>clearTimeout(dragTimer.current),[]);
   const theme = useTheme(),
     [renaming, setRenaming] = useState(false),
+    [managing, setManaging] = useState(false),
     [name, setName] = useState("");
   return (
     <>
+      {managing&&<ProjectManager projects={projects} currentId={record?.id} dirty={dirty} busy={busy} remove={deleteProject} close={()=>setManaging(false)}/>}
       <header className="studio-header toolbar" data-platform={window.tugou.platform}>
         <div className="brand">
           <img className="brand-logo" src="brand/logo.png" alt="土狗" draggable={false} />
@@ -64,6 +68,7 @@ export function StudioHeader({
               </option>
             ))}
           </Select>
+          <Button iconOnly icon="open" aria-label="管理项目" title="管理项目" disabled={busy} onClick={()=>setManaging(true)}/>
           <Button
             iconOnly
             aria-label={t('create')}

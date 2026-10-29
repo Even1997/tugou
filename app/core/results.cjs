@@ -1,6 +1,6 @@
 const { emptyCanvas } = require('./prompts.cjs');
 const { outputPosition, outputEdge } = require('./generation-output.cjs');
-function mergeResults(document, results) {
+function mergeActive(document, results) {
   let assets = [...document.assets], graph = document.tugouCanvas || emptyCanvas();
   let nodes = [...graph.nodes],edges=[...graph.edges];
   const reserved=new Set(document.generationOutputNodeIds||[]);
@@ -24,6 +24,14 @@ function mergeResults(document, results) {
     received.add(result.id);
   }
   return { ...document, assets, generationResultIds: [...received], tugouCanvas: { ...graph, nodes,edges } };
+}
+function mergeResults(document,results){
+  if(!document.pages?.canvas)return mergeActive(document,results);
+  const pages=require('./pages.cjs');let next=document;
+  for(const result of results){if((next.generationResultIds||[]).includes(result.id))continue;const pageId=pages.nodePage(next,result.nodeId);
+    if(pageId)next=pages.withCanvas(next,pageId,d=>mergeActive(d,[result]));
+    else next={...next,assets:[...new Map([...next.assets,...result.assets].map(a=>[a.id,a])).values()],generationResultIds:[...(next.generationResultIds||[]),result.id]};
+  }return next;
 }
 // Local outputs are one undoable edit, but the receipt survives undo and restart.
 function applyResults(document, history, results) {

@@ -1,7 +1,7 @@
 const {inputsOf}=require('./workflow-nodes.cjs');
 
 // Prepare the opened document in memory; the original project is only changed on Save.
-function extractDeskPrompts(document){
+function extractActive(document){
   const graph=document.tugouCanvas;
   if(!graph?.nodes.some(n=>n.type==='config'&&n.data.prompt))return document;
   const nodes=[...graph.nodes],edges=[...graph.edges];
@@ -22,4 +22,5 @@ function extractDeskPrompts(document){
   }
   return {...document,tugouCanvas:{...graph,nodes,edges}};
 }
+function extractDeskPrompts(document){const pages=require('./pages.cjs');let next=document;for(const p of pages.list(document,'canvas'))next=pages.withCanvas(next,p.id,extractActive);return next;}
 module.exports={extractDeskPrompts};

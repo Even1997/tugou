@@ -7,6 +7,7 @@ import {SettingsModelDefaults,McpConnectionInfo} from './settings-connections.js
 import {SettingsShortcuts} from './settings-shortcuts.jsx';
 import {definitions} from '../core/shortcuts.cjs';
 import './settings.css';
+import {useUiView} from './ui-view.js';
 const tabs=[['general','settings'],['appearance','style'],['storage','open'],['models','model'],['mcp','transform'],['shortcuts','text'],['updates','sync']];
 const keys={general:['language','followSystemLanguage','restoreProject','confirmClose','notifyTasks','sounds'],appearance:['theme','zoom','grid'],storage:['dataDir','cache','backup'],models:['image','analysis','text'],mcp:['mcpEnabled','copyConfig'],shortcuts:Object.keys(definitions),updates:['autoCheck','autoDownload','check','download','install']};
 export function SettingsWorkspace({openModels,modelsOpen}){
@@ -20,6 +21,7 @@ export function SettingsWorkspace({openModels,modelsOpen}){
   const dropdown=(key,options,hint,disabled=false)=><Row label={t(key)} hint={hint&&t(hint)}><Select aria-label={t(key)} value={value[key]} disabled={busy||disabled||!ready} onChange={e=>patch({[key]:key==='zoom'?Number(e.target.value):e.target.value})}>{options.map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></Row>;
   const filtered=tabs.filter(([id])=>[id,t(id),...keys[id].map(t)].join(' ').toLowerCase().includes(query.toLowerCase()));
   const open=id=>{setTab(id);setFailure('');setNotice('');};
+  useUiView('settings',{get:()=>({tab,query}),restore:v=>{setTab(v.tab);setQuery(v.query);},navigate:a=>{setQuery('');open(a.settingsTab);},blocked:()=>busy?'设置正在保存，请稍后导航':null});
   const current=update||{status:'idle'};
   const manualDmg=current.installMode==='dmg';
   const checkUpdate=action=>perform(async()=>setUpdate(await window.tugou.update(action)));

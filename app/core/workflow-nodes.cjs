@@ -33,22 +33,31 @@ function compileWorkflow(document,id){
   const promptNode=graph.edges.some(e=>e.target===id&&e.source===node.data.promptNodeId)&&graph.nodes.find(n=>n.id===node.data.promptNodeId&&n.type==='text');
   const sourcePrompt=promptNode?promptNode.data.text:node.data.prompt||'';
   const mentions=[...sourcePrompt.matchAll(/@\[node:([^\]]+)\]/g)].map(m=>m[1]);
-  const visiting=new Set(),seen=new Set(),texts=[],refs=[],configs=[],sources=[];
+  const visiting=new Set(),seen=new Set(),bindingsUsed=new Map(),recipeTexts=new Map(),texts=[],refs=[],configs=[],sources=[];
   const visit=(id,edge)=>{
     if(visiting.has(id))throw Error('画布连线形成循环');
     if(seen.has(id))return;
     const n=graph.nodes.find(x=>x.id===id);if(!n)throw Error('输入节点不存在');
     visiting.add(id);
     const generatedConfig=n.type==='config'&&!!n.data.outputAssetId;
-    if(assembling&&!generatedConfig&&n.type!=='asset')for(const e of inputsOf(graph,n))visit(e.source,e);
-    const addText=(text,origin='prompt')=>{
-      if(!assembling||!mentions.includes(id))texts.push(text);
-      if(assembling&&text)sources.push({nodeId:id,name:n.data.binding?.snapshot.name||n.data.snapshot?.name||nodeName(n)||labels[n.type]||'文字节点',category:n.data.binding?.snapshot.kind||n.data.kind||'text',text,origin:mentions.includes(id)?'mention':origin});
+    if((assembling||n.type==='recipe')&&!generatedConfig&&n.type!=='asset')for(const e of inputsOf(graph,n))visit(e.source,e);
+    const addText=(text,origin='prompt',details={})=>{
+      const part={text,include:!assembling||!mentions.includes(id),source:{nodeId:id,name:n.data.binding?.snapshot.name||n.data.snapshot?.name||nodeName(n)||labels[n.type]||'文字节点',category:n.data.binding?.snapshot.kind||n.data.kind||'text',text,origin:mentions.includes(id)?'mention':origin,...details}};
+      texts.push(part);return part;
     };
-    const addAsset=asset=>{
+    const addBinding=(binding,text,details={})=>{
+      const previous=bindingsUsed.get(binding.moduleId),direct=n.type==='module';
+      if(previous?.direct&&!direct)return;
+      const part=addText(text,'prompt',details);
+      part.style=!direct&&binding.snapshot.kind==='style';
+      if(previous)previous.part.text='';
+      bindingsUsed.set(binding.moduleId,{part,direct});
+    };
+    const addAsset=(asset,role)=>{
       if(asset.kind==='text')addText(n.data.resultText??asset.text??'','result');
       else {
-        const ref={assetId:asset.id,nodeId:n.id,kind:asset.kind||'image',role:node.data.inputRoles?.[n.id]||edge?.role||n.data.role||'参考内容'};
+        const ref={assetId:asset.id,nodeId:n.id,kind:asset.kind||'image',role:node.data.inputRoles?.[n.id]||edge?.role||role||n.data.role||'参考内容'};
+        if(refs.some(r=>r.assetId===ref.assetId&&r.role===ref.role))return;
         refs.push(ref);
         if(assembling)sources.push({...ref,name:nodeName(n)||asset.name||'素材节点',assetName:asset.name,category:'reference',origin:'reference'});
       }
@@ -61,9 +70,19 @@ function compileWorkflow(document,id){
     }else if(n.type==='config'){
       if(!assembling)for(const e of inputsOf(graph,n))visit(e.source,e);
       if(n.data.prompt)addText(n.data.prompt);
-    }else if(n.type==='module')addText(n.data.binding.overrideText??n.data.binding.snapshot.text);
+    }else if(n.type==='module')addBinding(n.data.binding,n.data.binding.overrideText??n.data.binding.snapshot.text);
     else if(n.type==='text'){if(n.id!==promptNode?.id)addText(n.data.text);}
-    else if(n.type==='recipe')addText(n.data.snapshot.output||'');
+    else if(n.type==='recipe'){
+      const {compileParts}=require('./prompts.cjs'),snapshot=n.data.snapshot,bindings=snapshot.moduleBindings||[];
+      recipeTexts.set(id,compileParts(bindings,[],[],snapshot.output));
+      for(const binding of bindings)addBinding(binding,compileParts([binding],[],[],''),{moduleId:binding.moduleId,name:binding.snapshot.name,category:binding.snapshot.kind||'other'});
+      addText(compileParts([],[],[],snapshot.output));
+      for(const reference of snapshot.references||[]){
+        const asset=document.assets.find(a=>a.id===reference.assetId);
+        if(!asset)throw Error(`输入「${snapshot.name}」尚无可用结果，请先添加素材或生成内容`);
+        addAsset(asset,reference.role);
+      }
+    }
     else if(n.type==='textgen'){
       if(!n.data.resultText&&!assembling)throw Error('请先生成上游文本');
       addText(n.data.resultText||n.data.prompt||'',n.data.resultText?'result':'prompt');
@@ -84,12 +103,14 @@ function compileWorkflow(document,id){
   if(typeof data.size!=='string'||!(/^(auto|\d{1,5}x\d{1,5})$/.test(data.size)))throw Error('尺寸请填写宽x高或 auto');
   if(data.size!=='auto'){const [w,h]=data.size.split('x').map(Number);if(w<1||h<1||w*h>100000000)throw Error('图片尺寸需在一亿像素以内');}
   for(const id of mentions)if(!seen.has(id)){if(id===node.id||!done.has(id))throw Error('提示词引用了未连接的节点');visit(id);}
-  const localPrompt=sourcePrompt.replace(/@\[node:([^\]]+)\]/g,(_,id)=>{const n=graph.nodes.find(n=>n.id===id),output=n.type==='config'&&document.assets.find(a=>a.id===n.data.outputAssetId);return n.type==='text'?n.data.text:n.type==='textgen'?(n.data.resultText||n.data.prompt||''):n.type==='module'?(n.data.binding.overrideText??n.data.binding.snapshot.text):output?.kind==='text'?(n.data.resultText??output.text??''):`【参考：${nodeName(n)||document.assets.find(a=>a.id===n.data.assetId)?.name||n.type}】`;});
+  const localPrompt=sourcePrompt.replace(/@\[node:([^\]]+)\]/g,(_,id)=>{const n=graph.nodes.find(n=>n.id===id),output=n.type==='config'&&document.assets.find(a=>a.id===n.data.outputAssetId);return n.type==='recipe'?recipeTexts.get(id):n.type==='text'?n.data.text:n.type==='textgen'?(n.data.resultText||n.data.prompt||''):n.type==='module'?(n.data.binding.overrideText??n.data.binding.snapshot.text):output?.kind==='text'?(n.data.resultText??output.text??''):`【参考：${nodeName(n)||document.assets.find(a=>a.id===n.data.assetId)?.name||n.type}】`;});
   if(assembling&&localPrompt)sources.push({nodeId:node.id,name:nodeName(node),category:'other',text:localPrompt,origin:'local'});
-  let prompt=(assembling?[...texts,localPrompt]:[localPrompt,...(node.data.excludeUpstreamText||mentions.length?[]:texts)]).filter(Boolean).join('\n\n').trim();
+  const upstream=[...texts.filter(part=>!part.style),...texts.filter(part=>part.style)].filter(part=>part.include).map(part=>part.text);
+  if(assembling)sources.unshift(...texts.filter(part=>part.text).map(part=>part.source));
+  let prompt=(assembling?[...upstream,localPrompt]:[localPrompt,...(node.data.excludeUpstreamText||mentions.length?[]:upstream)]).filter(Boolean).join('\n\n').trim();
   for(const ref of refs)ref.role=node.data.inputRoles?.[ref.nodeId]||ref.role;
   if(mode==='image'&&refs.length)prompt+='\n\n参考图职责：\n'+refs.map((r,i)=>`${i+1}. ${r.role}`).join('\n');
-  const globals=document.modules.filter(m=>(m.global??m.kind==='style')&&!graph.nodes.some(n=>seen.has(n.id)&&n.type==='module'&&n.data.binding.moduleId===m.id));
+  const globals=document.modules.filter(m=>(m.global??m.kind==='style')&&!bindingsUsed.has(m.id));
   if(globals.length)prompt+='\n\n'+globals.map(m=>`【${m.name}】\n${m.text}`).join('\n\n');
   if(assembling)for(const m of globals)sources.push({moduleId:m.id,name:m.name,category:m.kind||'other',text:m.text,origin:'global'});
   if(!prompt)throw Error('请填写提示词或连接文本输入');

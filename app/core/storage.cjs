@@ -72,7 +72,9 @@ function validateDocument(document) {
     if (!asset || typeof asset.id !== 'string') throw new Error('素材格式无效');
   }
   if (document.tugouCanvas !== undefined) validateCanvas(document.tugouCanvas);
+  if(document.compositionView!==undefined){const v=document.compositionView;if(!v||![v.x,v.y,v.zoom].every(Number.isFinite)||v.zoom<.02||v.zoom>8)throw Error('合成视图无效');}
   if (document.layers.some(l => l.artboard)) require('./artboards.cjs').validate(document);
+  require('./pages.cjs').validate(document,validateDocument);
   resourcesIn(document);
 }
 
@@ -184,6 +186,21 @@ class ProjectStore {
       const bytes = await fs.readFile(await safePath(folder, 'resources', name));
       if (hash(bytes) !== name.split('.')[0]) throw new Error(`素材校验失败：${name}`);
     }
+  }
+
+  remove(id, expectedRevision, tasks) {
+    return this.serialize(async () => {
+      const record = await this.read(id);
+      if (record.revision !== expectedRevision) throw new Error('工程已更新，请刷新列表后再删除');
+      if (tasks.list().some(t => t.context?.projectId === id && (['queued','running'].includes(t.status) || tasks.completions?.has(t.id)))) throw new Error('工程仍有任务未结束，请等待完成后再删除');
+      // Keep shared resources and a private recovery copy; stale saves cannot recreate the project.
+      const folder = await safePath(this.root, 'deleted-projects', id);
+      await fs.mkdir(folder, { recursive: true });
+      const backup = await safePath(this.root, 'projects', `${id}.json.bak`);
+      try { await fs.rename(backup, await safePath(folder, 'project.json.bak')); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+      await fs.rename(await this.projectPath(id), await safePath(folder, 'project.json'));
+      return { id };
+    });
   }
 
   async writeRecord(record) {

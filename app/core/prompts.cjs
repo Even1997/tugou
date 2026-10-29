@@ -73,12 +73,13 @@ function refreshNode(document, node, mode = 'safe') {
   return node;
 }
 
-function syncAll(document) {
+function syncActive(document) {
   const recipes = document.recipes.map((recipe) => refreshRecipe(document, recipe));
   const updated = { ...document, recipes };
   if (document.tugouCanvas) updated.tugouCanvas = { ...document.tugouCanvas, nodes: document.tugouCanvas.nodes.map((node) => refreshNode(updated, node)) };
   return updated;
 }
+function syncAll(document){const pages=require('./pages.cjs');let next=document;for(const p of pages.list(document,'canvas'))next=pages.withCanvas(next,p.id,syncActive);return next;}
 
 function compileParts(bindings, texts, references, output) {
   const unique = [...new Map(bindings.map((binding) => [binding.moduleId, binding])).values()];
@@ -171,4 +172,4 @@ function syncCounts(document) {
   return { outdated: states.filter((state) => state === 'outdated').length, conflicts: states.filter((state) => state === 'conflict').length, missing: states.filter((state) => state === 'missing').length };
 }
 
-module.exports = { isGlobal, bindModule, bindingsFor, bindingStatus, refreshBinding, pinRecipe, refreshRecipe, editModule, removeModule, newRecipe, nodeStatus, refreshNode, syncAll, compileRecipe, emptyCanvas, createNode, canConnect, compileNode, syncCounts };
+module.exports = { isGlobal, bindModule, bindingsFor, bindingStatus, refreshBinding, pinRecipe, refreshRecipe, editModule, removeModule, newRecipe, nodeStatus, refreshNode, syncAll, compileParts, compileRecipe, emptyCanvas, createNode, canConnect, compileNode, syncCounts };

@@ -19,7 +19,7 @@ const toolSchemas={
   preview:object({artboardId:string,id:string,mode:enumeration('composite','mask','overlay','original'),maxSize:{type:'integer',minimum:64,maximum:2048}},['artboardId']),
 };
 const ajv=new Ajv(),checks=Object.fromEntries(Object.entries(toolSchemas).map(([n,s])=>[n,ajv.compile(s)]));
-const compact = ({document,...state}) => ({...state,name:document?.name,counts:document?{nodes:document.tugouCanvas?.nodes.length||0,edges:document.tugouCanvas?.edges.length||0,layers:document.layers.length,artboards:document.layers.filter(l=>l.artboard).length,assets:document.assets.length,prompts:document.modules.length,recipes:document.recipes.length}:null});
+const compact = ({document,...state}) => ({...state,name:document?.name,pages:document?{canvas:require('./pages.cjs').list(document,'canvas'),layers:require('./pages.cjs').list(document,'layers')}:null,counts:document?{nodes:document.tugouCanvas?.nodes.length||0,edges:document.tugouCanvas?.edges.length||0,layers:document.layers.length,artboards:document.layers.filter(l=>l.artboard).length,assets:document.assets.length,prompts:document.modules.length,recipes:document.recipes.length}:null});
 function collection(document,kind){return ({canvasNode:document.tugouCanvas?.nodes||[],edge:document.tugouCanvas?.edges||[],layer:document.layers,artboard:document.layers.filter(l=>l.artboard),asset:document.assets,prompt:document.modules,recipe:document.recipes})[kind];}
 function summary(item,kind){return {id:item.id,kind,type:item.type||item.kind,name:item.name||item.data?.name||item.data?.binding?.snapshot?.name,parentId:item.parentId,position:item.position,...(kind==='layer'||kind==='artboard'?{x:item.x,y:item.y,width:item.width,height:item.height,rotation:item.rotation,visible:item.visible,locked:item.locked,hasMask:!!item.mask,coordinateSpace:'parent-local'}:{}),...(kind==='edge'?{source:item.source,target:item.target}:{})};}
 
@@ -36,12 +36,14 @@ class RequestJournal {
   }
 }
 
-async function createDispatcher({ui,projects,connections,tasks,workflow,generation,analysis,localAI,imageTools,cloud,semantic,root,filesRoot,fonts=new (require('./font-service.cjs').FontService)(root,tasks)}){
+async function createDispatcher({ui,capture,projects,connections,tasks,workflow,generation,analysis,localAI,imageTools,cloud,semantic,root,filesRoot,fonts=new (require('./font-service.cjs').FontService)(root,tasks)}){
   const journal=new RequestJournal(await safePath(root,'mcp-requests.json'));await journal.init();
   const snapshot=()=>ui('snapshot');
   const guard=(state,expected)=>{if(state.busy)fail('BUSY','界面正在处理操作');if(expected!==state.revision)fail('CONFLICT','请使用 get_state 返回的实时 revision');};
   const project=state=>{if(!state.document)fail('NO_PROJECT','请先打开工程');return state.document;};
   const commit=async(state,document)=>{
+    const pages=require('./pages.cjs'),removed=pages.list(state.document,'canvas').filter(p=>!pages.list(document,'canvas').some(n=>n.id===p.id));
+    if(removed.some(p=>tasks.list().some(t=>t.context?.projectId===state.projectId&&['queued','running'].includes(t.status)&&pages.content(state.document,'canvas',p.id).tugouCanvas.nodes.some(n=>n.id===t.context?.nodeId))))fail('BUSY','此画布仍有运行任务，请先完成或取消任务');
     const previous=resourcesIn(state.document),added=[...resourcesIn(document)].filter(name=>!previous.has(name));
     if(added.length)await projects.verifyResources(added.map(resource=>({resource})));
     return compact(await ui('commit',{document},state.revision));
@@ -76,6 +78,10 @@ async function createDispatcher({ui,projects,connections,tasks,workflow,generati
     }
     const name=args.command,input=args.args||{},command=commands.validate(name,input);
     if(!['read','task'].includes(command.effect))guard(state,args.expectedRevision);
+    if(name==='ui.capture'){if(!capture)fail('UNAVAILABLE','当前会话不支持界面截图');return capture(input);}
+    if(name.startsWith('ui.'))return ui(name,input,state.revision);
+    if(name==='page.list')return {pages:require('./pages.cjs').list(project(state),input.kind),revision:state.revision};
+    if(name==='page.activate')return ui(name,input,state.revision);
     if(command.effect==='document'){
       const result=commands.batch(project(state),[{name:'result',command:name,args:input}]);
       return {...await commit(state,result.document),...result.results.result};
@@ -233,7 +239,7 @@ async function startAutomationHost({window,ipcMain,app,entryUrl,...services}){
   });
   const profile=app.getPath('userData'),filesRoot=path.resolve(process.env.TUGOU_MCP_FILES||path.join(profile,'automation'));
   await fs.mkdir(filesRoot,{recursive:true});await safePath(filesRoot,'.');
-  const dispatch=await createDispatcher({...services,ui,filesRoot});
+  const dispatch=await createDispatcher({...services,ui,filesRoot,capture:args=>require('./ui-capture.cjs').captureUi(window,ui,args)});
   const token=randomBytes(32).toString('hex'),sockets=new Set();
   const server=net.createServer(socket=>{
     if(sockets.size>=8){socket.destroy();return;}sockets.add(socket);const cancelled=new AbortController();socket.on('close',()=>{sockets.delete(socket);cancelled.abort();});socket.on('error',()=>{});

@@ -5,6 +5,7 @@ import {deleteTarget,editorShortcut} from '../core/editor-commands.cjs';
 import {commandFor,shortcutBlocked} from '../core/shortcuts.cjs';
 import {usePreferences} from './preferences.jsx';
 import {maskSelection,maskView} from './mask-view.js';
+import {useUiView} from './ui-view.js';
 import {useSubjectStatus} from './use-subject-status.js';
 import {Button, Icon, Input, EmptyState} from './components.jsx';
 import {Tooltip} from 'antd';
@@ -219,6 +220,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       y: (viewport.height - height * zoom) / 2-top*zoom,
     });
   };
+  useUiView('layers',{get:()=>({view,tool}),restore:v=>{setView(v.view);setTool(v.tool);},blocked:()=>draft||pathDraft||selectionBusy?'合成编辑尚未完成，请先完成当前操作':null});
   useEffect(() => {
     let previous;
     const observer = new ResizeObserver(([entry]) => {
