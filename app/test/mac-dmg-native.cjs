@@ -1,5 +1,5 @@
 // Native CI acceptance against the actual release DMG and packaged download controller.
-const {app}=require('electron'),fs=require('node:fs'),fsp=require('node:fs/promises'),path=require('node:path'),os=require('node:os'),http=require('node:http'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
+const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),http=require('node:http'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const out=path.resolve('test-results/mac-release'),profile=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'tugou-dmg-native-')));
 app.setPath('userData',profile);
 const report={platform:process.platform,arch:process.arch,checks:[]};let server,mount;
@@ -27,5 +27,6 @@ app.whenReady().then(async()=>{
 }).catch(e=>{report.error=e.stack;console.error(e);}).finally(async()=>{
   if(mount)try{execFileSync('hdiutil',['detach',mount],{timeout:60000});}catch(e){report.passed=false;report.detachError=e.message;}
   server?.close();server?.closeAllConnections();fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'dmg-native.json'),JSON.stringify(report,null,2));
-  await fsp.rm(profile,{recursive:true,force:true});app.exit(report.passed?0:1);
+  // Chromium may still write its active profile; the ephemeral CI runner cleans it after exit.
+  app.exit(report.passed?0:1);
 });
