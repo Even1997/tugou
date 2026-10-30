@@ -93,7 +93,7 @@ app.on('browser-window-created',(_,w)=>{
       check('batch result selector changes downstream reference',deskData.outputAssetId===deskData.outputAssetIds[1]);
       const output=doc.tugouCanvas.nodes.find(n=>n.type==='asset'&&n.data.assetId===deskData.outputAssetIds[0]);
       check('generated result does not overlap the wider generation desk',output.position.x>=desk.position.x+400+70);
-      await click('预览生成结果',nodeSelector(desk.id)+' button');await wait('document.body.innerText.includes("素材详情")');await click('关闭素材详情');
+      await click('预览生成结果',nodeSelector(desk.id)+' button');await wait('document.querySelector(".canvas-image-viewer")');await click('关闭图片查看器');
       check('node result opens the shared material viewer',true);
       const assetCount=doc.assets.length;slow=true;await click('开始生成',nodeSelector(desk.id)+' button');await wait(`(await tugou.tasks()).some(t=>t.context.nodeId==='${desk.id}'&&['running','queued'].includes(t.status))`);await delay(200);
       await js(`{const b=[...document.querySelectorAll('${nodeSelector(desk.id)} button')].find(e=>['取消生成','取消排队'].includes(e.getAttribute('aria-label')));if(!b)throw Error('missing cancel action');b.click();}`);

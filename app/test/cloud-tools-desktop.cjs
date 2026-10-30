@@ -116,7 +116,7 @@ app.on('browser-window-created',(_,w)=>{
    const portraitBytes=await sharp(path.resolve('test-results/local-ai-fixtures/white.png')).resize(2048,3072).png().toBuffer();
    const portrait=await js(`window.tugou.storeRaster(${JSON.stringify([...portraitBytes])},'人物涂画测试')`);
    await js(`window.tugou.open(${JSON.stringify(project)}).then(r=>window.tugou.save(r.id,{...r.document,assets:[...r.document.assets,${JSON.stringify(portrait)}]},r.revision))`);await run('project.open',{id:project});await run('ui.navigate',{workspace:'tools'});await click('AI 局部修改');
-   await js(`document.querySelector('[aria-label="处理来源"]').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);await wait(`!!document.querySelector('[data-option-value="${portrait.id}"]')`);await js(`document.querySelector('[data-option-value="${portrait.id}"]').click()`);await delay(100);
+   await js(`document.querySelector('.tools-material-list [data-asset-id="${portrait.id}"]').click()`);await delay(100);
    await input('云端修改要求','修改涂画处');check('changing source clears the previous paint mask',await js(submitDisabled));
    w.setSize(960,720);await click('切换浅色主题');await wait(`document.documentElement.dataset.theme==='light'`);
    await click('涂画修改区域');await wait(`document.querySelector('[aria-label="涂画修改区域画布"]')?.dataset.ready==='true'`);
@@ -128,7 +128,7 @@ app.on('browser-window-created',(_,w)=>{
    const legacy=largeDoc.document.assets.find(a=>a.toolResult);
    await js(`window.tugou.open(${JSON.stringify(project)}).then(r=>window.tugou.save(r.id,{...r.document,assets:r.document.assets.map(a=>a.id===${JSON.stringify(legacy.id)}?{...a,name:'历史云端增强',toolResult:{...a.toolResult,operation:'cloudEnhance'}}:a)},r.revision))`);await run('project.open',{id:project});await run('ui.navigate',{workspace:'tools'});
    await js(`document.querySelector('.processing-history summary').click()`);await js(`[...document.querySelectorAll('.processing-item')].find(b=>b.textContent.includes('历史云端增强')).click()`);await delay(100);
-   check('legacy cloud output remains viewable without reactivating removed tool',await js(`!!document.querySelector('.image-comparison.view-result')&&document.querySelector('.tools-navigation section>button[aria-pressed=true]')?.textContent==='分辨率调整'`));
+   check('legacy cloud output remains viewable without reactivating removed tool',await js(`!!document.querySelector('.image-comparison.view-result')&&document.querySelector('.tools-options>button[aria-pressed=true]')?.textContent==='分辨率调整'`));
    check('no renderer errors or real provider calls',report.errors.length===0&&report.requests.length===3);finish(0);
   }catch(e){report.failure=e.stack;console.error(e);try{await capture('failure');}catch{}finish(1);}
  });

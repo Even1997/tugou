@@ -77,7 +77,7 @@ app.on('browser-window-created',(_,w)=>{
       check('upstream edits refresh assembled preview',await js(`document.querySelector('.canvas-inspector [data-source-node="desk-words"]').textContent.includes('修改后的人物五官')`));
       doc=await save();doc.tugouCanvas=originalGraph;
       await js(`(async()=>{const r=await tugou.open(${JSON.stringify(report.id)});await tugou.save(r.id,${JSON.stringify(doc)},r.revision)})()`);await load();
-      await select(ids.image);await click('图片工具');await click('复制提示词');check('generated image node exposes shared image tools and exact prompt',copied==='图片生成 测试内容');await click('原图与提示词');await wait('document.body.innerText.includes("素材详情")');await click('关闭素材详情');
+      await select(ids.image);await click('图片工具');await click('复制提示词');check('generated image node exposes shared image tools and exact prompt',copied==='图片生成 测试内容');await click('查看原图');await wait('document.querySelector(".canvas-image-viewer")');await click('关闭图片查看器');
       await select(ids.video);await click('媒体工具');await wait('document.querySelector(".ant-modal video")?.readyState>=2');await click('提取视频帧');await wait('document.body.innerText.includes("结果已加入素材库和画布")');await click('关闭媒体工具');
       doc=await save();check('video frame extraction creates a real image',doc.assets.some(a=>a.name.includes('视频帧')&&a.width===128&&a.height===72));
       await select(ids.video);await click('媒体工具');await wait('document.querySelector(".ant-modal video")?.readyState>=2');await set('片段开始',0.1);await set('片段结束',0.7);await click('截取片段');await wait('document.body.innerText.includes("结果已加入素材库和画布")');await click('关闭媒体工具');

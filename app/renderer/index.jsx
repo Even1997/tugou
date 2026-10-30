@@ -18,6 +18,7 @@ import { CompositeWorkspace as LayerEditor } from "./composite-workspace.jsx";
 import { AnalysisDialog } from "./analysis.jsx";
 import { analysisToCanvas } from "../core/analysis-draft.cjs";
 import { MaterialDetails } from "./material-details.jsx";
+import { CanvasImageViewer } from './canvas-image-viewer.jsx';
 import { TaskPanel } from "./tasks.jsx";
 import { applyResults } from "../core/results.cjs";
 import { stageOutputs } from "../core/generation-output.cjs";
@@ -646,7 +647,7 @@ function App() {
         openTasks={() => setTasksOpen(true)}
         connection={() => setConnectionOpen(true)}
       />
-      {detailsSession&&record&&<MaterialDetails {...detailsSession} projectId={record.id} document={record.document} change={change} close={()=>setDetailsSession(null)} editImages={openImageTools} analyzeImage={analyzeImage} addToLayers={addAssetLayer} addToCanvas={addToCanvas}/>}
+      {detailsSession&&record&&(()=>{const asset=record.document.assets.find(a=>a.id===detailsSession.assetId);return asset&&(!asset.kind||asset.kind==='image')?<CanvasImageViewer key={asset.id} asset={asset} close={()=>setDetailsSession(null)}/>:<MaterialDetails {...detailsSession} projectId={record.id} document={record.document} change={change} close={()=>setDetailsSession(null)} editImages={openImageTools} analyzeImage={analyzeImage} addToLayers={addAssetLayer} addToCanvas={addToCanvas}/>;})()}
       {analysisOpen && record && <AnalysisDialog key={record.id+":"+(analysisSource?.assetId||"")} initialAssetId={analysisSource?.assetId} sendToCanvas={sendAnalysisToCanvas} projectId={record.id} document={record.document} change={change} tasks={tasks} refreshTasks={refreshTasks} close={() => setAnalysisOpen(false)} onSelect={setModuleId} />}
       {tasksOpen && (
         <TaskPanel

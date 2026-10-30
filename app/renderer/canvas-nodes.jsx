@@ -7,6 +7,7 @@ import {analysisKinds} from '../core/analysis-draft.cjs';
 import {MediaPreview} from './media-preview.jsx';
 import {GenerationChoice,ModelChoice,sizeDescription} from './generation-choice.jsx';
 import {GenerationProgress,GenerationOutput} from './generation-progress.jsx';
+import {imageSettingsError,imageResultWarning} from '../core/image-settings.cjs';
 import './canvas-nodes.css';
 
 export const CanvasContext=createContext(null);
@@ -72,13 +73,15 @@ function GenerationDesk({node}){
   const locked=disabled||busy,hasModel=!!(settings.model||shared),sizeLabel=(panorama?'2048x1024':settings.size||'auto').replace('auto','自动').replace('x',' × ');
   const parameterLabel=mode==='image'?`${sizeLabel} · ${settings.count??1} 张`:'更多参数';
   const field=(label,key,type='text')=><label>{label}<Input aria-label={`生成台${label}`} type={type} {...numericLimits[key]} disabled={locked||!!inherited||(panorama&&key==='size')} value={panorama&&key==='size'?'2048x1024':settings[key]??''} placeholder={key==='size'?'auto 或 1024x1536':undefined} onChange={e=>patch(id,{[key]:type==='number'?Number(e.target.value):e.target.value})}/></label>;
-  const choice=(label,key)=><label>{label}<GenerationChoice kind={key} mode={mode} aria-label={`生成台${label}`} disabled={locked||!!inherited} value={settings[key]} onChange={value=>patch(id,{[key]:value})}/></label>;
+  const choice=(label,key)=><div className="generation-field"><span>{label}</span><GenerationChoice kind={key} model={settings.model||shared} mode={mode} aria-label={`生成台${label}`} disabled={locked||!!inherited} value={settings[key]} onChange={value=>patch(id,{[key]:value})}/></div>;
   const error=nodeErrors[id]||(task?.status==='failed'?task.message:'');
-  const readiness=compiled.error||(connection&&!hasModel?'选择模型后即可生成':'');
+  const parameterError=mode==='image'?imageSettingsError(settings.model||shared,settings):'';
+  const readiness=compiled.error||parameterError||(connection&&!hasModel?'选择模型后即可生成':'');
   const output=document.assets.find(a=>a.id===d.outputAssetId);
+  const outputWarning=output&&imageResultWarning(output.generation?.requestedSize,output.width,output.height);
   const resultNode=document.tugouCanvas.nodes.find(n=>n.data.generationTaskId===task?.id&&n.data.sourceNodeId===id)||document.tugouCanvas.nodes.find(n=>n.type==='asset'&&n.data.assetId===d.outputAssetId);
   const prompt=<TextArea className="desk-prompt nodrag" aria-label={assembling?'生成台补充要求':'节点内提示词'} rows={panorama?2:1} value={d.prompt||''} disabled={locked} placeholder={panorama?'描述环绕场景、光线与地平线…':assembling?'补充本次要求，上游内容会自动拼入…':'描述你想生成的内容，或连接提示词节点…'} onChange={e=>patch(id,{prompt:e.target.value})}/>;
-  const generate=<Button primary={!busy&&!panorama} className="desk-run nodrag" icon={submitting?'loading':active?'stop':error?'sync':'generate'} disabled={disabled||submitting||(!active&&!!compiled.error)} onClick={()=>active?cancelNode(id):runNode(id)}>{submitting?'提交中':active?(task.status==='queued'?'取消排队':'取消生成'):error?'重新生成':panorama?(output?'重新生成':'生成全景'):'开始生成'}</Button>;
+  const generate=<Button primary={!busy&&!panorama} className="desk-run nodrag" icon={submitting?'loading':active?'stop':error?'sync':'generate'} disabled={disabled||submitting||(!active&&!!(compiled.error||parameterError))} onClick={()=>active?cancelNode(id):runNode(id)}>{submitting?'提交中':active?(task.status==='queued'?'取消排队':'取消生成'):error?'重新生成':panorama?(output?'重新生成':'生成全景'):'开始生成'}</Button>;
   if(retiredMode(node))return <div className="generation-desk nowheel"><header className="desk-heading"><strong>{nodeName(node)||labels[node.type]}</strong></header><p className="desk-hint">视频和音频生成已移除，已有结果仍可查看。</p>{(d.outputAssetId||d.outputAssetIds?.length)?<NodeResults node={node} disabled={disabled}/>:null}</div>;
   return <div className={`generation-desk nowheel ${panorama?'panorama-desk':''}`} data-mode={mode}>
     <header className="desk-heading"><Icon name={panorama?'camera':'generate'}/><strong title={nodeName(node)}>{nodeName(node)||labels[node.type]}</strong><div className={`node-status ${error?'node-warning':''}`} role="status"><span className={`node-status-dot ${busy?'is-active':task?.status==='completed'||(!task&&output)?'is-complete':''}`}/>{submitting?'正在提交':error?'生成失败':taskLabels[task?.status]||(output?'已有结果':readiness?'待完善':'就绪')}{active&&Number.isFinite(task.progress)?` · ${task.progress}%`:''}</div><div className="nodrag"><ToolPopover label={panorama?'全景设置':'节点选项'} className="desk-popover">
@@ -97,12 +100,13 @@ function GenerationDesk({node}){
           {(mode==='image')&&<>{choice('尺寸','size')}{choice('质量','quality')}</>}
           {mode==='text'&&field('负面提示词','negativePrompt')}
         </ToolPopover>
-        {mode==='image'&&<ToolPopover label={String(settings.count??1)+' 张'} description="生成数量" icon="layers" showLabel triggerClassName="generation-count" className="desk-popover">{field('数量','count','number')}</ToolPopover>}
+        {mode==='image'&&<Input className="generation-count nowheel" aria-label="生成台数量" title="生成数量（1–15 张）" type="number" {...numericLimits.count} suffix="张" disabled={locked||!!inherited} value={settings.count??1} onChange={e=>patch(id,{count:Number(e.target.value)})}/>}
         <ToolPopover label="更多生成参数" icon="settings" className="desk-popover">{field('负面提示词','negativePrompt')}</ToolPopover>
       </div>
       {generate}
     </div>}
     {inherited&&<p className="desk-hint">参数沿用上游「{nodeName(document.tugouCanvas.nodes.find(n=>n.id===inherited))||'生成台'}」，<button className="inline-link nodrag" onClick={()=>locateNode(inherited)}>定位来源</button></p>}
+    {!busy&&outputWarning&&<p className="node-warning" role="status">{outputWarning}</p>}
     {(error||(!busy&&readiness))&&<p className={error?'node-warning':'desk-hint'} role={error?'alert':undefined}>{error||readiness}</p>}
   </div>;
 }
@@ -121,7 +125,7 @@ export const ContentNode=memo(function ContentNode({id,type,data,selected}){
   const pendingOutput=type==='asset'&&!asset&&!!data.generationTaskId;
   return <div style={{'--node-width':`${nodeWidth(type)}px`}} className={`canvas-card node-shell ${generative?'node-desk':'node-content'} ${type==='asset'&&(!asset||isImage)?'node-picture':''} ${asset&&!generative?'node-media':''} ${selected?'selected':''} ${sizedIds.has(id)?'canvas-card-sized':''}`}>
     {!generative&&<header className="node-caption"><Icon name={category||({text:'text',module:'prompts',recipe:'prompts',asset:asset?.kind==='video'?'video':asset?.kind==='audio'?'audio':'assets',director:'layers'}[type])}/><strong title={title}>{title&&title!=='自由提示词'?title:label}</strong>{category&&<span className="node-kind">{analysisKinds[category]||category}</span>}{type==='module'&&<small title="引用工作台模块">关联模块</small>}</header>}
-    <NodeResizer isVisible={selected&&!disabled} minWidth={generative?320:220} minHeight={generative?260:140} maxWidth={10000} maxHeight={10000} keepAspectRatio={!!isImage&&!generative&&!data.freeResize} onResize={(_,rect)=>previewResize(id,rect)} onResizeEnd={(_,rect)=>resize(id,rect)}/>
+    <NodeResizer isVisible={selected&&!disabled} minWidth={generative?320:220} minHeight={generative?260:isImage&&asset.generation?.requestedSize?200:140} maxWidth={10000} maxHeight={10000} keepAspectRatio={!!isImage&&!generative&&!data.freeResize} onResize={(_,rect)=>previewResize(id,rect)} onResizeEnd={(_,rect)=>resize(id,rect)}/>
     <Handle type="target" position={Position.Left} title="输入：连接上游节点" aria-label="节点输入"/>
     {generative?<GenerationDesk node={node}/>:<>
       {pendingOutput?<GenerationOutput task={task} disabled={disabled} sourceExists={document.tugouCanvas.nodes.some(n=>n.id===data.sourceNodeId)} busy={submittingIds.has(data.sourceNodeId)||tasks.some(t=>t.context?.nodeId===data.sourceNodeId&&['queued','running'].includes(t.status))} retry={()=>runNode(data.sourceNodeId)} cancel={()=>cancelNode(data.sourceNodeId)} locate={()=>locateNode(data.sourceNodeId)}/>:editing&&editable?<TextArea autoFocus className="node-text-editor nodrag nowheel" aria-label="节点内文本" value={text||''} onChange={e=>updateText(e.target.value)} onBlur={()=>setEditing(false)} onKeyDown={e=>{if(!e.nativeEvent.isComposing&&(e.key==='Escape'||(e.key==='Enter'&&(e.ctrlKey||e.metaKey)))){e.preventDefault();e.stopPropagation();setEditing(false);}}}/>:asset?<div className="node-media-preview" onDoubleClick={()=>showDetails(asset.id,id)}><MediaPreview asset={asset.kind==='text'?{...asset,text}:asset} style={isImage&&asset.width&&asset.height?{aspectRatio:`${asset.width} / ${asset.height}`}:undefined}/></div>:type==='asset'?<button aria-label="添加图片" className="node-empty" disabled={disabled} onClick={()=>importNodeImage(id)} onDragOver={e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();e.stopPropagation();}}} onDrop={e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();e.stopPropagation();importNodeImage(id,Array.from(e.dataTransfer.files));}}}><Icon name="assets"/><strong>{data.assetId?'重新选择图片':'添加图片'}</strong><small>{data.assetId?'原素材不可用':'拖入图片，或点击导入'}</small></button>:type==='director'?<button className="node-empty" disabled={disabled} onClick={()=>openNodeScene(id)}><Icon name="layers"/><strong>打开导演台</strong><small>布置场景与机位</small></button>:<div className={`node-text nowheel ${text?'':'muted'}`} onDoubleClick={e=>{if(editable&&!disabled){e.stopPropagation();setEditing(true);}}}>{text||'双击编辑文字'}</div>}
@@ -134,6 +138,7 @@ export const ContentNode=memo(function ContentNode({id,type,data,selected}){
         {type==='recipe'&&<IconButton label="编辑配方" icon="open" onClick={()=>openRecipe(data.recipeId)}/>}
         {type==='director'&&asset&&<IconButton label="打开导演台" icon="layers" onClick={()=>openNodeScene(id)}/>}
       </div></footer>}
+      {isImage&&asset.generation?.requestedSize&&<div className="node-output-spec nodrag" role="status"><span>请求 {asset.generation.requestedSize.replace('auto','自动').replace('x',' × ')} · 实际 {asset.width} × {asset.height}</span>{imageResultWarning(asset.generation.requestedSize,asset.width,asset.height)&&<strong className="node-warning">尺寸不符 · 原图已保留</strong>}</div>}
       {(!pendingOutput&&(task||['outdated','conflict','missing'].includes(status)))&&<div className="node-reference-state nodrag"><span>{({outdated:'模块有更新',conflict:'本地修改与来源有冲突',missing:'来源已移除，保留快照'})[status]||taskLabels[task?.status]}</span>{status==='outdated'&&<Button iconOnly icon="sync" disabled={disabled} onClick={()=>updateReference(id)}>更新引用</Button>}</div>}
     </>}
     <Handle type="source" position={Position.Right} title="输出：拖向其他节点，或依次点击两个连接点" aria-label="节点输出"/>

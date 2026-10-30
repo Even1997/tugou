@@ -11,6 +11,7 @@ import {
 } from "../core/prompts.cjs";
 import "./workflow.css";
 import {GenerationChoice,sizeDescription} from "./generation-choice.jsx";
+import {imageSettingsError} from '../core/image-settings.cjs';
 import { assetUrl } from './canvas.jsx';
 import {
   Button,
@@ -152,6 +153,7 @@ export function RecipeWorkbench({
   const selectedId = activeId ?? document.recipes[0]?.id,
     selected = document.recipes.find((r) => r.id === selectedId);
   const [submitting, setSubmitting] = useState(false),[sharedModel,setSharedModel]=useState('');
+  const parameterError=selected?imageSettingsError(sharedModel,selected):'';
   const refreshModel=()=>window.tugou.connection().then(c=>setSharedModel(c.model||'')).catch(()=>setSharedModel(''));
   useEffect(()=>{refreshModel();window.addEventListener('focus',refreshModel);window.addEventListener('tugou-connection-changed',refreshModel);return()=>{window.removeEventListener('focus',refreshModel);window.removeEventListener('tugou-connection-changed',refreshModel);};},[]);
   const update = (next) =>
@@ -361,13 +363,14 @@ export function RecipeWorkbench({
           </div>
           <div className="recipe-generation-controls" onFocus={refreshModel}>
             <Button icon="model" className="generation-model" aria-label="配方共享模型" onClick={openConnection}><span className="control-copy"><strong>{sharedModel||'选择模型'}</strong><small>共享模型 · 点击配置连接</small></span><Icon name="collapse" className="control-chevron"/></Button>
-            <ToolPopover downward label={sizeDescription(selected.size)} description={(selected.size||'auto').replace('auto','自动').replace('x',' × ')} icon="selection" showLabel triggerClassName="generation-size" className="desk-popover"><h3>输出规格</h3><GenerationChoice kind="size" mode="image" aria-label="输出尺寸" value={selected.size} onChange={size=>patch({size})}/></ToolPopover>
+            <ToolPopover downward label={sizeDescription(selected.size)} description={(selected.size||'auto').replace('auto','自动').replace('x',' × ')} icon="selection" showLabel triggerClassName="generation-size" className="desk-popover"><h3>输出规格</h3><GenerationChoice kind="size" model={sharedModel} mode="image" aria-label="输出尺寸" value={selected.size} onChange={size=>patch({size})}/><label>质量<GenerationChoice kind="quality" model={sharedModel} aria-label="输出质量" value={selected.quality} onChange={quality=>patch({quality})}/></label></ToolPopover>
           </div>
+          {parameterError&&<p className="node-warning" role="alert">{parameterError}</p>}
           <div className="recipe-footer editor-heading">
             <Button
               primary
               icon="generate"
-              disabled={busy || submitting}
+              disabled={busy || submitting || !!parameterError}
               onClick={async () => {
                 setSubmitting(true);
                 try {

@@ -2,7 +2,7 @@
 
 面向图片创作的本地桌面工作台。把提示词、参考图、AI 生图、无限画布、图层合成和字体设计放在同一个工程里，也让外部 AI Agent 通过 MCP 操作这些工具。
 
-**当前版本：v0.8.5** · [下载安装](https://github.com/Even1997/tugou/releases) · [版本说明](docs/releases/v0.8.5.md) · [开发文档](app/README.md)
+**当前版本：v0.8.6** · [下载安装](https://github.com/Even1997/tugou/releases) · [版本说明](docs/releases/v0.8.6.md) · [开发文档](app/README.md)
 
 ## 功能
 
@@ -23,7 +23,7 @@
 
 ## 下载安装
 
-在 [Releases](https://github.com/Even1997/tugou/releases/tag/v0.8.5) 按系统下载，保存并关闭正在运行的土狗，再安装。首次使用无需克隆源码或启动 Web 服务。
+在 [Releases](https://github.com/Even1997/tugou/releases/tag/v0.8.6) 按系统下载，保存并关闭正在运行的土狗，再安装。首次使用无需克隆源码或启动 Web 服务。
 
 | 平台 | 当前发行范围 |
 |---|---|

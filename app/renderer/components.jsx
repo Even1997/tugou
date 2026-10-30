@@ -377,4 +377,14 @@ export function ToolPopover({
   );
 }
 export { Input, Checkbox };
-export const TextArea = Input.TextArea;
+export const TextArea = React.forwardRef(function TextArea({value,defaultValue,onChange,onCompositionStart,onCompositionEnd,onBlur,...props},ref){
+  const [draft,setDraft]=useState(value??defaultValue??''),composing=useRef(false),committed=useRef(draft);
+  // Keep the IME draft local: replaying an older controlled value cancels its range.
+  useEffect(()=>{if(!composing.current&&value!==undefined){setDraft(value??'');committed.current=value??'';}},[value]);
+  const commit=event=>{const next=event.target.value;if(next!==committed.current){committed.current=next;onChange?.(event);}};
+  return <Input.TextArea {...props} ref={ref} value={draft}
+    onChange={event=>{setDraft(event.target.value);if(!composing.current&&!event.nativeEvent.isComposing)commit(event);}}
+    onCompositionStart={event=>{composing.current=true;onCompositionStart?.(event);}}
+    onCompositionEnd={event=>{composing.current=false;setDraft(event.target.value);commit(event);onCompositionEnd?.(event);}}
+    onBlur={event=>{composing.current=false;commit(event);onBlur?.(event);}}/>;
+});

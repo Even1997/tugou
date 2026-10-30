@@ -44,8 +44,8 @@ function removeModule(document, id) {
   }), modules: document.modules.filter((module) => module.id !== id) };
 }
 
-function newRecipe() { return { id: uid(), name: '新配方', moduleIds: [], moduleBindings: [], references: [], output: '', size: '1024x1536' }; }
-function recipeKey(recipe) { return JSON.stringify([recipe.name, recipe.moduleIds, recipe.references, recipe.output, recipe.size]); }
+function newRecipe() { return { id: uid(), name: '新配方', moduleIds: [], moduleBindings: [], references: [], output: '', size: '1024x1536', quality:'auto' }; }
+function recipeKey(recipe) { return JSON.stringify([recipe.name, recipe.moduleIds, recipe.references, recipe.output, recipe.size,recipe.quality||'auto']); }
 function recipeNodeStatus(document, node) {
   const current = document.recipes.find((recipe) => recipe.id === node.data.recipeId);
   if (!current) return 'missing';
@@ -95,7 +95,7 @@ function compileParts(bindings, texts, references, output) {
 
 function compileRecipe(document, recipe) {
   const references = recipe.references || [];
-  return { prompt: compileParts(bindingsFor(document, recipe), [], references, recipe.output || ''), references, size: recipe.size };
+  return { prompt: compileParts(bindingsFor(document, recipe), [], references, recipe.output || ''), references, size: recipe.size,quality:recipe.quality||'auto' };
 }
 
 const emptyCanvas = () => ({ version: 1, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } });
@@ -164,7 +164,7 @@ function compileNode(document, nodeId) {
   };
   visit(nodeId);
   const uniqueReferences = [...new Map(references.map((reference) => [reference.assetId, reference])).values()];
-  return { prompt: compileParts(bindings, texts, uniqueReferences, root.data.snapshot.output), references: uniqueReferences, size: root.data.snapshot.size };
+  return { prompt: compileParts(bindings, texts, uniqueReferences, root.data.snapshot.output), references: uniqueReferences, size: root.data.snapshot.size,quality:root.data.snapshot.quality||'auto' };
 }
 
 function syncCounts(document) {

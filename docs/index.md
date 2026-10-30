@@ -14,6 +14,12 @@
 
 ## 开发文档
 
+- [v0.8.6 发布说明](releases/v0.8.6.md)
+- [v0.8.6 发布验收](engineering/release-v0.8.6.md)
+
+- [图像工具顶部导航与素材侧栏](engineering/tools-navigation-materials.md)
+- [中文输入法标点重复修复与验收](engineering/canvas-ime-input.md)
+- [生图尺寸、分辨率、质量与 MCP 验收](engineering/image-generation-parameters.md)
 - [土狗设置页与更新方案（待确认）](engineering/settings-update-proposal.md)
 
 - [字体素材图闭环与 MCP](engineering/independent-font-pipeline.md)

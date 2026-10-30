@@ -52,6 +52,7 @@ import {MediaTools} from './media-tools.jsx';
 import { ReferenceEditor, PromptPreview, statusLabels } from "./recipes.jsx";
 import { ReplaceImageDialog } from "./replace-image.jsx";
 import { copyAssetPrompt } from "./material-details.jsx";
+import { CanvasImageDetails } from './canvas-image-details.jsx';
 import { resizeAssetNode } from "../core/canvas-view.cjs";
 import { DisplayControls, AngleDialog } from "./canvas-view-tools.jsx";
 import { useImageImport, hasImageFiles } from './use-image-import.js';
@@ -234,7 +235,7 @@ function CanvasWorkspace({
   const canCreateLinked=type=>{
     const link=pendingLink.current;if(!link)return true;
     if(type==='import')return false;
-    const candidate={id:'__new_canvas_node__',type:type==='emptyImage'?'asset':type};
+    const candidate=createNode(document,type==='emptyImage'?'asset':type,undefined,{x:0,y:0});
     return canConnect({nodes:[...nodes,candidate],edges},link.type==='source'?link.id:candidate.id,link.type==='source'?candidate.id:link.id);
   };
   const remove = () => {
@@ -516,7 +517,7 @@ function CanvasWorkspace({
                 <ToolPopover label="图片工具" icon="tools">
                   <div className="image-tool-detail">
                     <Button disabled={disabled||!selectedImage||Boolean(activeTask)} onClick={()=>setAngleSource({nodeId:node.id,asset:selectedImage})}>AI 多角度</Button>
-                    <Button disabled={disabled||!selectedImage} onClick={()=>showDetails(selectedImage.id,node.id)}>原图与提示词</Button>
+                    <Button disabled={disabled||!selectedImage} onClick={()=>showDetails(selectedImage.id,node.id)}>查看原图</Button>
                     <Button disabled={disabled||!selectedImage} onClick={async()=>{
                       try{await copyAssetPrompt(await window.tugou.assetDetails(projectId,current.current.document,selectedImage.id,node.id));if(mounted.current)setMessage("提示词已复制");}
                       catch(e){if(mounted.current)setMessage(e.message);}
@@ -863,7 +864,7 @@ function CanvasWorkspace({
                   </>
                 )}
                 {node.type==='group'&&<label>分组名称<Input aria-label="分组名称" disabled={disabled} value={node.data.name} onChange={e=>patchNode({name:e.target.value})}/></label>}
-                {workflowTypes.includes(node.type)&&<WorkflowSettings node={node} compiled={compiled?.result} document={{...document,tugouCanvas:{...graph,nodes,edges}}} patch={patchNode} disabled={disabled} task={tasks.filter(t=>t.context?.nodeId===node.id).at(-1)} run={run} openScene={()=>setSceneNode(node.id)} openPanorama={()=>setSceneNode(node.id)}/>}
+                {workflowTypes.includes(node.type)&&<WorkflowSettings node={node} compiled={compiled?.result} sharedModel={connection?.model} document={{...document,tugouCanvas:{...graph,nodes,edges}}} patch={patchNode} disabled={disabled} task={tasks.filter(t=>t.context?.nodeId===node.id).at(-1)} run={run} openScene={()=>setSceneNode(node.id)} openPanorama={()=>setSceneNode(node.id)}/>}
                 {workflowTypes.includes(node.type)&&node.type!=='director'&&(compiled.error?<p role="alert">{compiled.error}</p>:<details><summary>合成提示词</summary><PromptPreview document={document} result={compiled.result}/></details>)}
                 {node.type === "asset" && (
                   <label>
@@ -903,6 +904,7 @@ function CanvasWorkspace({
                     )}
                   </>
                 )}
+                {selectedImage&&<CanvasImageDetails key={node.id} projectId={projectId} document={document} asset={selectedImage} nodeId={node.id} change={change} disabled={disabled}/>}
               </>
             ) : (
               <EmptyState compact icon="select" title={selected.length > 1 ? `已选择 ${selected.length} 个节点` : "未选择节点"} description={selected.length > 1 ? "可一起移动或删除。" : "选择节点以编辑内容、查看引用状态。"}/>

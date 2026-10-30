@@ -1,0 +1,12 @@
+.canvas-image-viewer .ant-image-preview-img { border:0; border-radius:0; box-shadow:none; background:transparent; }
+.canvas-image-viewer .viewer-controls { display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:8px; background:rgb(0 0 0 / .65); color:#fff; }
+.canvas-image-viewer .viewer-controls .ant-btn,.canvas-image-viewer .viewer-close.ant-btn { color:#fff; border:0; background:transparent; box-shadow:none; }
+.canvas-image-viewer .viewer-controls .ant-btn:hover,.canvas-image-viewer .viewer-close.ant-btn:hover { color:#fff; background:rgb(255 255 255 / .15); }
+.canvas-image-viewer .viewer-controls .ant-btn:disabled { color:rgb(255 255 255 / .35); }
+.canvas-image-viewer .viewer-controls .ant-btn { height:40px; }
+.canvas-image-viewer .viewer-controls .icon-button { min-width:40px; }
+.canvas-image-viewer .viewer-controls>span { min-width:48px; text-align:center; font-variant-numeric:tabular-nums; }
+.canvas-image-viewer .viewer-close.ant-btn { position:fixed; top:20px; right:20px; width:44px; height:44px; pointer-events:auto; }
+.canvas-image-viewer .ant-btn:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+.canvas-image-viewer .viewer-error { position:fixed; top:72px; left:0; right:0; text-align:center; color:#fff; }
+@media(max-width:600px){.canvas-image-viewer .viewer-controls{gap:2px;padding:4px 8px}.canvas-image-viewer .viewer-close.ant-btn{top:12px;right:12px}}

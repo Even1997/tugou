@@ -35,14 +35,13 @@ import { cloudToolReadiness } from "../core/cloud-readiness.cjs";
 import { ConnectionDialog } from "./connection.jsx";
 import { useImageImport } from './use-image-import.js';
 import { ImageComparison } from './image-comparison.jsx';
-const operations = {
-  cloudEdit: cloudNames.cloudEdit,
-  cloudExtend: cloudNames.cloudExtend,
-  ...rasterOperations,
-  ...compositionNames,
-  upscale: "AI 超分辨率",
-  cutout: "主体抠图",
-};
+const toolGroups = [
+  ['智能工具', {cloudEdit:cloudNames.cloudEdit,cloudExtend:cloudNames.cloudExtend,upscale:'AI 超分辨率',cutout:'主体抠图'}],
+  ['基础处理', rasterOperations],
+  ['图像合成', compositionNames],
+];
+const operations = Object.assign({}, ...toolGroups.map(([, entries])=>entries));
+const toolIcons = {cloudEdit:'brush',cloudExtend:'maximize',upscale:'zoomIn',cutout:'mask'};
 const defaults = {
   ...cloudDefaults,
   cloudEdit: { ...cloudDefaults.cloudEdit, maskMode: 'asset' },
@@ -88,7 +87,7 @@ export function ImageTools({
   tasks = [],
   refreshTasks,
   initialSourceIds = [],
-  initialOperation = "resize",
+  initialOperation = "cloudEdit",
 }) {
   const imageAssets=document.assets.filter(a=>!a.kind||a.kind==='image');
   const initialSource = imageAssets.find(a=>a.id===initialSourceIds[0]) || imageAssets[0];
@@ -99,6 +98,7 @@ export function ImageTools({
     [resultId, setResultId] = useState(null),
     [view, setView] = useState("original"),
     [toolQuery,setToolQuery]=useState(""),
+    [materialQuery,setMaterialQuery]=useState(""),
     [status, setStatus] = useState(""),
     [working, setWorking] = useState(false),
     [batchOpen, setBatchOpen] = useState(false);
@@ -137,6 +137,13 @@ export function ImageTools({
         ? result.toolResult.source
         : undefined);
   const isCloud = Boolean(cloudNames[operation]);
+  const activeGroup=toolGroups.find(([,entries])=>entries[operation])||toolGroups[0];
+  const visibleTools=(toolQuery.trim()?Object.entries(operations):Object.entries(activeGroup[1])).filter(([,label])=>label.toLowerCase().includes(toolQuery.trim().toLowerCase()));
+  const historicalSource=source&&!imageAssets.some(a=>a.id===source.id)?source:null;
+  const materialAssets=historicalSource?[historicalSource,...imageAssets]:imageAssets;
+  const visibleMaterials=materialAssets.filter(a=>(a.name||'未命名图片').toLowerCase().includes(materialQuery.trim().toLowerCase()));
+  const selectOperation=id=>{setOperation(id);setToolQuery('');setStatus('');};
+  const selectSource=asset=>{setSourceId(asset.id);setResultId(null);setView('original');setStatus('');setParameters(p=>sourceParameters(p,asset));};
   const [connections, setConnections] = useState(null),
     [connectionError, setConnectionError] = useState(''),
     [connectionOpen, setConnectionOpen] = useState(false),
@@ -205,6 +212,7 @@ export function ImageTools({
     if(change({...latest.current, assets:[...latest.current.assets,...added]}) === false)
       throw Error('工程正在保存，请稍后重新导入');
     setSourceId(added[0].id);
+    setMaterialQuery('');
     setResultId(null);
     setView('original');
     setParameters(p=>sourceParameters(p,added[0]));
@@ -379,10 +387,17 @@ export function ImageTools({
         setParameters(p=>({...p,cloudEdit:{...p.cloudEdit,maskMode:'asset',maskId:asset.id,maskChannel:'alpha',invertMask:false}}));
         setView('original');setStatus('修改区域已保存，请填写修改要求后提交');
       }}/>}
-      <aside className="tools-navigation"><PanelHeader title="图像工具"/><SearchField label="搜索工具" value={toolQuery} onChange={setToolQuery}/>
-        {[["基础处理",rasterOperations],["图像合成",compositionNames],["智能工具",{cloudEdit:cloudNames.cloudEdit,cloudExtend:cloudNames.cloudExtend,upscale:"AI 超分辨率",cutout:"主体抠图"}]].map(([title,entries])=><section key={title}><h3>{title}</h3>{Object.entries(entries).filter(([id,label])=>label.toLowerCase().includes(toolQuery.toLowerCase())).map(([id,label])=><Button key={id} aria-pressed={operation===id} disabled={working} onClick={()=>{setOperation(id);setStatus('');}}>{label}</Button>)}</section>)}
-                <details className="processing-history"><summary>处理记录 · {history.length}</summary>
-          <PanelHeader title="处理记录" count={history.length} />
+      <nav className="tools-navigation" aria-label="图像工具">
+        <div className="tools-navigation-heading"><div className="tools-categories" role="group" aria-label="工具分类">{toolGroups.map(([title,entries])=><Button key={title} aria-pressed={activeGroup[0]===title} disabled={working} onClick={()=>selectOperation(Object.keys(entries)[0])}>{title}</Button>)}</div><SearchField label="搜索工具" value={toolQuery} onChange={setToolQuery}/></div>
+        <div className="tools-options" role="group" aria-label={toolQuery.trim()?'工具搜索结果':activeGroup[0]}>{visibleTools.map(([id,label])=><Button key={id} data-tool={id} icon={toolIcons[id]} aria-pressed={operation===id} disabled={working} onClick={()=>selectOperation(id)}>{label}</Button>)}{!visibleTools.length&&<span className="muted" role="status">没有匹配的工具</span>}</div>
+      </nav>
+      <aside className="tools-materials" aria-label="图片素材">
+        <div className="tools-materials-heading"><PanelHeader title="素材" count={materialAssets.length}><Button icon="import" disabled={disabled||imageImport.importing} onClick={imageImport.open}>{imageImport.importing?'导入中…':'上传图片'}</Button></PanelHeader><SearchField label="搜索素材" value={materialQuery} onChange={setMaterialQuery}/></div>
+        <div className="tools-material-list" role="group" aria-label="处理来源" data-value={sourceId}>
+          {visibleMaterials.map(a=><Button key={a.id} className="tools-material-item" data-asset-id={a.id} aria-label={`选择素材 ${a.name||'未命名图片'}`} aria-pressed={sourceId===a.id} disabled={working} onClick={()=>selectSource(a)}><img src={assetUrl(a)} alt="" loading="lazy" draggable={false}/><span><strong>{a.name||'未命名图片'}</strong><small>{a.width} × {a.height}{a.id===historicalSource?.id?' · 历史原图':''}</small></span></Button>)}
+          {!visibleMaterials.length&&<EmptyState compact icon="assets" title={materialQuery.trim()?'没有匹配的素材':'还没有图片'} description={materialQuery.trim()?'试试其他关键词。':'上传图片后开始处理。'}/>}
+        </div>
+        <details className="processing-history"><summary>处理记录 · {history.length}</summary>
           {history.length ? (
             history.map((a) => (
               <Button
@@ -394,6 +409,7 @@ export function ImageTools({
                   setParameters(p=>sourceParameters(p,a.toolResult.source||document.assets.find(item=>item.id===a.toolResult.sourceId)));
                   if (operations[a.toolResult.operation]) {
                     setOperation(a.toolResult.operation);
+                    setView('compare');setToolQuery('');
                     const {
                       sourceId,
                       createdAt,
@@ -586,7 +602,7 @@ export function ImageTools({
         <p className="muted">提交后可能产生费用；已配置不代表供应商支持编辑或当前尺寸。</p>
       </div>}
       {connectionOpen && <ConnectionDialog close={() => setConnectionOpen(false)} />}
-</div><div className="tools-submit"><p className="muted">{!source ? "请先在上方选择处理素材" : "生成新素材，原图保留"}</p><Button
+</div><div className="tools-submit"><p className="muted">{!source ? "请先在左侧选择处理素材" : "生成新素材，原图保留"}</p><Button
           primary
           icon="generate"
           disabled={!source || disabled || imageImport.importing || (isCloud && !cloudReady.ready) || (isAI && !localToolReadiness(aiStatus, {operation, ...parameters[operation]}, source).ready)}
@@ -610,30 +626,7 @@ export function ImageTools({
         />
       )}
       <div className="image-tools-toolbar">
-        <strong>素材预览</strong>
-        <Button icon="import" disabled={disabled || imageImport.importing} onClick={imageImport.open}>{imageImport.importing ? '导入中…' : '上传图片'}</Button>
-        <Select
-          aria-label="处理来源"
-          value={sourceId}
-          disabled={working}
-          onChange={(e) => {
-            setSourceId(e.target.value);
-            setResultId(null);
-            setStatus("");
-            const a = document.assets.find((a) => a.id === e.target.value);
-            if (a) setParameters((p) => sourceParameters(p, a));
-          }}
-        >
-          <option value="">选择素材</option>
-          {source && !document.assets.some((a) => a.id === sourceId) && (
-            <option value={sourceId}>{source.name} · 历史原图</option>
-          )}
-          {imageAssets.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </Select>
+        <strong title={source?.name}>{source?.name||'素材预览'}</strong>
         {operation !== 'cloudSplit' && (
           <Button icon="layers"
             disabled={working || !document.assets.length}
@@ -702,7 +695,7 @@ export function ImageTools({
           {!source ? (
             <EmptyState
               title="选择一张素材"
-              description="上传本地 PNG、JPEG、WebP，或从上方素材库选择。"
+              description="从左侧选择素材，或上传本地 PNG、JPEG、WebP。"
             ><Button primary icon="import" disabled={disabled || imageImport.importing} onClick={imageImport.open}>{imageImport.importing ? '导入中…' : '上传图片'}</Button></EmptyState>
           ) : result && view !== 'edit' ? (
             <ImageComparison key={`${source.id}:${result.id}`} source={source} result={result} mode={view}/>

@@ -27,6 +27,7 @@ app.on('browser-window-created',(_,w)=>{
   const call=async(name,args={})=>{const r=await client.callTool({name,arguments:args});if(r.isError)throw Error(r.content[0].text);return r.structuredContent;};
   const state=()=>call('get_state'),run=async(command,args={})=>call('run_command',{command,args,expectedRevision:(await state()).revision});
   await state();await call('list_commands',{domain:'tools'});await run('project.create',{name:'工具本地上传检查'});await run('ui.navigate',{workspace:'tools'});
+  await click('基础处理');await click('分辨率调整');
   const before=await state();await click('上传图片');
   check('cancel picker leaves project unchanged',(await state()).revision===before.revision&&(await state()).counts.assets===0);
   check('picker accepts images and supports multiple files',pickerOptions.properties.includes('multiSelections')&&pickerOptions.filters[0].extensions.join(',')==='png,jpg,jpeg,webp');
@@ -39,8 +40,8 @@ app.on('browser-window-created',(_,w)=>{
   check('multiple local files are added to shared assets',(await state()).counts.assets===2);
   check('first uploaded file selected and geometry initialized',await js(`document.querySelector('.tools-settings-heading').textContent.includes('512 × 768')&&document.querySelector('.tool-output-size').textContent.includes('1024 × 1536')&&document.querySelector('.message').textContent.includes('已导入 2 张')`));
   await capture('uploaded');
-  const selected=await js(`document.querySelector('[aria-label="处理来源"]').closest('.studio-select').dataset.value`),rev=(await state()).revision;
-  pickerFiles=[];await click('上传图片');check('cancel keeps existing source and project',(await state()).revision===rev&&selected===await js(`document.querySelector('[aria-label="处理来源"]').closest('.studio-select').dataset.value`));
+  const selected=await js(`document.querySelector('.tools-material-list').dataset.value`),rev=(await state()).revision;
+  pickerFiles=[];await click('上传图片');check('cancel keeps existing source and project',(await state()).revision===rev&&selected===await js(`document.querySelector('.tools-material-list').dataset.value`));
   await click('批量处理');check('uploads are available for batch selection',await js(`document.querySelector('.ant-modal-body')?.textContent.includes('second')`));await click('关闭批量处理');
   await click('开始处理');await wait(`!!document.querySelector('img[alt="处理结果"]')`);check('uploaded image can be processed',(await state()).counts.assets===3);
 

@@ -3,6 +3,7 @@ const {compileWorkflow,nodeName}=require('./workflow-nodes.cjs');
 const {safePath,atomicWrite,validateDocument}=require('./storage.cjs');
 const {saveImage,referenceBytes}=require('./generation.cjs');
 const {boundedBytes,requestImages}=require('./image-api.cjs');
+const {validateImageSettings,imageResultWarning}=require('./image-settings.cjs');
 const fail=s=>Object.assign(Error(s),{safeMessage:s});
 const endpoint=(settings,route)=>settings.baseUrl.replace(/\/$/,'')+(settings.baseUrl.endsWith('/v1')?'':'/v1')+route;
 async function call(settings,route,signal,body){
@@ -31,6 +32,7 @@ class WorkflowService{
     const saved=await this.connections.readPrivate(c.mode),model=c.model||saved[`${c.mode}Model`]||(c.mode==='image'?saved.model:c.mode==='text'?saved.analysisModel:'');
     if(!saved.baseUrl||!saved.apiKey||!model)throw fail('请在模型连接或节点参数中填写对应模型');
     const settings={...saved,model},refs=[];
+    if(c.mode==='image')validateImageSettings(model,c);
     for(const ref of c.references){const asset=snapshot.assets.find(a=>a.id===ref.assetId);if(!asset)throw fail('参考素材缺失');const bytes=await referenceBytes(this.root,asset);if(bytes.length>64*1024*1024)throw fail('单个模型参考不超过 64 MiB');refs.push({...ref,bytes,mimeType:asset.mimeType||`image/${asset.resource?.endsWith('.jpg')?'jpeg':asset.resource?.split('.').at(-1)||'png'}`});}
     if(busy())throw fail('该节点已有任务');
     // Persist only parameters and referenced assets; credentials are read anew on an explicit retry.
@@ -56,10 +58,15 @@ class WorkflowService{
       }
       signal.throwIfAborted();
       await stage('saving');
-      assets.forEach((a,i)=>Object.assign(a,{id:`${id}-${i}`,name:`${label||'生成'} · ${i+1}`,generation:{taskId:id,nodeId,model,requestedSize:c.size,prompt:c.prompt}}));
+      assets.forEach((a,i)=>Object.assign(a,{id:`${id}-${i}`,name:`${label||'生成'} · ${i+1}`,generation:{taskId:id,nodeId,model,requestedSize:c.size,quality:c.quality||'auto',prompt:c.prompt}}));
+      if(c.mode==='image'){
+        journal.actualSizes=assets.map(a=>`${a.width}x${a.height}`);
+        const warnings=[...new Set(assets.map(a=>imageResultWarning(c.size,a.width,a.height)).filter(Boolean))];
+        if(warnings.length)journal.message=warnings.join('；');
+      }
       const result={id,kind:'workflow',projectId,nodeId,mode:c.mode,createdAt:new Date().toISOString(),prompt:c.prompt,references:c.references,assets};
       await atomicWrite(await safePath(this.root,'results',id+'.json'),JSON.stringify(result));return id;
-    },{kind:'workflow',projectId,nodeId,model,mode:c.mode,requestedSize:c.size,count:c.count,outputNodes:true});
+    },{kind:'workflow',projectId,nodeId,model,mode:c.mode,requestedSize:c.size,quality:c.quality||'auto',count:c.count,outputNodes:true});
     try{await atomicWrite(await safePath(this.root,'requests',task.id+'.json'),JSON.stringify(request));ready();}
     catch(error){failed(error);await this.tasks.cancel(task.id);throw error;}
     return {id:task.id};

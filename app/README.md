@@ -1,6 +1,6 @@
 # 土狗桌面应用开发说明
 
-安装使用见[项目首页](../README.md)，版本变更见[发布说明](../docs/releases/v0.8.5.md)。`app/` 是当前源码入口，Electron、React、Ant Design 与本地工具共用工程格式，无需旧 Web/Go 服务。
+安装使用见[项目首页](../README.md)，版本变更见[发布说明](../docs/releases/v0.8.6.md)。`app/` 是当前源码入口，Electron、React、Ant Design 与本地工具共用工程格式，无需旧 Web/Go 服务。
 
 ## 开发
 

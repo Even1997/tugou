@@ -37,8 +37,8 @@ define('prompt.create','新建提示词模块',{name:string,kind:string,text,glo
 define('prompt.update','编辑模块并保留引用版本语义',{id:string,patch:object({name:string,kind:string,text,global:bool})},['id','patch'],'document',(d,a)=>{find(d.modules,a.id);return {document:prompts.editModule(d,a.id,a.patch)};});
 define('prompt.delete','删除模块；引用按现有应用规则保留快照',{id:string},['id'],'document',(d,a)=>{find(d.modules,a.id);return {document:prompts.removeModule(d,a.id)};});
 define('prompt.sync','同步全局模块和配方引用',{},[],'document',d=>({document:prompts.syncAll(d)}));
-define('recipe.create','创建配方',{name:string,moduleIds:{type:'array',items:string,maxItems:500},output:text,size:string},['name'],'document',(d,a)=>{for(const id of a.moduleIds||[])find(d.modules,id);const r=prompts.pinRecipe(d,{...prompts.newRecipe(),...a});d.recipes.push(r);return {id:r.id};});
-define('recipe.update','修改配方及模块绑定',{id:string,patch:object({name:string,moduleIds:{type:'array',items:string,maxItems:500},output:text,size:string})},['id','patch'],'document',(d,a)=>{const r=find(d.recipes,a.id);for(const id of a.patch.moduleIds||[])find(d.modules,id);Object.assign(r,prompts.pinRecipe(d,{...r,...a.patch}));});
+define('recipe.create','创建配方',{name:string,moduleIds:{type:'array',items:string,maxItems:500},output:text,size:string,quality:string},['name'],'document',(d,a)=>{for(const id of a.moduleIds||[])find(d.modules,id);const r=prompts.pinRecipe(d,{...prompts.newRecipe(),...a});d.recipes.push(r);return {id:r.id};});
+define('recipe.update','修改配方及模块绑定',{id:string,patch:object({name:string,moduleIds:{type:'array',items:string,maxItems:500},output:text,size:string,quality:string})},['id','patch'],'document',(d,a)=>{const r=find(d.recipes,a.id);for(const id of a.patch.moduleIds||[])find(d.modules,id);Object.assign(r,prompts.pinRecipe(d,{...r,...a.patch}));});
 define('recipe.delete','删除配方，已有节点保留快照',{id:string},['id'],'document',(d,a)=>{find(d.recipes,a.id);d.recipes=d.recipes.filter(r=>r.id!==a.id);});
 define('canvas.create','创建节点；坐标相对于无限画布',{type:enumeration('text','asset','module','recipe','config','textgen','image','director'),sourceId:string,position:point,properties:object(nodeProps)},['type','position'],'document',(d,a)=>{d.tugouCanvas||=prompts.emptyCanvas();const n=prompts.createNode(d,a.type,a.sourceId,a.position);Object.assign(n.data,a.properties);d.tugouCanvas.nodes.push(n);return {id:n.id};});
 define('canvas.update','修改节点位置或生成参数',{id:string,position:point,properties:object(nodeProps)},['id'],'document',(d,a)=>{const n=find(d.tugouCanvas?.nodes||[],a.id);if(a.position)n.position=a.position;Object.assign(n.data,a.properties);});
@@ -111,6 +111,7 @@ define('history.undo','撤销一次编辑或整个批次',{},[],'session');
 define('history.redo','重做一次编辑或整个批次',{},[],'session');
 define('workspace.show','切换工作区',{workspace:enumeration('canvas','layers','prompts','assets','tools','fonts'),layerIds:ids},['workspace'],'session');
 define('models.status','读取供应商及模型可用状态；不返回 Key',{},[],'read');
+define('models.imageCapabilities','读取生图模型的合法比例、分辨率、尺寸与质量；省略 model 时使用共享生图模型。规则不代表供应商已验证',{model:string},[],'read');
 define('tools.status','读取本地图像工具与主体识别组件状态',{},[],'read');
 define('canvas.compile','预览节点最终提示词和输入引用',{id:string},['id'],'read');
 define('generation.start','提交生成任务；同 requestId 不会重复提交。可能产生费用',{nodeId:string,requestId:string},['nodeId','requestId'],'network');

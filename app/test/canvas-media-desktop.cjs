@@ -116,9 +116,9 @@ app.on("browser-window-created", (_, w) => {
       await delay(100);
     };
     const select = async (label, value) => {
-      await js(
-        `{const e=document.querySelector('select[aria-label=${JSON.stringify(label)}]');e.value=${JSON.stringify(value)};e.dispatchEvent(new Event('change',{bubbles:true}))}`,
-      );
+      await js(`document.querySelector('[aria-label=${JSON.stringify(label)}]').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
+      await delay(100);
+      await js(`(()=>{const e=[...document.querySelectorAll('[data-option-value]')].find(e=>e.dataset.optionValue===${JSON.stringify(value)});if(!e)throw Error('missing option');e.click()})()`);
       await delay(100);
     };
     const fill = async (label, value) => {
@@ -152,6 +152,7 @@ app.on("browser-window-created", (_, w) => {
     };
     const imageAction = async (name, action) => {
       await click(name, ".palette-item");
+      if(action === "查看提示词") return;
       await click("图片工具");
       await click(action);
     };
@@ -184,17 +185,16 @@ app.on("browser-window-created", (_, w) => {
             r.document.unknownMedia.keep &&
             r.document.tugouCanvas.futureGraph === 42,
         );
-        await imageAction("原图A", "原图与提示词");
+        await imageAction("原图A", "查看提示词");
         await wait(
-          'document.querySelector("textarea[aria-label=素材提示词]").value',
+          'document.querySelector("textarea[aria-label=图片生成提示词]").value',
         );
         check(
           "saved prompt available after restart",
           await js(
-            'document.querySelector("textarea[aria-label=素材提示词]").value==="原始人物提示词\\n完整第二行"',
+            'document.querySelector("textarea[aria-label=图片生成提示词]").value==="原始人物提示词\\n完整第二行"',
           ),
         );
-        await click("关闭素材详情");
         await imageAction("原图A", "图片反推");
         await wait('document.querySelector(".analysis-modules")');
         check(
@@ -294,35 +294,33 @@ app.on("browser-window-created", (_, w) => {
           `tugou.save(${JSON.stringify(report.id)},${JSON.stringify(r.document)},${r.revision})`,
         );
         await reload();
-        await imageAction(generated.name, "原图与提示词");
+        await imageAction(generated.name, "查看提示词");
         await wait(
-          'document.querySelector("textarea[aria-label=素材提示词]").value',
+          'document.querySelector("textarea[aria-label=图片生成提示词]").value',
         );
         check(
           "detail uses immutable generation prompt rather than current recipe",
           await js(
-            `document.querySelector('textarea[aria-label="素材提示词"]').value===${JSON.stringify(expected)}`,
+            `document.querySelector('textarea[aria-label="图片生成提示词"]').value===${JSON.stringify(expected)}`,
           ),
         );
-        await click("复制提示词");
+        await imageAction(generated.name, "复制提示词");
         check(
           "copy preserves exact original text without touching OS clipboard",
           copied === expected,
         );
-        await click("关闭素材详情");
         await imageAction("原图A", "复制提示词");
         check("top menu copies full recorded prompt", copied === a.prompt);
-        await imageAction("原图B", "原图与提示词");
+        await imageAction("原图B", "查看提示词");
         await wait(
-          'document.querySelector("textarea[aria-label=素材提示词]").placeholder.includes("没有可读取")',
+          'document.querySelector("textarea[aria-label=图片生成提示词]").placeholder.includes("没有可读取")',
         );
         check(
-          "missing prompt is explicit and copy is disabled",
+          "missing prompt is explicit in node settings",
           await js(
-            '[...document.querySelectorAll(".ant-modal button")].find(b=>b.textContent.trim()==="复制提示词").disabled',
+            'document.querySelector("textarea[aria-label=图片生成提示词]").value===""',
           ),
         );
-        await click("关闭素材详情");
         await click("原图A", ".palette-item");
         await click("替换图片");
         await select("替换素材", b.id);
@@ -416,7 +414,7 @@ app.on("browser-window-created", (_, w) => {
         check(
           "reverse opens exact selected image without unrelated latest draft",
           await js(
-            `document.querySelector('select[aria-label="分析参考图"]').value===${JSON.stringify(a.id)}&&!document.querySelector('.analysis-modules')`,
+            `document.querySelector('[aria-label="分析参考图"]').closest('.studio-select').dataset.value===${JSON.stringify(a.id)}&&!document.querySelector('.analysis-modules')`,
           ),
         );
         await fill("分析要求", "画风、人物、宠物分别拆分");
@@ -508,21 +506,21 @@ app.on("browser-window-created", (_, w) => {
           ),
         );
         await click("关闭参考图分析");
-        await imageAction("原图A", "原图与提示词");
+        await imageAction("原图A", "查看提示词");
         await wait(
-          'document.querySelector("textarea[aria-label=素材提示词]").value',
+          'document.querySelector("textarea[aria-label=图片生成提示词]").value',
         );
         await snapshot("canvas-media-details-dark-960");
         check(
-          "detail actions and prompt fit narrow desktop",
+          "node prompt fits narrow desktop",
           await js(
-            'document.querySelector(".ant-modal").getBoundingClientRect().right<=innerWidth&&document.querySelector("textarea[aria-label=素材提示词]").getBoundingClientRect().bottom<innerHeight',
+            'document.querySelector(".canvas-inspector").getBoundingClientRect().right<=innerWidth&&document.querySelector("textarea[aria-label=图片生成提示词]").scrollWidth<=document.querySelector("textarea[aria-label=图片生成提示词]").clientWidth',
           ),
         );
-        await click("关闭素材详情");
         await click("切换浅色主题");
-        await click("素材库", "nav button");
+        await click("素材", "nav button");
         await click("预览 原图A");
+        await click("查看完整详情");
         await wait(
           'document.querySelector("textarea[aria-label=素材提示词]").value',
         );
@@ -537,11 +535,11 @@ app.on("browser-window-created", (_, w) => {
         check(
           "library reverse shares source-selected analysis",
           await js(
-            `document.querySelector('select[aria-label="分析参考图"]').value===${JSON.stringify(a.id)}`,
+            `document.querySelector('[aria-label="分析参考图"]').closest('.studio-select').dataset.value===${JSON.stringify(a.id)}`,
           ),
         );
         await click("关闭参考图分析");
-        await click("无限画布", "nav button");
+        await click("画布", "nav button");
         r = await save();
         check(
           "all original sources and opaque project fields retained",

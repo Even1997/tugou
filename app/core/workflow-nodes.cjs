@@ -102,6 +102,7 @@ function compileWorkflow(document,id){
   if(!['text','image'].includes(mode)||!Number.isInteger(count)||count<1||count>15)throw Error('生成模式或数量无效（1–15）');
   if(typeof data.size!=='string'||!(/^(auto|\d{1,5}x\d{1,5})$/.test(data.size)))throw Error('尺寸请填写宽x高或 auto');
   if(data.size!=='auto'){const [w,h]=data.size.split('x').map(Number);if(w<1||h<1||w*h>100000000)throw Error('图片尺寸需在一亿像素以内');}
+  if(mode==='image')require('./image-settings.cjs').validateImageSettings(data.model||'',data);
   for(const id of mentions)if(!seen.has(id)){if(id===node.id||!done.has(id))throw Error('提示词引用了未连接的节点');visit(id);}
   const localPrompt=sourcePrompt.replace(/@\[node:([^\]]+)\]/g,(_,id)=>{const n=graph.nodes.find(n=>n.id===id),output=n.type==='config'&&document.assets.find(a=>a.id===n.data.outputAssetId);return n.type==='recipe'?recipeTexts.get(id):n.type==='text'?n.data.text:n.type==='textgen'?(n.data.resultText||n.data.prompt||''):n.type==='module'?(n.data.binding.overrideText??n.data.binding.snapshot.text):output?.kind==='text'?(n.data.resultText??output.text??''):`【参考：${nodeName(n)||document.assets.find(a=>a.id===n.data.assetId)?.name||n.type}】`;});
   if(assembling&&localPrompt)sources.push({nodeId:node.id,name:nodeName(node),category:'other',text:localPrompt,origin:'local'});

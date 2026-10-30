@@ -5,6 +5,7 @@ const { angleRequest } = require('./canvas-view.cjs');
 
 const failure = (message) => Object.assign(new Error(message), { safeMessage: message });
 const {boundedBytes,imageExtension,requestImages}=require('./image-api.cjs');
+const {validateImageSettings}=require('./image-settings.cjs');
 async function saveImage(root, bytes, inspectImage) {
   if (!bytes.length || bytes.length > 64 * 1024 * 1024) throw failure('图片大小超出支持范围');
   const extension = imageExtension(bytes);
@@ -59,19 +60,20 @@ class GenerationService {
     if (this.tasks.list().some(t => t.context?.projectId === projectId && t.context?.nodeId === nodeId && ['queued', 'running'].includes(t.status))) throw failure('这个节点已有任务，请等待或取消');
     const settings = await this.connections.readPrivate('image');
     if (!settings.baseUrl || !settings.model || !settings.apiKey) throw failure('请先在模型连接中填写 API 地址、密钥和生图模型');
+    validateImageSettings(settings.model,compiled);
     const refs = [];
     for (const ref of compiled.references) refs.push(await referenceBytes(this.root, snapshot.assets.find(a => a.id === ref.assetId)));
-    const context = { ...extra, projectId, nodeId, model: settings.model, requestedSize: compiled.size };
+    const context = { ...extra, projectId, nodeId, model: settings.model, requestedSize: compiled.size,quality:compiled.quality||'auto' };
     if (this.tasks.list().some(t => t.context?.projectId === projectId && t.context?.nodeId === nodeId && ['queued', 'running'].includes(t.status))) throw failure('这个节点已有任务，请等待或取消');
     const task = await this.tasks.start(label, async (cancelSignal, taskId) => {
       await atomicWrite(await safePath(this.root, 'requests', `${taskId}.json`), JSON.stringify({ ...extra, projectId, nodeId, compiled, referenceAssets: snapshot.assets.filter(a => compiled.references.some(r => r.assetId === a.id)), node: snapshot.tugouCanvas.nodes.find(n => n.id === nodeId) }));
       const signal = AbortSignal.any([cancelSignal, AbortSignal.timeout(600000)]);
-      const images = await requestImages(settings, { prompt:compiled.prompt, size:compiled.size, images:refs }, signal);
+      const images = await requestImages(settings, { prompt:compiled.prompt, size:compiled.size,quality:compiled.quality, images:refs }, signal);
       const assets = [];
       for (const [i, bytes] of images.entries()) {
         signal.throwIfAborted();
         const image = await saveImage(this.root, bytes, this.inspectImage);
-        assets.push({ id: `${taskId}-${i}`, name: `${label} · ${i + 1}`, ...image, generation: { ...extra, taskId, nodeId, model: settings.model, requestedSize: compiled.size } });
+        assets.push({ id: `${taskId}-${i}`, name: `${label} · ${i + 1}`, ...image, generation: { ...extra, taskId, nodeId, model: settings.model, requestedSize: compiled.size,quality:compiled.quality||'auto' } });
       }
       signal.throwIfAborted();
       const result = { id: taskId, projectId, nodeId, createdAt: new Date().toISOString(), prompt: compiled.prompt, references: compiled.references, assets };

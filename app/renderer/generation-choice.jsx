@@ -1,10 +1,9 @@
 import {Select} from './select.jsx';
 import React,{useState} from 'react';
 import {Input,Button,ToolPopover} from './components.jsx';
-import {imageRatios,ratioOf,sizeOptions} from './generation-sizes.js';
+import {ratioOf} from './generation-sizes.js';
+import {imageCapabilities,imageSettingsError,resolutionOf,sizeFor,qualityLabels} from '../core/image-settings.cjs';
 export {sizeDescription} from './generation-sizes.js';
-
-const qualities=[['auto','自动'],['low','低'],['medium','中'],['high','高'],['standard','标准'],['hd','高清']];
 
 export function ModelChoice({value,shared,disabled,onChange,openConnection}){
   const [mode,setMode]=useState(value?'custom':'shared'),[draft,setDraft]=useState(value||'');
@@ -16,17 +15,28 @@ export function ModelChoice({value,shared,disabled,onChange,openConnection}){
   </ToolPopover>;
 }
 
-export function GenerationChoice({kind,value,disabled,onChange,'aria-label':label}){
-  const [custom,setCustom]=useState(false),size=kind==='size',current=value||'auto';
-  const options=size?sizeOptions(current).map(v=>[v,v==='auto'?'自动':v.replace('x',' × ')]):qualities;
-  const known=options.some(([v])=>v===current),ratio=ratioOf(current),editing=size&&(custom||ratio==='custom');
+export function GenerationChoice({kind,value,model='',disabled,onChange,'aria-label':label}){
+  const [customSize,setCustomSize]=useState(null),size=kind==='size',current=value||'auto';
+  const profile=imageCapabilities(model),ratio=ratioOf(current),resolution=resolutionOf(current,model);
+  const custom=profile.custom&&customSize===current;
+  const error=imageSettingsError(model,size?{size:current}:{quality:current});
   const dimensions=current.includes('x')?current.split('x'):['',''];
-  return <div className="generation-choice" style={{display:'grid',gap:10}}>
-    {size&&<div className="ratio-choices" role="group" aria-label="画面比例" data-keep-open>{[['auto',['auto']],...imageRatios,['custom',[]]].map(([id,sizes])=>{const [rw,rh]=id.includes(':')?id.split(':').map(Number):[1,1];return <button key={id} type="button" disabled={disabled} aria-pressed={editing?id==='custom':ratio===id} onClick={()=>{setCustom(id==='custom');if(id!=='custom')onChange(sizes[0]);else if(current==='auto')onChange('1024x1024');}}><i style={{width:Math.round(22*rw/Math.max(rw,rh)),height:Math.round(22*rh/Math.max(rw,rh))}}/><span>{id==='auto'?'自动':id==='custom'?'自定义':id}</span></button>;})}</div>}
-    {!editing&&<Select aria-label={label} disabled={disabled} value={current} onChange={e=>onChange(e.target.value)}>
-      {options.map(([v,text])=><option key={v} value={v}>{text}</option>)}
-      {!size&&!known&&<option value={current}>{current}（当前值）</option>}
+  const selectRatio=id=>{setCustomSize(id==='custom'?(current==='auto'?'1024x1024':current):null);if(id==='auto')onChange('auto');else if(id==='custom'){if(current==='auto')onChange('1024x1024');}else onChange(sizeFor(id,profile.resolutions.includes(resolution)?resolution:'1k',model));};
+  return <div className="generation-choice">
+    {size?<>
+      <div className="ratio-choices" role="group" aria-label="画面比例" data-keep-open>{['auto',...Object.keys(profile.presets),'custom'].map(id=>{const [rw,rh]=id.includes(':')?id.split(':').map(Number):[1,1];return <button key={id} type="button" disabled={disabled||(id==='custom'&&!profile.custom)} aria-pressed={custom?id==='custom':ratio===id} onClick={()=>selectRatio(id)}><i aria-hidden="true" style={{width:Math.round(22*rw/Math.max(rw,rh)),height:Math.round(22*rh/Math.max(rw,rh))}}/><span>{id==='auto'?'自动':id==='custom'?'自定义':id}</span></button>;})}</div>
+      <div className="generation-resolution"><span>分辨率{(custom||resolution==='custom')?' · 自定义':''}</span><div className="resolution-choices" role="group" aria-label={label.replace('尺寸','分辨率')} data-keep-open>
+        {['auto',...profile.resolutions].map(tier=><button key={tier} type="button" disabled={disabled} aria-pressed={!custom&&resolution===tier} data-resolution={tier} onClick={()=>{setCustomSize(null);onChange(tier==='auto'?'auto':sizeFor(profile.presets[ratio]?ratio:'1:1',tier,model));}}>{tier==='auto'?'自动':tier.toUpperCase()}</button>)}
+      </div></div>
+      <div className="generation-dimensions">{['宽度','高度'].map((name,index)=><div key={name}><span>{name}</span><Input aria-label={`${label}（${name}）`} aria-invalid={!!error} status={error?'error':undefined} type="number" min={1} max={profile.limits?.maxEdge||99999} step={profile.limits?.step||1} required suffix="px" disabled={disabled||current==='auto'||!profile.custom} value={dimensions[index]||''} onChange={e=>{const next=dimensions.map((v,i)=>i===index?e.target.value:v).join('x');setCustomSize(next);onChange(next);}}/></div>)}</div>
+      <small className="muted">分辨率为档位，实际输出请求以宽高为准。</small>
+      {!profile.custom&&<small className="muted">当前模型使用固定尺寸。</small>}
+      {profile.limits&&Number(dimensions[0])*Number(dimensions[1])>2560*1440&&<small className="muted">此尺寸属于模型实验范围。</small>}
+    </>:<Select aria-label={label} aria-invalid={!!error} status={error?'error':undefined} disabled={disabled} value={current} onChange={e=>onChange(e.target.value)}>
+      {profile.qualityValues.map(q=><option key={q} value={q}>{qualityLabels[q]||q}</option>)}
+      {!profile.qualityValues.includes(current)&&<option value={current} disabled={profile.known}>{qualityLabels[current]||current}{profile.known?'（当前值不可用）':'（未验证）'}</option>}
     </Select>}
-    {editing&&<div className="generation-dimensions">{['宽度','高度'].map((name,index)=><div key={name}><span>{name}</span><Input aria-label={`${label}（${name}）`} type="number" min={1} max={99999} step={1} required suffix="px" disabled={disabled} value={dimensions[index]||''} onChange={e=>onChange(dimensions.map((v,i)=>i===index?e.target.value:v).join('x'))}/></div>)}</div>}
+    {error&&<small className="node-warning" role="alert">{error}</small>}
+    {size&&!profile.known&&<small className="muted">{profile.notice}</small>}
   </div>;
 }

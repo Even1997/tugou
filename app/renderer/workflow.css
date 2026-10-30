@@ -184,6 +184,14 @@
 }
 .recipe-footer > .ant-btn-primary { flex:1; width:auto; height:44px; padding:0 16px; }
 .generation-choice .ratio-choices { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+.generation-choice { display:grid; gap:10px; min-width:0; }
+.generation-field { display:grid; gap:6px; min-width:0; }
+.generation-choice .generation-resolution { display:grid; gap:6px; }
+.resolution-choices { display:flex; gap:6px; }
+.resolution-choices button { flex:1; height:34px; border:1px solid var(--line); border-radius:6px; color:var(--muted); background:var(--surface); cursor:pointer; }
+.resolution-choices button[aria-pressed=true] { border-color:var(--accent); color:var(--accent); background:var(--accent-bg); }
+.resolution-choices button:disabled { opacity:.6; cursor:default; }
+.generation-choice small { font-size:11px; line-height:1.6; }
 .generation-dimensions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .generation-dimensions > div { min-width:0; display:grid; gap:6px; }
 .generation-dimensions .ant-input-suffix { color:var(--muted); font-size:12px; }

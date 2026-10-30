@@ -94,6 +94,7 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     }
     if(name==='project.list')return projects.list();
     if(name==='models.status')return connections.listSuppliers();
+    if(name==='models.imageCapabilities')return require('./image-settings.cjs').imageCapabilities(input.model||(await connections.publicSettings()).model||'');
     if(name.startsWith('models.')){
       const result=await require('./automation-models.cjs').execute(connections,name,input,commands);
       if(command.effect==='configuration'){

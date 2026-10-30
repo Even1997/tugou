@@ -25,7 +25,18 @@ function imageExtension(bytes) {
     return "webp";
   throw failure("模型没有返回有效的 PNG、JPEG 或 WebP 图片");
 }
+function outputPrompt({ prompt, size }) {
+  if (!size || size === "auto") return prompt;
+  const [width, height] = size.split("x").map(Number);
+  let a = width, b = height;
+  while (b) [a, b] = [b, a % b];
+  const orientation = width === height ? "方形" : width > height ? "横版" : "竖版";
+  // Add only on the wire so saved prompts and explicit retries keep the user text.
+  return `${prompt}\n\n输出画幅要求（仅用于构图，不要在图中绘制这些文字）：采用 ${width / a}:${height / a} ${orientation}构图，目标输出尺寸为 ${width} × ${height} 像素。`;
+}
 async function requestImages(settings, request, signal) {
+  require('./image-settings.cjs').validateImageSettings(settings.model,request);
+  const prompt = outputPrompt(request);
   const refs = request.images || [];
   const endpoint =
     settings.baseUrl.replace(/\/$/, "") +
@@ -36,7 +47,7 @@ async function requestImages(settings, request, signal) {
   if (refs.length) {
     body = new FormData();
     body.set("model", settings.model);
-    body.set("prompt", request.prompt);
+    body.set("prompt", prompt);
     body.set("size", request.size);
     body.set("n", String(request.count||1));
     if(request.quality&&request.quality!=='auto')body.set('quality',request.quality);
@@ -58,7 +69,7 @@ async function requestImages(settings, request, signal) {
     headers["Content-Type"] = "application/json";
     body = JSON.stringify({
       model: settings.model,
-      prompt: request.prompt,
+      prompt,
       size: request.size,
       n: request.count||1,
       ...(request.quality&&request.quality!=='auto'?{quality:request.quality}:{}),

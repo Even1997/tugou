@@ -5,13 +5,13 @@ import {modeOf,retiredMode,inputsOf,nodeName} from '../core/workflow-nodes.cjs';
 import {MediaPreview} from './media-preview.jsx';
 import {GenerationChoice} from './generation-choice.jsx';
 
-export function WorkflowSettings({node,document,compiled,patch,run,openScene,disabled,task}){
+export function WorkflowSettings({node,document,compiled,patch,run,openScene,disabled,task,sharedModel}){
   const d={...node.data,name:nodeName(node)},mode=modeOf(node),inputs=inputsOf(document.tugouCanvas,node);
   if(retiredMode(node))return <p className="muted">视频和音频生成已移除，已有结果保留在工程中。</p>;
   const compact=['config','image','panorama'].includes(node.type),busy=disabled||['queued','running'].includes(task?.status);
   const inherited=!!compiled?.parameterSourceId,settings=inherited?compiled:d;
   const field=(label,key,type='text')=><label key={key}>{label}<Input aria-label={label} type={type} value={(key==='name'?d:settings)[key]??''} disabled={busy||(inherited&&key!=='name')} onChange={e=>patch({[key]:type==='number'?Number(e.target.value):e.target.value})}/></label>;
-  const choice=(label,key)=><label>{label}<GenerationChoice kind={key} mode={mode} aria-label={label} value={settings[key]} disabled={disabled||inherited||['queued','running'].includes(task?.status)} onChange={value=>patch({[key]:value})}/></label>;
+  const choice=(label,key)=><div className="generation-field"><span>{label}</span><GenerationChoice kind={key} model={settings.model||sharedModel} mode={mode} aria-label={label} value={settings[key]} disabled={disabled||inherited||['queued','running'].includes(task?.status)} onChange={value=>patch({[key]:value})}/></div>;
   const move=(index,step)=>{const ids=inputs.map(e=>e.source);[ids[index],ids[index+step]]=[ids[index+step],ids[index]];patch({inputOrder:ids});};
   const outputs=(d.outputAssetIds||[d.outputAssetId]).map(id=>document.assets.find(a=>a.id===id)).filter(Boolean);
   const basics=<>

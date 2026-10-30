@@ -44,7 +44,7 @@ app.on('browser-window-created',(_,w)=>{
       check('the actual selected result is compiled into the next node',compiled.references.length===1&&compiled.references[0].assetId===assets[2].id);
       await click('定位引入 人物参考',`[data-id="${desk.id}"] button`);await delay(250);check('source locate selects the original node',await js('document.querySelector("[data-id=picture]").classList.contains("selected")'));
       check('selected image exposes its preview and replacement toolbar',await js('getComputedStyle(document.querySelector(".image-node-tools")).visibility==="visible"&&!!document.querySelector(".image-node-tools [aria-label=替换图片]")'));
-      await click('预览素材','[data-id=picture] button');await wait('document.body.innerText.includes("素材详情")');await click('关闭素材详情');
+      await click('预览素材','[data-id=picture] button');await wait('document.querySelector(".canvas-image-viewer")');await click('关闭图片查看器');
       await select(panorama.id);await click('环视全景',`[data-id="${panorama.id}"] button`);await wait('document.querySelector("[data-scene-view] canvas")');await snapshot('integrated-panorama');await click('关闭全景查看');
       check('panorama opens the existing immersive viewer',!await js('Boolean(document.querySelector("[data-scene-view]"))'));
       w.setSize(1280,800);await select(desk.id);await click('适应画布');await delay(200);await snapshot('integrated-compact');
