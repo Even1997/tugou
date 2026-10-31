@@ -2,6 +2,13 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {Preferences,languageFor,validate}=require('../core/preferences.cjs');
 const {Updates}=require('../core/updates.cjs');
 async function folder(t){const p=await fs.mkdtemp(path.join(os.tmpdir(),'tugou-settings-'));t.after(()=>fs.rm(p,{recursive:true,force:true}));return p;}
+test('image concurrency defaults to eight and persists only integers from one to thirty-two',async t=>{
+  const p=await folder(t),s=new Preferences(p);await s.init();assert.equal(s.value.imageConcurrency,8);
+  await fs.writeFile(s.file,JSON.stringify({theme:'light'}));await s.init();assert.equal(s.value.imageConcurrency,8);assert.equal(s.value.theme,'light');
+  for(const imageConcurrency of [1,8,16,32]){await s.save({imageConcurrency});const restored=new Preferences(p);await restored.init();assert.equal(restored.value.imageConcurrency,imageConcurrency);}
+  for(const imageConcurrency of [0,33,1.5,'8',null,NaN,Infinity])assert.throws(()=>s.save({imageConcurrency}),/INVALID_SETTINGS/);
+  assert.equal(s.value.imageConcurrency,32);assert.equal(JSON.parse(await fs.readFile(s.file)).imageConcurrency,32);
+});
 test('preferences persist all five languages and preserve concurrent partial updates',async t=>{
   const p=await folder(t),s=new Preferences(p);await s.init();await Promise.all([s.save({theme:'light'}),s.save({zoom:125}),s.save({notifyTasks:false})]);
   for(const language of ['zh-CN','zh-TW','en','ja','ko']){await s.save({language});const restored=new Preferences(p);await restored.init();assert.equal(restored.value.language,language);assert.equal(restored.value.theme,'light');assert.equal(restored.value.zoom,125);assert.equal(restored.value.notifyTasks,false);}

@@ -1,6 +1,7 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {Button,FormDialog} from './components.jsx';
 import {usePreferences} from './preferences.jsx';
+import {ReleaseNotes} from './release-notes.jsx';
 import './update-prompt.css';
 
 const reminderKey='tugou.update-reminder';
@@ -47,7 +48,7 @@ export function UpdatePrompt(){
   return <FormDialog title={t(confirm?'installConfirm':ready?'updateReadyTitle':'updateFoundTitle')} className="update-prompt" close={()=>!locked&&close()}>
     <div className="update-prompt-version"><img src="brand/logo.png" alt=""/><div><strong>土狗 · v{current.version||opened.version}</strong><span>v{current.currentVersion} → v{current.version||opened.version}</span></div></div>
     {confirm?<p>{t('installHint')}</p>:<>
-      <div className="update-prompt-notes"><strong>{t('releaseNotes')}</strong><pre>{current.notes||t('updateNoNotes')}</pre></div>
+      <div className="update-prompt-notes"><strong>{t('releaseNotes')}</strong><ReleaseNotes text={current.notes||t('updateNoNotes')} onLink={url=>window.tugou.settings('releaseLink',url).catch(()=>setFailure('updateFailed'))}/></div>
       {dmg&&<p className="muted">{t(ready?'dmgInstallHint':'dmgUpdateHint')}</p>}
       {downloading&&<div className="update-prompt-progress" role="status"><span>{t('downloading')} · {Math.floor(current.percent||0)}%</span><progress aria-label={t('downloading')} max="100" value={current.percent||0}/></div>}
       {!downloading&&!ready&&<p className="muted">{t('updateLaterHint')}</p>}

@@ -42,7 +42,8 @@ class WorkflowService{
       await savedRequest;cancelSignal.throwIfAborted();
       const signal=AbortSignal.any([cancelSignal,AbortSignal.timeout(600000)]),assets=[];
       const journal=this.tasks.tasks.find(t=>t.id===id);
-      const stage=async value=>{signal.throwIfAborted();journal.stage=value;await this.tasks.persist();};
+      // A provider deadline must not discard other images already saved; user cancellation still stops publishing.
+      const stage=async value=>{cancelSignal.throwIfAborted();journal.stage=value;await this.tasks.persist();};
       await stage('generating');
       const uri=r=>`data:${r.mimeType};base64,${r.bytes.toString('base64')}`;
       if(c.mode==='text'){
@@ -52,17 +53,25 @@ class WorkflowService{
         const text=responses?(payload.output_text||payload.output?.flatMap(o=>o.content||[]).filter(c=>c.type==='output_text').map(c=>c.text).join('\n')):payload.choices?.[0]?.message?.content;if(typeof text!=='string'||!text.trim())throw fail('文本模型未返回文本');
         assets.push({kind:'text',text,name:(label||'文本')+' · 结果'});
       }else if(c.mode==='image'){
-        const images=await requestImages(settings,{prompt:c.prompt,size:c.size,quality:c.quality,count:c.count,images:refs.map(r=>r.bytes)},signal);
+        const outcomes=await Promise.allSettled(Array.from({length:c.count},async()=>{
+          const images=await requestImages(settings,{prompt:c.prompt,size:c.size,quality:c.quality,count:1,images:refs.map(r=>r.bytes)},signal),saved=[];
+          for(const bytes of images){signal.throwIfAborted();saved.push({...await saveImage(this.root,bytes,this.inspectImage),kind:'image',projection:c.projection});}
+          return saved;
+        }));
+        cancelSignal.throwIfAborted();
+        const failures=outcomes.filter(r=>r.status==='rejected');
+        if(failures.length===outcomes.length)throw failures[0].reason;
+        assets.push(...outcomes.filter(r=>r.status==='fulfilled').flatMap(r=>r.value));
+        if(failures.length)journal.message=`已生成 ${outcomes.length-failures.length}/${c.count} 张，${failures.length} 张失败；成功结果已保留，未自动重试`;
         await stage('saving');
-        for(const bytes of images){signal.throwIfAborted();assets.push({...await saveImage(this.root,bytes,this.inspectImage),kind:'image',projection:c.projection});}
       }
-      signal.throwIfAborted();
+      cancelSignal.throwIfAborted();
       await stage('saving');
       assets.forEach((a,i)=>Object.assign(a,{id:`${id}-${i}`,name:`${label||'生成'} · ${i+1}`,generation:{taskId:id,nodeId,model,requestedSize:c.size,quality:c.quality||'auto',prompt:c.prompt}}));
       if(c.mode==='image'){
         journal.actualSizes=assets.map(a=>`${a.width}x${a.height}`);
         const warnings=[...new Set(assets.map(a=>imageResultWarning(c.size,a.width,a.height)).filter(Boolean))];
-        if(warnings.length)journal.message=warnings.join('；');
+        if(warnings.length)journal.message=[journal.message,...warnings].filter(Boolean).join('；');
       }
       const result={id,kind:'workflow',projectId,nodeId,mode:c.mode,createdAt:new Date().toISOString(),prompt:c.prompt,references:c.references,assets};
       await atomicWrite(await safePath(this.root,'results',id+'.json'),JSON.stringify(result));return id;

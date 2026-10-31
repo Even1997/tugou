@@ -35,7 +35,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   await click('开始生成',desk);await wait('document.querySelectorAll(".generation-output-placeholder").length===2');await click('适应画布');await sleep(350);
   let t=await latest();check('task journals output count and real stage',t.context.count===2&&t.stage==='generating');
   const ids=await js('[...document.querySelectorAll(".generation-output-placeholder")].map(e=>e.closest(".react-flow__node").dataset.id)');
-  check('two pending nodes appear before server responds',pending.length===1&&ids.length===2);await click('定位结果',desk);await sleep(250);check('desk can locate a pending result',await js('document.querySelector(".react-flow__node.selected .generation-output-placeholder")!==null'));await click('适应画布');await sleep(200);
+  check('two independent requests and pending nodes appear before server responds',pending.length===2&&pending.every(p=>p.count===1)&&ids.length===2);await click('定位结果',desk);await sleep(250);check('desk can locate a pending result',await js('document.querySelector(".react-flow__node.selected .generation-output-placeholder")!==null'));await click('适应画布');await sleep(200);
   check('one edge connects each pending result',await js('[...document.querySelectorAll(".react-flow__edge")].filter(e=>e.dataset.id.startsWith("output-")).length===2'));
   check('indeterminate progress has no invented percentage',await js('[...document.querySelectorAll("[role=progressbar]")].every(e=>!e.hasAttribute("aria-valuenow"))'));
   await sleep(1200);check('elapsed time advances while waiting',await js('[...document.querySelectorAll(".generation-progress")].some(e=>/[1-9] 秒/.test(e.textContent))'));await shot('generating');

@@ -1,10 +1,12 @@
 const fs = require('node:fs/promises');
 const { randomUUID } = require('node:crypto');
 const { atomicWrite, safePath } = require('./storage.cjs');
+const pLimit = require('p-limit').default;
 
 // A persisted running task is never resubmitted automatically after restart.
 class TaskQueue {
-  constructor(root) { this.root = root; this.tasks = []; this.controllers = new Map(); this.completions = new Map(); this.pending = Promise.resolve(); this.execution = Promise.resolve(); }
+  constructor(root) { this.root = root; this.tasks = []; this.controllers = new Map(); this.completions = new Map(); this.pending = Promise.resolve(); this.execution = Promise.resolve(); this.serial = Promise.resolve(); this.images = pLimit(require('./preference-values.cjs').defaults.imageConcurrency); }
+  setImageConcurrency(value) { this.images.concurrency = value; }
   async init() {
     this.file = await safePath(this.root, 'tasks.json');
     try { this.tasks = JSON.parse(await fs.readFile(this.file, 'utf8')); }
@@ -28,7 +30,7 @@ class TaskQueue {
     this.tasks.push(task);
     this.controllers.set(task.id, controller);
     try { await this.persist(); } catch (error) { this.controllers.delete(task.id); task.status = 'failed'; throw error; }
-    const completion = this.execution.then(async () => {
+    const executeTask = async () => {
       try {
         if (controller.signal.aborted) return;
         task.status = 'running'; task.startedAt = new Date().toISOString();
@@ -46,10 +48,14 @@ class TaskQueue {
         task.finishedAt = new Date().toISOString();
         await this.persist();
       }
-    });
-    this.execution = completion.catch(() => {});
-    this.completions.set(task.id, this.execution);
-    this.execution.then(() => this.completions.delete(task.id));
+    };
+    const image = (context.kind === 'workflow' && context.mode === 'image') || ['generation','angle'].includes(context.kind);
+    const completion = image ? this.images(executeTask) : this.serial.then(executeTask);
+    const settled = completion.catch(() => {});
+    if (!image) this.serial = settled;
+    this.execution = Promise.all([this.execution, settled]).then(() => {});
+    this.completions.set(task.id, settled);
+    settled.then(() => this.completions.delete(task.id));
     return { id: task.id, completion };
   }
   async cancel(id) {

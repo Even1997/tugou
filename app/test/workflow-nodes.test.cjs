@@ -102,11 +102,12 @@ test('image and text generation: parameters, result persistence, cancellation an
     const task=await service.start(record.id,document,node.id);await tasks.execution;
     assert.equal(tasks.list().find(t=>t.id===task.id).status,'completed',type);
     const result=JSON.parse(await fs.readFile(path.join(profile,'results',task.id+'.json'),'utf8'));document=mergeResults(document,[result]);
+    assert.equal(result.assets.length,type==='textgen'?1:2,type);
     assert.ok(document.tugouCanvas.nodes.find(n=>n.id===node.id).data.outputAssetId);
     assert.deepEqual(mergeResults(document,[result]),document);
     assert.ok(!(await fs.readFile(path.join(profile,'requests',task.id+'.json'),'utf8')).includes(settings.apiKey));
   }
-  assert.equal(JSON.parse(requests.find(r=>r.url.endsWith('/images/generations')).raw).n,2);
+  const images=requests.filter(r=>r.url.endsWith('/images/generations'));assert.equal(images.length,6);assert.ok(images.every(r=>JSON.parse(r.raw).n===1));
   assert.ok(!requests.some(r=>/audio|videos/.test(r.url)));
   const node=workflowNode('textgen',{x:0,y:0});node.data.prompt='取消';document.tugouCanvas.nodes.push(node);hold=true;
   const task=await service.start(record.id,document,node.id);while(!release)await new Promise(r=>setTimeout(r,10));

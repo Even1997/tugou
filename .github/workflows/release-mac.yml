@@ -76,6 +76,16 @@ jobs:
           TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
           TUGOU_PAGE_QA_OUT: test-results/pages-native
         run: node_modules/.bin/electron test/pages-desktop.cjs
+      - name: Test packaged image concurrency, settings and process restart
+        env:
+          TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+        run: |
+          node_modules/.bin/electron test/generation-concurrency-desktop.cjs
+          node_modules/.bin/electron test/generation-concurrency-desktop.cjs --reopen
+      - name: Test packaged release notes, safe links and update prompts
+        env:
+          TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+        run: node_modules/.bin/electron test/update-prompt-desktop.cjs
       - name: Launch actual packaged executable with isolated profile
         run: |
           # macOS /var is a symlink; the app deliberately rejects linked data paths.
@@ -123,6 +133,10 @@ jobs:
             app/test-results/pages-native/*.png
             app/test-results/comparison-view/*.json
             app/test-results/comparison-view/*.png
+            app/test-results/generation-concurrency/*.json
+            app/test-results/generation-concurrency/*.png
+            app/test-results/update-prompt/*.json
+            app/test-results/update-prompt/*.png
           retention-days: 14
   publish:
     if: inputs.tag != ''

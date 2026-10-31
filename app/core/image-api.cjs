@@ -1,5 +1,7 @@
 const failure = (message) =>
   Object.assign(new Error(message), { safeMessage: message });
+const imageRequests = require('p-limit').default(require('./preference-values.cjs').defaults.imageConcurrency);
+function setImageConcurrency(value) { imageRequests.concurrency = value; }
 async function boundedBytes(response, limit) {
   if (Number(response.headers.get("content-length")) > limit)
     throw failure("模型返回的数据过大，未入库");
@@ -35,6 +37,15 @@ function outputPrompt({ prompt, size }) {
   return `${prompt}\n\n输出画幅要求（仅用于构图，不要在图中绘制这些文字）：采用 ${width / a}:${height / a} ${orientation}构图，目标输出尺寸为 ${width} × ${height} 像素。`;
 }
 async function requestImages(settings, request, signal) {
+  signal = AbortSignal.any([signal]);
+  signal.throwIfAborted();
+  let abort;
+  const cancelled = new Promise((_,reject) => { abort = () => reject(signal.reason); signal.addEventListener('abort',abort,{once:true}); });
+  try {
+    return await Promise.race([imageRequests(() => { signal.throwIfAborted(); return sendImages(settings,request,signal); }),cancelled]);
+  } finally { signal.removeEventListener('abort',abort); }
+}
+async function sendImages(settings, request, signal) {
   require('./image-settings.cjs').validateImageSettings(settings.model,request);
   const prompt = outputPrompt(request);
   const refs = request.images || [];
@@ -135,4 +146,4 @@ async function requestImages(settings, request, signal) {
   }
   return images;
 }
-module.exports = { boundedBytes, imageExtension, requestImages };
+module.exports = { boundedBytes, imageExtension, requestImages, setImageConcurrency };

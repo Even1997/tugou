@@ -5,6 +5,7 @@ const { angleRequest } = require('./canvas-view.cjs');
 
 const failure = (message) => Object.assign(new Error(message), { safeMessage: message });
 const {boundedBytes,imageExtension,requestImages}=require('./image-api.cjs');
+const imageWrites = require('p-limit').default(1);
 const {validateImageSettings}=require('./image-settings.cjs');
 async function saveImage(root, bytes, inspectImage) {
   if (!bytes.length || bytes.length > 64 * 1024 * 1024) throw failure('图片大小超出支持范围');
@@ -13,7 +14,9 @@ async function saveImage(root, bytes, inspectImage) {
   const dimensions = inspectImage(bytes);
   if (!dimensions.width || !dimensions.height || dimensions.width * dimensions.height > 100000000) throw failure('图片无效或超过一亿像素');
   const resource = `${hash(bytes)}.${extension}`;
-  await atomicWrite(await safePath(root, 'resources', resource), bytes);
+  const file = await safePath(root, 'resources', resource);
+  // Concurrent responses can contain identical bytes; keep Windows resource replacement serial.
+  await imageWrites(() => atomicWrite(file, bytes));
   return { resource, ...dimensions, bytes: bytes.length };
 }
 async function referenceBytes(root, asset) {
@@ -63,7 +66,7 @@ class GenerationService {
     validateImageSettings(settings.model,compiled);
     const refs = [];
     for (const ref of compiled.references) refs.push(await referenceBytes(this.root, snapshot.assets.find(a => a.id === ref.assetId)));
-    const context = { ...extra, projectId, nodeId, model: settings.model, requestedSize: compiled.size,quality:compiled.quality||'auto' };
+    const context = { ...extra, kind:extra.kind||'generation', projectId, nodeId, model: settings.model, requestedSize: compiled.size,quality:compiled.quality||'auto' };
     if (this.tasks.list().some(t => t.context?.projectId === projectId && t.context?.nodeId === nodeId && ['queued', 'running'].includes(t.status))) throw failure('这个节点已有任务，请等待或取消');
     const task = await this.tasks.start(label, async (cancelSignal, taskId) => {
       await atomicWrite(await safePath(this.root, 'requests', `${taskId}.json`), JSON.stringify({ ...extra, projectId, nodeId, compiled, referenceAssets: snapshot.assets.filter(a => compiled.references.some(r => r.assetId === a.id)), node: snapshot.tugouCanvas.nodes.find(n => n.id === nodeId) }));

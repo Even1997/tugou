@@ -58,4 +58,8 @@ updateBackground:['后台下载','背景下載','Download in background','バッ
 updateNoNotes:['此版本未提供更新说明。','此版本未提供更新說明。','No release notes provided.','リリースノートはありません。','릴리스 노트가 없습니다.'],
 updateLaterHint:['稍后提醒将在 24 小时后的下次检查时再次提示，也可随时到设置中更新。','稍後提醒會在 24 小時後的下次檢查再次提示，也可隨時至設定更新。','Reminders resume on the next check after 24 hours. You can also update anytime in Settings.','24 時間後の次回チェックで再通知します。設定からいつでも更新できます。','24시간 후 다음 확인 시 다시 알립니다. 설정에서 언제든 업데이트할 수 있습니다.'],
 });
+Object.assign(rows,{
+imageConcurrency:['图片生成并发数','圖片生成並行數','Concurrent image requests','画像生成の同時リクエスト数','동시 이미지 생성 요청 수'],
+imageConcurrencyHint:['所有生成台和 MCP 共用，保存立即生效。调低后已发出的请求继续完成；请按供应商限额设置。','所有生成台與 MCP 共用，儲存立即生效。調低後已送出的請求繼續完成；請依供應商限額設定。','Shared by all generation desks and MCP. Changes apply immediately. Lowering the limit lets active requests finish. Match your provider’s limits.','すべての生成台と MCP で共有し、保存後すぐに適用します。上限を下げても実行中のリクエストは完了まで続行します。プロバイダーの制限に合わせてください。','모든 생성대와 MCP가 공유하며 저장 즉시 적용됩니다. 한도를 낮춰도 실행 중인 요청은 완료됩니다. 공급업체 한도에 맞게 설정하세요.'],
+});
 export const messages=Object.fromEntries(Object.keys(languages).map((locale,i)=>[locale,Object.fromEntries(Object.entries(rows).map(([key,value])=>[key,value[i]]))]));

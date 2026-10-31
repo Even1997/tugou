@@ -14,6 +14,12 @@
 
 ## 开发文档
 
+- [生图并发调度与桌面／MCP 验收](engineering/generation-concurrency.md)
+- [更新弹窗与说明排版、安全校验](engineering/update-prompt.md)
+
+- [v0.8.7 发布说明](releases/v0.8.7.md)
+- [v0.8.7 发布验收](engineering/release-v0.8.7.md)
+
 - [v0.8.6 发布说明](releases/v0.8.6.md)
 - [v0.8.6 发布验收](engineering/release-v0.8.6.md)
 

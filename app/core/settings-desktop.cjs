@@ -2,6 +2,7 @@ const fs=require('node:fs/promises'),path=require('node:path');
 const {Updates,RELEASES}=require('./updates.cjs');
 const {atomicWrite}=require('./storage.cjs');
 const {clientConfig,clientFormats}=require('./mcp-client-config.cjs');
+const {setImageConcurrency}=require('./image-api.cjs');
 async function directorySize(directory){let total=0;try{for(const entry of await fs.readdir(directory,{withFileTypes:true})){if(entry.isSymbolicLink())continue;const file=path.join(directory,entry.name);if(entry.isDirectory())total+=await directorySize(file);else if(entry.isFile())total+=(await fs.stat(file)).size;}}catch(e){if(e.code!=='ENOENT')throw e;}return total;}
 async function registerSettings({app,window,handle,preferences,projects,fonts,tasks,isDirty,isBusy,enableMcp,disableMcp,mcpStatus,prepareMcpUpdate,updater,refreshShortcuts}){
   const {shell,Notification}=require('electron'),profile=app.getPath('userData'),root=path.join(profile,'workspace');
@@ -13,15 +14,23 @@ async function registerSettings({app,window,handle,preferences,projects,fonts,ta
     beforeInstall:prepareMcpUpdate,
     emit:state=>{if(!window.isDestroyed())window.webContents.send('tugou:update-state',state);}});
   await updates.init();
+  const applyConcurrency=value=>{setImageConcurrency(value);tasks.setImageConcurrency(value);};
+  applyConcurrency(preferences.value.imageConcurrency);
   let storageOperation;
   handle('settings',async(action,payload)=>{
     if(action==='get')return {preferences:{...preferences.value},locale:app.getLocale(),version:require('../package.json').version,platform:process.platform,arch:process.arch,dataDir:root};
-    if(action==='save'){const value=await preferences.save(payload);window.webContents.setZoomFactor(value.zoom/100);if(payload.shortcuts)refreshShortcuts?.();return value;}
+    if(action==='save'){const value=await preferences.save(payload);applyConcurrency(value.imageConcurrency);window.webContents.setZoomFactor(value.zoom/100);if(payload.shortcuts)refreshShortcuts?.();return value;}
     if(action==='shortcutCapture'){if(typeof payload!=='boolean')throw Error('INVALID_SETTINGS');window.webContents.setIgnoreMenuShortcuts(payload);return true;}
     if(action==='storage')return {bytes:await directorySize(root),cacheBytes:await window.webContents.session.getCacheSize(),dataDir:root};
     if(action==='clearCache'){if(!storageOperation)storageOperation=window.webContents.session.clearCache().finally(()=>{storageOperation=null;});await storageOperation;return true;}
     if(action==='openFolder'){const error=await shell.openPath(root);if(error)throw Error('OPEN_FOLDER_FAILED');return true;}
     if(action==='releasePage'||action==='sourcePage'){await shell.openExternal(action==='releasePage'?RELEASES:'https://github.com/Even1997/tugou');return true;}
+    if(action==='releaseLink'){
+      if(typeof payload!=='string')throw Error('INVALID_RELEASE_LINK');
+      const url=new URL(payload);
+      if(url.origin!=='https://github.com'||url.username||url.password||!/^\/Even1997\/tugou(?:\/|$)/i.test(url.pathname))throw Error('INVALID_RELEASE_LINK');
+      await shell.openExternal(url.href);return true;
+    }
     if(action==='mcpStatus')return mcpStatus();
     if(action==='mcpEnable'){if(typeof payload!=='boolean')throw Error('INVALID_SETTINGS');if(payload)await enableMcp();else await disableMcp();return mcpStatus();}
     if(action==='mcpConfig'||action==='mcpConnection'){

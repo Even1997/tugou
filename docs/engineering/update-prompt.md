@@ -7,12 +7,24 @@
 - 稍后提醒按版本及阶段记录 24 小时，刷新后保留；新的版本或后台下载完成可再次提示。手动检查不受稍后提醒限制。
 - 下载进度来自更新器实际事件，允许关闭弹窗并继续下载。失败可重新检查后重试。
 - Windows 下载完成后，点击安装还需再次确认；现有未保存内容、任务、编辑状态及落盘保护继续生效。Mac 仅打开已校验的 DMG，不自动退出或替换应用。
-- 更新说明作为纯文本渲染，不执行 HTML；说明独立滚动，底部操作保持可见，适配现有五种语言与深浅主题。
+- 更新说明统一渲染 HTML、Markdown 和纯文本，保留标题、列表、表格、代码及换行；说明独立滚动，底部操作保持可见，适配现有五种语言与深浅主题。
 
-## 验证方式
+## HTML 原样显示修复（未发布）
+
+Windows electron-updater 的 GitHubProvider 从 Atom feed 读取已转换的 HTML；Mac 控制器读取 Release body 的 Markdown。原来两处直接使用 pre 文本节点，导致标签或 Markdown 符号可见。后端传输和更新状态保持原样，两处界面共用 `app/renderer/release-notes.jsx`。
+
+使用 [Marked](https://marked.js.org/#usage) 处理 Markdown／HTML，再由 [DOMPurify](https://github.com/cure53/DOMPurify) 按静态排版标签与属性白名单清理。禁止外部图片、SVG、iframe、样式、事件、表单和危险 URI；不放宽现有 CSP。仅保留 `https://github.com/Even1997/tugou` 及其子路径的链接，点击后通过设置 IPC 交给系统浏览器；主进程再次验证来源、仓库路径及无用户凭证，不接受 file、javascript、http、其他站点或其他仓库。
+
+新增 marked 18.1.2、dompurify 3.4.17 为锁定的前端构建依赖，第三方许可由现有构建收集流程纳入。全依赖与运行时审计均为 0 已知漏洞（证据 `app/test-results/release-notes-audit.json`、`release-notes-runtime-audit.json`）。渲染结果只在说明文本变化时重新解析，不随下载百分比重复处理；输入沿用核心层 20,000 字符上限。与 v0.8.6 渲染产物相比，JS 增加 81,559 字节、CSS 增加 1,338 字节；没有引入运行时 CDN。
+
+`app/test/update-prompt-desktop.cjs` 扩为 46 项隔离原生窗口检查：HTML／Markdown／纯文本、弹窗和设置页、列表／表格／换行、链接正反例、恶意脚本／样式／媒体、长内容滚动、下载状态、提醒与未保存内容保护、五语言和深浅主题。报告 `app/test-results/update-prompt/report.json`，截图在同目录。故意输入的两类恶意 CSS 会被 CSP 拦截，按已知 SHA256 记录在 blockedStyles；其余渲染错误仍导致失败，未关闭或忽略 CSP。首次 45 项通过后因把预期拦截算作渲染错误而失败，已分离记录，未降低 DOM 安全断言。最终 46 项全部通过，54 次已知恶意样式 CSP 拦截、0 次意外渲染错误；深浅主题及窄窗口截图已查看。
+
+当前生产安装包 v0.8.6 已发布，本轮修复没有替换任何旧附件，也没有重启用户实例。下一补丁版安装后才对安装客户端生效；Mac 模式目前在 Windows 原生 Electron 中检查，不能等同于 macOS 实机验收。
+
+## 既有更新控制器验证（本轮未重复）
 
 1. `app/test/settings.test.cjs` 与 `app/test/mac-dmg-update.test.cjs`：19 项通过，覆盖节流、自动下载开关、安装保护、下载校验、Mac 两架构资源选择及 MCP 安装交接。
-2. `app/test/update-prompt-desktop.cjs`：30 项通过，隔离 Electron 窗口与真实 IPC，注入更新器事件。实际鼠标点击弹窗，检查自动发现、稍后提醒与刷新持久化、手动检查、失败重试、进度、后台完成、自动下载延迟响应不重复弹窗、Windows 确认与未保存保护、Mac 入口、五语言窄窗口和状态保留，渲染错误为零。源码路径构建到 `app/test-results/update-prompt/dist`，报告与截图在同目录的上一级。
+2. 原先 `app/test/update-prompt-desktop.cjs`：30 项通过，隔离 Electron 窗口与真实 IPC，注入更新器事件。实际鼠标点击弹窗，检查自动发现、稍后提醒与刷新持久化、手动检查、失败重试、进度、后台完成、自动下载延迟响应不重复弹窗、Windows 确认与未保存保护、Mac 入口、五语言窄窗口和状态保留，渲染错误为零。源码路径构建到 `app/test-results/update-prompt/dist`，报告与截图在同目录的上一级。
 3. `app/test/mac-dmg-desktop.cjs`：14 项通过，真实 Mac DMG 下载控制器通过本机 HTTP 流式下载测试数据，检验进度、校验、缓存文件及手动打开入口；系统打开函数为测试记录器，不调用安装。
 
 ## 范围与限制
@@ -20,3 +32,12 @@
 本轮在 Windows 检查真实 Electron 窗口；Mac 模式在 Windows 执行，不代替 macOS 真机安装验证。测试版本和下载内容均为隔离夹具，不接触用户工程、生产更新包或付费服务。未重新进行 NSIS 系统升级，也未发布新版。
 
 代码沿用 PreferencesProvider 的更新订阅及现有更新 IPC，不新增下载源或可执行文件入口；提醒记录只包含版本、阶段和时间，不包含工程数据。用户正在运行的实例未强制重启。
+
+## 本轮质量自评
+
+| 维度 | 评分 | 依据／剩余验证 |
+|---|---|---|
+| 功能／代码／安全 | 9.5/10 | 两处共用组件、46 项原生检查、主进程 URL 校验、成熟清理库、依赖审计 0 已知漏洞 |
+| UI／UX／性能 | 9.4/10 | 五语言、深浅主题、长内容滚动及截图检查；原生 Mac 和 20,000 字符极限压力仍待补 |
+| 美术 | N/A | 无新增美术资产，沿用应用主题 |
+| 整体 | 9.4/10 | 源码修复可交付，尚未纳入新安装包 |

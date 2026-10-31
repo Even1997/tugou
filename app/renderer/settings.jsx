@@ -5,11 +5,12 @@ import {usePreferences} from './preferences.jsx';
 import {languages} from './settings-messages.js';
 import {SettingsModelDefaults,McpConnectionInfo} from './settings-connections.jsx';
 import {SettingsShortcuts} from './settings-shortcuts.jsx';
+import {ReleaseNotes} from './release-notes.jsx';
 import {definitions} from '../core/shortcuts.cjs';
 import './settings.css';
 import {useUiView} from './ui-view.js';
 const tabs=[['general','settings'],['appearance','style'],['storage','open'],['models','model'],['mcp','transform'],['shortcuts','text'],['updates','sync']];
-const keys={general:['language','followSystemLanguage','restoreProject','confirmClose','notifyTasks','sounds'],appearance:['theme','zoom','grid'],storage:['dataDir','cache','backup'],models:['image','analysis','text'],mcp:['mcpEnabled','copyConfig'],shortcuts:Object.keys(definitions),updates:['autoCheck','autoDownload','check','download','install']};
+const keys={general:['language','followSystemLanguage','restoreProject','confirmClose','notifyTasks','sounds'],appearance:['theme','zoom','grid'],storage:['dataDir','cache','backup'],models:['image','analysis','text','imageConcurrency'],mcp:['mcpEnabled','copyConfig'],shortcuts:Object.keys(definitions),updates:['autoCheck','autoDownload','check','download','install']};
 export function SettingsWorkspace({openModels,modelsOpen}){
   const {value,save,status,error,ready,t,locale,update,setUpdate,requestUpdatePrompt}=usePreferences();
   const [tab,setTab]=useState('general'),[query,setQuery]=useState(''),[info,setInfo]=useState(null),[storage,setStorage]=useState(null),[models,setModels]=useState(null),[mcp,setMcp]=useState(null),[busy,setBusy]=useState(false),[failure,setFailure]=useState(''),[notice,setNotice]=useState(''),[confirm,setConfirm]=useState(null);
@@ -18,7 +19,7 @@ export function SettingsWorkspace({openModels,modelsOpen}){
   useEffect(()=>{let live=true;Promise.all([window.tugou.settings('get'),window.tugou.update('status')]).then(([i,u])=>{if(live){setInfo(i);setUpdate(u);}}).catch(e=>live&&setFailure(e.message));return()=>{live=false;};},[]);
   useEffect(()=>{let live=true;const request=tab==='storage'?window.tugou.settings('storage'):tab==='models'?window.tugou.listSuppliers():tab==='mcp'?window.tugou.settings('mcpStatus'):null;request?.then(result=>{if(!live)return;if(tab==='storage')setStorage(result);if(tab==='models')setModels(result);if(tab==='mcp')setMcp(result);}).catch(e=>live&&setFailure(e.message));return()=>{live=false;};},[tab,modelsOpen]);
   const toggle=(key,hint)=> <Row label={t(key)} hint={hint&&t(hint)}><button className="settings-switch" role="switch" aria-label={t(key)} aria-checked={value[key]} disabled={busy||!ready} onClick={()=>patch({[key]:!value[key]})}><span/></button></Row>;
-  const dropdown=(key,options,hint,disabled=false)=><Row label={t(key)} hint={hint&&t(hint)}><Select aria-label={t(key)} value={value[key]} disabled={busy||disabled||!ready} onChange={e=>patch({[key]:key==='zoom'?Number(e.target.value):e.target.value})}>{options.map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></Row>;
+  const dropdown=(key,options,hint,disabled=false)=><Row label={t(key)} hint={hint&&t(hint)}><Select aria-label={t(key)} value={value[key]} disabled={busy||disabled||!ready} onChange={e=>patch({[key]:['zoom','imageConcurrency'].includes(key)?Number(e.target.value):e.target.value})}>{options.map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></Row>;
   const filtered=tabs.filter(([id])=>[id,t(id),...keys[id].map(t)].join(' ').toLowerCase().includes(query.toLowerCase()));
   const open=id=>{setTab(id);setFailure('');setNotice('');};
   useUiView('settings',{get:()=>({tab,query}),restore:v=>{setTab(v.tab);setQuery(v.query);},navigate:a=>{setQuery('');open(a.settingsTab);},blocked:()=>busy?'设置正在保存，请稍后导航':null});
@@ -38,7 +39,7 @@ export function SettingsWorkspace({openModels,modelsOpen}){
       </>}
       {tab==='appearance'&&<><Row label={t('theme')}><div className="settings-themes">{['dark','light','system'].map(theme=><button key={theme} aria-label={t(theme)} aria-pressed={value.theme===theme} disabled={busy} onClick={()=>patch({theme})}><span className={'theme-sample theme-'+theme}><i/><i/></span>{t(theme)}{value.theme===theme&&<Icon name="check"/>}</button>)}</div></Row>{dropdown('zoom',[80,90,100,110,125].map(v=>[v,v+'%']))}{dropdown('grid',['dots','lines','none'].map(id=>[id,t(id)]),'gridHint')}</>}
       {tab==='storage'&&<><div className="settings-storage-summary"><Icon name="open"/><div><span>{t('projects')}</span><strong>{storage?bytes(storage.bytes):'—'}</strong></div><div><span>{t('cache')}</span><strong>{storage?bytes(storage.cacheBytes):'—'}</strong></div></div><Row label={t('dataDir')} hint={storage?.dataDir||info?.dataDir}><Button icon="open" disabled={busy} onClick={()=>perform(()=>window.tugou.settings('openFolder'))}>{t('openFolder')}</Button></Row><Row label={t('cache')} hint={t('cacheHint')}><Button disabled={busy} onClick={()=>setConfirm('cache')}>{t('clearCache')}</Button></Row><Row label={t('backup')} hint={t('backupHint')}><Icon name="check"/></Row><Row label={t('exportHint')}><Icon name="check"/></Row></>}
-      {tab==='models'&&<><div className="settings-feature"><Icon name="model"/><div><h2>{t('models')}</h2><p>{t('modelHint')}</p></div><Button primary disabled={busy} onClick={openModels}>{t('manageModels')}</Button></div><SettingsModelDefaults models={models} setModels={setModels} busy={busy} perform={perform} t={t}/></>}
+      {tab==='models'&&<><div className="settings-feature"><Icon name="model"/><div><h2>{t('models')}</h2><p>{t('modelHint')}</p></div><Button primary disabled={busy} onClick={openModels}>{t('manageModels')}</Button></div>{dropdown('imageConcurrency',Array.from({length:32},(_,i)=>[i+1,String(i+1)]),'imageConcurrencyHint')}<SettingsModelDefaults models={models} setModels={setModels} busy={busy} perform={perform} t={t}/></>}
       {tab==='mcp'&&<><div className="settings-feature"><Icon name="transform"/><div><h2>{t(mcp?.enabled?'connected':'disabled')}</h2><p>{t('mcpSafety')}</p></div><span className={'settings-dot '+(mcp?.enabled?'active':'')}/></div><Row label={t('mcpEnabled')} hint={t('mcpHint')}><button className="settings-switch" role="switch" aria-label={t('mcpEnabled')} aria-checked={!!mcp?.enabled} disabled={busy||!mcp} onClick={()=>perform(async()=>setMcp(await window.tugou.settings('mcpEnable',!mcp.enabled)))}><span/></button></Row><McpConnectionInfo busy={busy} perform={perform} t={t}/></>}
       {tab==='shortcuts'&&<SettingsShortcuts/>}
       {tab==='updates'&&<>
@@ -49,7 +50,7 @@ export function SettingsWorkspace({openModels,modelsOpen}){
         {manualDmg&&current.status!=='ready'&&<p>{t('dmgUpdateHint')}</p>}
         {toggle('autoCheck','autoCheckHint')}{toggle('autoDownload','autoDownloadHint')}
         <Row label={t('lastCheck')}><span>{current.lastChecked?new Date(current.lastChecked).toLocaleString(locale):t('never')}</span></Row>
-        {current.notes&&<details className="settings-notes"><summary>{t('releaseNotes')}</summary><pre>{current.notes}</pre></details>}
+        {current.notes&&<details className="settings-notes"><summary>{t('releaseNotes')}</summary><ReleaseNotes text={current.notes} onLink={url=>perform(()=>window.tugou.settings('releaseLink',url))}/></details>}
         <div className="settings-links"><Button icon="export" onClick={()=>perform(()=>window.tugou.settings('releasePage'))}>{t('releases')}</Button><Button onClick={()=>perform(()=>window.tugou.settings('sourcePage'))}>{t('source')}</Button><span>Apache-2.0</span></div>
       </>}
     </section>
