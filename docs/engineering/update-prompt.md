@@ -21,6 +21,8 @@ Windows electron-updater 的 GitHubProvider 从 Atom feed 读取已转换的 HTM
 
 当前生产安装包 v0.8.6 已发布，本轮修复没有替换任何旧附件，也没有重启用户实例。下一补丁版安装后才对安装客户端生效；Mac 模式目前在 Windows 原生 Electron 中检查，不能等同于 macOS 实机验收。
 
+本修复已随 v0.8.7 发布，Windows 及 Mac 双架构包内各 46 项更新说明检查通过；发布结果见[本版发布验收](release-v0.8.7.md)。上段“未发布”描述保留为实现阶段的历史边界。
+
 ## 既有更新控制器验证（本轮未重复）
 
 1. `app/test/settings.test.cjs` 与 `app/test/mac-dmg-update.test.cjs`：19 项通过，覆盖节流、自动下载开关、安装保护、下载校验、Mac 两架构资源选择及 MCP 安装交接。
