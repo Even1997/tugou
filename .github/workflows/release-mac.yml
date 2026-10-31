@@ -45,7 +45,7 @@ jobs:
           test "$RELEASE_TAG" = "v$(node -p "require('./package.json').version")"
           git fetch --depth=1 origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
           # Only documentation, Mac licensing collection and release QA may differ from the app tag.
-          git diff --exit-code "$RELEASE_TAG" -- . ':!README.md' ':!test/mac-release-desktop.cjs' ':!test/mac-dmg-native.cjs' ':!test/comparison-view-desktop.cjs' ':!scripts/third-party-notices.cjs'
+          git diff --exit-code "$RELEASE_TAG" -- . ':!README.md' ':!test/mac-release-desktop.cjs' ':!test/mac-dmg-native.cjs' ':!test/comparison-view-desktop.cjs' ':!test/generation-concurrency-desktop.cjs' ':!test/update-prompt-desktop.cjs' ':!scripts/third-party-notices.cjs'
       - run: npm ci
       - name: Test DMG update controller
         run: node --test test/mac-dmg-update.test.cjs test/font-downloads.test.cjs
