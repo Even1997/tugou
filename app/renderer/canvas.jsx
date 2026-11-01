@@ -1,3 +1,4 @@
+import {AssetTime} from './asset-time.jsx';
 import {Select} from './select.jsx';
 import {useUiView} from './ui-view.js';
 import {usePreferences} from './preferences.jsx';
@@ -114,6 +115,10 @@ function CanvasWorkspace({
     [],
   );
   const [message, setMessage] = useState("");
+  const saveImage=useCallback(async assetId=>{
+    try{if(await window.tugou.exportAsset(projectId,current.current.document,assetId))setMessage('已保存图片');}
+    catch(error){setMessage(error.message);}
+  },[projectId]);
   const [createMenu,setCreateMenu] = useState(null);
   const [insertPoint,setInsertPoint] = useState(null);
   const selectAfterAdd = useRef(null);
@@ -142,7 +147,7 @@ function CanvasWorkspace({
   useUiView('canvas',{
     get:()=>({viewport:flow.getViewport(),nodes:current.current.nodes.filter(n=>n.selected).map(n=>n.id),edges:current.current.edges.filter(e=>e.selected).map(e=>e.id),palette,query,minimap}),
     restore:v=>moveUi(async()=>{setPalette(v.palette);setQuery(v.query);setMinimap(v.minimap);setNodes(ns=>ns.map(n=>({...n,selected:v.nodes.includes(n.id)})));setEdges(es=>es.map(e=>({...e,selected:v.edges.includes(e.id)})));await flow.setViewport(v.viewport);}),
-    navigate:a=>moveUi(async()=>{if(a.nodeId)setNodes(ns=>ns.map(n=>({...n,selected:n.id===a.nodeId})));await flow.fitView({...(a.nodeId?{nodes:[{id:a.nodeId}]}:{}),padding:.25,minZoom:.05,maxZoom:1,duration:0});})
+    navigate:a=>moveUi(async()=>{if(a.nodeId)setNodes(ns=>ns.map(n=>({...n,selected:n.id===a.nodeId})));await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));await flow.fitView({...(a.nodeId?{nodes:[{id:a.nodeId}]}:{}),padding:.25,minZoom:.05,maxZoom:1,duration:0});})
   });
   const fitCanvas=()=>{
     const visible=current.current.nodes.filter(n=>!n.parentId);
@@ -302,6 +307,7 @@ function CanvasWorkspace({
           ? document.assets
           : nodes.map((n) => ({
               id: n.id,
+              asset: document.assets.find(a=>a.id===(n.type==="asset"?n.data.assetId:n.data.outputAssetId)),
               name:
                 n.type === "module"
                   ? n.data.binding.snapshot.name
@@ -428,12 +434,14 @@ function CanvasWorkspace({
     }
   }, [document, node?.id, node?.data, edges]);
   const sizedKey=nodes.filter(n=>n.width&&n.height).map(n=>n.id).join('|');
-  const locateNode=useCallback(id=>{
+  const locateNode=useCallback(async id=>{
     if(!current.current.nodes.some(n=>n.id===id))return;
     setNodes(previous=>previous.map(n=>({...n,selected:n.id===id})));
+    // Selecting a node opens the inspector and changes the available canvas width.
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     flow.fitView({nodes:[{id}],padding:.4,maxZoom:1,duration:200});
   },[flow]);
-  const nodeContext=useMemo(()=>({document:document.tugouCanvas?document:{...document,tugouCanvas:graph},resize,previewResize,disabled,tasks,patch:patchById,runNode,cancelNode,submittingIds,connection,refreshConnection,run,importNodeImage,openNodeScene:setSceneNode,showDetails,openConnection,openRecipe,nodeErrors,locateNode,moveInput,removeInput,replaceImage:(nodeId,assetId)=>setReplacement({nodeId,assetId}),updateReference:id=>commit(current.current.nodes.map(n=>n.id===id?refreshNode(current.current.document,n):n),current.current.edges),sizedIds:new Set(sizedKey?sizedKey.split('|'):[])}),[document,disabled,tasks,submittingIds,connection,nodeErrors,sizedKey,resize,previewResize,showDetails,openConnection,openRecipe,projectId,locateNode]);
+  const nodeContext=useMemo(()=>({document:document.tugouCanvas?document:{...document,tugouCanvas:graph},saveImage,resize,previewResize,disabled,tasks,patch:patchById,runNode,cancelNode,submittingIds,connection,refreshConnection,run,importNodeImage,openNodeScene:setSceneNode,showDetails,openConnection,openRecipe,nodeErrors,locateNode,moveInput,removeInput,replaceImage:(nodeId,assetId)=>setReplacement({nodeId,assetId}),updateReference:id=>commit(current.current.nodes.map(n=>n.id===id?refreshNode(current.current.document,n):n),current.current.edges),sizedIds:new Set(sizedKey?sizedKey.split('|'):[])}),[document,disabled,tasks,submittingIds,connection,nodeErrors,sizedKey,resize,previewResize,showDetails,openConnection,openRecipe,projectId,locateNode,saveImage]);
   return (
     <CanvasContext.Provider value={nodeContext}>
       <div
@@ -513,6 +521,7 @@ function CanvasWorkspace({
                 <Button iconOnly icon="replace" disabled={disabled||!selectedImage} onClick={()=>setReplacement({nodeId:node.id,assetId:selectedImage.id})}>替换图片</Button>
                 <Button iconOnly icon="crop" disabled={disabled} onClick={()=>editSelectedImages("crop")}>裁剪</Button>
                 <Button iconOnly icon="zoomIn" disabled={disabled} onClick={()=>editSelectedImages("resize")}>放大</Button>
+                {selectedImage&&<Button iconOnly icon="export" onClick={()=>saveImage(selectedImage.id)}>保存图片</Button>}
                 {selectedImage&&<DisplayControls node={node} resize={resize} patch={patchNode} disabled={disabled}/>}
                 <ToolPopover label="图片工具" icon="tools">
                   <div className="image-tool-detail">
@@ -646,7 +655,7 @@ function CanvasWorkspace({
                 }
               >
                 {palette === "asset" ? (
-                  <MediaPreview thumbnail asset={item} className="palette-thumbnail"/>
+                  item.kind==='text'?<Icon name="text"/>:<MediaPreview thumbnail asset={item} className="palette-thumbnail"/>
                 ) : (
                   <Icon
                     name={
@@ -658,7 +667,7 @@ function CanvasWorkspace({
                     }
                   />
                 )}{" "}
-                {item.name}
+                <span className="palette-item-caption"><span>{item.name}</span><AssetTime asset={palette==="asset"?item:item.asset}/></span>
               </Button>
             ))}
           </aside>
@@ -854,7 +863,7 @@ function CanvasWorkspace({
                     <label>
                       提示词
                       <TextArea
-                        aria-label="画布自由提示词"
+                        className="canvas-prompt-editor" aria-label="画布自由提示词"
                         value={node.data.text}
                         onChange={(event) =>
                           patchNode({ text: event.target.value })
@@ -880,7 +889,7 @@ function CanvasWorkspace({
                 )}
                 {node.type === "recipe" && (
                   <>
-                    <label>生成提示词<TextArea aria-label="画布生成提示词" value={node.data.snapshot.output||''} onChange={event=>{
+                    <label>生成提示词<TextArea className="canvas-prompt-editor" aria-label="画布生成提示词" value={node.data.snapshot.output||''} onChange={event=>{
                       const output=event.target.value,source=current.current.document;
                       commit(current.current.nodes.map(n=>n.id===node.id?{...n,data:{...n.data,snapshot:{...n.data.snapshot,output}}}:n),current.current.edges,undefined,true,{...source,recipes:source.recipes.map(r=>r.id===node.data.recipeId?{...r,output}:r)});
                     }}/></label>

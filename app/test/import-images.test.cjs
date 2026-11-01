@@ -23,9 +23,12 @@ async function fixture(t) {
 }
 test("file import preserves original bytes, deduplicates repeated paths and reuses content-addressed storage", async (t) => {
   const { root, file } = await fixture(t);
+  await fs.utimes(file, new Date('2000-01-01'), new Date('2000-01-01'));
+  const started = Date.now();
   const assets = await importImages(root, [file, file], inspect);
   assert.equal(assets.length, 1);
   assert.equal(assets[0].name, "照片");
+  assert.ok(Date.parse(assets[0].createdAt) >= started && Date.parse(assets[0].createdAt) <= Date.now());
   assert.deepEqual(
     await fs.readFile(path.join(root, "resources", assets[0].resource)),
     png,

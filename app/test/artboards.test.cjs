@@ -65,3 +65,14 @@ test('locked boards reject transforms, resizing, deletion and incoming layers',(
   let {document:doc,id}=A.create(A.normalize(fixture()));doc={...doc,layers:doc.layers.map(l=>l.id===id?{...l,locked:true}:l)};
   assert.throws(()=>A.update(doc,id,{width:800}),/解锁/);assert.throws(()=>A.remove(doc,id),/解锁/);assert.throws(()=>A.relocate(doc,['a'],id),/锁定/);
 });
+
+test('empty projects and new composition pages stay empty until a board is explicitly created',()=>{
+  const empty={...fixture(),layers:[],selection:undefined};
+  assert.equal(A.normalize(empty),empty);
+  const page=require('../core/pages.cjs').create(A.normalize(fixture()),'layers').document;
+  assert.equal(A.normalize(page),page);assert.equal(A.boards(page).length,0);
+  const result=A.create(A.normalize(empty),{width:800,height:600});
+  assert.equal(result.document.layers.length,1);assert.equal(A.boards(result.document)[0].name,'画板 1');
+  assert.equal(A.extract(result.document,result.id).width,800);
+  assert.equal(empty.layers.length,0);assert.equal(A.normalize(result.document),result.document);
+});

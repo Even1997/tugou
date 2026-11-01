@@ -14,7 +14,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
  const dimensions=()=>js(`['画板宽度','画板高度'].map(s=>+document.querySelector('[aria-label="'+s+'"]').value)`);
  const boards=async()=>(await call('query_objects',{kind:'artboard'})).objects;
  const open=async()=>{await click('尺寸预设','.board-size-trigger');await wait(`!!document.querySelector('.board-size-panel')`);};
- await wait(`!!document.querySelector('.studio-header')`);await run('project.create',{name:'画板预设验收'});await run('artboard.update',{id:'artboard-main',patch:{width:1000,height:1400}});await run('workspace.show',{workspace:'layers'});await wait(`!!document.querySelector('.layer-stage')`);await click('画板','.composition-primary-tools button');await open();
+ await wait(`!!document.querySelector('.studio-header')`);await run('project.create',{name:'画板预设验收'});await run('artboard.create',{name:'画板 1',width:1000,height:1400});await run('workspace.show',{workspace:'layers'});await wait(`!!document.querySelector('.layer-stage')`);await click('画板','.composition-primary-tools button');await open();
  const initial=await boards();check('opening presets preserves current dimensions',JSON.stringify(await dimensions())===JSON.stringify([initial[0].width,initial[0].height]));
  const {boardPresetGroups}=await import('data:text/javascript;base64,'+fs.readFileSync(path.resolve('renderer/board-presets.js')).toString('base64'));
  for(const [group,presets] of Object.entries(boardPresetGroups)){

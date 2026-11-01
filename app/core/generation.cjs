@@ -17,7 +17,7 @@ async function saveImage(root, bytes, inspectImage) {
   const file = await safePath(root, 'resources', resource);
   // Concurrent responses can contain identical bytes; keep Windows resource replacement serial.
   await imageWrites(() => atomicWrite(file, bytes));
-  return { resource, ...dimensions, bytes: bytes.length };
+  return { resource, ...dimensions, bytes: bytes.length, createdAt: new Date().toISOString() };
 }
 async function referenceBytes(root, asset) {
   const name = asset?.resource || asset?.dataUrl?.split('/api/studio/resource/')[1];

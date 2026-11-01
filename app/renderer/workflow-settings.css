@@ -1,0 +1,38 @@
+.canvas-inspector:has(.generation-inspector) { width:320px; padding:20px; }
+.generation-inspector { display:grid; gap:18px; min-width:0; padding-top:6px; }
+.generation-inspector .inspector-field { display:grid; gap:8px; margin:0; min-width:0; }
+.generation-inspector .inspector-field>span,.generation-inspector .generation-field>span { font-size:12px; font-weight:500; color:var(--muted); }
+.generation-inspector .ant-input-affix-wrapper { min-width:0; }
+.generation-inspector .ant-input-prefix { color:var(--accent); margin-inline-end:9px; }
+.generation-inspector .ant-input-suffix { color:var(--muted); font-size:12px; }
+.generation-inspector .inspector-model-label { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.generation-inspector .inspector-model-label small { color:var(--accent); font-size:11px; font-weight:400; }
+.generation-inspector .inspector-generation-params { margin:0; padding:0; border:0; }
+.generation-inspector .inspector-generation-params>summary { display:flex; align-items:center; justify-content:space-between; padding:15px 0; border-top:1px solid var(--line); list-style:none; font-weight:600; font-size:13px; }
+.generation-inspector .inspector-generation-params>summary::-webkit-details-marker { display:none; }
+.generation-inspector .inspector-generation-params>summary>span { display:flex; gap:8px; align-items:center; }
+.generation-inspector .inspector-generation-params>summary>span>.anticon { color:var(--accent); }
+.generation-inspector .inspector-generation-params:not([open])>summary>.anticon { transform:rotate(-90deg); }
+.generation-inspector .inspector-generation-params>summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:4px; }
+.inspector-generation-body,.inspector-advanced { display:grid; gap:16px; min-width:0; }
+.generation-inspector .generation-field,.generation-inspector .generation-choice { gap:10px; }
+.generation-inspector .ratio-choices { gap:6px; }
+.generation-inspector .ratio-choices button { height:54px; gap:5px; border-color:transparent; background:var(--surface); cursor:pointer; }
+.generation-inspector .ratio-choices button[aria-pressed=true] { border-color:var(--accent); background:var(--accent-bg); color:var(--accent); }
+.generation-inspector .ratio-choices button:not(:disabled):hover { border-color:var(--accent); }
+.generation-inspector .ratio-choices button:focus-visible,.generation-inspector .resolution-choices button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.generation-inspector .resolution-choices { padding:3px; gap:3px; border-radius:8px; background:var(--surface); }
+.generation-inspector .resolution-choices button { height:30px; background:transparent; border-color:transparent; }
+.generation-inspector .resolution-choices button[aria-pressed=true] { background:var(--accent-bg); color:var(--accent); font-weight:600; }
+.generation-inspector .generation-resolution>span,.generation-inspector .generation-dimensions>div>span { font-size:12px; color:var(--muted); }
+.generation-inspector .inspector-count { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0; padding-top:12px; border-top:1px solid var(--line); font-size:12px; }
+.generation-inspector .inspector-count>.ant-input-affix-wrapper { width:104px; }
+.generation-inspector .inspector-disclosure { border-top:1px solid var(--line); border-radius:0; }
+.generation-inspector .inspector-disclosure .ant-collapse-header { padding:12px 0; font-weight:500; }
+.generation-inspector .inspector-disclosure .ant-collapse-body { padding:4px 0 0; }
+.generation-inspector .inspector-checkbox { display:flex; align-items:center; gap:8px; margin:0; font-size:12px; }
+.generation-inspector .inspector-inherited { margin:0; color:var(--accent); font-size:11px; }
+.generation-inspector .inspector-task-status { display:grid; gap:5px; padding:12px; border-radius:8px; background:var(--surface); font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
+.generation-inspector .inspector-task-status span { color:var(--muted); }
+@media(max-width:1150px) { .canvas-inspector:has(.generation-inspector) { width:290px; padding:16px; } }
+@media(max-width:1000px) { .canvas-inspector:has(.generation-inspector) { width:260px; padding:14px; } }

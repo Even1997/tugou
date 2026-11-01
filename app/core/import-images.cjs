@@ -47,7 +47,7 @@ async function importImages(root, filenames, inspectImage) {
       const target = await safePath(root, "resources", resource);
       await fs.rename(await safePath(staging, "resources", resource), target);
     }
-    return assets;
+    return assets.map(asset => ({ ...asset, createdAt: new Date().toISOString() }));
   } finally {
     await fs.rm(staging, { recursive: true, force: true });
   }

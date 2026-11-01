@@ -35,6 +35,20 @@ async function fixture(t) {
 async function finished(f) { await f.tasks.execution; return f.tasks.list().at(-1); }
 async function requestArrived(f) { for (let i = 0; i < 100 && !f.requests.length; i++) await new Promise(r => setTimeout(r, 10)); assert.ok(f.requests.length); }
 
+test('image time is completion time and survives result replay, rename and project reopen', async t => {
+  const f=await fixture(t);f.behavior('wait');
+  await f.service.start(f.record.id,f.document,'n');await requestArrived(f);
+  const releasedAt=Date.now();f.release();await finished(f);
+  const results=await f.service.results(f.record.id),asset=results[0].assets[0];
+  assert.ok(Date.parse(asset.createdAt)>=releasedAt && Date.parse(asset.createdAt)<=Date.now());
+  const merged=mergeResults(f.document,results);
+  merged.assets[0].name='改名不改变完成时间';
+  await f.store.save(f.record.id,merged,f.record.revision);
+  const reopened=await new ProjectStore(f.root).read(f.record.id);
+  assert.equal(reopened.document.assets[0].createdAt,asset.createdAt);
+  assert.equal(mergeResults(reopened.document,results).assets[0].createdAt,asset.createdAt);
+});
+
 test('angle generation snapshots source and camera, shares configured model and persists output without altering original', async t=>{
   const f=await fixture(t),a={id:'a',name:'人物',dataUrl:`data:image/png;base64,${png.toString('base64')}`,width:1,height:1};
   f.document.assets.push(a);f.document.tugouCanvas.nodes.push({id:'image',type:'asset',position:{x:40,y:50},data:{assetId:'a',role:'主体'}});

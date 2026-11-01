@@ -146,3 +146,8 @@
 .generation-output-actions .ant-btn { height:28px; font-size:11px; padding:0 8px; }
 @keyframes generation-wait { from { transform:translateX(-100%); } to { transform:translateX(290%); } }
 @media(prefers-reduced-motion:reduce) { .generation-progress-track.is-indeterminate>span { animation:none; width:100%; opacity:.45; } }
+
+.node-caption-text { display:flex; flex-direction:column; min-width:0; gap:2px; }
+.canvas-card.node-picture .node-caption:has(.asset-time) { height:64px; min-height:64px; }
+.node-result-caption { padding:8px 0; }
+.node-result-caption strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; font-weight:500; }

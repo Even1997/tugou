@@ -1,3 +1,4 @@
+import {AssetTime} from './asset-time.jsx';
 import React, { useEffect, useState } from "react";
 import {
   Button,
@@ -6,7 +7,7 @@ import {
   TextArea,
   ToolPopover,
 } from "./components.jsx";
-import { exportMaterial, originalUrl } from "./image-processing.js";
+import { originalUrl } from "./image-processing.js";
 import {MediaPreview} from './media-preview.jsx';
 
 export async function copyAssetPrompt(details) {
@@ -103,9 +104,9 @@ export function MaterialDetails({
           <div className="image-tool-detail">
             <Button
               icon="export"
-              onClick={() => run(() => asset.kind&&asset.kind!=='image'?window.tugou.exportAsset(projectId,document,asset.id):exportMaterial(asset))}
+              onClick={() => run(async() => {if(await window.tugou.exportAsset(projectId,document,asset.id))setNotice(asset.kind&&asset.kind!=='image'?'已导出原文件':'已保存图片');})}
             >
-              {asset.kind&&asset.kind!=='image'?'导出原文件':'导出 PNG'}
+              {asset.kind&&asset.kind!=='image'?'导出原文件':'保存图片'}
             </Button>
             <Button
               disabled={asset.kind&&asset.kind!=='image'}
@@ -161,6 +162,7 @@ export function MaterialDetails({
           }
         />
       </label>
+      <AssetTime asset={asset}/>
       <label>
         {details?.label || "生成提示词"}
         <TextArea

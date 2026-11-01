@@ -86,6 +86,15 @@ jobs:
         env:
           TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
         run: node_modules/.bin/electron test/update-prompt-desktop.cjs
+      - name: Test packaged image times, empty composition, inspector and save locations
+        env:
+          TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+        run: |
+          node_modules/.bin/electron test/asset-time-desktop.cjs
+          node_modules/.bin/electron test/empty-composition-desktop.cjs
+          node_modules/.bin/electron test/generation-inspector-desktop.cjs
+          node_modules/.bin/electron test/image-save-desktop.cjs
+          node_modules/.bin/electron test/image-save-desktop.cjs --reopen
       - name: Launch actual packaged executable with isolated profile
         run: |
           # macOS /var is a symlink; the app deliberately rejects linked data paths.
@@ -124,6 +133,14 @@ jobs:
         with:
           name: mac-evidence-${{ matrix.arch }}
           path: |
+            app/test-results/asset-time/*.json
+            app/test-results/asset-time/*.png
+            app/test-results/empty-composition/*.json
+            app/test-results/empty-composition/*.png
+            app/test-results/generation-inspector/*.json
+            app/test-results/generation-inspector/*.png
+            app/test-results/image-save/*.json
+            app/test-results/image-save/*.png
             app/test-results/mac-release/*.json
             app/test-results/mac-release/*.png
             app/test-results/mac-release/*.log

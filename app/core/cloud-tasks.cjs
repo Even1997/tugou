@@ -95,6 +95,7 @@ class CloudTaskService {
         await referenceBytes(this.root, input),
         this.inspectImage,
       )),
+      createdAt: input.createdAt,
     };
     const { settings, size } = cloudSettings(options, source),
       connection = await this.connections.readPrivate('image');
@@ -113,6 +114,7 @@ class CloudTaskService {
           await referenceBytes(this.root, inputMask),
           this.inspectImage,
         )),
+        createdAt: inputMask.createdAt,
       };
       if (mask.width !== source.width || mask.height !== source.height)
         throw fail('蒙版必须与每张来源图片尺寸一致');

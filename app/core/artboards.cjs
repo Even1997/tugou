@@ -2,6 +2,7 @@ const {createLayer, descendants, validateLayers, multiply, matrix, decompose, du
 
 const boards = doc => doc.layers.filter(l => l.artboard);
 function normalize(doc) {
+  if (!doc.layers.length) return doc;
   let list = boards(doc);
   if (!list.length) {
     let id = 'artboard-main';

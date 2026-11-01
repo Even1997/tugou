@@ -39,7 +39,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
   useUiView('boards',{get:()=>({activeId,maskId,scaleContent,view:view.current}),restore:v=>{view.current=v.view;setActiveId(v.activeId);setMaskId(v.maskId);setScaleContent(v.scaleContent);}});
   const selectedOwner=selected.length ? artboards.owner(normalized,selected[0]) : null;
   const board=selectedOwner || list.find(b=>b.id===activeId) || list[0];
-  const local=useMemo(()=>artboards.extract(normalized,board.id),[normalized,board.id]);
+  const local=useMemo(()=>board?artboards.extract(normalized,board.id):null,[normalized,board?.id]);
   latest.current={normalized,board};
   const run=fn=>{try{setError('');return fn()}catch(e){setError(e.message);return false}};
   const activate=(id,ids=[])=>{setActiveId(id);setSelected(ids)};
@@ -60,6 +60,10 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     const next=artboards.relocate(normalized,ids,targetId,placement);
     if(save(next)!==false)activate(artboards.owner(next,ids[0]).id,ids);
   });
+  if(!board)return <div className="composite-workspace composite-empty">
+    <div className="composition-tools"><BoardSizeControl board={normalized} creating apply={createBoard} disabled={props.disabled}><Button icon="add" disabled={props.disabled}>新建画板</Button></BoardSizeControl></div>
+    {error&&<div className="message error" role="alert">{error}</div>}
+  </div>;
   const workspace={
     contextMenu:(event,id)=>{event.preventDefault();event.stopPropagation();if(!props.disabled)setContext({id,x:event.clientX,y:event.clientY});},
     board,boards:list.map(b=>({...b,x:b.x-board.x,y:b.y-board.y})),layers:normalized.layers,

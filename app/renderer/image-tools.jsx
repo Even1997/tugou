@@ -1,3 +1,4 @@
+import {AssetTime} from './asset-time.jsx';
 import {Select} from './select.jsx';
 import React, { useState, useRef, useEffect } from "react";
 import { Button, PanelHeader, EmptyState, ToolPopover, SearchField } from "./components.jsx";
@@ -414,7 +415,7 @@ export function ImageTools({
       <aside className="tools-materials" aria-label="图片素材">
         <div className="tools-materials-heading"><PanelHeader title="素材" count={materialAssets.length}><Button icon="import" disabled={disabled||imageImport.importing} onClick={imageImport.open}>{imageImport.importing?'导入中…':'上传图片'}</Button></PanelHeader><SearchField label="搜索素材" value={materialQuery} onChange={setMaterialQuery}/></div>
         <div className="tools-material-list" role="group" aria-label="处理来源" data-value={sourceId}>
-          {visibleMaterials.map(a=><Button key={a.id} className="tools-material-item" data-asset-id={a.id} aria-label={`选择素材 ${a.name||'未命名图片'}`} aria-pressed={sourceId===a.id} disabled={working} onClick={()=>selectSource(a)}><img src={assetUrl(a)} alt="" loading="lazy" draggable={false}/><span><strong>{a.name||'未命名图片'}</strong><small>{a.width} × {a.height}{a.id===historicalSource?.id?' · 历史原图':''}</small></span></Button>)}
+          {visibleMaterials.map(a=><Button key={a.id} className="tools-material-item" data-asset-id={a.id} aria-label={`选择素材 ${a.name||'未命名图片'}`} aria-pressed={sourceId===a.id} disabled={working} onClick={()=>selectSource(a)}><img src={assetUrl(a)} alt="" loading="lazy" draggable={false}/><span><strong>{a.name||'未命名图片'}</strong><AssetTime asset={a}/><small>{a.width} × {a.height}{a.id===historicalSource?.id?' · 历史原图':''}</small></span></Button>)}
           {!visibleMaterials.length&&<EmptyState compact icon="assets" title={materialQuery.trim()?'没有匹配的素材':'还没有图片'} description={materialQuery.trim()?'试试其他关键词。':'上传图片后开始处理。'}/>}
         </div>
         <details className="processing-history"><summary>处理记录 · {history.length}</summary>

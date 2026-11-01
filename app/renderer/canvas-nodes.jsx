@@ -1,3 +1,4 @@
+import {AssetTime} from './asset-time.jsx';
 import React,{createContext,useContext,useMemo,useRef,useState,memo} from 'react';
 import {Handle,Position,NodeResizer} from '@xyflow/react';
 import {Button,Icon,IconButton,Input,TextArea,ToolPopover} from './components.jsx';
@@ -9,6 +10,7 @@ import {GenerationChoice,ModelChoice,sizeDescription} from './generation-choice.
 import {GenerationProgress,GenerationOutput} from './generation-progress.jsx';
 import {imageSettingsError,imageResultWarning} from '../core/image-settings.cjs';
 import './canvas-nodes.css';
+import {ImageSaveMenu} from './image-save-menu.jsx';
 
 export const CanvasContext=createContext(null);
 const modes=[['image','生图','assets'],['text','文本','text']];
@@ -21,7 +23,7 @@ export function GroupNode({id,data}){
 }
 
 function NodeResults({node,disabled}){
-  const {document,patch,run,showDetails}=useContext(CanvasContext);
+  const {document,patch,run,showDetails,saveImage}=useContext(CanvasContext);
   const [editing,setEditing]=useState(false),d=node.data;
   const panorama=node.type==='panorama';
   const results=(d.outputAssetIds||[d.outputAssetId]).map(id=>document.assets.find(a=>a.id===id)).filter(Boolean);
@@ -33,7 +35,8 @@ function NodeResults({node,disabled}){
     {!image&&<div className="node-result-heading"><span>生成结果{results.length>1?` · ${results.length}`:''}</span><div>
       {asset.kind==='text'?<><IconButton label={editing?'完成编辑':'编辑生成文本'} icon={editing?'check':'edit'} disabled={disabled} onClick={()=>setEditing(!editing)}/><IconButton label="复制生成文本" icon="copy" onClick={()=>run(()=>window.tugou.copyText(text))}/></>:<IconButton label="预览生成结果" icon="maximize" onClick={()=>showDetails(asset.id,node.id)}/>}
     </div></div>}
-    {image?<button className="node-result-preview" aria-label="预览生成结果" onClick={()=>showDetails(asset.id,node.id)}><MediaPreview asset={asset} style={asset.width&&asset.height?{aspectRatio:`${asset.width} / ${asset.height}`}:undefined}/>{panorama&&<span className="panorama-badge"><Icon name="camera"/>360°</span>}</button>:asset.kind==='text'&&editing?<TextArea aria-label="编辑生成文本" rows={5} value={text} disabled={disabled} onChange={e=>patch(node.id,{resultText:e.target.value})}/>:<MediaPreview asset={asset.kind==='text'?{...asset,text}:asset}/>}
+    {image?<ImageSaveMenu asset={asset} save={saveImage}><button className="node-result-preview" aria-label="预览生成结果" onClick={()=>showDetails(asset.id,node.id)}><MediaPreview asset={asset} style={asset.width&&asset.height?{aspectRatio:`${asset.width} / ${asset.height}`}:undefined}/>{panorama&&<span className="panorama-badge"><Icon name="camera"/>360°</span>}</button></ImageSaveMenu>:asset.kind==='text'&&editing?<TextArea aria-label="编辑生成文本" rows={5} value={text} disabled={disabled} onChange={e=>patch(node.id,{resultText:e.target.value})}/>:<MediaPreview asset={asset.kind==='text'?{...asset,text}:asset}/>}
+    {image&&<div className="node-result-caption"><strong title={asset.name}>{asset.name}</strong><AssetTime asset={asset}/></div>}
     {results.length>1&&<><div className="node-result-picker" aria-label="选择引用结果">{results.map((a,i)=><button key={a.id} aria-label={`引用结果 ${i+1}`} aria-pressed={a.id===asset.id} disabled={disabled} onClick={()=>patch(node.id,{outputAssetId:a.id})}>{!a.kind||a.kind==='image'?<MediaPreview asset={a} thumbnail/>:<span>{i+1}</span>}</button>)}</div><small className="node-current-result">当前引用 · {results.findIndex(a=>a.id===asset.id)+1} / {results.length}</small></>}
   </section>;
 }
@@ -112,8 +115,10 @@ function GenerationDesk({node}){
 }
 
 export const ContentNode=memo(function ContentNode({id,type,data,selected}){
-  const {document,resize,previewResize,sizedIds,disabled,tasks,patch,importNodeImage,openNodeScene,showDetails,replaceImage,run,updateReference,openRecipe,runNode,cancelNode,locateNode,submittingIds}=useContext(CanvasContext);
+  const {document,resize,previewResize,sizedIds,disabled,tasks,patch,importNodeImage,openNodeScene,showDetails,replaceImage,saveImage,run,updateReference,openRecipe,runNode,cancelNode,locateNode,submittingIds}=useContext(CanvasContext);
   const [editing,setEditing]=useState(false),node={id,type,data},status=nodeStatus(document,node),generative=types.includes(type)&&type!=='director';
+  const contentRef=useRef(null),[editorHeight,setEditorHeight]=useState(undefined);
+  const startEditing=()=>{setEditorHeight(contentRef.current?.querySelector('.node-text,.node-media-preview')?.offsetHeight);setEditing(true);};
   const asset=document.assets.find(a=>a.id===(type==='asset'?data.assetId:data.outputAssetId));
   const title=type==='module'?data.binding.snapshot.name:type==='recipe'?data.snapshot.name:type==='asset'?(asset?.name||data.name||'图片'):nodeName(node);
   const label={text:'文本',module:'模块',recipe:'配方',asset:asset?.kind==='video'?'视频':asset?.kind==='audio'?'音频':asset?.kind==='text'?'文本':'图片'}[type]||labels[type];
@@ -123,16 +128,17 @@ export const ContentNode=memo(function ContentNode({id,type,data,selected}){
   const updateText=value=>patch(id,type==='module'?{binding:{...data.binding,overrideText:value}}:type==='recipe'?{snapshot:{...data.snapshot,output:value}}:type==='asset'?{resultText:value}:{text:value});
   const task=data.generationTaskId?tasks.find(t=>t.id===data.generationTaskId):tasks.filter(t=>t.context?.nodeId===id).at(-1);
   const pendingOutput=type==='asset'&&!asset&&!!data.generationTaskId;
-  return <div style={{'--node-width':`${nodeWidth(type)}px`}} className={`canvas-card node-shell ${generative?'node-desk':'node-content'} ${type==='asset'&&(!asset||isImage)?'node-picture':''} ${asset&&!generative?'node-media':''} ${selected?'selected':''} ${sizedIds.has(id)?'canvas-card-sized':''}`}>
-    {!generative&&<header className="node-caption"><Icon name={category||({text:'text',module:'prompts',recipe:'prompts',asset:asset?.kind==='video'?'video':asset?.kind==='audio'?'audio':'assets',director:'layers'}[type])}/><strong title={title}>{title&&title!=='自由提示词'?title:label}</strong>{category&&<span className="node-kind">{analysisKinds[category]||category}</span>}{type==='module'&&<small title="引用工作台模块">关联模块</small>}</header>}
+  const content=<div ref={contentRef} style={{'--node-width':`${nodeWidth(type)}px`}} className={`canvas-card node-shell ${generative?'node-desk':'node-content'} ${type==='asset'&&(!asset||isImage)?'node-picture':''} ${asset&&!generative?'node-media':''} ${selected?'selected':''} ${sizedIds.has(id)?'canvas-card-sized':''}`}>
+    {!generative&&<header className="node-caption"><Icon name={category||({text:'text',module:'prompts',recipe:'prompts',asset:asset?.kind==='video'?'video':asset?.kind==='audio'?'audio':'assets',director:'layers'}[type])}/><span className="node-caption-text"><strong title={title}>{title&&title!=='自由提示词'?title:label}</strong><AssetTime asset={asset}/></span>{category&&<span className="node-kind">{analysisKinds[category]||category}</span>}{type==='module'&&<small title="引用工作台模块">关联模块</small>}</header>}
     <NodeResizer isVisible={selected&&!disabled} minWidth={generative?320:220} minHeight={generative?260:isImage&&asset.generation?.requestedSize?200:140} maxWidth={10000} maxHeight={10000} keepAspectRatio={!!isImage&&!generative&&!data.freeResize} onResize={(_,rect)=>previewResize(id,rect)} onResizeEnd={(_,rect)=>resize(id,rect)}/>
     <Handle type="target" position={Position.Left} title="输入：连接上游节点" aria-label="节点输入"/>
     {generative?<GenerationDesk node={node}/>:<>
-      {pendingOutput?<GenerationOutput task={task} disabled={disabled} sourceExists={document.tugouCanvas.nodes.some(n=>n.id===data.sourceNodeId)} busy={submittingIds.has(data.sourceNodeId)||tasks.some(t=>t.context?.nodeId===data.sourceNodeId&&['queued','running'].includes(t.status))} retry={()=>runNode(data.sourceNodeId)} cancel={()=>cancelNode(data.sourceNodeId)} locate={()=>locateNode(data.sourceNodeId)}/>:editing&&editable?<TextArea autoFocus className="node-text-editor nodrag nowheel" aria-label="节点内文本" value={text||''} onChange={e=>updateText(e.target.value)} onBlur={()=>setEditing(false)} onKeyDown={e=>{if(!e.nativeEvent.isComposing&&(e.key==='Escape'||(e.key==='Enter'&&(e.ctrlKey||e.metaKey)))){e.preventDefault();e.stopPropagation();setEditing(false);}}}/>:asset?<div className="node-media-preview" onDoubleClick={()=>showDetails(asset.id,id)}><MediaPreview asset={asset.kind==='text'?{...asset,text}:asset} style={isImage&&asset.width&&asset.height?{aspectRatio:`${asset.width} / ${asset.height}`}:undefined}/></div>:type==='asset'?<button aria-label="添加图片" className="node-empty" disabled={disabled} onClick={()=>importNodeImage(id)} onDragOver={e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();e.stopPropagation();}}} onDrop={e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();e.stopPropagation();importNodeImage(id,Array.from(e.dataTransfer.files));}}}><Icon name="assets"/><strong>{data.assetId?'重新选择图片':'添加图片'}</strong><small>{data.assetId?'原素材不可用':'拖入图片，或点击导入'}</small></button>:type==='director'?<button className="node-empty" disabled={disabled} onClick={()=>openNodeScene(id)}><Icon name="layers"/><strong>打开导演台</strong><small>布置场景与机位</small></button>:<div className={`node-text nowheel ${text?'':'muted'}`} onDoubleClick={e=>{if(editable&&!disabled){e.stopPropagation();setEditing(true);}}}>{text||'双击编辑文字'}</div>}
+      {pendingOutput?<GenerationOutput task={task} disabled={disabled} sourceExists={document.tugouCanvas.nodes.some(n=>n.id===data.sourceNodeId)} busy={submittingIds.has(data.sourceNodeId)||tasks.some(t=>t.context?.nodeId===data.sourceNodeId&&['queued','running'].includes(t.status))} retry={()=>runNode(data.sourceNodeId)} cancel={()=>cancelNode(data.sourceNodeId)} locate={()=>locateNode(data.sourceNodeId)}/>:editing&&editable?<TextArea autoFocus className="node-text-editor nodrag nowheel" aria-label="节点内文本" style={{height:editorHeight}} value={text||''} onChange={e=>updateText(e.target.value)} onBlur={()=>setEditing(false)} onKeyDown={e=>{if(!e.nativeEvent.isComposing&&(e.key==='Escape'||(e.key==='Enter'&&(e.ctrlKey||e.metaKey)))){e.preventDefault();e.stopPropagation();setEditing(false);}}}/>:asset?<div className="node-media-preview" onDoubleClick={()=>showDetails(asset.id,id)}><MediaPreview asset={asset.kind==='text'?{...asset,text}:asset} style={isImage&&asset.width&&asset.height?{aspectRatio:`${asset.width} / ${asset.height}`}:undefined}/></div>:type==='asset'?<button aria-label="添加图片" className="node-empty" disabled={disabled} onClick={()=>importNodeImage(id)} onDragOver={e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();e.stopPropagation();}}} onDrop={e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();e.stopPropagation();importNodeImage(id,Array.from(e.dataTransfer.files));}}}><Icon name="assets"/><strong>{data.assetId?'重新选择图片':'添加图片'}</strong><small>{data.assetId?'原素材不可用':'拖入图片，或点击导入'}</small></button>:type==='director'?<button className="node-empty" disabled={disabled} onClick={()=>openNodeScene(id)}><Icon name="layers"/><strong>打开导演台</strong><small>布置场景与机位</small></button>:<div className={`node-text nowheel ${text?'':'muted'}`} onDoubleClick={e=>{if(editable&&!disabled){e.stopPropagation();startEditing();}}}>{text||'双击编辑文字'}</div>}
       {!pendingOutput&&<footer className="node-meta nowheel"><span>{type==='asset'&&(!asset||isImage)&&<strong className="node-image-role">{data.role||'参考图片'}</strong>}{asset?(isImage?`${asset.width} × ${asset.height}`:label):type==='asset'?'添加图片后可连接生成台':type==='director'?'场景与机位':`${(text||'').length} 字`}</span><div className={`node-actions nodrag ${type==='asset'&&(!asset||isImage)?'image-node-tools':''}`}>
-        {editable&&<IconButton label={editing?'完成编辑':'编辑文字'} icon={editing?'check':'edit'} disabled={disabled} onMouseDown={e=>e.preventDefault()} onClick={()=>setEditing(!editing)}/>}
+        {editable&&<IconButton label={editing?'完成编辑':'编辑文字'} icon={editing?'check':'edit'} disabled={disabled} onMouseDown={e=>e.preventDefault()} onClick={()=>editing?setEditing(false):startEditing()}/>}
         {!!text&&type!=='director'&&<IconButton label="复制文字" icon="copy" onClick={()=>run(()=>window.tugou.copyText(text))}/>}
         {asset&&<IconButton label="预览素材" icon="maximize" onClick={()=>showDetails(asset.id,id)}/>}
+        {isImage&&<IconButton label="保存图片" icon="export" onClick={()=>saveImage(asset.id)}/>}
         {isImage&&<IconButton label="替换图片" icon="replace" disabled={disabled} onClick={()=>replaceImage(id,asset.id)}/>}
         {type==='asset'&&<ToolPopover label="参考用途" icon="settings" className="desk-popover"><label>参考用途<Input aria-label="节点参考用途" value={data.role||''} disabled={disabled} onChange={e=>patch(id,{role:e.target.value})}/></label></ToolPopover>}
         {type==='recipe'&&<IconButton label="编辑配方" icon="open" onClick={()=>openRecipe(data.recipeId)}/>}
@@ -143,4 +149,5 @@ export const ContentNode=memo(function ContentNode({id,type,data,selected}){
     </>}
     <Handle type="source" position={Position.Right} title="输出：拖向其他节点，或依次点击两个连接点" aria-label="节点输出"/>
   </div>;
+  return generative?content:<ImageSaveMenu asset={asset} save={saveImage}>{content}</ImageSaveMenu>;
 },(a,b)=>a.id===b.id&&a.type===b.type&&a.data===b.data&&a.selected===b.selected);

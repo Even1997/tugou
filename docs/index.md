@@ -14,6 +14,13 @@
 
 ## 开发文档
 
+- [v0.8.10 发布说明](releases/v0.8.10.md)
+- [v0.8.10 发布验收](engineering/release-v0.8.10.md)
+
+- [整体界面规整与前后对比](engineering/ui-regularity.md)
+
+- [图片保存入口与目录记忆](engineering/image-save.md)
+
 - [v0.8.9 发布说明](releases/v0.8.9.md)
 - [v0.8.9 发布验收](engineering/release-v0.8.9.md)
 

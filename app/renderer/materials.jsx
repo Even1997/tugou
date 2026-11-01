@@ -1,3 +1,4 @@
+import {AssetTime} from './asset-time.jsx';
 import {Select} from './select.jsx';
 import React, { useState, useRef, useMemo } from "react";
 import {filterMaterials,materialSource} from '../core/materials.cjs';
@@ -7,6 +8,7 @@ import { MaterialDetails } from "./material-details.jsx";
 import { MaterialGrid } from "./material-grid.jsx";
 import {MediaPreview} from './media-preview.jsx';
 import {useUiView} from './ui-view.js';
+import {ImageSaveMenu} from './image-save-menu.jsx';
 
 import {
   Button,
@@ -25,12 +27,14 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
     [selected, setSelected] = useState([]),
     [density, setDensity] = useState("medium");
   const latest = useRef(document);
+  const [notice,setNotice]=useState('');
   useUiView('assets',{get:()=>({source,shape,sort,query,focused,selected,density}),restore:v=>{setSource(v.source);setShape(v.shape);setSort(v.sort);setQuery(v.query);setFocused(v.focused);setSelected(v.selected);setDensity(v.density);}});
   latest.current = document;
   const run = async (operation) => {
     setError('');
     try { await operation(); } catch(e) { setError(e.message); }
   };
+  const saveImage=id=>run(async()=>{setNotice('');if(await window.tugou.exportAsset(projectId,latest.current,id))setNotice('已保存图片');});
   const assets = useMemo(()=>filterMaterials(document.assets,{query,source,shape,sort}),[document.assets,query,source,shape,sort]);
   const detail=assets.find(a=>a.id===focused)||assets[0];
   const assetIds=useMemo(()=>new Set(document.assets.map(a=>a.id)),[document.assets]);
@@ -96,11 +100,13 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
           {error}
         </div>
       )}
+      {notice&&<div className="message" role="status">{notice}</div>}
       <div className="library-filters" role="group" aria-label="素材来源筛选">{[["all","全部"],["imported","导入素材"],["generated","生成结果"],["processed","处理结果"]].map(([id,label])=><Button key={id} aria-pressed={source===id} onClick={()=>setSource(id)}>{label}</Button>)}</div>
       <div className="library-content">
       {assets.length ? (
         <MaterialGrid items={assets} density={density}>
           {(asset) => (
+            <ImageSaveMenu key={asset.id} asset={asset} save={saveImage}>
             <article
               className={`asset-card ${selected.includes(asset.id)||detail?.id===asset.id ? "selected" : ""}`}
               key={asset.id}
@@ -132,10 +138,12 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
               </div>
               <div className="asset-caption">
                 <strong title={asset.name}>{asset.name}</strong>
+                <AssetTime asset={asset}/>
                 <span>
                   {asset.kind&&asset.kind!=='image'?{text:'文本',audio:'音频',video:'视频'}[asset.kind]:`${asset.width} × ${asset.height}`}
                 </span>
                 <div className="asset-actions">
+                  {(!asset.kind||asset.kind==='image')&&<Button iconOnly icon="export" size="small" onClick={()=>saveImage(asset.id)}>保存图片</Button>}
                   <Button iconOnly icon="layers" size="small" disabled={asset.kind&&asset.kind!=='image'} onClick={() => addToLayers(asset)}>
                     加入画面
                   </Button>
@@ -148,6 +156,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
                 </div>
               </div>
             </article>
+            </ImageSaveMenu>
           )}
         </MaterialGrid>
       ) : (
@@ -162,7 +171,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
           </Button>
         </EmptyState>
       )}
-      {detail&&<aside className="library-details" aria-label="素材详情"><div className="panel-heading"><h2>素材详情</h2><Button iconOnly icon="maximize" aria-label="放大预览" onClick={()=>setPreview(detail.id)}/></div><MediaPreview asset={detail} className="material-preview"/><h3>{detail.name}</h3><dl><dt>尺寸</dt><dd>{detail.width&&detail.height?detail.width+' × '+detail.height:detail.kind}</dd><dt>来源</dt><dd>{({processed:'处理结果',generated:'生成结果',imported:'导入素材'})[materialSource(detail)]}</dd></dl><div className="detail-actions"><Button primary icon="canvas" onClick={()=>addToCanvas('asset',detail.id)}>添加到画布</Button><Button icon="layers" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>addToLayers(detail)}>添加到合成</Button><Button icon="tools" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>editImages([detail.id])}>处理图片</Button><Button onClick={()=>setPreview(detail.id)}>查看完整详情</Button></div></aside>}
+      {detail&&<aside className="library-details" aria-label="素材详情"><div className="panel-heading"><h2>素材详情</h2><Button iconOnly icon="maximize" aria-label="放大预览" onClick={()=>setPreview(detail.id)}/></div><MediaPreview asset={detail} className="material-preview"/><div className="material-identity"><h3>{detail.name}</h3><AssetTime asset={detail}/></div><dl><dt>尺寸</dt><dd>{detail.width&&detail.height?detail.width+' × '+detail.height:detail.kind}</dd><dt>来源</dt><dd>{({processed:'处理结果',generated:'生成结果',imported:'导入素材'})[materialSource(detail)]}</dd></dl><div className="detail-actions">{(!detail.kind||detail.kind==='image')&&<Button icon="export" onClick={()=>saveImage(detail.id)}>保存图片</Button>}<Button primary icon="canvas" onClick={()=>addToCanvas('asset',detail.id)}>添加到画布</Button><Button icon="layers" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>addToLayers(detail)}>添加到合成</Button><Button icon="tools" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>editImages([detail.id])}>处理图片</Button><Button onClick={()=>setPreview(detail.id)}>查看完整详情</Button></div></aside>}
       </div>
       {preview&&<MaterialDetails projectId={projectId} document={document} assetId={preview} change={change} close={()=>setPreview(null)} editImages={editImages} analyzeImage={analyzeImage} addToCanvas={addToCanvas} addToLayers={addToLayers}/>}
     </section>

@@ -211,3 +211,6 @@
 .board-export-list label span {flex:1;overflow-wrap:anywhere;min-width:0;}
 .board-export-list small {color:var(--muted);white-space:nowrap;}
 .board-export-list input {accent-color:var(--accent);}
+
+.composite-empty { background:var(--bg); }
+.composite-empty > .composition-tools { min-height:44px; }

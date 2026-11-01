@@ -70,7 +70,7 @@ export function ReferenceEditor({ document, binding, change }) {
       {editing && (
         <>
           <TextArea
-            aria-label={`${binding.snapshot.name}本地提示词`}
+            className="canvas-prompt-editor" aria-label={`${binding.snapshot.name}本地提示词`}
             value={binding.overrideText ?? binding.snapshot.text}
             onChange={(event) =>
               change({ ...binding, overrideText: event.target.value })
@@ -242,7 +242,7 @@ export function RecipeWorkbench({
                         });
                       }}
                     />
-                    <span>文本</span>
+                    <span>{module.name}</span>
                     {isGlobal(module) && <small>全局</small>}
                   </label>
                 ))}

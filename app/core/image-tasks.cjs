@@ -78,6 +78,7 @@ class ImageTaskService {
         bytes,
         this.inspectImage,
       )),
+      createdAt: asset.createdAt,
       ...(display || {}),
     };
   }

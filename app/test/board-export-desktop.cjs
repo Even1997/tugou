@@ -27,7 +27,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
  try{
   w.setSize(1380,900);await wait(`!!document.querySelector('.workspace-rail')`);
   const asset=await js(`(async()=>{const c=document.createElement('canvas');c.width=2048;c.height=1024;const x=c.getContext('2d');x.fillStyle='#ff0000';x.fillRect(0,0,c.width,c.height);const b=await new Promise(r=>c.toBlob(r));return tugou.storeRaster(new Uint8Array(await b.arrayBuffer()),'高清原图')})()`);
-  let doc=A.normalize({name:'画板保存检查',width:1024,height:768,background:'#ffffff',assets:[asset],layers:[]});
+  let doc=A.normalize({name:'画板保存检查',width:1024,height:768,background:'#ffffff',assets:[asset],layers:[L.createLayer('group',{id:'artboard-main',artboard:true,name:'画板 1',width:1024,height:768,background:'#ffffff',clipContent:true})]});
   doc=A.update(doc,'artboard-main',{name:'同名'});let r=A.create(doc,{name:'同名',width:640,height:960});doc=A.update(r.document,r.id,{background:'transparent'});const second=r.id;
   r=A.create(doc,{name:'第三张',width:4096,height:3072});doc=r.document;const third=r.id;
   doc.layers.push(L.createLayer('image',{parentId:'artboard-main',assetId:asset.id,x:0,y:0,width:1024,height:512}),L.createLayer('shape',{parentId:second,shape:'rect',fill:true,color:'#00ff00',x:20,y:20,width:200,height:200}));

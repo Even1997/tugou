@@ -1,4 +1,6 @@
 :root {
+  --sidebar-width: 248px;
+  --panel-padding: 16px;
   --disclosure-size: 10px;
   --control-icon-size: 16px;
   --icon-tile-size: 24px;
@@ -343,10 +345,10 @@ main {
 .workbench {
   height: 100%;
   display: grid;
-  grid-template-columns: 208px minmax(300px, 1fr) 380px;
+  grid-template-columns: var(--sidebar-width) minmax(240px, 1fr) 340px;
 }
 .module-list {
-  padding: 20px 16px;
+  padding: var(--panel-padding);
   background: var(--shell);
   border-right: 1px solid var(--line);
   min-height: 0;
@@ -400,7 +402,7 @@ main {
   margin-left: auto;
 }
 .module-editor {
-  padding: 32px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -413,8 +415,8 @@ main {
   gap: 12px;
 }
 .editor-heading .name-input {
-  font-size: 24px;
-  font-weight: 650;
+  font-size: 20px;
+  font-weight: 600;
   padding: 0 8px;
   min-width: 0;
   flex: 1;
@@ -427,7 +429,7 @@ main {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 22px 0;
+  margin: 16px 0;
   flex-wrap: wrap;
 }
 .module-options .studio-select {
@@ -592,8 +594,8 @@ main {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
-  padding: 16px 24px;
+  gap: 8px;
+  padding: 12px 24px;
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
 }
@@ -704,7 +706,7 @@ main {
     width: 34px;
   }
   .workbench {
-    grid-template-columns: 176px minmax(240px, 1fr) 300px;
+    grid-template-columns: var(--sidebar-width) minmax(240px, 1fr) 300px;
   }
   .module-editor {
     padding: 24px;
@@ -719,7 +721,7 @@ main {
     padding: 20px;
   }
   .module-editor .name-input {
-    font-size: 22px;
+    font-size: 20px;
   }
 }
 @media (max-width: 1200px) {
@@ -728,7 +730,7 @@ main {
     padding: 0;
   }
   .workbench {
-    grid-template-columns: 176px minmax(240px, 1fr) 300px;
+    grid-template-columns: var(--sidebar-width) minmax(240px, 1fr) 300px;
   }
   .module-editor {
     padding: 20px;
@@ -796,14 +798,19 @@ main {
 .library-filters [aria-pressed=true] { color:var(--accent); background:var(--accent-bg); }
 .library-content { flex:1; display:flex; min-height:0; }
 .library-content > .empty { flex:1; min-width:0; }
-.library-details { flex:0 0 280px; padding:24px; background:var(--shell); border-left:1px solid var(--line); overflow:auto; display:flex; flex-direction:column; gap:18px; }
+.library-details { flex:0 0 304px; padding:var(--panel-padding); background:var(--shell); border-left:1px solid var(--line); overflow:auto; display:flex; flex-direction:column; gap:16px; }
 .library-details .material-preview { height:200px; background:var(--surface); border-radius:10px; }
 .library-details h3 { margin:0; font-size:14px; overflow-wrap:anywhere; }
-.library-details dl { display:grid; grid-template-columns:60px 1fr; gap:16px; font-size:12px; }
+.library-details dl { display:grid; grid-template-columns:60px 1fr; gap:12px; margin:0; font-size:12px; }
 .library-details dt { color:var(--muted); }.library-details dd { margin:0; overflow-wrap:anywhere; text-align:right; }
-.library-details .detail-actions { display:flex; flex-direction:column; gap:8px; margin-top:auto; }
+.library-details .detail-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+.library-details .detail-actions > .ant-btn:first-child,.library-details .detail-actions > .ant-btn-primary,.library-details .detail-actions > .ant-btn:last-child { grid-column:1 / -1; }
+.library-details .detail-actions > .ant-btn { min-width:0; padding-inline:8px; font-size:12px; }
+.library-details .panel-heading { margin-bottom:0; }
+.material-identity { display:grid; gap:6px; }
 .library-details .detail-actions .ant-btn { width:100%; }
-@media (max-width:1150px) { .library-details { flex-basis:240px; padding:16px; } .header-save-state { display:none; } }
+@media (max-width:1150px) { .library-details { flex-basis:280px; padding:16px; } .header-save-state { display:none; } }
+@media (max-width:1000px) { .library-details { flex-basis:240px; } }
 @media (max-width:900px) { .library-details { flex-basis:210px; } .workspace-title { display:none; } }
 .project-management-list{max-height:55vh;overflow:auto}
 .project-management-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
@@ -811,3 +818,6 @@ main {
 .project-management-row strong{overflow-wrap:anywhere}
 .project-management-row small{color:var(--muted)}
 .project-management-row>button{flex-shrink:0}
+
+@media (max-width:1150px) { :root { --sidebar-width:230px; } }
+@media (max-width:1000px) { :root { --sidebar-width:216px; } }

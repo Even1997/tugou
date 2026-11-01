@@ -20,6 +20,7 @@ const { readLegacyCanvas } = require('./core/legacy-canvas-source.cjs');
 const { migrateCanvases } = require('./core/legacy-canvas.cjs');
 const {WorkflowService}=require('./core/workflow-service.cjs');
 const {saveMedia,importMedia,mediaResponse}=require('./core/media.cjs');
+const {pngName,exportDefaultPath,rememberExportDirectory}=require('./core/image-export.cjs');
 
 app.setName('TugouIndependent');
 if(process.platform==='win32')app.setAppUserModelId('app.tugou.studio');
@@ -56,6 +57,11 @@ async function boot() {
   const localAI = new LocalAIService(projects);
   const installer = new RuntimeInstaller(localAI,tasks);
   const exports = new Map();
+  const imageDestination=name=>{
+    let fallback;
+    try{fallback=app.getPath('pictures');}catch{fallback=app.getPath('home');}
+    return exportDefaultPath(app.getPath('userData'),fallback,name);
+  };
   await generation.recover();
   const cloud = new CloudTaskService(projects, connections, tasks, inspectImage, cloudRunner(root));
   await cloud.recover();
@@ -176,11 +182,15 @@ async function boot() {
   handle('exportAsset',async(projectId,document,assetId)=>{
     await projects.read(projectId);require('./core/storage.cjs').validateDocument(document);
     const asset=document.assets.find(a=>a.id===assetId);if(!asset)throw Error('素材不存在');
-    const extension=asset.kind==='text'?'txt':asset.resource?.split('.').at(-1);
-    const choice=await dialog.showSaveDialog(window,{title:'导出素材',defaultPath:String(asset.name||'素材').replace(/[<>:"/\\|?*]/g,'_')+'.'+extension,filters:[{name:'素材',extensions:[extension]}]});
-    if(choice.canceled)return false;
+    const image=!asset.kind||asset.kind==='image';
+    const extension=asset.kind==='text'?'txt':(asset.resource||asset.dataUrl?.split('/api/studio/resource/')[1])?.split('.').at(-1)||asset.dataUrl?.match(/^data:image\/(png|jpe?g|webp);/)?.[1];
+    if(!extension||!(/^[a-z0-9]+$/i.test(extension)))throw Error('素材格式不可导出');
+    const filename=pngName(asset.name||'素材').replace(image?/\.(png|jpe?g|webp)$/i:new RegExp('\\.'+extension+'$','i'),'')+'.'+extension;
+    const choice=await dialog.showSaveDialog(window,{title:image?'保存图片':'导出素材',defaultPath:await imageDestination(filename),filters:[{name:image?'原始图片':'素材',extensions:[extension]}]});
+    if(choice.canceled||!choice.filePath)return false;
     const bytes=asset.kind==='text'?Buffer.from(asset.text||''):await require('./core/generation.cjs').referenceBytes(root,asset);
-    await atomicWrite(await safePath(path.dirname(choice.filePath),path.basename(choice.filePath)),bytes);return true;
+    await atomicWrite(await safePath(path.dirname(choice.filePath),path.basename(choice.filePath)),bytes);
+    if(image)await rememberExportDirectory(app.getPath('userData'),choice.filePath);return true;
   });
   handle('localToolsStatus', () => localAI.status());
   handle('inspectMetadata', async (projectId,document,assetId) => {
@@ -240,13 +250,13 @@ async function boot() {
   handle('chooseExport', async (name) => {
     if(Array.isArray(name)){
       if(!name.length||name.length>500||name.some(n=>typeof n!=='string'||n.length>256))throw Error('请选择 1–500 个画板');
-      const choice=await dialog.showOpenDialog(window,{title:'选择画板图片保存文件夹',properties:['openDirectory','createDirectory']});
+      const choice=await dialog.showOpenDialog(window,{title:'选择画板图片保存文件夹',defaultPath:await imageDestination(),properties:['openDirectory','createDirectory']});
       if(choice.canceled)return null;
       const targets=await require('./core/image-export.cjs').batchTargets(choice.filePaths[0],name);
       return {files:targets.map(target=>{const token=randomUUID();exports.set(token,{target,exclusive:true});return {token,name:path.basename(target)};})};
     }
-    const choice=await dialog.showSaveDialog(window,{title:'导出原尺寸 PNG',defaultPath:`${String(name||'土狗').replace(/[<>:"/\\|?*]/g,'_')}.png`,filters:[{name:'PNG 图片',extensions:['png']}]});
-    if(choice.canceled)return null;
+    const choice=await dialog.showSaveDialog(window,{title:'保存原尺寸 PNG',defaultPath:await imageDestination(pngName(name||'土狗').replace(/\.png$/i,'')+'.png'),filters:[{name:'PNG 图片',extensions:['png']}]});
+    if(choice.canceled||!choice.filePath)return null;
     const target=await safePath(path.dirname(choice.filePath),path.basename(choice.filePath));
     const token=randomUUID();exports.set(token,target);return {token};
   });
@@ -258,6 +268,7 @@ async function boot() {
     if(buffer.length<24||buffer.length>512*1024*1024||!buffer.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))||buffer.readUInt32BE(16)*buffer.readUInt32BE(20)>100000000)throw new Error('导出内容不是有效尺寸的 PNG');
     await safePath(path.dirname(target),path.basename(target));
     if(choice.exclusive)await require('./core/image-export.cjs').writeExclusive(target,buffer);else await atomicWrite(target,buffer);
+    await rememberExportDirectory(app.getPath('userData'),target);
     exports.delete(token);return {name:path.basename(target),bytes:buffer.length};
   });
   handle('generate', (id, document, nodeId) => generation.start(id, document, nodeId));
