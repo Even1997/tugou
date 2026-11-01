@@ -29,4 +29,4 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
  await run('page.create',{kind:'layers',name:'空白合成 2'});await wait(`!!document.querySelector('.composite-empty')`);check('new composition page is also empty',await count()===0);
  await click('撤销');await wait(`!!document.querySelector('.layer-stage')`);check('returning to previous page retains existing board',await count()===1);
  check('no renderer errors',report.errors.length===0);finish(0);
- }catch(error){report.failure=error.stack;console.error(error);finish(1);}});});require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');
+ }catch(error){report.failure=error.stack;console.error(error);finish(1);}});});require(process.env.TUGOU_TEST_APP?path.resolve(process.env.TUGOU_TEST_APP):'../desktop-main.cjs');

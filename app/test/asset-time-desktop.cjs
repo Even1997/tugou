@@ -57,4 +57,4 @@ app.on('browser-window-created',(_,w)=>{
    check('no renderer errors',report.errors.length===0);finish(0);
   }catch(error){report.failure=error.stack;console.error(error);try{await capture('failure')}catch{}finish(1);}
  });
-});require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');
+});require(process.env.TUGOU_TEST_APP?path.resolve(process.env.TUGOU_TEST_APP):'../desktop-main.cjs');

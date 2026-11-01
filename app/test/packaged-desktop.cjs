@@ -47,7 +47,7 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
          const timeout=setTimeout(()=>{helper.kill();reject(new Error('Packaged migration helper timeout'));},15000);
          helper.on('message',value=>{message=value;});helper.once('error',error=>{clearTimeout(timeout);reject(error);});helper.once('exit',code=>{clearTimeout(timeout);code===0?resolve(message):reject(new Error('Helper failed: '+code));});
        });
-       check('packaged helper bypasses app lock and decrypts isolated fixture',result?.ok&&JSON.parse(result.value).apiKey==='packaged-test-secret');
+       check('packaged helper bypasses app lock and decrypts isolated fixture',result?.ok&&JSON.parse(result.value).connections.some(c=>c.apiKey==='packaged-test-secret'));
      } finally {
        const root=await fs.realpath(os.tmpdir());if(path.dirname(temporary)!==root||!path.basename(temporary).startsWith('tugou-key-import-'))throw new Error('Unsafe cleanup path');
        await fs.rm(temporary,{recursive:true,force:true,maxRetries:5,retryDelay:100});
