@@ -21,7 +21,7 @@ app.on('browser-window-created',(_,w)=>{
   const wait=async s=>{for(let i=0;i<400;i++){if(await js(s))return;await delay(50);}throw Error('Timeout '+s);};
   const click=async(selector,text)=>{await js(`(()=>{const e=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>${text===undefined?'true':`e.textContent.trim()===${JSON.stringify(text)}`});if(!e||e.disabled)throw Error('Missing button '+${JSON.stringify(text||selector)});e.click()})()`);await delay(180);};
   const context=async selector=>{await js(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});const r=e.getBoundingClientRect();e.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:r.x+Math.min(30,r.width/2),clientY:r.y+Math.min(30,r.height/2)}))})()`);await wait(`!!document.querySelector('.image-save-menu:not(.ant-dropdown-hidden) [role=menuitem]')`);};
-  const capture=async name=>{w.showInactive();await delay(150);fs.writeFileSync(path.join(out,name+'.png'),(await w.webContents.capturePage()).toPNG());w.hide();};
+  const capture=async name=>{if(process.platform!=='darwin')w.showInactive();await delay(150);fs.writeFileSync(path.join(out,name+'.png'),(await w.webContents.capturePage()).toPNG());if(process.platform!=='darwin')w.hide();};
   const remembered=()=>JSON.parse(fs.readFileSync(path.join(profile,'image-export.json'))).directory;
   try{
    w.setSize(1380,900);await wait(`!!document.querySelector('.workspace-rail')`);
