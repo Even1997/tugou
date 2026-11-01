@@ -1,7 +1,8 @@
 import {ColorControl} from './color-control.jsx';
 import {useUiView} from './ui-view.js';
-import React, {useMemo, useRef, useState} from 'react';
-import {Modal} from 'antd';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {Modal,Dropdown} from 'antd';
+import {BoardExport} from './board-export.jsx';
 import {Button, Input, Icon} from './components.jsx';
 import {NumberField} from './number-field.jsx';
 import {LayerEditor} from './layers.jsx';
@@ -25,6 +26,14 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
   const list=artboards.boards(normalized);
   const [activeId,setActiveId]=useState(null),[dialog,setDialog]=useState(null),[error,setError]=useState('');
   const [maskId,setMaskId]=useState(null);
+  const [context,setContext]=useState(null),[exportRequest,setExportRequest]=useState(null),[notice,setNotice]=useState('');
+  useEffect(()=>{
+    if(!context)return;
+    const outside=e=>{if(!e.target.closest('.board-context-menu'))setContext(null);};
+    const escape=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setContext(null);}};
+    window.document.addEventListener('pointerdown',outside,true);window.document.addEventListener('keydown',escape,true);
+    return()=>{window.document.removeEventListener('pointerdown',outside,true);window.document.removeEventListener('keydown',escape,true);};
+  },[context]);
   const [scaleContent,setScaleContent]=useState(false);
   const view=useRef(initialPageView||null), latest=useRef(null);
   useUiView('boards',{get:()=>({activeId,maskId,scaleContent,view:view.current}),restore:v=>{view.current=v.view;setActiveId(v.activeId);setMaskId(v.maskId);setScaleContent(v.scaleContent);}});
@@ -52,6 +61,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     if(save(next)!==false)activate(artboards.owner(next,ids[0]).id,ids);
   });
   const workspace={
+    contextMenu:(event,id)=>{event.preventDefault();event.stopPropagation();if(!props.disabled)setContext({id,x:event.clientX,y:event.clientY});},
     board,boards:list.map(b=>({...b,x:b.x-board.x,y:b.y-board.y})),layers:normalized.layers,
     parameters:<fieldset className="board-tool-options" disabled={props.disabled||board.locked}>
       <BoardSizeControl board={board} apply={applySize} disabled={props.disabled||board.locked}><Button className="board-preset-button">{presets.find(([,w,h])=>w===board.width&&h===board.height)?.[0]||'自定义尺寸'}<Icon name="collapse"/></Button></BoardSizeControl>
@@ -77,9 +87,19 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
       duplicate={()=>run(()=>{const result=artboards.duplicate(normalized,board.id);if(save(result.document)!==false){view.current=null;activate(result.id)}})}
       remove={()=>setDialog('delete')}/>,
   };
-  return <div className="composite-workspace">
+  return <div className="composite-workspace" data-dev-update-blocked={exportRequest?'请先完成画板保存':undefined} onContextMenu={e=>{const row=e.target.closest('[data-artboard="true"]');if(row)workspace.contextMenu(e,row.dataset.treeId);}}>
     {error&&<div className="message error" role="alert">{error}<Button iconOnly icon="close" onClick={()=>setError('')}>关闭错误</Button></div>}
-    <LayerEditor key={board.id} {...props} document={local} change={edit} selected={selected.filter(id=>local.layers.some(l=>l.id===id))} setSelected={setSelected} workspace={workspace}/>
+    {notice&&<div className="message" role="status">{notice}<Button iconOnly icon="close" onClick={()=>setNotice('')}>关闭保存提示</Button></div>}
+    <LayerEditor key={board.id} {...props} disabled={props.disabled||!!exportRequest} document={local} change={edit} selected={selected.filter(id=>local.layers.some(l=>l.id===id))} setSelected={setSelected} workspace={workspace}/>
+    {context&&<Dropdown open trigger={[]} autoFocus overlayClassName="board-context-menu" onOpenChange={open=>{if(!open)setContext(null);}} menu={{items:[
+      {key:'save',label:'保存图片',icon:<Icon name="export"/>},
+      {key:'batch',label:'批量保存画板…'},
+      {type:'divider'},
+      {key:'edit',label:'编辑画板'},
+      {key:'copy',label:'复制画板'},
+      {key:'delete',label:'删除画板',danger:true,disabled:list.length<2||list.find(b=>b.id===context.id)?.locked},
+    ],onClick:({key})=>{const id=context.id;setContext(null);if(key==='save'||key==='batch'){setNotice('');setExportRequest({document:normalized,id,single:key==='save'});}else if(key==='copy')run(()=>{const result=artboards.duplicate(normalized,id);if(save(result.document)!==false)activate(result.id);});else{activate(id);if(key==='delete')setDialog('delete');}}}}><span style={{position:'fixed',left:context.x,top:context.y,width:1,height:1,pointerEvents:'none'}}/></Dropdown>}
+    {exportRequest&&<BoardExport document={exportRequest.document} initialId={exportRequest.id} single={exportRequest.single} close={()=>setExportRequest(null)} complete={setNotice}/>}
     {dialog==='delete'&&<Modal open getContainer={()=>window.document.getElementById('dialogs')} transitionName="" maskTransitionName="" title={`删除“${board.name}”？`} onCancel={()=>setDialog(null)} onOk={()=>run(()=>{if(save(artboards.remove(normalized,board.id))===false)return;activate(list.find(b=>b.id!==board.id).id);setDialog(null)})} okText="删除画板" cancelText="取消" okButtonProps={{danger:true}}><p>画板内的 {local.layers.length} 个图层会一起删除。可通过撤销恢复。</p></Modal>}
   </div>;
 }

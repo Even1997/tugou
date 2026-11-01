@@ -14,6 +14,8 @@
 
 ## 开发文档
 
+- [可见水印修复与元数据清理：实现与验收](engineering/cleanup-tools.md)
+
 - [生图并发调度与桌面／MCP 验收](engineering/generation-concurrency.md)
 - [更新弹窗与说明排版、安全校验](engineering/update-prompt.md)
 
@@ -46,6 +48,10 @@
 - [打赏支持](support/donate.md)
 
 ## 项目进度
+
+- [v0.8.8 版本说明](releases/v0.8.8.md) · [发布验收](engineering/release-v0.8.8.md)
+
+- [画板右键与批量原尺寸保存验收](engineering/artboard-image-export.md)
 
 - [待测试](progress/pending-test.md)
 - [TODO](progress/todo.md)

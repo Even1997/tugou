@@ -1,0 +1,21 @@
+const fs=require('node:fs/promises'),path=require('node:path');
+const {safePath}=require('./storage.cjs');
+function pngName(value){
+  let name=String(value||'画板').replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').replace(/[. ]+$/g,'').slice(0,100)||'画板';
+  if(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name))name='_'+name;
+  return name;
+}
+async function batchTargets(folder,names){
+  if(!Array.isArray(names)||!names.length||names.length>500||names.some(n=>typeof n!=='string'||n.length>256))throw Error('请选择 1–500 个画板');
+  const used=new Set((await fs.readdir(folder)).map(n=>n.normalize('NFC').toLowerCase()));
+  const targets=[];
+  for(const value of names){const base=pngName(value);let name=base+'.png',index=2;while(used.has(name.normalize('NFC').toLowerCase()))name=`${base} (${index++}).png`;used.add(name.normalize('NFC').toLowerCase());targets.push(await safePath(folder,name));}
+  return targets;
+}
+async function writeExclusive(target,bytes){
+  await safePath(path.dirname(target),path.basename(target));
+  const file=await fs.open(target,'wx');
+  let failed=false;
+  try{await file.writeFile(bytes);await file.sync();}catch(error){failed=true;throw error;}finally{await file.close();if(failed)await fs.unlink(target);}
+}
+module.exports={pngName,batchTargets,writeExclusive};

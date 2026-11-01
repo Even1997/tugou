@@ -1,6 +1,12 @@
 const cutoutModels = require('../runtime/cutout-models.json');
 function localToolReadiness(status, settings, size) {
   if (!status) return { ready: false, reason: "正在检查本地组件…" };
+  if (require('./cleanup-settings.cjs').cleanupNames[settings.operation]) {
+    if(!status.cleanup?.[settings.operation]?.ready)return {ready:false,reason:'请先手动下载工具'};
+    try {require('./cleanup-settings.cjs').validateCleanup(settings,size||{width:0,height:0});}
+    catch(error){return {ready:false,reason:error.message};}
+    return {ready:true,reason:'本地工具已就绪 · 离线可用'};
+  }
   if (!status.configured) return { ready: false, reason: status.message || "请先安装本地组件" };
   if (settings.operation === 'cutout') {
     if (!status.cutout) return { ready: false, reason: status.cutoutReason || "请安装主体抠图组件" };

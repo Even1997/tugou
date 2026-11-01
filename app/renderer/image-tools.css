@@ -343,3 +343,7 @@
 .tools-setting-fields .image-tool-parameters label { flex-direction:column; align-items:stretch; gap:8px; }
 .tools-setting-fields .image-tool-parameters label:has(input[type=checkbox]) { flex-direction:row; justify-content:flex-start; align-items:center; }
 .tools-setting-fields .image-tool-parameters input[type=number] { width:100%; }
+.cleanup-controls .cleanup-fields {max-height:220px;overflow:auto;margin:12px 0;font-size:12px;overflow-wrap:anywhere;}
+.cleanup-controls .cleanup-fields dt {font-weight:600;margin-top:8px;}
+.cleanup-controls .cleanup-fields dd {margin:4px 0;color:var(--muted);}
+.cleanup-report {padding:12px;border:1px solid var(--line);border-radius:8px;overflow-wrap:anywhere;}

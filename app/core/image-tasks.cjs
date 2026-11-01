@@ -21,8 +21,9 @@ const {
   compositionDefaults,
   validateComposition,
 } = require("./image-composition.cjs");
-const aiNames = { upscale: "AI 超分辨率", cutout: "主体抠图" };
-const aiDefaults = { upscale: { model: "general", scale: 4 }, cutout: { model: 'birefnet', edgeShrink: 0, edgeFeather: 0 } };
+const {cleanupNames, cleanupDefaults} = require('./cleanup-settings.cjs');
+const aiNames = { upscale: "AI 超分辨率", cutout: "主体抠图", ...cleanupNames };
+const aiDefaults = { upscale: { model: "general", scale: 4 }, cutout: { model: 'birefnet', edgeShrink: 0, edgeFeather: 0 }, ...cleanupDefaults };
 const names = { ...operations, ...compositionNames, ...aiNames };
 const fail = (message) =>
   Object.assign(new Error(message), { safeMessage: message });
@@ -50,6 +51,8 @@ function validateJob(job) {
     }
   }
   if (s.operation === "lut") parseCube(s.lutText);
+  if (s.operation === 'watermark' && s.mode === 'mask' && (inputs.length!==1 || !job.mask || job.mask.width!==inputs[0].width || job.mask.height!==inputs[0].height))
+    throw fail('涂画修复一次处理一张，蒙版须与原图尺寸相同');
 }
 class ImageTaskService {
   constructor(projects, tasks, inspectImage, execute, localAI) {
@@ -62,17 +65,20 @@ class ImageTaskService {
       root: projects.root,
     });
   }
-  async normalizeAsset(asset) {
+  async normalizeAsset(asset, oriented = false) {
     if (!asset || typeof asset.id !== "string")
       throw fail("原图已移除且没有历史快照");
+    const bytes=await referenceBytes(this.root, asset);
+    const display=oriented ? (await require('sharp')(bytes).metadata()).autoOrient : null;
     return {
       id: asset.id,
       name: typeof asset.name === "string" ? asset.name : "素材",
       ...(await saveImage(
         this.root,
-        await referenceBytes(this.root, asset),
+        bytes,
         this.inspectImage,
       )),
+      ...(display || {}),
     };
   }
   async start(projectId, document, sourceIds, options) {
@@ -106,17 +112,18 @@ class ImageTaskService {
     const find = (id) =>
       document.assets.find((a) => a.id === id) ||
       document.assets
-        .flatMap((a) => [a.toolResult?.source, a.toolResult?.secondary])
+        .flatMap((a) => [a.toolResult?.source, a.toolResult?.secondary, a.toolResult?.mask])
         .find((a) => a?.id === id);
     const inputs = [];
     for (const id of sourceIds)
-      inputs.push(await this.normalizeAsset(find(id)));
+      inputs.push(await this.normalizeAsset(find(id),settings.operation==='watermark'));
     const secondary = ["mattePair", "texture", "patch"].includes(
       options.operation,
     )
       ? await this.normalizeAsset(find(settings.secondaryId))
       : undefined;
-    const job = { projectId, inputs, secondary, settings };
+    const mask = settings.operation==='watermark' && settings.mode==='mask' ? await this.normalizeAsset(find(settings.maskId)) : undefined;
+    const job = { projectId, inputs, secondary, mask, settings };
     validateJob(job);
     let runtime;
     if (Object.hasOwn(aiNames, settings.operation)) {
@@ -159,6 +166,7 @@ class ImageTaskService {
     await this.projects.verifyResources([
       ...job.inputs,
       ...(job.secondary ? [job.secondary] : []),
+      ...(job.mask ? [job.mask] : []),
     ]);
     const runtime = Object.hasOwn(aiNames, job.settings.operation)
       ? await this.localAI.resolveRuntime(job.settings, job.runtime, job.inputs.reduce((a,b) => a.width*a.height>b.width*b.height ? a : b))
@@ -223,6 +231,7 @@ class ImageTaskService {
                   this.inspectImage,
                 );
               let expected = input;
+              if(job.settings.operation==='watermark')Object.assign(output,(await require('sharp')(Buffer.from(part.bytes)).metadata()).autoOrient);
               if (job.settings.operation === "upscale")
                 expected = {
                   width: input.width * job.settings.scale,
@@ -256,6 +265,8 @@ class ImageTaskService {
                   sourceId: input.id,
                   source: input,
                   secondary: job.secondary,
+                  ...(job.mask ? {mask:job.mask} : {}),
+                  ...(part.report ? {report:part.report} : {}),
                   taskId: id,
                   batchId: id,
                   partIndex: part.index,
@@ -299,7 +310,8 @@ class ImageTaskService {
           // A cancellation after the durable write still stays cancelled; recovery never publishes cancelled tasks.
           signal.throwIfAborted();
           entry.progress = 100;
-          entry.message = `已完成 ${job.inputs.length} 张原图，${outputs.length} 张结果`;
+          const partial=outputs.filter(a=>['partial','unvalidated'].includes(a.toolResult.report?.status)).length;
+          entry.message = `已完成 ${job.inputs.length} 张原图，${outputs.length} 张结果${partial?`；${partial} 张需检查残留`:''}`;
           return id;
         } catch (error) {
           throw error.name === "AbortError"

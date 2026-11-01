@@ -1,0 +1,62 @@
+// Isolated desktop, actual compositor and IPC/files; only native picker choices are automated.
+const {app,dialog,nativeImage}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const A=require('../core/artboards.cjs'),L=require('../core/layers.cjs');
+const out=path.resolve('test-results/board-export');fs.mkdirSync(out,{recursive:true});const profile=fs.mkdtempSync(path.join(out,'desktop-')),dest=path.join(profile,'exports');fs.mkdirSync(dest);
+require('esbuild').buildSync({stdin:{contents:'import {exportMaterial} from "./renderer/image-processing.js";window.exportMaterialQA=exportMaterial;',resolveDir:path.resolve('.'),loader:'js'},bundle:true,platform:'browser',format:'iife',outfile:path.join(out,'export-material.js')});
+process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.join(out,'dist');delete process.env.TUGOU_DEV_PREVIEW;
+fs.writeFileSync(path.join(profile,'preferences.json'),JSON.stringify({...require('../core/preference-values.cjs').defaults,theme:'light',autoCheck:false,notifyTasks:false}));
+const exporter=require('../core/image-export.cjs'),realWrite=exporter.writeExclusive;let failName;
+exporter.writeExclusive=async(target,bytes)=>{if(path.basename(target)===failName){failName=null;throw Error('模拟磁盘写入失败');}return realWrite(target,bytes);};
+const report={profile,checks:[],errors:[]};let finished=false,savePath=path.join(dest,'single.png'),cancel=false,pickers=0;
+const check=(name,ok)=>{assert.ok(ok,name);report.checks.push(name);console.log('PASS '+name);};
+const finish=code=>{if(finished)return;finished=true;fs.writeFileSync(path.join(out,'desktop-report.json'),JSON.stringify(report,null,2));app.exit(code);};
+dialog.showErrorBox=(title,msg)=>{report.failure=title+': '+msg;finish(1);};
+dialog.showSaveDialog=async()=>({canceled:cancel,filePath:savePath});dialog.showOpenDialog=async()=>{pickers++;return{canceled:cancel,filePaths:[dest]};};
+setTimeout(()=>{report.failure='timeout';finish(1)},180000);
+app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webContents.setBackgroundThrottling(false);
+ w.webContents.on('console-message',e=>{if(e.level==='error')report.errors.push(e.message);});
+ w.webContents.once('did-finish-load',async()=>{
+ const js=s=>w.webContents.executeJavaScript(s,true),delay=ms=>new Promise(r=>setTimeout(r,ms));
+ const wait=async s=>{for(let i=0;i<400;i++){if(await js(s))return;await delay(50);}throw Error('Timeout '+s);};
+ const click=async(label,selector='button')=>{await js(`(()=>{const b=[...document.querySelectorAll(${JSON.stringify(selector)})].find(b=>b.textContent.trim()===${JSON.stringify(label)}||b.getAttribute('aria-label')===${JSON.stringify(label)});if(!b||b.disabled)throw Error('Unavailable '+${JSON.stringify(label)});b.click()})()`);await delay(160);};
+ const capture=async name=>{w.showInactive();await delay(200);fs.writeFileSync(path.join(out,name+'.png'),(await w.webContents.capturePage()).toPNG());w.hide();};
+ const context=async(id='artboard-main',tree=false)=>{await js(`(()=>{const e=document.querySelector(${JSON.stringify(tree?`[data-tree-id="${id}"]`:`[data-board-id="${id}"]`)});if(!e)throw Error('board missing');const r=e.getBoundingClientRect();e.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:Math.min(innerWidth-10,Math.max(80,r.x+r.width/2)),clientY:Math.min(innerHeight-20,Math.max(100,r.y+r.height/2))}))})()`);await wait(`!!document.querySelector('.board-context-menu [role=menuitem]')`);};
+ const menu=label=>click(label,'.board-context-menu [role=menuitem]');
+ const noDialog=()=>wait(`!document.querySelector('.ant-modal')`);
+ const png=(name,width,height)=>{const b=fs.readFileSync(path.join(dest,name));assert.equal(b.readUInt32BE(16),width);assert.equal(b.readUInt32BE(20),height);return nativeImage.createFromBuffer(b);};
+ try{
+  w.setSize(1380,900);await wait(`!!document.querySelector('.workspace-rail')`);
+  const asset=await js(`(async()=>{const c=document.createElement('canvas');c.width=2048;c.height=1024;const x=c.getContext('2d');x.fillStyle='#ff0000';x.fillRect(0,0,c.width,c.height);const b=await new Promise(r=>c.toBlob(r));return tugou.storeRaster(new Uint8Array(await b.arrayBuffer()),'高清原图')})()`);
+  let doc=A.normalize({name:'画板保存检查',width:1024,height:768,background:'#ffffff',assets:[asset],layers:[]});
+  doc=A.update(doc,'artboard-main',{name:'同名'});let r=A.create(doc,{name:'同名',width:640,height:960});doc=A.update(r.document,r.id,{background:'transparent'});const second=r.id;
+  r=A.create(doc,{name:'第三张',width:4096,height:3072});doc=r.document;const third=r.id;
+  doc.layers.push(L.createLayer('image',{parentId:'artboard-main',assetId:asset.id,x:0,y:0,width:1024,height:512}),L.createLayer('shape',{parentId:second,shape:'rect',fill:true,color:'#00ff00',x:20,y:20,width:200,height:200}));
+  const id=await js(`(async()=>{const r=await tugou.create('画板保存检查');await tugou.save(r.id,{...r.document,...${JSON.stringify(doc)}},r.revision);return r.id})()`);
+  await js(`sessionStorage.setItem('tugou-reload-view',JSON.stringify({id:${JSON.stringify(id)},workspace:'layers'}))`);let loaded=new Promise(r=>w.webContents.once('did-finish-load',r));w.webContents.reload();await loaded;await wait(`!!document.querySelector('.layer-stage')`);await delay(650);
+  const unchanged=await js(`document.querySelector('.statusbar [role=status]').textContent`);
+  await context(second);await capture('context-menu');check('right-click offers save and batch save',await js(`document.querySelector('.board-context-menu').textContent.includes('批量保存画板')`));await menu('保存图片');await noDialog();check('right-click inactive board exports its exact 640x960 pixels',png('single.png',640,960).getSize().width===640);check('transparent background retained',png('single.png',640,960).toBitmap()[3]===0);
+  check('saving does not dirty project',await js(`document.querySelector('.statusbar [role=status]').textContent===${JSON.stringify(unchanged)}`));
+  const point=await js(`(()=>{const r=document.querySelector('[data-board-label="artboard-main"] > rect').getBoundingClientRect();return{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`);
+  w.showInactive();w.webContents.sendInputEvent({type:'mouseDown',button:'right',clickCount:1,...point});w.webContents.sendInputEvent({type:'mouseUp',button:'right',clickCount:1,...point});await wait(`!!document.querySelector('.board-context-menu')`);check('native right-click inside artwork opens artboard menu',true);await menu('编辑画板');
+  await context();await js(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);await wait(`!document.querySelector('.board-context-menu')`);check('Escape closes menu',true);
+  await context();await js(`document.querySelector('.layer-stage').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:2}))`);await wait(`!document.querySelector('.board-context-menu')`);check('outside click closes menu',true);
+  await context(second,true);await menu('批量保存画板…');await wait(`!!document.querySelector('.board-export-list')`);await click('清空选择');check('empty selection blocks saving',await js(`[...document.querySelectorAll('button')].find(b=>b.textContent==='保存 0 张图片').disabled`));await click('全选画板');await capture('batch-light');
+  cancel=true;await click('保存 3 张图片');await wait(`!document.querySelector('progress')`);check('folder cancellation creates no files and preserves selection',fs.readdirSync(dest).length===1&&await js(`document.querySelectorAll('.board-export-list input:checked').length===3`));cancel=false;
+  fs.writeFileSync(path.join(dest,'同名.png'),'keep');const before=pickers;await click('保存 3 张图片');await noDialog();check('one folder choice for batch',pickers===before+1);png('同名 (2).png',1024,768);png('同名 (3).png',640,960);png('第三张.png',4096,3072);check('batch saves every selected board at independent original dimensions including 4K at reduced zoom',true);check('existing image never overwritten',fs.readFileSync(path.join(dest,'同名.png'),'utf8')==='keep');
+  const pixels=png('同名 (3).png',640,960).toBitmap(),offset=(100*640+100)*4;check('transparent board retains painted content and alpha',pixels[3]===0&&pixels[offset+1]===255&&pixels[offset+3]===255);
+  await context();await menu('批量保存画板…');await click('全选画板');failName='同名 (5).png';await click('保存 3 张图片');await wait(`document.querySelector('.ant-modal [role=alert]')?.textContent.includes('已保存 1 张')`);check('partial failure keeps successful files and selects remaining boards',fs.existsSync(path.join(dest,'同名 (4).png'))&&!fs.existsSync(path.join(dest,'同名 (5).png'))&&await js(`document.querySelectorAll('.board-export-list input:checked').length===2`));await click('保存 2 张图片');await noDialog();png('同名 (5).png',640,960);check('retry saves remaining without duplicating successful board',!fs.existsSync(path.join(dest,'同名 (6).png')));
+  await context(third,true);await menu('批量保存画板…');const countBeforeCancel=fs.readdirSync(dest).length;
+  await js(`window.cancelExportCheck=setInterval(()=>{const p=document.querySelector('.ant-modal [role=status]'),b=[...document.querySelectorAll('.ant-modal button')].find(b=>b.textContent==='取消保存');if(p?.textContent.includes('正在保存')&&b&&!b.disabled){clearInterval(window.cancelExportCheck);b.click();}},1)`);
+  await click('保存 1 张图片');await noDialog();await js(`clearInterval(window.cancelExportCheck)`);check('cancel during 4K rendering leaves no partial file',fs.readdirSync(dest).length===countBeforeCancel);
+  await context();await menu('复制画板');check('copy adds artboard',await js(`document.querySelectorAll('.layer-row[data-artboard="true"]').length===4`));await click('撤销');check('copy can be undone',await js(`document.querySelectorAll('.layer-row[data-artboard="true"]').length===3`));
+  await context(third,true);await menu('删除画板');await click('取消');await noDialog();check('delete requires confirmation',await js(`document.querySelectorAll('.layer-row[data-artboard="true"]').length===3`));
+  // Export original asset via the actual shared renderer entry, not a viewport canvas.
+  const source=fs.readFileSync(path.join(out,'export-material.js'),'utf8');await js(source);savePath=path.join(dest,'asset.png');await js(`window.exportMaterialQA(${JSON.stringify(asset)})`);png('asset.png',2048,1024);check('shared asset save retains full source dimensions',true);
+  await click('重做');check('export and cancelled delete retain redo history',await js(`document.querySelectorAll('.layer-row[data-artboard="true"]').length===4`));await click('撤销');
+  await context('artboard-main',true);await menu('编辑画板');savePath=path.join(dest,'toolbar.png');await click('导出 PNG');await wait(`document.querySelector('.layer-message')?.textContent.includes('已导出')||[...document.querySelectorAll('[role=status]')].some(e=>e.textContent.includes('已导出'))`);png('toolbar.png',1024,768);check('existing toolbar export still uses full board dimensions',true);
+  savePath=path.join(dest,'invalid.png');check('cancelled destination token cannot be reused',await js(`(async()=>{const c=await tugou.chooseExport('invalid');await tugou.cancelExport(c.token);try{await tugou.writeExport(c.token,new Uint8Array(25));return false}catch{return true}})()`));check('invalid PNG cannot be written',await js(`(async()=>{const c=await tugou.chooseExport('invalid');try{await tugou.writeExport(c.token,new Uint8Array(25));return false}catch{return true}finally{await tugou.cancelExport(c.token)}})()`)&&!fs.existsSync(savePath));
+  w.setSize(960,720);await click('切换深色主题');await context(third,true);await menu('批量保存画板…');await capture('batch-dark-narrow');check('batch dialog fits narrow window',await js(`(()=>{const e=document.querySelector('.ant-modal'),r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&e.scrollWidth<=e.clientWidth+1})()`));await click('取消');
+  check('no renderer errors',report.errors.length===0);finish(0);
+ }catch(e){report.failure=e.stack;console.error(e);try{await capture('failure');}catch{}finish(1);}
+ });
+});require('../desktop-main.cjs');

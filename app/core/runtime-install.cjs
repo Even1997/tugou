@@ -71,6 +71,7 @@ class RuntimeInstaller {
     this.root = localAI.root;
   }
   async start(parent, options = {}) {
+    if (options.cleanup) return this.localAI.cleanup.install(this.tasks,options.cleanup);
     if (
       this.tasks
         .list()
@@ -125,6 +126,7 @@ class RuntimeInstaller {
         .some((t) => t.context?.kind === "runtime-install" && active(t))
     )
       throw fail("该安装任务暂不可重试");
+    if (task.context.cleanup) return this.localAI.cleanup.install(this.tasks,task.context.cleanup);
     const job = JSON.parse(
       await fs.readFile(
         await safePath(

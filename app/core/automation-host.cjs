@@ -103,6 +103,7 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
       return result;
     }
     if(name==='tools.status')return localAI.status();
+    if(name==='image.metadata')return localAI.cleanup.inspect(find(project(state).assets,input.id),signal);
     if(name==='task.list')return tasks.list();
     if(name==='task.get')return find(tasks.list(),input.id);
     if(name==='task.cancel'){find(tasks.list(),input.id);return {cancelled:await tasks.cancel(input.id)};}

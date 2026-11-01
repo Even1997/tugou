@@ -33,7 +33,7 @@ function drawMask(canvas, source, base, settings, actions) {
   ctx.restore();
 }
 
-export function CloudMaskEditor({source,mask,settings,close,apply}){
+export function CloudMaskEditor({source,mask,settings,close,apply,description='蓝色区域将交给 AI 修改，未涂区域保留原图。应用只保存区域，不会立即调用模型。'}){
   const canvas=useRef(null),original=useRef(null),base=useRef(null),overlay=useRef(null);
   const actions=useRef([]),redo=useRef([]),draft=useRef(null),frame=useRef(null),alive=useRef(true);
   const [revision,setRevision]=useState(0),[ready,setReady]=useState(false),[saving,setSaving]=useState(false),[error,setError]=useState('');
@@ -87,7 +87,7 @@ export function CloudMaskEditor({source,mask,settings,close,apply}){
   };
   return <FormDialog title="涂画修改区域" width={920} close={()=>{if(!saving)close();}}>
     <div className="cloud-mask-editor" onKeyDown={e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!['INPUT','TEXTAREA'].includes(e.target.tagName)){e.preventDefault();e.stopPropagation();undo();}}}>
-      <p>蓝色区域将交给 AI 修改，未涂区域保留原图。应用只保存区域，不会立即调用模型。</p>
+      <p>{description}</p>
       <div className="mask-paint-toolbar">
         <Button disabled={!ready||saving} aria-pressed={mode==='paint'} onClick={()=>setMode('paint')}>涂画</Button>
         <Button disabled={!ready||saving} aria-pressed={mode==='erase'} onClick={()=>setMode('erase')}>擦除</Button>

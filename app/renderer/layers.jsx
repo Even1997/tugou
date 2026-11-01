@@ -1844,6 +1844,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           onDragOver={e=>{if(hasImageFiles(e)){imageImport.over(e);return;}if(!disabled&&e.dataTransfer.types.includes(materialMime)){e.preventDefault();e.dataTransfer.dropEffect='copy';}}}
           onDrop={e=>{if(hasImageFiles(e)){imageImport.drop(e,at(e));return;}if(disabled||!e.dataTransfer.types.includes(materialMime))return;e.preventDefault();run(()=>addAssets([readMaterialDrop(e,projectId,latest.current.document)],at(e)));}}
           onPointerDown={down}
+          onContextMenu={e=>{if(!workspace)return;const p=at(e),id=e.target.closest('[data-board-id]')?.dataset.boardId||[...workspace.boards].reverse().find(b=>p.x>=b.x&&p.y>=b.y&&p.x<=b.x+b.width&&p.y<=b.y+b.height)?.id;if(id)workspace.contextMenu(e,id);}}
           onPointerMove={move}
           onPointerLeave={()=>setPaintCursor(null)}
           onPointerUp={up}

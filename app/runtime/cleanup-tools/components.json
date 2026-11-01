@@ -1,0 +1,20 @@
+{
+  "version": "cleanup-1",
+  "python": "3.12.12",
+  "metadata": {
+    "win32": {
+      "url": "https://registry.npmjs.org/exiftool-vendored.exe/-/exiftool-vendored.exe-13.60.0.tgz",
+      "sha256": "a197c91eaf4a533f8046babbf5d1f3c75e466c0803d811da3493f02e06aec075",
+      "bytes": 10904596,
+      "format": "tar.gz",
+      "strip": 1
+    },
+    "darwin": {
+      "url": "https://registry.npmjs.org/exiftool-vendored.pl/-/exiftool-vendored.pl-13.60.0.tgz",
+      "sha256": "d4b16591cc45a6af1ff1f39862d831a4db2c6c458938b4cb893d2817718d5147",
+      "bytes": 5884456,
+      "format": "tar.gz",
+      "strip": 1
+    }
+  }
+}

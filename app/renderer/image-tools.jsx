@@ -21,6 +21,8 @@ import {
 } from "../core/image-tools.cjs";
 import { ImageToolControls } from "./image-tool-controls.jsx";
 import { LocalAIControls } from "./local-ai-controls.jsx";
+import { CleanupControls } from './cleanup-controls.jsx';
+import { cleanupNames, cleanupDefaults } from '../core/cleanup-settings.cjs';
 import { localToolReadiness } from "../core/local-readiness.cjs";
 import {
   compositionNames,
@@ -36,13 +38,14 @@ import { ConnectionDialog } from "./connection.jsx";
 import { useImageImport } from './use-image-import.js';
 import { ImageComparison } from './image-comparison.jsx';
 const toolGroups = [
-  ['智能工具', {cloudEdit:cloudNames.cloudEdit,cloudExtend:cloudNames.cloudExtend,upscale:'AI 超分辨率',cutout:'主体抠图'}],
-  ['基础处理', rasterOperations],
+  ['智能工具', {cloudEdit:cloudNames.cloudEdit,cloudExtend:cloudNames.cloudExtend,upscale:'AI 超分辨率',cutout:'主体抠图',watermark:cleanupNames.watermark}],
+  ['基础处理', {...rasterOperations,metadata:cleanupNames.metadata}],
   ['图像合成', compositionNames],
 ];
 const operations = Object.assign({}, ...toolGroups.map(([, entries])=>entries));
 const toolIcons = {cloudEdit:'brush',cloudExtend:'maximize',upscale:'zoomIn',cutout:'mask'};
 const defaults = {
+  ...cleanupDefaults,
   ...cloudDefaults,
   cloudEdit: { ...cloudDefaults.cloudEdit, maskMode: 'asset' },
   ...rasterDefaults,
@@ -50,7 +53,7 @@ const defaults = {
   upscale: { model: "general", scale: 4 },
   cutout: { model: 'u2netp', edgeShrink: 0, edgeFeather: 0 },
 };
-const regionOperations = ["texture", "crop", "extract", "patch", "cloudEdit"];
+const regionOperations = ["texture", "crop", "extract", "patch", "cloudEdit", "watermark"];
 function sourceParameters(parameters, source) {
   if (!source) return parameters;
   const keys = [...regionOperations, "resize", "extend", "cloudExtend"];
@@ -65,6 +68,7 @@ function sourceParameters(parameters, source) {
           height: source.height,
           ...(key === 'cloudEdit' ? {maskId:''} : {}),
           ...(key !== "resize" ? { left: 0, top: 0 } : {}),
+          ...(key === 'watermark' ? {maskId:'',width:Math.min(128,Math.max(1,Math.floor(source.width/4))),height:Math.min(128,Math.max(1,Math.floor(source.height/4))),left:Math.floor(source.width*0.7),top:Math.floor(source.height*0.7)} : {}),
           ...(key === "cloudExtend"
             ? {
                 width: source.width + 256,
@@ -107,6 +111,7 @@ export function ImageTools({
   );
   const [aiStatus, setAIStatus] = useState(null);
   const [paintOpen, setPaintOpen] = useState(false);
+  const [watermarkSize,setWatermarkSize]=useState(null);
   const latest = useRef(document),
     mounted = useRef(true);
   const selectionController = useRef(null);
@@ -131,11 +136,22 @@ export function ImageTools({
     [],
   );
   const result = document.assets.find((a) => a.id === resultId),
-    source =
+    storedSource =
       document.assets.find((a) => a.id === sourceId) ||
       (result?.toolResult?.source?.id === sourceId
         ? result.toolResult.source
         : undefined);
+  const source=operation==='watermark'&&watermarkSize?.id===storedSource?.id?{...storedSource,...watermarkSize}:storedSource;
+  useEffect(()=>{
+    if(operation!=='watermark'||!storedSource)return;
+    let alive=true;
+    loadOriginal(storedSource).then(image=>{
+      if(!alive)return;
+      const size={id:storedSource.id,width:image.naturalWidth,height:image.naturalHeight};setWatermarkSize(size);
+      if(size.width!==storedSource.width||size.height!==storedSource.height)setParameters(p=>({...p,watermark:sourceParameters(p,size).watermark}));
+    }).catch(e=>{if(alive)setStatus(e.message);});
+    return()=>{alive=false;};
+  },[operation,storedSource?.id]);
   const isCloud = Boolean(cloudNames[operation]);
   const activeGroup=toolGroups.find(([,entries])=>entries[operation])||toolGroups[0];
   const visibleTools=(toolQuery.trim()?Object.entries(operations):Object.entries(activeGroup[1])).filter(([,label])=>label.toLowerCase().includes(toolQuery.trim().toLowerCase()));
@@ -163,9 +179,10 @@ export function ImageTools({
     window.addEventListener('tugou-connection-changed', refresh);
     return () => { active = false; window.removeEventListener('tugou-connection-changed', refresh); };
   }, [isCloud, connectionRefresh]);
+  const maskSettings = operation==='watermark'?{...parameters.watermark,maskChannel:'alpha',invertMask:false}:parameters.cloudEdit;
   const mask =
-    document.assets.find((a) => a.id === parameters.cloudEdit.maskId) ||
-    (result?.toolResult?.mask?.id === parameters.cloudEdit.maskId
+    document.assets.find((a) => a.id === maskSettings.maskId) ||
+    (result?.toolResult?.mask?.id === maskSettings.maskId
       ? result.toolResult.mask
       : undefined);
   const cloudReady = isCloud ? cloudToolReadiness(connections, { operation, ...parameters[operation] }, source, mask) : null;
@@ -180,6 +197,7 @@ export function ImageTools({
   );
   useEffect(() => setSelectionLayerId(""), [sourceId]);
   const isAI = ["upscale", "cutout"].includes(operation);
+  const isCleanup = Boolean(cleanupNames[operation]);
   const isComposition = Boolean(compositionNames[operation]);
   const secondary =
     document.assets.find((a) => a.id === parameters[operation]?.secondaryId) ||
@@ -316,7 +334,7 @@ export function ImageTools({
             await refreshTasks();
             throw Error(`已提交 ${submitted.ids.length} 张；${submitted.error}`);
           }
-        } else if (isAI)
+        } else if (isAI || isCleanup)
           await window.tugou.startLocalTool(
             projectId,
             latest.current,
@@ -379,13 +397,13 @@ export function ImageTools({
 
   return (
     <section className="image-tools">
-      {paintOpen && source && <CloudMaskEditor source={source} mask={parameters.cloudEdit.maskMode==='asset'?mask:null} settings={parameters.cloudEdit} close={()=>setPaintOpen(false)} apply={async bytes=>{
+      {paintOpen && source && <CloudMaskEditor source={source} mask={operation==='watermark'||parameters.cloudEdit.maskMode==='asset'?mask:null} settings={maskSettings} description={operation==='watermark'?'蓝色区域将在本机修复，未涂区域保留。用橡皮擦调整边缘，应用后再开始处理。':undefined} close={()=>setPaintOpen(false)} apply={async bytes=>{
         const snapshot=latest.current,id=source.id;
         const asset=await window.tugou.storeRaster(bytes,`修改区域 · ${source.name}`);
         if(!mounted.current||latest.current!==snapshot||context.current.sourceId!==id)throw Error('画面已变化，请重新应用修改区域');
         if(change({...snapshot,assets:[...snapshot.assets,asset]})===false)throw Error('工程正在保存，请稍后应用');
-        setParameters(p=>({...p,cloudEdit:{...p.cloudEdit,maskMode:'asset',maskId:asset.id,maskChannel:'alpha',invertMask:false}}));
-        setView('original');setStatus('修改区域已保存，请填写修改要求后提交');
+        setParameters(p=>({...p,[operation]:{...p[operation],...(operation==='watermark'?{mode:'mask'}:{maskMode:'asset',maskChannel:'alpha',invertMask:false}),maskId:asset.id}}));
+        setView('original');setStatus(operation==='watermark'?'修复区域已保存，可开始处理':'修改区域已保存，请填写修改要求后提交');
       }}/>}
       <nav className="tools-navigation" aria-label="图像工具">
         <div className="tools-navigation-heading"><div className="tools-categories" role="group" aria-label="工具分类">{toolGroups.map(([title,entries])=><Button key={title} aria-pressed={activeGroup[0]===title} disabled={working} onClick={()=>selectOperation(Object.keys(entries)[0])}>{title}</Button>)}</div><SearchField label="搜索工具" value={toolQuery} onChange={setToolQuery}/></div>
@@ -447,7 +465,7 @@ export function ImageTools({
         </details>
       </aside>
       <aside className="tools-settings" aria-label="输出设置">
-        <header className="tools-settings-heading"><span className="muted">{isCloud ? '云端 AI' : isAI ? '本地 AI' : isComposition ? '图像合成' : '基础处理'}</span><h2>{operations[operation]}</h2><p>{source ? `原尺寸 ${source.width} × ${source.height} px` : '选择素材后开始处理'}</p></header>
+        <header className="tools-settings-heading"><span className="muted">{isCloud ? '云端 AI' : isAI ? '本地 AI' : isCleanup ? '本地工具' : isComposition ? '图像合成' : '基础处理'}</span><h2>{operations[operation]}</h2><p>{source ? `原尺寸 ${source.width} × ${source.height} px` : '选择素材后开始处理'}</p></header>
         <div className="tools-setting-fields" ref={settingsPanel}>
       {operation === "cloudSplit" ? (
         <SemanticControls
@@ -564,6 +582,8 @@ export function ImageTools({
             }))
           }
         />
+      ) : isCleanup ? (
+        <CleanupControls key={`${operation}:${sourceId}`} operation={operation} source={source} projectId={projectId} document={document} result={result} value={parameters[operation]} disabled={disabled} onStatus={setAIStatus} update={patch=>{setParameters(p=>({...p,[operation]:{...p[operation],...patch}}));if(patch.mode)setView('original');}} paint={()=>setPaintOpen(true)} editRegion={()=>setView('edit')}/>
       ) : isAI ? (
         <LocalAIControls
           onStatus={setAIStatus}
@@ -605,7 +625,7 @@ export function ImageTools({
 </div><div className="tools-submit"><p className="muted">{!source ? "请先在左侧选择处理素材" : "生成新素材，原图保留"}</p><Button
           primary
           icon="generate"
-          disabled={!source || disabled || imageImport.importing || (isCloud && !cloudReady.ready) || (isAI && !localToolReadiness(aiStatus, {operation, ...parameters[operation]}, source).ready)}
+          disabled={!source || disabled || imageImport.importing || (operation==='watermark'&&watermarkSize?.id!==source.id) || (isCloud && !cloudReady.ready) || ((isAI||isCleanup) && !localToolReadiness(aiStatus, {operation, ...parameters[operation]}, source).ready)}
           onClick={process}
         >
           {disabled ? "处理中" : isCloud ? "提交云端" : "开始处理"}
@@ -629,7 +649,8 @@ export function ImageTools({
         <strong title={source?.name}>{source?.name||'素材预览'}</strong>
         {operation !== 'cloudSplit' && (
           <Button icon="layers"
-            disabled={working || !document.assets.length}
+            disabled={working || !document.assets.length || (operation==='watermark'&&parameters.watermark.mode==='mask')}
+            title={operation==='watermark'&&parameters.watermark.mode==='mask'?'涂画区域仅用于当前图片':undefined}
             onClick={() => setBatchOpen(true)}
           >
             批量处理
@@ -714,14 +735,13 @@ export function ImageTools({
                       {source.width} × {source.height}
                     </span>
                   </figcaption>
-                  {operation === "cloudEdit" &&
-                  parameters.cloudEdit.maskMode === "asset" ? (
+                  {(operation === "cloudEdit" && parameters.cloudEdit.maskMode === "asset") || (operation==='watermark'&&parameters.watermark.mode==='mask') ? (
                     <CloudMaskPreview
                       source={source}
                       mask={mask}
-                      settings={parameters.cloudEdit}
+                      settings={maskSettings}
                     />
-                  ) : regionOperations.includes(operation) ? (
+                  ) : regionOperations.includes(operation) && (operation!=='watermark'||parameters.watermark.mode==='region') ? (
                     <RegionPreview
                       source={source}
                       region={parameters[operation]}

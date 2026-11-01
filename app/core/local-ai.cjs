@@ -8,6 +8,7 @@ const { referenceBytes } = require("./generation.cjs");
 const { dimensions } = require("./image-tools.cjs");
 const { runProcess } = require("./local-process.cjs");
 const { localToolReadiness } = require("./local-readiness.cjs");
+const { cleanupNames, validateCleanup } = require('./cleanup-settings.cjs');
 
 const cutoutModels = require('../runtime/cutout-models.json');
 const models = {
@@ -19,6 +20,7 @@ const failure = (message) =>
   Object.assign(new Error(message), { safeMessage: message });
 function validateLocalSettings(settings, size) {
   const operation = settings?.operation;
+  if (cleanupNames[operation]) { validateCleanup(settings, size); return settings; }
   if (!["upscale", "cutout"].includes(operation))
     throw failure("不支持的本地 AI 工具");
   const value =
@@ -42,6 +44,7 @@ function validateLocalSettings(settings, size) {
 class LocalAIService {
   constructor(projects) {
     this.root = projects.root;
+    this.cleanup = new (require('./cleanup-tools.cjs').CleanupTools)(projects);
   }
   async worker() {
     const file = await safePath(this.root, "runtime", "image-worker.py");
@@ -214,10 +217,15 @@ class LocalAIService {
     this.statusRequest ??= this.runtime().then(runtime=>this.publicRuntime(runtime)).catch(e=>({
         configured: false,
         message: e.safeMessage || "本地组件不可用，请重新选择目录",
-      })).then(status=>({...status,downloadFolder:path.join(path.dirname(this.root),'components','tugou-components')})).finally(()=>{this.statusRequest=null;});
+      })).then(async status=>({...status,cleanup:await this.cleanup.status(),downloadFolder:path.join(path.dirname(this.root),'components','tugou-components')})).finally(()=>{this.statusRequest=null;});
     return this.statusRequest;
   }
   async resolveRuntime(settings, snapshot, size) {
+    if (cleanupNames[settings.operation]) {
+      validateCleanup(settings,size);
+      try { return await this.cleanup.runtime(settings.operation); }
+      catch { throw failure('请先手动下载'+cleanupNames[settings.operation]); }
+    }
     const provider = settings.operation === 'cutout' && settings.model === 'u2netp' ? 'CPUExecutionProvider' : undefined;
     const runtime = snapshot
       ? await this.inspect(snapshot.folder, provider || snapshot.provider, undefined, snapshot.cutoutFolder)
@@ -227,6 +235,7 @@ class LocalAIService {
     return runtime;
   }
   async execute(job, runtime, signal, id, onPart, onProgress) {
+    if (cleanupNames[job.settings.operation]) return this.cleanup.execute(job,runtime,signal,id,onPart,onProgress);
     for (let inputIndex = 0; inputIndex < job.inputs.length; inputIndex++) {
       signal.throwIfAborted();
       const stage = (message, percent = 0) =>
