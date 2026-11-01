@@ -4,7 +4,7 @@ import {originalUrl} from './image-processing.js';
 import {comparisonLayout,zoomCamera} from './comparison-view.cjs';
 import './image-comparison.css';
 
-export function ImageComparison({source,result,mode}) {
+export function ImageComparison({source,result=source,mode}) {
   const layout=comparisonLayout(source,result),host=useRef(null),drag=useRef(null);
   const [size,setSize]=useState({width:0,height:0}),[camera,setCamera]=useState({zoom:null,x:layout.width/2,y:layout.height/2}),[split,setSplit]=useState(50),[failed,setFailed]=useState(false);
   const parallel=mode==='compare',swipe=mode==='swipe';
@@ -28,8 +28,8 @@ export function ImageComparison({source,result,mode}) {
     if(delta){e.preventDefault();e.stopPropagation();setCamera(c=>({...c,x:c.x+delta[0]/live.current.zoom,y:c.y+delta[1]/live.current.zoom}));}
     else if(['+','=','-','0'].includes(e.key)){e.preventDefault();e.stopPropagation();if(e.key==='0')reset();else setCamera(zoomCamera(live.current,live.current.zoom*(e.key==='-'?1/1.25:1.25)));}
   };
-  return <section className="comparison-viewer" aria-label="图片对比">
-    <header className="comparison-heading"><span>原图 <small>{source.width} × {source.height}</small></span><span>结果 <small>{result.width} × {result.height}</small></span></header>
+  return <section className="comparison-viewer" aria-label={mode==='original'?'原图查看':mode==='result'?'结果查看':'图片对比'}>
+    <header className="comparison-heading">{mode!=='result'&&<span>原图 <small>{source.width} × {source.height}</small></span>}{mode!=='original'&&<span>结果 <small>{result.width} × {result.height}</small></span>}</header>
     <div ref={host} className={`comparison-stage ${parallel?'is-parallel':''}`}>
       {(parallel?['original','result']:[mode==='original'?'original':'result']).map(side=><div key={side} className="comparison-pane" tabIndex={0} aria-label={side==='original'?'原图预览，可缩放和拖动':'结果预览，可缩放和拖动'} onPointerDown={panStart} onPointerMove={panMove} onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}} onLostPointerCapture={()=>{drag.current=null;}} onKeyDown={keys} onDoubleClick={reset}>
         {swipe?<>

@@ -438,12 +438,7 @@ export class Compositor {
     }
     return c;
   }
-  async node(l, doc, frame, seen = new Set()) {
-    frame.signal?.throwIfAborted();
-    if (seen.has(l.id)) throw new Error("图层或蒙版形成循环");
-    seen = new Set(seen);
-    seen.add(l.id);
-    if (l.visible === false) return surface(1,1);
+  intersects(l, doc, frame) {
     const intersects = (layer, margin = 2) => {
       if (layer.visible === false || layer.kind === "adjustment") return false;
       const padding = margin + Math.max(0, ...(layer.effects || []).map(effectPadding)) * frame.scale;
@@ -459,8 +454,16 @@ export class Compositor {
           Math.min(...points.map(p => p[0])) - padding > frame.width ||
           Math.min(...points.map(p => p[1])) - padding > frame.height);
     };
+    return intersects(l);
+  }
+  async node(l, doc, frame, seen = new Set()) {
+    frame.signal?.throwIfAborted();
+    if (seen.has(l.id)) throw new Error("图层或蒙版形成循环");
+    seen = new Set(seen);
+    seen.add(l.id);
+    if (l.visible === false) return surface(1,1);
     // Keep an empty surface as the clipping base; only skip invisible raster work.
-    if (l.kind !== "adjustment" && !intersects(l)) return surface(1,1);
+    if (l.kind !== "adjustment" && !this.intersects(l,doc,frame)) return surface(1,1);
     const c = surface(frame.width, frame.height),
       ctx = c.getContext("2d", { willReadFrequently: true });
     if (l.kind === "group") {
@@ -619,12 +622,33 @@ export class Compositor {
     // Only clipped adjustments need an isolated color target. Ordinary clipping
     // retains its existing backdrop blend and independent opacity semantics.
     if (!children.some((l) => l.kind === "adjustment" && l.clipping)) {
+      const unclipped=!children.some(l=>l.clipping);
       let base = null,
-        baseOpacity = 1;
+        baseOpacity = 1, scratch = null;
       try {
         for (const l of children) {
+          frame.signal?.throwIfAborted();
           if (l.kind === "adjustment") {
             await this.adjustment(ctx, l, doc, frame);
+            continue;
+          }
+          // Reuse one isolation surface for plain images and copy only their
+          // visible bounds. Original coordinates retain raster edge rounding.
+          if(unclipped&&!frame.overrides?.size&&l.kind==='image'&&l.opacity===1&&(!l.blend||l.blend==='source-over')&&!l.mask&&!l.maskSourceId&&!l.warp&&!l.effects?.length){
+            if(base){base.width=base.height=1;base=null;}
+            if(!this.intersects(l,doc,frame))continue;
+            const content=await this.content(l,doc,frame.scale);
+            frame.signal?.throwIfAborted();
+            const points=corners(doc.layers,l).map(p=>({x:p.x*frame.scale+frame.transform[4],y:p.y*frame.scale+frame.transform[5]}));
+            const left=Math.max(0,Math.floor(Math.min(...points.map(p=>p.x)))-2),top=Math.max(0,Math.floor(Math.min(...points.map(p=>p.y)))-2);
+            const right=Math.min(frame.width,Math.ceil(Math.max(...points.map(p=>p.x)))+2),bottom=Math.min(frame.height,Math.ceil(Math.max(...points.map(p=>p.y)))+2);
+            if(right<=left||bottom<=top)continue;
+            scratch ||= surface(frame.width,frame.height);
+            const local=scratch.getContext('2d',{willReadFrequently:true});
+            ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+            this.geometry(local,content,l,multiply(frame.transform,worldMatrix(doc.layers,l)));
+            ctx.drawImage(scratch,left,top,right-left,bottom-top,left,top,right-left,bottom-top);
+            local.clearRect(left,top,right-left,bottom-top);
             continue;
           }
           const c = await this.node(l, doc, frame, seen);
@@ -646,6 +670,7 @@ export class Compositor {
         }
       } finally {
         if (base) base.width = base.height = 1;
+        if (scratch) scratch.width = scratch.height = 1;
         ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = "source-over";
       }

@@ -34,6 +34,14 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   const id=await js(`(async()=>{const r=await tugou.create('画板保存检查');await tugou.save(r.id,{...r.document,...${JSON.stringify(doc)}},r.revision);return r.id})()`);
   await js(`sessionStorage.setItem('tugou-reload-view',JSON.stringify({id:${JSON.stringify(id)},workspace:'layers'}))`);let loaded=new Promise(r=>w.webContents.once('did-finish-load',r));w.webContents.reload();await loaded;await wait(`!!document.querySelector('.layer-stage')`);await delay(650);
   const unchanged=await js(`document.querySelector('.statusbar [role=status]').textContent`);
+  await context('artboard-main');await menu('编辑画板');await click('聚焦画板');await delay(300);
+  const beforeMove=await js(`document.querySelector('canvas[aria-label="图层画布"]').toDataURL()`);
+  const imagePoint=await js(`(()=>{const g=document.querySelector('.layer-overlay > g'),p=new DOMPoint(512,256).matrixTransform(g.getScreenCTM());return {x:Math.round(p.x),y:Math.round(p.y)}})()`);
+  w.showInactive();w.webContents.sendInputEvent({type:'mouseMove',...imagePoint});w.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...imagePoint});await delay(80);w.webContents.sendInputEvent({type:'mouseMove',x:imagePoint.x+40,y:imagePoint.y+25,modifiers:['leftButtonDown']});await delay(80);w.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,x:imagePoint.x+40,y:imagePoint.y+25});await delay(300);await wait(`document.querySelector('canvas[aria-label="图层画布"]').dataset.rendering==='false'`);
+  check('native image drag redraws composition',beforeMove!==await js(`document.querySelector('canvas[aria-label="图层画布"]').toDataURL()`));
+  await click('撤销');await delay(300);check('undo restores exact composition pixels',beforeMove===await js(`document.querySelector('canvas[aria-label="图层画布"]').toDataURL()`));
+  await click('重做');await delay(300);check('redo restores moved image',beforeMove!==await js(`document.querySelector('canvas[aria-label="图层画布"]').toDataURL()`));await click('撤销');await delay(300);
+  await click('保存');await wait(`document.querySelector('.statusbar [role=status]').textContent==='已保存'`);
   await context(second);await capture('context-menu');check('right-click offers save and batch save',await js(`document.querySelector('.board-context-menu').textContent.includes('批量保存画板')`));await menu('保存图片');await noDialog();check('right-click inactive board exports its exact 640x960 pixels',png('single.png',640,960).getSize().width===640);check('transparent background retained',png('single.png',640,960).toBitmap()[3]===0);
   check('saving does not dirty project',await js(`document.querySelector('.statusbar [role=status]').textContent===${JSON.stringify(unchanged)}`));
   const point=await js(`(()=>{const r=document.querySelector('[data-board-label="artboard-main"] > rect').getBoundingClientRect();return{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`);

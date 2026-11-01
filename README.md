@@ -2,7 +2,7 @@
 
 面向图片创作的本地桌面工作台。把提示词、参考图、AI 生图、无限画布、图层合成和字体设计放在同一个工程里，也让外部 AI Agent 通过 MCP 操作这些工具。
 
-**当前版本：v0.8.8** · [下载安装](https://github.com/Even1997/tugou/releases) · [版本说明](docs/releases/v0.8.8.md) · [开发文档](app/README.md)
+**当前版本：v0.8.9** · [下载安装](https://github.com/Even1997/tugou/releases) · [版本说明](docs/releases/v0.8.9.md) · [开发文档](app/README.md)
 
 ## 功能
 
@@ -24,13 +24,13 @@
 
 ## 下载安装
 
-在 [Releases](https://github.com/Even1997/tugou/releases/tag/v0.8.8) 按系统下载，保存并关闭正在运行的土狗，再安装。首次使用无需克隆源码或启动 Web 服务。
+在 [Releases](https://github.com/Even1997/tugou/releases/tag/v0.8.9) 按系统下载，保存并关闭正在运行的土狗，再安装。首次使用无需克隆源码或启动 Web 服务。
 
 | 平台 | 当前发行范围 |
 |---|---|
-| Windows x64 | `tugou-0.8.8-win-x64.exe`；支持应用内检查、下载和安装更新 |
-| macOS 13+ · Apple Silicon（M 系列） | `tugou-0.8.8-mac-arm64.dmg`，另提供同架构 ZIP |
-| macOS 13+ · Intel | `tugou-0.8.8-mac-x64.dmg`，另提供同架构 ZIP |
+| Windows x64 | `tugou-0.8.9-win-x64.exe`；支持应用内检查、下载和安装更新 |
+| macOS 13+ · Apple Silicon（M 系列） | `tugou-0.8.9-mac-arm64.dmg`，另提供同架构 ZIP |
+| macOS 13+ · Intel | `tugou-0.8.9-mac-x64.dmg`，另提供同架构 ZIP |
 | Linux | 当前没有正式支持或安装包 |
 
 当前 Windows 包未代码签名，系统可能提示未知发布者，请核对下载仓库及 Release 附带的 SHA256 校验文件。字体文件按需下载，安装包保留完整目录和授权；下载后可离线使用。

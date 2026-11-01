@@ -1,6 +1,12 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {comparisonLayout,zoomCamera}=require('../renderer/comparison-view.cjs');
 const source={width:512,height:768};
+test('viewing a processed asset alone ignores offsets from its earlier crop or extension',()=>{
+  for(const operation of ['crop','extend','cloudExtend']){
+    const asset={width:100,height:200,toolResult:{operation,left:300,top:400,padding:64}},layout=comparisonLayout(asset,asset);
+    assert.deepEqual(layout.original,{x:0,y:0,width:100,height:200});assert.deepEqual(layout.output,layout.original);assert.equal(layout.width,100);assert.equal(layout.height,200);
+  }
+});
 test('upscale and resize register the same source coordinate at different resolutions',()=>{
   for(const operation of ['resize','upscale']){const l=comparisonLayout(source,{width:2048,height:3072,toolResult:{operation}});assert.deepEqual(l.original,l.output);assert.equal(l.width,512);}
 });

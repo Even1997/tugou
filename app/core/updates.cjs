@@ -21,7 +21,10 @@ class Updates {
   async check({automatic=false,autoDownload=false}={}){
     if(!this.state.supported)return this.snapshot();
     if(this.operation||['ready','installing'].includes(this.state.status))return this.snapshot();
-    if(automatic&&this.state.lastChecked&&this.now()-this.state.lastChecked<86400000)return this.snapshot();
+    // Throttle within this session only: every launch must discover new releases.
+    const interval=this.state.status==='error'?300000:1800000;
+    if(automatic&&this.lastAttempt!=null&&this.now()-this.lastAttempt<interval)return this.snapshot();
+    this.lastAttempt=this.now();
     this.operation=true;
     try{this.set({status:'checking',error:null});await this.updater.checkForUpdates();}
     catch(e){this.failure(e);}finally{this.operation=false;this.set({lastChecked:this.now()});try{await atomicWrite(path.join(this.profile,'update-state.json'),JSON.stringify({lastChecked:this.state.lastChecked}));}catch(e){this.failure(e);}}

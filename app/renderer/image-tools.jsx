@@ -37,6 +37,7 @@ import { cloudToolReadiness } from "../core/cloud-readiness.cjs";
 import { ConnectionDialog } from "./connection.jsx";
 import { useImageImport } from './use-image-import.js';
 import { ImageComparison } from './image-comparison.jsx';
+import { CanvasImageViewer } from './canvas-image-viewer.jsx';
 const toolGroups = [
   ['智能工具', {cloudEdit:cloudNames.cloudEdit,cloudExtend:cloudNames.cloudExtend,upscale:'AI 超分辨率',cutout:'主体抠图',watermark:cleanupNames.watermark}],
   ['基础处理', {...rasterOperations,metadata:cleanupNames.metadata}],
@@ -94,6 +95,7 @@ export function ImageTools({
   initialOperation = "cloudEdit",
 }) {
   const imageAssets=document.assets.filter(a=>!a.kind||a.kind==='image');
+  const [viewingOriginal,setViewingOriginal]=useState(false);
   const initialSource = imageAssets.find(a=>a.id===initialSourceIds[0]) || imageAssets[0];
   const [sourceId, setSourceId] = useState(initialSource?.id || ""),
     [operation, setOperation] = useState(operations[initialOperation] ? initialOperation : 'cloudEdit'),
@@ -647,6 +649,7 @@ export function ImageTools({
       )}
       <div className="image-tools-toolbar">
         <strong title={source?.name}>{source?.name||'素材预览'}</strong>
+        <Button icon="zoomIn" disabled={!source} onClick={()=>setViewingOriginal(true)}>查看原图</Button>
         {operation !== 'cloudSplit' && (
           <Button icon="layers"
             disabled={working || !document.assets.length || (operation==='watermark'&&parameters.watermark.mode==='mask')}
@@ -712,14 +715,15 @@ export function ImageTools({
         </div>
       )}
       <div className="image-tools-body">
+        {viewingOriginal&&source&&<CanvasImageViewer key={source.id} asset={source} close={()=>setViewingOriginal(false)}/>}
         <div className={`image-comparison view-${view}`}>
           {!source ? (
             <EmptyState
               title="选择一张素材"
               description="从左侧选择素材，或上传本地 PNG、JPEG、WebP。"
             ><Button primary icon="import" disabled={disabled || imageImport.importing} onClick={imageImport.open}>{imageImport.importing ? '导入中…' : '上传图片'}</Button></EmptyState>
-          ) : result && view !== 'edit' ? (
-            <ImageComparison key={`${source.id}:${result.id}`} source={source} result={result} mode={view}/>
+          ) : (result && view !== 'edit') || (view==='original'&&!regionOperations.includes(operation)) ? (
+            <ImageComparison key={`${source.id}:${result?.id||'original'}`} source={source} result={result||undefined} mode={view}/>
           ) : (
             <>
               {view !== "result" && (

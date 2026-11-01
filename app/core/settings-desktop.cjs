@@ -44,10 +44,12 @@ async function registerSettings({app,window,handle,preferences,projects,fonts,ta
   window.webContents.on('did-start-loading',()=>window.webContents.setIgnoreMenuShortcuts(false));
   window.webContents.setZoomFactor(preferences.value.zoom/100);
   const automatic=()=>{if(preferences.value.autoCheck)updates.check({automatic:true,autoDownload:preferences.value.autoDownload}).catch(()=>{});};
-  const start=setTimeout(automatic,15000),daily=setInterval(automatic,3600000);start.unref();daily.unref();
+  const start=setTimeout(automatic,15000),poll=setInterval(automatic,300000);start.unref();poll.unref();
+  const focused=()=>{if(updates.lastAttempt!=null)automatic();};
+  window.on('focus',focused);
   const known=new Map(tasks.list().map(t=>[t.id,t.status]));
   const notify=setInterval(()=>{for(const task of tasks.list()){const before=known.get(task.id);known.set(task.id,task.status);if(before&&before!==task.status&&task.status==='completed'&&preferences.value.notifyTasks&&Notification.isSupported())new Notification({title:'土狗 / Tugou',body:task.label,silent:!preferences.value.sounds}).show();}},2000);notify.unref();
-  window.once('closed',()=>{clearTimeout(start);clearInterval(daily);clearInterval(notify);});
+  window.once('closed',()=>{clearTimeout(start);clearInterval(poll);clearInterval(notify);window.removeListener('focus',focused);});
   return {updates,remember:record=>atomicWrite(path.join(profile,'last-project.json'),JSON.stringify({id:record.id}))};
 }
 module.exports={registerSettings,directorySize};

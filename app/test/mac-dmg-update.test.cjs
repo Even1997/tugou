@@ -50,10 +50,10 @@ test('corruption cannot become ready or open; retry and open errors remain recov
   const network=await server(t),f=await fixture(t);await f.updates.check();network.setMode('corrupt');await f.updates.download();assert.equal(f.updates.state.status,'error');assert.equal(f.u.file,null);await assert.rejects(f.updates.openInstaller());
   network.setMode('ok');await f.updates.check();await f.updates.download();f.u.openPath=async()=> 'No handler';await f.updates.openInstaller();assert.equal(f.updates.state.status,'error');assert.equal(f.quit(),0);
 });
-test('automatic download is opt-in, never opens the DMG; checks persist throttling',async t=>{
+test('automatic download is opt-in, never opens the DMG; restart checks again',async t=>{
   const network=await server(t),f=await fixture(t);await f.updates.check({automatic:true});assert.equal(network.ranges.length,0);await f.updates.check({automatic:true,autoDownload:true});assert.equal(f.requests.length,1);
   await f.updates.check({autoDownload:true});assert.equal(f.updates.state.status,'ready');assert.equal(f.opened.length,0);assert.equal(network.ranges.length,1);
-  const restored=new Updates({updater:f.u,profile:f.profile,version:'0.8.2',supported:true,guard:async()=>null,prepare:async()=>{}});await restored.init();await restored.check({automatic:true});assert.equal(f.requests.length,2);
+  const restored=new Updates({updater:f.u,profile:f.profile,version:'0.8.2',supported:true,guard:async()=>null,prepare:async()=>{}});await restored.init();await restored.check({automatic:true});assert.equal(f.requests.length,3);
 });
 test('a linked download cache is refused',async t=>{
   const f=await fixture(t);await f.updates.check();const other=path.join(f.profile,'other');await fs.mkdir(other);await fs.symlink(other,path.join(f.profile,'updates'),process.platform==='win32'?'junction':'dir');await f.updates.download();assert.equal(f.updates.state.status,'error');assert.deepEqual(await fs.readdir(other),[]);

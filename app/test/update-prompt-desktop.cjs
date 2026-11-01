@@ -7,6 +7,7 @@ const source=process.env.TUGOU_TEST_APP?path.resolve(path.dirname(process.env.TU
 const out=path.resolve('test-results/update-prompt');fs.mkdirSync(out,{recursive:true});
 const profile=fs.mkdtempSync(path.join(out,'profile-'));process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=process.env.TUGOU_TEST_APP?path.join(source,'dist'):path.join(out,'dist');delete process.env.TUGOU_DEV_PREVIEW;process.argv.push('--mcp-enable');
 fs.writeFileSync(path.join(profile,'preferences.json'),JSON.stringify({...require(path.join(source,'core/preference-values.cjs')).defaults,autoCheck:true,notifyTasks:false,language:'zh-CN'}));
+fs.writeFileSync(path.join(profile,'update-state.json'),JSON.stringify({lastChecked:Date.now()}));
 const report={checks:[],errors:[],blockedStyles:[],note:'Windows native renderer and both update modes; updater is a fixture'},updater=new EventEmitter();
 let controller,transport,finished=false,checks=0,installs=0,opened=0,finishDownload,version='0.8.8',downloadError=false;
 const attack='<script>window.updateNotesExecuted=true</script><img src="https://invalid.example/track" onerror="window.updateNotesExecuted=true"><svg onload="window.updateNotesExecuted=true"></svg><iframe src="file:///C:/Windows/win.ini"></iframe><style>body{display:none}</style><a href="javascript:window.updateNotesExecuted=true">危险链接</a><a href="https://evil.example/">站外链接</a><p onclick="window.updateNotesExecuted=true" style="position:fixed">正常文字</p>';
@@ -65,9 +66,14 @@ app.on('browser-window-created',(_,w)=>{
    controller.set({notes:'纯文本说明\n保留换行 & < 5 > 3'});await wait(`document.querySelector('.settings-notes .release-notes')?.textContent.includes('纯文本说明')`);
    check('plain text line breaks and punctuation remain readable',await js(`document.querySelector('.settings-notes .release-notes').textContent.includes('保留换行 & < 5 > 3')&&!!document.querySelector('.settings-notes .release-notes br')`));
    controller.set({notes:htmlNotes});await wait(`!!document.querySelector('.settings-notes .release-notes h1')`);await capture('settings-html-dark');await click('[data-settings-tab="general"]');await js(`document.querySelector('.settings-search input').focus()`);
-   version='0.8.9';updater.emit('update-available',{version,releaseNotes:notes});await delay(1800);check('focused text input defers a newer version',await js(`!document.querySelector('.update-prompt')&&document.activeElement===document.querySelector('.settings-search input')`));
+   w.emit('focus');await delay(100);check('repeated focus within thirty minutes does not check again',checks===1);
+   const due=controller.lastAttempt+1800000;controller.now=()=>due;
+   await js(`window.tugou.settings('save',{autoCheck:false})`);w.emit('focus');await delay(100);check('automatic checking respects disabled preference',checks===1);
+   await js(`window.tugou.settings('save',{autoCheck:true})`);version='0.8.9';w.emit('focus');await wait(`window.tugou.update('status').then(s=>s.version==='0.8.9')`);controller.now=Date.now;
+   check('returning to window discovers new version when check is due',checks===2);
+   await delay(1800);check('focused text input defers a newer version',await js(`!document.querySelector('.update-prompt')&&document.activeElement===document.querySelector('.settings-search input')`));
    await js(`document.activeElement.blur();document.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,buttons:1}));`);await delay(1800);check('pointer drag also defers popup',await js(`!document.querySelector('.update-prompt')`));await js(`document.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}))`);await popup();await dismiss();
-   await click('[data-settings-tab="updates"]');await click('.settings-version button');await popup();check('explicit manual check reopens a dismissed version',checks===2);
+   await click('[data-settings-tab="updates"]');await click('.settings-version button');await popup();check('explicit manual check reopens a dismissed version',checks===3);
    downloadError=true;await click('.update-prompt button','下载更新');await wait(`!!document.querySelector('.update-prompt [role="alert"]')`);check('download failure remains visible with a retry action',await js(`!![...document.querySelectorAll('.update-prompt button')].find(b=>b.textContent==='检查更新')`));
    downloadError=false;await click('.update-prompt button','检查更新');await wait(`!![...document.querySelectorAll('.update-prompt button')].find(b=>b.textContent==='下载更新')`);await click('.update-prompt button','下载更新');await wait(`document.querySelector('.update-prompt progress')?.value===42`);await capture('download-progress');check('popup uses actual updater progress',true);
    await click('.update-prompt button','后台下载');await wait(`!document.querySelector('.update-prompt')`);finishDownload();await popup();check('finished background download prompts once without installing',installs===0);

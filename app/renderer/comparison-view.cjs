@@ -1,5 +1,5 @@
 function comparisonLayout(source, result) {
-  const s=result.toolResult||{}, original={x:0,y:0,width:source.width,height:source.height}, output={x:0,y:0,width:result.width,height:result.height};
+  const s=result===source?{}:result.toolResult||{}, original={x:0,y:0,width:source.width,height:source.height}, output={x:0,y:0,width:result.width,height:result.height};
   if(['resize','upscale','cloudUpscale'].includes(s.operation)) Object.assign(output,original);
   else if(['extend','cloudExtend'].includes(s.operation)) {
     original.x=s.operation==='extend'&&s.sizeMode!=='size' ? s.padding||0 : s.left||0;

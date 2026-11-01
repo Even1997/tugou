@@ -14,6 +14,11 @@
 
 ## 开发文档
 
+- [v0.8.9 发布说明](releases/v0.8.9.md)
+- [v0.8.9 发布验收](engineering/release-v0.8.9.md)
+
+- [合成页图片渲染性能与验收](engineering/composite-performance.md)
+
 - [可见水印修复与元数据清理：实现与验收](engineering/cleanup-tools.md)
 
 - [生图并发调度与桌面／MCP 验收](engineering/generation-concurrency.md)
