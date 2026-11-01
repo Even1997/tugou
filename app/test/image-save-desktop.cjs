@@ -33,7 +33,7 @@ app.on('browser-window-created',(_,w)=>{
    const png=await require('sharp')({create:{width:1600,height:900,channels:4,background:{r:200,g:80,b:20,alpha:.5}}}).png().toBuffer();
    const jpg=await require('sharp')(png).jpeg({quality:94}).toBuffer();
    const assets=[];for(const [bytes,name] of [[png,'生成图片'],[jpg,'照片.jpeg']])assets.push(await js(`tugou.storeRaster(new Uint8Array(${JSON.stringify([...bytes])}),${JSON.stringify(name)})`));
-   let doc= require('../core/artboards.cjs').normalize({name:'保存图片检查',width:640,height:480,background:'transparent',assets,layers:[]});
+   let doc= require('../core/artboards.cjs').normalize({name:'保存图片检查',width:640,height:480,background:'transparent',assets,layers:[require('../core/layers.cjs').createLayer('group',{id:'artboard-main',artboard:true,name:'画板 1',width:640,height:480,background:'transparent',clipContent:true})]});
    doc.tugouCanvas={version:1,nodes:[{id:'image-node',type:'asset',position:{x:40,y:40},data:{assetId:assets[0].id,role:'主体身份'}},{id:'text-node',type:'text',position:{x:480,y:40},data:{name:'普通文本',text:'普通文本'}}],edges:[],viewport:{x:0,y:0,zoom:1}};
    const id=await js(`(async()=>{const r=await tugou.create('保存图片检查');await tugou.save(r.id,{...r.document,...${JSON.stringify(doc)}},r.revision);return r.id})()`);
    fixture={profile,id,assets};fs.writeFileSync(fixtureFile,JSON.stringify(fixture));
