@@ -18,7 +18,7 @@
 
 桌面测试：先以 `TUGOU_BUILD_DIR=test-results/image-save/dist` 构建隔离前端，再运行 `electron test/image-save-desktop.cjs` 和 `electron test/image-save-desktop.cjs --reopen`。真实界面／IPC／文件写入，自动选择本地保存对话框返回值，检查原图字节、跨页面目录、取消／失败、原尺寸及透明度、未保存内容与历史、独立进程重开。证据位于 `app/test-results/image-save/`。
 
-现有 `test/board-export-desktop.cjs` 回归批量画板、原始尺寸、取消、失败重试及历史保护。Mac 使用同一 Electron 保存对话框 API，但本次未进行 Mac 原生实机检查；系统原生弹窗的手动选目录及覆盖确认仍需用户确认。
+现有 `test/board-export-desktop.cjs` 回归批量画板、原始尺寸、取消、失败重试及历史保护。发布阶段已在 Mac 两架构安装包补验 16 项保存和 3 项独立进程重开，见[v0.8.10 发布验收](release-v0.8.10.md)；系统原生弹窗的手动选目录及覆盖确认仍需用户确认。
 
 ## 质量自评
 
@@ -28,4 +28,4 @@
 | UI／UX | 9.4/10 | 右键及按钮入口、截图通过；Mac 原生弹窗操作待补 |
 | 性能 | 9.4/10 | 原素材直接保存字节，避免为导出额外重绘；超大素材与网络目录压力待补 |
 | 美术 | N/A | 未新增美术素材 |
-| 整体 | 9.4/10 | 当前验证范围内可交付，未打包发布 |
+| 整体 | 9.4/10 | 当前验证范围内可交付，已随 v0.8.10 发布 |
