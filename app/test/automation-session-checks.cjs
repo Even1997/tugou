@@ -4,8 +4,11 @@ const {bridge}=require('../core/mcp.cjs');
 async function prepare({profile,js,check,sleep}){
  const descriptor=path.join(profile,'mcp-session.json');await sleep(300);check('ordinary launch leaves MCP disabled',!fs.existsSync(descriptor));
  assert.ok(await js(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='新建工程');b?.click();return !!b;})()`));
- for(let i=0;i<50&&!await js(`!!document.querySelector('input[aria-label="工程名称"]')`);i++)await sleep(50);
- await js(`(()=>{const input=document.querySelector('input[aria-label="工程名称"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'启用前未保存的工程');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);await sleep(100);
+ for(let i=0;i<100&&!await js(`(()=>{const e=document.querySelector('input[aria-label="工程名称"]');return e&&!e.disabled})()`);i++)await sleep(50);
+ assert.ok(await js(`!document.querySelector('input[aria-label="工程名称"]').disabled`),'project ready for editing');
+ await js(`(()=>{const input=document.querySelector('input[aria-label="工程名称"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'启用前未保存的工程');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+ for(let i=0;i<100&&!await js(`document.querySelector('.statusbar [role=status]').textContent.includes('未保存')`);i++)await sleep(50);
+ assert.ok(await js(`document.querySelector('.statusbar [role=status]').textContent.includes('未保存')&&document.querySelector('input[aria-label="工程名称"]').value==='启用前未保存的工程'`),'unsaved fixture committed before second process');
  const enable=()=>new Promise((resolve,reject)=>{
   const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
   const child=spawn(process.env.TUGOU_MCP_BINARY||process.execPath,process.env.TUGOU_TEST_APP?['--mcp-enable']:[path.resolve('main.cjs'),'--mcp-enable'],{env,stdio:'ignore',windowsHide:true});
