@@ -11,7 +11,7 @@ test('different sizes fit transparently without stretching; once-only loop survi
  const meta=await inspectGif(bytes);assert.equal(meta.gif.loop,1);const raw=await sharp(bytes,{page:0}).ensureAlpha().raw().toBuffer();assert.equal(raw[3],0);assert.equal(raw[(8*16+8)*4],255);
 });
 test('import preserves GIF bytes and animation through project persistence',async t=>{
- const root=await fs.mkdtemp(path.join(os.tmpdir(),'tugou-gif-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const root=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'tugou-gif-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
  const {ProjectStore}=require('../core/storage.cjs'),store=new ProjectStore(root);await store.init();
  const bytes=await encodeGif([await png('red'),await png('blue')],{width:16,height:16,delays:[100,200]});const file=path.join(root,'source.gif');await fs.writeFile(file,bytes);
  const [asset]=await require('../core/import-images.cjs').importImages(root,[file],()=>{throw Error('GIF must not use static native image decoder');});assert.equal(asset.gif.frames,2);assert.deepEqual(await fs.readFile(path.join(root,'resources',asset.resource)),bytes);
@@ -30,6 +30,6 @@ test('timeline uses actual frame durations, repeats shorter GIFs and respects hi
  doc.layers=[{id:'g',kind:'group',visible:false},{id:'a',kind:'image',assetId:'a',parentId:'g'}];assert.deepEqual(timeline(doc),[{time:0,delay:100}]);
 });
 test('GIF batch export names use correct extensions and avoid overwrites',async t=>{
- const dir=await fs.mkdtemp(path.join(os.tmpdir(),'gif-export-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));await fs.writeFile(path.join(dir,'动图.gif'),'existing');
+ const dir=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'gif-export-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));await fs.writeFile(path.join(dir,'动图.gif'),'existing');
  const targets=await require('../core/image-export.cjs').batchTargets(dir,['动图','动图'],'gif');assert.deepEqual(targets.map(p=>path.basename(p)),['动图 (2).gif','动图 (3).gif']);
 });
