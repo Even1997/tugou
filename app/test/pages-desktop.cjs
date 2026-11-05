@@ -66,9 +66,10 @@ app.on('browser-window-created',(_,w)=>{
       check('rename dialog updates visible tab',(await run('page.list',{kind:'canvas'})).pages.find(p=>p.id===b).name==='邀请函 · 已命名');
       await js(`document.querySelector('.page-tabs [aria-selected="true"]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}))`);await delay(150);check('keyboard navigation changes active page',(await state()).pages.canvas.find(p=>p.active).id==='canvas-main');
       await run('page.activate',{kind:'layers',id:'composition-main'});const board=(await run('artboard.create',{name:'主画板',width:900,height:1200})).id;
-      const layer=(await run('layer.create',{artboardId:board,kind:'text',properties:{text:'欢迎来信',x:100,y:100,fontSize:80}})).id;
+      // Page navigation uses system fonts; downloads have their own packaged acceptance test.
+      const layer=(await run('layer.create',{artboardId:board,kind:'text',properties:{text:'欢迎来信',fontFamily:'sans-serif',x:100,y:100,fontSize:80}})).id;
       const composition=(await run('page.create',{kind:'layers',name:'邀请函合成'})).id;check('new composition starts empty',(await query('layer')).length===0);
-      const secondBoard=(await run('artboard.create',{name:'内页',width:800,height:1000})).id;await run('layer.create',{artboardId:secondBoard,kind:'text',properties:{text:'诚挚邀请',x:80,y:80,fontSize:72}});
+      const secondBoard=(await run('artboard.create',{name:'内页',width:800,height:1000})).id;await run('layer.create',{artboardId:secondBoard,kind:'text',properties:{text:'诚挚邀请',fontFamily:'sans-serif',x:80,y:80,fontSize:72}});
       await run('page.activate',{kind:'layers',id:'composition-main'});check('composition layer trees are isolated',(await query('layer')).some(l=>l.id===layer)&&!(await query('layer')).some(l=>l.id===secondBoard));
       await run('page.activate',{kind:'layers',id:composition});await capture('composition-dark');
       await js(`document.querySelector('.layer-stage').dispatchEvent(new WheelEvent('wheel',{deltaY:77,deltaX:33,bubbles:true,cancelable:true}))`);await wait(`document.querySelector('canvas[aria-label="图层画布"]').dataset.rendering==='false'`);await delay(180);const viewBefore=await js(`document.querySelector('canvas[aria-label="图层画布"]').toDataURL()`);
@@ -82,6 +83,6 @@ app.on('browser-window-created',(_,w)=>{
       await call('batch',{expectedRevision:(await state()).revision,steps:extra.map((id,i)=>({name:'p'+i,command:'page.delete',args:{kind:'canvas',id}}))});
       await run('page.delete',{kind:'canvas',id:b});await assert.rejects(run('page.delete',{kind:'canvas',id:'canvas-main'}));check('last page cannot be deleted',true);
       check('no renderer errors',report.errors.length===0);finish(0);
-    }catch(e){report.failure=e.stack;console.error(e);try{fs.writeFileSync(path.join(out,'failure.png'),(await w.webContents.capturePage()).toPNG());}catch{}finish(1);}
+    }catch(e){report.failure=e.stack;console.error(e);try{report.uiState=await js(`({fonts:document.fonts.status,canvases:[...document.querySelectorAll('canvas[data-rendering]')].map(c=>({label:c.getAttribute('aria-label'),rendering:c.dataset.rendering})),messages:[...document.querySelectorAll('.message.error')].map(e=>e.textContent)})`);console.error('UI diagnostics',JSON.stringify(report.uiState));fs.writeFileSync(path.join(out,'failure.png'),(await w.webContents.capturePage()).toPNG());}catch{}finish(1);}
   });
 });require(main);
