@@ -105,6 +105,7 @@ jobs:
       - name: Test packaged full MCP creative commands
         env:
           TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+          TUGOU_MCP_BINARY: release/${{ matrix.bundle }}/Tugou.app/Contents/MacOS/Tugou
           TUGOU_TEST_OUTPUT: test-results/mcp-regression
         run: |
           node_modules/.bin/electron test/automation-desktop.cjs
