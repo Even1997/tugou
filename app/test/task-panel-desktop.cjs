@@ -2,9 +2,9 @@
 const {app,ipcMain}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const out=path.resolve('test-results/task-panel');fs.mkdirSync(out,{recursive:true});
 const profile=fs.realpathSync(fs.mkdtempSync(path.join(out,'profile-')));
-process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.resolve('test-results/home/ui');delete process.env.TUGOU_DEV_PREVIEW;
+process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.resolve('test-results/home/ui');delete process.env.TUGOU_DEV_PREVIEW;if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;
 fs.writeFileSync(path.join(profile,'preferences.json'),JSON.stringify({...require('../core/preference-values.cjs').defaults,theme:'light',autoCheck:false,notifyTasks:false}));
-const {TaskQueue}=require('../core/tasks.cjs'),init=TaskQueue.prototype.init;let queue,ended=false;
+const {TaskQueue}=require(process.env.TUGOU_TEST_APP?path.join(path.dirname(process.env.TUGOU_TEST_APP),'core/tasks.cjs'):'../core/tasks.cjs'),init=TaskQueue.prototype.init;let queue,ended=false;
 TaskQueue.prototype.init=async function(){await init.call(this);queue=this;};
 const report={profile,checks:[],errors:[],calls:[]},handle=ipcMain.handle.bind(ipcMain);
 ipcMain.handle=(channel,listener)=>handle(channel,['retryWorkflow','retryImageTool','retryCloudTool','retryRuntimeInstall','cancelCloudBatch','cloudReview'].some(name=>channel===`tugou:${name}`)?async(_,id)=>{
@@ -68,4 +68,4 @@ app.on('browser-window-created',(_,w)=>{
   }catch(e){report.failure=e.stack;console.error(e);await capture('failure');finish(1);}
  });
 });
-require('../desktop-main.cjs');
+require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');

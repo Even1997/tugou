@@ -1,7 +1,7 @@
 const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {Client}=require('@modelcontextprotocol/sdk/client/index.js'),{StdioClientTransport}=require('@modelcontextprotocol/sdk/client/stdio.js');
 const out=path.resolve('test-results/ui-mcp');fs.mkdirSync(out,{recursive:true});const profile=fs.mkdtempSync(path.join(out,'profile-'));
-process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.resolve('test-results/ui-mcp-dist');delete process.env.TUGOU_DEV_PREVIEW;process.argv.push('--mcp-enable');
+process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.resolve('test-results/ui-mcp-dist');delete process.env.TUGOU_DEV_PREVIEW;if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;process.argv.push('--mcp-enable');
 fs.writeFileSync(path.join(profile,'preferences.json'),JSON.stringify({...require('../core/preference-values.cjs').defaults,autoCheck:false,notifyTasks:false}));
 const report={checks:[],errors:[],timings:[]};let transport,finished=false,lastCommand='startup';
 const check=(name,ok)=>{assert.ok(ok,name);report.checks.push(name);console.log('PASS '+name);};
@@ -13,7 +13,7 @@ app.on('browser-window-created',(_,w)=>{
     const js=s=>w.webContents.executeJavaScript(s,true),delay=ms=>new Promise(r=>setTimeout(r,ms)),wait=async s=>{for(let i=0;i<150;i++){if(await js(s))return;await delay(50);}throw Error('Timeout '+s);};
     try{
       await wait(`!!document.querySelector('.workspace-rail')`);for(let i=0;i<100&&!fs.existsSync(path.join(profile,'mcp-session.json'));i++)await delay(50);
-      transport=new StdioClientTransport({command:process.execPath,args:[path.resolve('core/mcp.cjs'),'--session',path.join(profile,'mcp-session.json')],env:{...process.env,ELECTRON_RUN_AS_NODE:'1'},stderr:'pipe'});
+      transport=new StdioClientTransport({command:process.execPath,args:[process.env.TUGOU_TEST_APP?path.join(path.dirname(process.env.TUGOU_TEST_APP),'core/mcp.cjs'):path.resolve('core/mcp.cjs'),'--session',path.join(profile,'mcp-session.json')],env:{...process.env,ELECTRON_RUN_AS_NODE:'1'},stderr:'pipe'});
       const client=new Client({name:'ui-acceptance',version:'1'});await client.connect(transport);
       const call=async(name,args={})=>{const result=await client.callTool({name,arguments:args});if(result.isError)throw Object.assign(Error(result.content[0].text),result.structuredContent?.error);return result;};
       const state=async()=>(await call('get_state')).structuredContent;
@@ -56,4 +56,4 @@ app.on('browser-window-created',(_,w)=>{
       check('no renderer errors',report.errors.length===0);finish(0);
     }catch(e){report.failure=e.stack;console.error(e);try{fs.writeFileSync(path.join(out,'failure.png'),(await w.webContents.capturePage()).toPNG());}catch{}finish(1);}
   });
-});require('../desktop-main.cjs');
+});require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');
