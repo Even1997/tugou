@@ -30,7 +30,7 @@ app.on('browser-window-created',(_,w)=>{
   await click('基础处理');await click('分辨率调整');
   const before=await state();await click('上传图片');
   check('cancel picker leaves project unchanged',(await state()).revision===before.revision&&(await state()).counts.assets===0);
-  check('picker accepts images and supports multiple files',pickerOptions.properties.includes('multiSelections')&&pickerOptions.filters[0].extensions.join(',')==='png,jpg,jpeg,webp');
+  check('picker accepts images and supports multiple files',pickerOptions.properties.includes('multiSelections')&&pickerOptions.filters[0].extensions.join(',')==='png,jpg,jpeg,webp,gif');
   const input=path.join(out,'source.png'),second=path.join(out,'second.png'),bad=path.join(out,'corrupt.png');
   const bytes=await require('sharp')(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="768"><rect width="512" height="768" fill="#f4e8d8"/><path d="M32 96H480V672H32Z M256 96V672 M32 384H480" fill="none" stroke="#293e62" stroke-width="8"/><circle cx="160" cy="250" r="60" fill="#d67b54"/><path d="M300 440L440 630H180Z" fill="#607d60"/></svg>')).png().toBuffer();
   fs.writeFileSync(input,bytes);fs.writeFileSync(second,bytes);fs.writeFileSync(bad,'not an image');

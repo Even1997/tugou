@@ -30,7 +30,7 @@ app.on('browser-window-created',(_,w)=>{
   await click('基础处理');await click('分辨率调整');
   const before=await state();await click('上传图片');
   check('cancel picker leaves project unchanged',(await state()).revision===before.revision&&(await state()).counts.assets===0);
-  check('picker accepts images and supports multiple files',pickerOptions.properties.includes('multiSelections')&&pickerOptions.filters[0].extensions.join(',')==='png,jpg,jpeg,webp');
+  check('picker accepts images and supports multiple files',pickerOptions.properties.includes('multiSelections')&&pickerOptions.filters[0].extensions.join(',')==='png,jpg,jpeg,webp,gif');
   const input=path.resolve('test-results/local-ai-fixtures/white.png'),bytes=fs.readFileSync(input),second=path.join(out,'second.png'),bad=path.join(out,'corrupt.png');fs.writeFileSync(second,bytes);fs.writeFileSync(bad,'not an image');
   pickerFiles=[input,bad];await click('上传图片');await wait(`!!document.querySelector('.message[role="status"]')`);
   check('corrupt member reports an error and imports no partial batch',(await state()).counts.assets===0&&await js(`!!document.querySelector('.message[role="status"]').textContent.trim()&&!document.querySelector('img[alt="处理原图"]')`));

@@ -20,7 +20,7 @@ app.on('browser-window-created',(_,w)=>{
       const state=async()=>(await call('get_state')).structuredContent;
       const run=async(command,args={})=>{const r=await call('run_command',{command,args,expectedRevision:(await state()).revision});await delay(100);return r.structuredContent||r;};
       const query=async kind=>(await call('query_objects',{kind,limit:100})).structuredContent.objects;
-      const capture=async name=>{if(w.isMinimized())w.restore();w.showInactive();await delay(200);const r=await run('ui.capture',{maxSize:1440});fs.writeFileSync(path.join(out,name+'.png'),Buffer.from(r.content.find(c=>c.type==='image').data,'base64'));};
+      const capture=async name=>{if(w.isMinimized())w.restore();w.showInactive();await delay(200);let r;for(let i=0;i<10;i++){try{r=await run('ui.capture',{maxSize:1440});break;}catch(e){if(e.code!=='UI_NOT_READY'||i===9)throw e;await delay(200);}}fs.writeFileSync(path.join(out,name+'.png'),Buffer.from(r.content.find(c=>c.type==='image').data,'base64'));};
       check('six page commands discoverable',(await call('list_commands',{domain:'page'})).structuredContent.total===6);
       await run('project.create',{name:'多画布与合成验收'});const project=(await state()).projectId;
       check('legacy-compatible default pages',(await run('page.list',{kind:'canvas'})).pages.length===1&&(await run('page.list',{kind:'layers'})).pages.length===1);

@@ -6,7 +6,7 @@ if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;else process.en
 process.env.TUGOU_FONT_RUNTIME='F:/婚礼请柬/tugou-components/font-runtime';
 const report={checks:[],errors:[],profile},check=(label,value)=>{assert.ok(value,label);report.checks.push(label);fs.writeFileSync(path.join(out,'progress.json'),JSON.stringify(report,null,2));};
 let inputFile,cancelImport=false,cancelExport=false,done=false;
-dialog.showOpenDialog=async(_window,options)=>{check('native import only accepts image formats',options.filters[0].extensions.every(x=>['png','jpg','jpeg','webp'].includes(x)));return {canceled:cancelImport,filePaths:inputFile?[inputFile]:[]};};
+dialog.showOpenDialog=async(_window,options)=>{check('native import only accepts image formats',options.filters[0].extensions.every(x=>['png','jpg','jpeg','webp','gif'].includes(x)));return {canceled:cancelImport,filePaths:inputFile?[inputFile]:[]};};
 dialog.showSaveDialog=async(_window,options)=>({canceled:cancelExport,filePath:path.join(out,options.defaultPath)});
 const finish=code=>{if(done)return;done=true;fs.writeFileSync(path.join(out,'acceptance.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({checks:report.checks.length,failure:report.failure,out}));app.exit(code);};
 setTimeout(()=>{report.failure='timeout';finish(1);},600000);
