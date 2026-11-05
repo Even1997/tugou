@@ -98,7 +98,7 @@ app.on("browser-window-created", (_event, window) => {
       );
       await field("select[aria-label=当前工程]", id, true);
       await wait('document.querySelector(".document-heading")');
-      await click("nav button", "图层合成");
+      await click("nav button", "图层");
       await delay(150);
       await js(
         (await fs.readFile(path.join(output, "layer-engine-qa.js"), "utf8")) +

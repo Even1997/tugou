@@ -86,7 +86,7 @@ export function StudioHeader({
             onClick={importProject}
           />
         </div>
-        <span className="workspace-title">{t(workspace)}</span>
+        <span className="workspace-title">{t(workspace==='layers'?'layerEditor':workspace)}</span>
         <div className="header-space" />
         <div className="toolbar-end">
           <IconButton
@@ -112,7 +112,7 @@ export function StudioHeader({
             aria-busy={busy}
             onClick={save}
           >{t('save')}</Button>
-          <Button aria-label={t('models')} icon="settings" onClick={connection}>{t('models')}</Button>
+          <Button aria-label={t('models')} icon="model" onClick={connection}>{t('models')}</Button>
           {workspace==='layers'&&<span id="composition-export"/>}
           <ToolPopover label={t('more')} className="import-menu">
             <Button
@@ -152,9 +152,10 @@ export function StudioHeader({
       </header>
         <nav className="workspace-rail" aria-label="工作区">
           {[
+            ["home", "首页"],
             ["prompts", "提示词工作台"],
             ["canvas", "无限画布"],
-            ["layers", "图层合成"],
+            ["layers", "图层编辑器"],
             ["tools", "图像工具"],
             ["assets", "素材库"],
             ["fonts", "字体"],
@@ -162,8 +163,8 @@ export function StudioHeader({
             <Button
               key={id}
               aria-label={t(id)}
-              icon={['prompts','fonts'].includes(id)?'text':id}
-              title={t(id)}
+              icon={id}
+              title={t(id==='layers'?'layerEditor':id)}
               aria-current={workspace === id ? "page" : undefined}
               onClick={() => setWorkspace(id)}
               onDragOver={event=>{
@@ -175,7 +176,7 @@ export function StudioHeader({
               onDrop={()=>{clearTimeout(dragTimer.current);dragTimer.current=null;}}
             ><span>{t(id)}</span></Button>
           ))}
-          <div className="rail-bottom"><IconButton label={t('settings')} className={['available','ready'].includes(update?.status)?'has-update':''} icon="settings" aria-current={workspace==='settings'?'page':undefined} onClick={()=>setWorkspace('settings')}/><IconButton
+          <div className="rail-bottom"><IconButton label={t('settings')} className={['available','ready'].includes(update?.status)&&update.skippedVersion!==update.version?'has-update':''} icon="settings" aria-current={workspace==='settings'?'page':undefined} onClick={()=>setWorkspace('settings')}/><IconButton
             label={theme.mode === "dark" ? "切换浅色主题" : "切换深色主题"}
             icon={theme.mode === "dark" ? "sun" : "moon"}
             onClick={theme.toggle}
@@ -220,6 +221,8 @@ export function StudioStatus({
   openTasks,
   connection,
 }) {
+  const {t,update,requestUpdatePrompt}=usePreferences();
+  const updateVisible=update?.supported&&update.version&&update.skippedVersion!==update.version&&['available','downloading','ready','error'].includes(update.status);
   const running = tasks.filter((t) =>
     ["running", "queued"].includes(t.status),
   ).length;
@@ -229,6 +232,7 @@ export function StudioStatus({
         {dirty ? "有未保存修改" : notice || (record ? "已保存" : "就绪")}
       </span>
       <div>
+        {updateVisible&&<Button className="update-entry" icon={update.status==='downloading'?'loading':'download'} onClick={requestUpdatePrompt}>{t(update.status==='ready'?'updateReadyTitle':update.status==='downloading'?'downloading':update.status==='error'?'updateRetry':'updateFoundTitle')} · v{update.version}{update.status==='downloading'?` · ${Math.floor(update.percent||0)}%`:''}</Button>}
         <Button iconOnly aria-label="任务" title={running ? `任务 · ${running} 项进行中` : "任务"} icon={running ? "loading" : "tasks"} onClick={openTasks}>
           任务{running ? ` · ${running}` : ""}
         </Button>

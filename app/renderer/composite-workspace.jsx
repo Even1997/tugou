@@ -69,7 +69,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
   }),setError,props.disabled);
   if(!board)return <div className="composite-workspace composite-empty" onDragOver={emptyImport.over} onDrop={emptyImport.drop}>
     <div className="composition-tools"><BoardSizeControl board={normalized} creating apply={createBoard} disabled={props.disabled}><Button icon="add" disabled={props.disabled}>新建画板</Button></BoardSizeControl></div>
-    <div className="empty"><p>新建画板，或拖入图片 / GIF 开始合成</p><Button icon="import" disabled={props.disabled||emptyImport.importing} onClick={emptyImport.open}>导入图片 / GIF</Button></div>
+    <div className="empty"><p>新建画板，或拖入图片 / GIF 开始编辑</p><Button icon="import" disabled={props.disabled||emptyImport.importing} onClick={emptyImport.open}>导入图片 / GIF</Button></div>
     {error&&<div className="message error" role="alert">{error}</div>}
   </div>;
   const workspace={

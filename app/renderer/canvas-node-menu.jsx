@@ -6,6 +6,8 @@ const entries = [
   ['text', '文字提示词', 'text', '文本 prompt text'],
   ['emptyImage', '图片节点', 'assets', '图像 image picture'],
   ['config', '生成台', 'tools', '生成 生图 generator'],
+  ['upscale', 'AI 超分辨率', 'zoomIn', '超分 放大 upscale'],
+  ['cutout', '主体抠图', 'mask', '抠图 去背景 cutout'],
 ];
 
 export function CanvasNodeMenu({ position, close, choose, disabled, canChoose }) {

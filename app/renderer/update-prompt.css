@@ -8,3 +8,5 @@
 .update-prompt .muted{margin-top:14px;font-size:12px}
 .update-prompt-progress{margin-top:18px}.update-prompt-progress progress{display:block;width:100%;height:8px;margin-top:10px;accent-color:var(--accent)}
 .update-prompt-error{color:var(--danger);margin-top:14px}.update-prompt .dialog-footer{flex-wrap:wrap}
+.update-prompt .update-skip{margin-right:auto;color:var(--muted)}
+.statusbar .update-entry{color:var(--accent);background:var(--accent-bg);border-radius:6px;padding-inline:10px;white-space:nowrap}

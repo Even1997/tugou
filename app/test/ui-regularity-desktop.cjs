@@ -72,7 +72,7 @@ app.on('browser-window-created',(_,w)=>{
     await click('.workspace-rail [aria-label="工具"]');await click('.tools-material-item:nth-child(2)');
     check('tool source changes without affecting materials',await js(`document.querySelector('.image-tools-toolbar>strong').textContent.includes('花园场景')`));
     await click('button','基础处理');await capture('8-tools-basic-light-1040');
-    await click('button','图像合成');await capture('9-tools-composite-light-1040');
+    await click('button','素材处理');await capture('9-tools-composite-light-1040');
     await click('.workspace-rail [aria-label="设置"]');
     for(const tab of ['appearance','models','shortcuts']){await run('ui.navigate',{workspace:'settings',settingsTab:tab});await capture('10-settings-'+tab+'-light-1040');check(tab+' settings fit viewport',await js(`document.querySelector('.settings-content').scrollWidth<=document.querySelector('.settings-content').clientWidth+1`));}
     await run('ui.navigate',{workspace:'settings',settingsTab:'general'});

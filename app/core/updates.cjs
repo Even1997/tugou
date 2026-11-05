@@ -5,7 +5,7 @@ const RELEASES='https://github.com/Even1997/tugou/releases';
 class Updates {
   constructor({updater,profile,version,supported,guard,prepare,beforeInstall=async()=>{},emit=()=>{},now=Date.now}){
     Object.assign(this,{updater,profile,guard,prepare,beforeInstall,emit,now});
-    this.state={status:supported?'idle':'portable',currentVersion:version,supported,installMode:updater.installMode||'automatic',releaseUrl:RELEASES,lastChecked:null};
+    this.state={status:supported?'idle':'portable',currentVersion:version,supported,installMode:updater.installMode||'automatic',releaseUrl:RELEASES,lastChecked:null,skippedVersion:null};
     updater.autoDownload=false;updater.autoInstallOnAppQuit=false;updater.allowPrerelease=false;updater.allowDowngrade=false;
     updater.on('checking-for-update',()=>this.set({status:'checking',version:null,notes:'',blocked:null,error:null}));
     updater.on('update-available',info=>this.set({status:'available',version:info.version,notes:notes(info.releaseNotes),error:null}));
@@ -17,18 +17,25 @@ class Updates {
   set(patch){this.state={...this.state,...patch};this.emit(this.snapshot());}
   snapshot(){return {...this.state};}
   failure(e){const code=String(e.code||'');this.set({status:'error',error:/404|latest|release|channel/i.test(code+' '+e.message)?'releaseUnavailable':'updateFailed'});}
-  async init(){try{const saved=JSON.parse(await fs.readFile(path.join(this.profile,'update-state.json'),'utf8'));if(Number.isFinite(saved.lastChecked))this.state.lastChecked=saved.lastChecked;}catch(e){if(e.code!=='ENOENT')this.state.error='updateFailed';}}
+  async init(){try{const saved=JSON.parse(await fs.readFile(path.join(this.profile,'update-state.json'),'utf8'));if(Number.isFinite(saved.lastChecked))this.state.lastChecked=saved.lastChecked;if(typeof saved.skippedVersion==='string')this.state.skippedVersion=saved.skippedVersion;}catch(e){if(e.code!=='ENOENT')this.state.error='updateFailed';}}
+  persist(){this.pending=(this.pending||Promise.resolve()).catch(()=>{}).then(()=>atomicWrite(path.join(this.profile,'update-state.json'),JSON.stringify({lastChecked:this.state.lastChecked,skippedVersion:this.state.skippedVersion})));return this.pending;}
+  async skip(){
+    if(!this.state.supported||!this.state.version||!['available','downloading','ready','error'].includes(this.state.status))throw Error('UPDATE_NOT_AVAILABLE');
+    const previous=this.state.skippedVersion;this.set({skippedVersion:this.state.version});
+    try{await this.persist();}catch(e){this.set({skippedVersion:previous});throw e;}
+    return this.snapshot();
+  }
   async check({automatic=false,autoDownload=false}={}){
     if(!this.state.supported)return this.snapshot();
-    if(this.operation||['ready','installing'].includes(this.state.status))return this.snapshot();
+    if(this.operation||this.state.status==='installing'||(this.state.status==='ready'&&this.state.skippedVersion!==this.state.version))return this.snapshot();
     // Throttle within this session only: every launch must discover new releases.
     const interval=this.state.status==='error'?300000:1800000;
     if(automatic&&this.lastAttempt!=null&&this.now()-this.lastAttempt<interval)return this.snapshot();
     this.lastAttempt=this.now();
     this.operation=true;
     try{this.set({status:'checking',error:null});await this.updater.checkForUpdates();}
-    catch(e){this.failure(e);}finally{this.operation=false;this.set({lastChecked:this.now()});try{await atomicWrite(path.join(this.profile,'update-state.json'),JSON.stringify({lastChecked:this.state.lastChecked}));}catch(e){this.failure(e);}}
-    if(autoDownload&&this.state.status==='available')await this.download();
+    catch(e){this.failure(e);}finally{this.operation=false;this.set({lastChecked:this.now()});try{await this.persist();}catch(e){this.failure(e);}}
+    if(autoDownload&&this.state.status==='available'&&(!automatic||this.state.skippedVersion!==this.state.version))await this.download();
     return this.snapshot();
   }
   async download(){

@@ -2,10 +2,11 @@ const fs = require('node:fs/promises');
 const { randomUUID } = require('node:crypto');
 const { atomicWrite, safePath } = require('./storage.cjs');
 const pLimit = require('p-limit').default;
+const { EventEmitter } = require('node:events');
 
 // A persisted running task is never resubmitted automatically after restart.
-class TaskQueue {
-  constructor(root) { this.root = root; this.tasks = []; this.controllers = new Map(); this.completions = new Map(); this.pending = Promise.resolve(); this.execution = Promise.resolve(); this.serial = Promise.resolve(); this.images = pLimit(require('./preference-values.cjs').defaults.imageConcurrency); }
+class TaskQueue extends EventEmitter {
+  constructor(root) { super(); this.root = root; this.tasks = []; this.controllers = new Map(); this.completions = new Map(); this.pending = Promise.resolve(); this.execution = Promise.resolve(); this.serial = Promise.resolve(); this.images = pLimit(require('./preference-values.cjs').defaults.imageConcurrency); }
   setImageConcurrency(value) { this.images.concurrency = value; }
   async init() {
     this.file = await safePath(this.root, 'tasks.json');
@@ -19,14 +20,22 @@ class TaskQueue {
   }
   persist() {
     const bytes = JSON.stringify(this.tasks);
-    const next = this.pending.then(() => atomicWrite(this.file, bytes));
+    const next = this.pending.then(async () => { await atomicWrite(this.file, bytes); this.emit('changed'); });
     this.pending = next.catch(() => {});
     return next;
   }
   list() { return structuredClone(this.tasks); }
-  async start(label, execute, context = {}) {
+  async report(id,{progress,message}) {
+    const task=this.tasks.find(t=>t.id===id);
+    if(!task||task.status!=='running')return;
+    if(Number.isFinite(progress))task.progress=Math.max(task.progress||0,Math.min(100,Math.max(0,Math.round(progress))));
+    if(typeof message==='string')task.message=message.slice(0,300);
+    await this.persist();
+  }
+  async start(label, execute, context = {}, {canCancel} = {}) {
     const task = { id: randomUUID(), label, status: 'queued', createdAt: new Date().toISOString(), context };
     const controller = new AbortController();
+    if(canCancel)controller.canCancel=()=>canCancel(task.id);
     this.tasks.push(task);
     this.controllers.set(task.id, controller);
     try { await this.persist(); } catch (error) { this.controllers.delete(task.id); task.status = 'failed'; throw error; }
@@ -61,6 +70,8 @@ class TaskQueue {
   async cancel(id) {
     const controller = this.controllers.get(id);
     if (!controller) return false;
+    if(controller.canCancel&&!await controller.canCancel())return false;
+    if(this.controllers.get(id)!==controller||controller.signal.aborted)return false;
     const task = this.tasks.find((item) => item.id === id);
     task.status = 'cancelled'; task.message = task.context?.kind === 'runtime-install' ? '已取消安装，已下载内容保留' : task.context?.kind === 'local-tool' ? '已取消本地处理' : '本地已取消；已提交的供应商请求仍可能计费';
     controller.abort();

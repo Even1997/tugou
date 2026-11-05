@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {Button,Icon} from './components.jsx';
 const labels={queued:'等待排队',running:'等待模型返回',completed:'正在载入结果',failed:'生成失败',cancelled:'已取消',interrupted:'生成已中断'};
-const stages={generating:'等待模型返回',downloading:'下载生成结果',saving:'保存生成结果'};
+const stages={'request-queued':'等待请求名额',generating:'等待模型返回',receiving:'接收模型响应',downloading:'下载生成结果',saving:'保存生成结果'};
 export function GenerationProgress({task,compact=false}){
   const active=['queued','running'].includes(task?.status),[now,setNow]=useState(Date.now());
   useEffect(()=>{if(!active)return;setNow(Date.now());const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer);},[active,task?.id]);

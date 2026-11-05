@@ -7,7 +7,7 @@ const {
   hash,
 } = require("./storage.cjs");
 const { saveImage, referenceBytes } = require("./generation.cjs");
-const { requestImages } = require("./image-api.cjs");
+const { requestImages, imageProgress } = require("./image-api.cjs");
 const {
   cloudSettings,
   cloudPrompt,
@@ -223,6 +223,7 @@ class CloudTaskService {
           );
           entry.context.requestedSize = `${job.size.width}x${job.size.height}`;
           entry.message = "模型处理中";
+          const progress = imageProgress(this.tasks,entry);
           const images = await requestImages(
             connection,
             {
@@ -232,6 +233,7 @@ class CloudTaskService {
               mask: prepared.mask,
             },
             AbortSignal.any([signal, AbortSignal.timeout(600000)]),
+            progress,
           );
           signal.throwIfAborted();
           if (images.length !== 1) throw fail("图像工具需要单张返回结果");
@@ -241,6 +243,7 @@ class CloudTaskService {
             ...(await saveImage(this.root, images[0], this.inspectImage)),
           };
           const raw = { id, job, asset };
+          progress('saved');
           await atomicWrite(
             await safePath(this.root, "cloud-raw", id + ".json"),
             JSON.stringify(raw),

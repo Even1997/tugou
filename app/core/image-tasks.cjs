@@ -82,7 +82,12 @@ class ImageTaskService {
       ...(display || {}),
     };
   }
-  async start(projectId, document, sourceIds, options) {
+  async startNode(projectId,document,nodeId){
+    validateDocument(document);
+    const {asset,settings,signature}=require('./canvas-tools.cjs').compileTool(document,nodeId);
+    return this.start(projectId,document,[asset.id],settings,{nodeId,signature});
+  }
+  async start(projectId, document, sourceIds, options, canvas) {
     await this.projects.read(projectId);
     validateDocument(document);
     if (
@@ -124,7 +129,7 @@ class ImageTaskService {
       ? await this.normalizeAsset(find(settings.secondaryId))
       : undefined;
     const mask = settings.operation==='watermark' && settings.mode==='mask' ? await this.normalizeAsset(find(settings.maskId)) : undefined;
-    const job = { projectId, inputs, secondary, mask, settings };
+    const job = { projectId, inputs, secondary, mask, settings, ...(canvas?{canvas}:{}) };
     validateJob(job);
     let runtime;
     if (Object.hasOwn(aiNames, settings.operation)) {
@@ -179,7 +184,7 @@ class ImageTaskService {
     if (
       this.tasks.tasks.some(
         (t) =>
-          t.context?.requestKey === key &&
+          (t.context?.requestKey === key || job.canvas && t.context?.projectId===job.projectId && t.context.nodeId===job.canvas.nodeId) &&
           ["queued", "running"].includes(t.status),
       )
     )
@@ -305,6 +310,7 @@ class ImageTaskService {
               id,
               kind: "local-tool",
               projectId: job.projectId,
+              ...(job.canvas?{nodeId:job.canvas.nodeId,outputSignature:job.canvas.signature}:{}),
               assets: outputs,
             }),
           );
@@ -324,6 +330,7 @@ class ImageTaskService {
         kind: "local-tool",
         engine: isAI ? "local-ai" : "raster",
         projectId: job.projectId,
+        ...(job.canvas?{nodeId:job.canvas.nodeId}:{}),
         sourceId: job.inputs.length === 1 ? job.inputs[0].id : undefined,
         sourceIds: job.inputs.map((a) => a.id),
         operation: job.settings.operation,

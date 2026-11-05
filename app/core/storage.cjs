@@ -95,9 +95,13 @@ function validateCanvas(graph) {
     || !graph.viewport || ![graph.viewport.x, graph.viewport.y, graph.viewport.zoom].every(Number.isFinite) || graph.viewport.zoom <= 0) throw new Error('画布数据格式无效');
   const ids = new Set();
   for (const node of graph.nodes) {
-    if (!node || typeof node.id !== 'string' || ids.has(node.id) || !['module', 'recipe', 'asset', 'text','group',...require('./workflow-nodes.cjs').types].includes(node.type)
+    if (!node || typeof node.id !== 'string' || ids.has(node.id) || !['module', 'recipe', 'asset', 'text','group','imageTool',...require('./workflow-nodes.cjs').types].includes(node.type)
       || !node.position || ![node.position.x, node.position.y].every(Number.isFinite) || !node.data) throw new Error('画布节点格式无效');
     ids.add(node.id);
+    if(node.type==='imageTool'){
+      if(typeof node.data.name!=='string')throw Error('工具节点名称无效');
+      require('./local-ai.cjs').validateLocalSettings(require('./canvas-tools.cjs').settingsOf(node),{width:1,height:1});
+    }
     if(require('./workflow-nodes.cjs').types.includes(node.type)){
       if(typeof node.data.name!=='string'||typeof node.data.prompt!=='string'||(node.data.inputOrder!==undefined&&(!Array.isArray(node.data.inputOrder)||node.data.inputOrder.some(id=>typeof id!=='string'))))throw Error('生成节点参数格式无效');
       const scene=node.data.scene;

@@ -1,0 +1,43 @@
+.task-dialog.ant-modal { top:40px; padding-bottom:24px; max-width:calc(100vw - 32px); }
+.task-dialog.ant-modal .ant-modal-container { padding:0; overflow:hidden; display:flex; flex-direction:column; max-height:calc(100dvh - 80px); border:1px solid var(--line); border-radius:12px; }
+.task-dialog.ant-modal .ant-modal-header { margin:0; padding:22px 24px 16px; }
+.task-dialog.ant-modal .ant-modal-body { padding:0; min-height:0; display:flex; flex-direction:column; }
+.task-toolbar { padding:0 24px 16px; display:flex; align-items:center; gap:16px; justify-content:space-between; border-bottom:1px solid var(--line); flex-shrink:0; }
+.task-filters { display:flex; flex-wrap:wrap; gap:6px; }
+.task-filters button { display:flex; align-items:center; gap:8px; padding:8px 12px; border:0; border-radius:8px; background:transparent; color:var(--muted); font-size:13px; }
+.task-filters button:hover { background:var(--hover); color:var(--text); }
+.task-filters button[aria-pressed=true] { background:var(--accent-bg); color:var(--accent); }
+.task-filters button>span { font-size:12px; font-variant-numeric:tabular-nums; }
+.task-order { color:var(--muted); font-size:12px; white-space:nowrap; }
+.task-list { overflow:auto; min-height:160px; max-height:62vh; scrollbar-gutter:stable; }
+.task-row { display:grid; grid-template-columns:28px minmax(0,1fr) 120px; column-gap:12px; padding:14px 22px; border-bottom:1px solid var(--line); }
+.task-row:last-child { border-bottom:0; }
+.task-type-icon { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:var(--surface); color:var(--muted); font-size:14px; }
+.task-main { min-width:0; }
+.task-row-heading { display:flex; align-items:baseline; gap:16px; }
+.task-row-heading strong { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; font-weight:600; line-height:1.7; }
+.task-state { display:inline-flex; align-items:center; gap:6px; flex-shrink:0; font-size:12px; color:var(--muted); }
+.task-state::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+.task-row[data-status=completed] .task-state { color:var(--success); }
+.task-row[data-status=running] .task-state,.task-row[data-status=queued] .task-state { color:var(--accent); }
+.task-row[data-status=failed] .task-state,.task-row[data-status=interrupted] .task-state,.task-row[data-status=review] .task-state { color:var(--danger); }
+.task-row p { margin:6px 0 0; font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
+.task-metadata { color:var(--muted); }
+.task-row .task-message { color:var(--muted); }
+.task-row[data-status=failed] .task-message { color:var(--danger); }
+.task-actions { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.task-actions .ant-btn { max-width:100%; height:28px; padding:0 8px; font-size:12px; }
+.task-row progress { display:block; width:100%; accent-color:var(--accent); height:4px; border:0; margin-top:10px; }
+.task-row progress::-webkit-progress-bar { background:var(--surface); border-radius:4px; }
+.task-row progress::-webkit-progress-value { background:var(--accent); border-radius:4px; }
+.task-row details { margin-top:8px; font-size:12px; line-height:1.7; min-width:0; }
+.task-row summary { cursor:pointer; color:var(--muted); }
+.task-row summary:hover { color:var(--accent); }
+.task-message-details>summary { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; list-style-position:inside; }
+.task-message-details[open]>summary { color:var(--accent); }
+.task-message-details p { white-space:pre-wrap; }
+.task-timings[open] { padding:10px 12px; border-radius:6px; background:var(--surface); }
+.task-dialog .task-error { margin:0; padding:12px 24px; background:var(--surface); color:var(--danger); font-size:12px; overflow-wrap:anywhere; }
+.task-dialog :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+@media(max-width:700px){.task-toolbar{align-items:flex-start;flex-direction:column;gap:8px;padding:0 16px 12px}.task-row{grid-template-columns:28px minmax(0,1fr);padding:16px;gap:8px 12px}.task-actions{grid-column:2;flex-direction:row;flex-wrap:wrap;align-items:center}.task-row-heading{gap:8px}.task-order{display:none}}
+@media(max-height:650px){.task-dialog.ant-modal{top:16px}.task-dialog.ant-modal .ant-modal-container{max-height:calc(100dvh - 32px)}}

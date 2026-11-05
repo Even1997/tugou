@@ -16,9 +16,10 @@ const ids = {type:'array',items:string,minItems:1,maxItems:500,uniqueItems:true}
 const point = object({x:number,y:number},['x','y']);
 const color = {type:'string',pattern:'^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|transparent)$',maxLength:20};
 const transform = {name:string,x:number,y:number,width:size,height:size,rotation:number,opacity:{type:'number',minimum:0,maximum:1},visible:bool,locked:bool,flipX:bool,flipY:bool};
-const layerProps = {...transform,text,color,fill:bool,stroke:color,strokeWidth:{type:'number',minimum:0,maximum:1000},fontSize:{type:'number',minimum:1,maximum:1000},fontFamily:string,fontWeight:{type:'integer',minimum:1,maximum:1000},fontResource:{anyOf:[{type:'null'},object({resource:{type:'string',pattern:'^[a-f0-9]{64}\\.ttf$'},projectId:string,jobId:string},['resource','projectId','jobId'])]},fontStyle:enumeration('normal','bold','italic','bold italic'),align:enumeration('left','center','right'),shape:enumeration('rect','rounded','ellipse','triangle','diamond','star'),radius:{type:'number',minimum:0,maximum:10000},blend:enumeration('source-over','multiply','screen','overlay','darken','lighten','difference','exclusion'),assetId:string};
+const layerProps = {...transform,text,color,fill:bool,stroke:color,strokeWidth:{type:'number',minimum:0,maximum:1000},fontSize:{type:'number',minimum:1,maximum:1000},fontFamily:string,fontWeight:{type:'integer',minimum:1,maximum:1000},fontResource:{anyOf:[{type:'null'},object({resource:{type:'string',pattern:'^[a-f0-9]{64}\\.ttf$'},projectId:string,jobId:string},['resource','projectId','jobId'])]},fontStyle:enumeration('normal','bold','italic','bold italic'),align:enumeration('left','center','right'),shape:enumeration('rect','rounded','ellipse','triangle','diamond','star','line'),radius:{type:'number',minimum:0,maximum:10000},blend:enumeration(...layers.nativeBlends),assetId:string,scaleX:number,scaleY:number,skewX:{type:'number',minimum:-89,maximum:89},warp:{anyOf:[{type:'null'},{type:'array',items:number,minItems:8,maxItems:8}]},clipping:bool,maskSourceId:{anyOf:[string,{type:'null'}]}};
 const nodeProps = {name:string,text,prompt:text,model:{type:'string',maxLength:512},size:string,count:{type:'integer',minimum:1,maximum:15},mode:enumeration('image','text'),quality:string,negativePrompt:text,role:string,inputOrder:{type:'array',items:string,maxItems:500,uniqueItems:true}};
 Object.assign(nodeProps,{camera:text,excludeUpstreamText:bool,resultText:text,inputRoles:{type:'object',maxProperties:500,propertyNames:{maxLength:256},additionalProperties:{type:'string',maxLength:1000}}});
+nodeProps.parameters=object({model:enumeration('general','illustration','anime','birefnet','u2netp'),scale:enumeration(2,3,4),edgeShrink:{type:'integer',minimum:0,maximum:4},edgeFeather:{type:'number',minimum:0,maximum:4}});
 const catalog = new Map(), ajv = new Ajv({allErrors:true});
 function define(name,description,properties={},required=[],effect='document',apply) {
   const inputSchema=object(properties,required);
@@ -30,6 +31,16 @@ function imageAsset(doc,id){const asset=find(doc.assets,id);if(asset.kind&&asset
 function editable(doc,ids) {
   for(const id of ids){const layer=find(doc.layers,id);if(layers.inherited(doc.layers,layer,'locked'))fail('LOCKED',`图层已锁定：${id}`);}
 }
+function maskSource(doc,layer,id){
+  const source=find(doc.layers,id);
+  if(source.artboard||boards.owner(doc,id)?.id!==boards.owner(doc,layer.id)?.id)fail('INVALID_TARGET','蒙版来源必须为同画板的内容图层');
+  const seen=new Set(),visit=current=>{
+    if(current.id===layer.id)fail('INVALID_TARGET','蒙版来源不可循环依赖');
+    if(seen.has(current.id))return;seen.add(current.id);
+    if(current.maskSourceId)visit(find(doc.layers,current.maskSourceId));
+    for(const child of doc.layers.filter(l=>l.parentId===current.id))visit(child);
+  };visit(source);
+}
 function contentLayers(doc,ids){editable(doc,ids);if(ids.some(id=>find(doc.layers,id).artboard))fail('INVALID_TARGET','画板请使用 artboard 命令');}
 const layerArgs={ids};
 define('project.rename','修改当前工程名称',{name:string},['name'],'document',(d,a)=>{d.name=a.name;});
@@ -40,7 +51,7 @@ define('prompt.sync','同步全局模块和配方引用',{},[],'document',d=>({d
 define('recipe.create','创建配方',{name:string,moduleIds:{type:'array',items:string,maxItems:500},output:text,size:string,quality:string},['name'],'document',(d,a)=>{for(const id of a.moduleIds||[])find(d.modules,id);const r=prompts.pinRecipe(d,{...prompts.newRecipe(),...a});d.recipes.push(r);return {id:r.id};});
 define('recipe.update','修改配方及模块绑定',{id:string,patch:object({name:string,moduleIds:{type:'array',items:string,maxItems:500},output:text,size:string,quality:string})},['id','patch'],'document',(d,a)=>{const r=find(d.recipes,a.id);for(const id of a.patch.moduleIds||[])find(d.modules,id);Object.assign(r,prompts.pinRecipe(d,{...r,...a.patch}));});
 define('recipe.delete','删除配方，已有节点保留快照',{id:string},['id'],'document',(d,a)=>{find(d.recipes,a.id);d.recipes=d.recipes.filter(r=>r.id!==a.id);});
-define('canvas.create','创建节点；坐标相对于无限画布',{type:enumeration('text','asset','module','recipe','config','textgen','image','director'),sourceId:string,position:point,properties:object(nodeProps)},['type','position'],'document',(d,a)=>{d.tugouCanvas||=prompts.emptyCanvas();const n=prompts.createNode(d,a.type,a.sourceId,a.position);Object.assign(n.data,a.properties);d.tugouCanvas.nodes.push(n);return {id:n.id};});
+define('canvas.create','创建节点；坐标相对于无限画布。imageTool 的 sourceId 为 upscale 或 cutout',{type:enumeration('text','asset','module','recipe','config','textgen','image','director','imageTool'),sourceId:string,position:point,properties:object(nodeProps)},['type','position'],'document',(d,a)=>{d.tugouCanvas||=prompts.emptyCanvas();const n=prompts.createNode(d,a.type,a.sourceId,a.position);Object.assign(n.data,a.properties);d.tugouCanvas.nodes.push(n);return {id:n.id};});
 define('canvas.update','修改节点位置或生成参数',{id:string,position:point,properties:object(nodeProps)},['id'],'document',(d,a)=>{const n=find(d.tugouCanvas?.nodes||[],a.id);if(a.position)n.position=a.position;Object.assign(n.data,a.properties);});
 define('canvas.connect','连接两个节点，拒绝环和重复连线',{source:string,target:string},['source','target'],'document',(d,a)=>{if(!prompts.canConnect(d.tugouCanvas,a.source,a.target))fail('INVALID_LINK','不可连接这些节点');const edge={id:randomUUID(),...a};d.tugouCanvas.edges.push(edge);return {id:edge.id};});
 define('canvas.disconnect','删除指定连线',{id:string},['id'],'document',(d,a)=>{find(d.tugouCanvas?.edges||[],a.id);d.tugouCanvas.edges=d.tugouCanvas.edges.filter(e=>e.id!==a.id);});
@@ -53,8 +64,8 @@ define('artboard.create','新建画板并返回 ID；自动放在已有画板右
 define('artboard.update','修改画板名称、位置、尺寸、背景',{id:string,patch:object({name:string,x:number,y:number,width:size,height:size,background:color,clipContent:bool}),scaleContent:bool},['id','patch'],'document',(d,a)=>({document:boards.update(boards.normalize(d),a.id,a.patch,{scaleContent:a.scaleContent})}));
 define('artboard.duplicate','复制整个画板',{id:string},['id'],'document',(d,a)=>boards.duplicate(d,a.id));
 define('artboard.delete','删除画板及内容，至少保留一个',{id:string},['id'],'document',(d,a)=>{find(boards.boards(d),a.id);return {document:boards.remove(d,a.id)};});
-define('layer.create','在指定画板内创建文字、形状或图片，坐标相对画板',{artboardId:string,kind:enumeration('text','shape','image'),properties:object(layerProps)},['artboardId','kind'],'document',(d,a)=>{const n=boards.normalize(d),b=find(n.layers,a.artboardId);editable(n,[b.id]);if(!b.artboard)fail('INVALID_TARGET','必须指定画板');if(a.kind==='image')imageAsset(d,a.properties?.assetId);const l=layers.createLayer(a.kind,{text:'文字',color:'#aebcf2',fill:true,shape:'rect',fontSize:48,radius:a.properties?.shape==='rounded'?24:0,...a.properties,parentId:b.id});n.layers.push(l);return {document:n,id:l.id};});
-define('layer.update','修改图层属性；坐标相对于父级。锁定图层须先解锁',{id:string,patch:object(layerProps)},['id','patch'],'document',(d,a)=>{const l=find(d.layers,a.id);if(l.artboard)fail('INVALID_TARGET','画板请使用 artboard.update');if(Object.keys(a.patch).length===1&&a.patch.locked===false){if(l.parentId)editable(d,[l.parentId]);}else editable(d,[a.id]);if(a.patch.assetId)imageAsset(d,a.patch.assetId);if(a.patch.fontFamily&&!Object.hasOwn(a.patch,'fontResource'))delete l.fontResource;Object.assign(l,a.patch);});
+define('layer.create','在指定画板内创建文字、形状或图片，坐标相对画板',{artboardId:string,kind:enumeration('text','shape','image'),properties:object(layerProps)},['artboardId','kind'],'document',(d,a)=>{const n=boards.normalize(d),b=find(n.layers,a.artboardId);editable(n,[b.id]);if(!b.artboard)fail('INVALID_TARGET','必须指定画板');if(a.kind==='image')imageAsset(d,a.properties?.assetId);const l=layers.createLayer(a.kind,{text:'文字',color:'#aebcf2',fill:true,shape:'rect',fontSize:48,radius:a.properties?.shape==='rounded'?24:0,...a.properties,parentId:b.id});n.layers.push(l);if(l.maskSourceId)maskSource(n,l,l.maskSourceId);return {document:n,id:l.id};});
+define('layer.update','修改图层属性；坐标相对于父级。锁定图层须先解锁',{id:string,patch:object(layerProps)},['id','patch'],'document',(d,a)=>{const l=find(d.layers,a.id);if(l.artboard)fail('INVALID_TARGET','画板请使用 artboard.update');if(Object.keys(a.patch).length===1&&a.patch.locked===false){if(l.parentId)editable(d,[l.parentId]);}else editable(d,[a.id]);if(a.patch.assetId)imageAsset(d,a.patch.assetId);if(a.patch.maskSourceId)maskSource(d,l,a.patch.maskSourceId);if(a.patch.fontFamily&&!Object.hasOwn(a.patch,'fontResource'))delete l.fontResource;Object.assign(l,a.patch);});
 define('layer.replaceImage','替换图片素材并清除旧像素编辑，保留尺寸、变换、蒙版、层级与特效',{id:string,assetId:string},['id','assetId'],'document',(d,a)=>{
   editable(d,[a.id]);const l=find(d.layers,a.id);if(l.kind!=='image')fail('INVALID_TARGET','请选择图片图层');imageAsset(d,a.assetId);l.assetId=a.assetId;delete l.bitmap;
 });
@@ -73,7 +84,7 @@ define('layer.align','按选中图层边界对齐；单层相对于所属画板�
 });
 define('layer.distribute','均匀分布至少三个图层',{ids,axis:enumeration('x','y')},['ids','axis'],'document',(d,a)=>{editable(d,a.ids);if(a.ids.length<3)fail('INVALID_TARGET','至少选择三个图层');d.layers=layers.distributeLayers(d.layers,a.ids,a.axis);});
 define('selection.polygon','创建自由多边形选区；坐标相对画板，可加减或相交',{artboardId:string,points:{type:'array',items:number,minItems:6,maxItems:20000},operation:enumeration('replace','add','subtract','intersect')},['artboardId','points'],'document',(d,a)=>{if(a.points.length%2)fail('INVALID_ARGUMENT','坐标必须为 x,y 配对');const b=find(d.layers,a.artboardId);if(!b.artboard)fail('INVALID_TARGET','必须指定画板');editable(d,[b.id]);if(b.selection?.inverted&&a.operation&&a.operation!=='replace')fail('INVALID_TARGET','反选后请先用 selection.rasterize 固化选区');const s=a.operation&&a.operation!=='replace'?b.selection||{}:{};b.selection={...s,paths:[...(s.paths||[]),{points:a.points,operation:a.operation||'add'}]};});
-define('selection.rectangle','创建矩形选区',{artboardId:string,x:number,y:number,width:size,height:size},['artboardId','x','y','width','height'],'document',(d,a)=>{const {x,y,width:w,height:h}=a;return catalog.get('selection.polygon').apply(d,{artboardId:a.artboardId,points:[x,y,x+w,y,x+w,y+h,x,y+h]});});
+define('selection.rectangle','创建矩形选区',{artboardId:string,x:number,y:number,width:size,height:size,operation:enumeration('replace','add','subtract','intersect')},['artboardId','x','y','width','height'],'document',(d,a)=>{const {x,y,width:w,height:h}=a;return catalog.get('selection.polygon').apply(d,{artboardId:a.artboardId,operation:a.operation,points:[x,y,x+w,y,x+w,y+h,x,y+h]});});
 for(const name of ['clear','invert'])define('selection.'+name,name==='clear'?'取消选区':'反向选择',{artboardId:string},['artboardId'],'document',(d,a)=>{const b=find(d.layers,a.artboardId);if(!b.artboard)fail('INVALID_TARGET','必须指定画板');editable(d,[b.id]);if(name==='clear')delete b.selection;else{if(!b.selection)fail('INVALID_TARGET','没有选区');b.selection={...b.selection,inverted:!b.selection.inverted};}});
 define('mask.create','添加全白可见蒙版，不覆盖已有蒙版',{id:string},['id'],'document',(d,a)=>{contentLayers(d,[a.id]);const l=find(d.layers,a.id);if(l.mask)fail('INVALID_TARGET','已存在蒙版');l.mask={x:0,y:0,width:1,height:1};});
 define('mask.update','设置蒙版启停、反相、浓度、羽化',{id:string,patch:object({disabled:bool,inverted:bool,density:{type:'number',minimum:0,maximum:100},feather:{type:'number',minimum:0,maximum:1000}})},['id','patch'],'document',(d,a)=>{editable(d,[a.id]);const l=find(d.layers,a.id);if(!l.mask)fail('INVALID_TARGET','没有蒙版');Object.assign(l.mask,a.patch);});
@@ -109,7 +120,7 @@ define('project.open','打开已保存工程；有未保存修改时拒绝',{id:
 define('project.save','保存当前实时文档，使用磁盘版本检查',{},[],'session');
 define('history.undo','撤销一次编辑或整个批次',{},[],'session');
 define('history.redo','重做一次编辑或整个批次',{},[],'session');
-define('workspace.show','切换工作区',{workspace:enumeration('canvas','layers','prompts','assets','tools','fonts'),layerIds:ids},['workspace'],'session');
+define('workspace.show','切换工作区',{workspace:enumeration('home','canvas','layers','prompts','assets','tools','fonts'),layerIds:ids},['workspace'],'session');
 define('models.status','读取供应商及模型可用状态；不返回 Key',{},[],'read');
 define('models.imageCapabilities','读取生图模型的合法比例、分辨率、尺寸与质量；省略 model 时使用共享生图模型。规则不代表供应商已验证',{model:string},[],'read');
 define('tools.status','读取本地图像工具与主体识别组件状态',{},[],'read');
@@ -134,15 +145,16 @@ define('image.fillSelection','在所属画板当前选区内填色或清除图�
 define('layer.merge','合并同画板内相邻顶层图层或分组，单层可栅格化；保留外观，一次撤销。不支持跨组/外部混合依赖',{ids},['ids'],'pixels');
 define('mask.loadSelection','把指定蒙版载入所属画板选区',{id:string},['id'],'pixels');
 define('selection.rasterize','固化画板当前选区，之后可继续加减自由选区',{artboardId:string},['artboardId'],'pixels');
-define('selection.ellipse','创建椭圆选区；坐标相对画板',{artboardId:string,x:number,y:number,width:size,height:size},['artboardId','x','y','width','height'],'document',(d,a)=>{
+define('selection.ellipse','创建椭圆选区；坐标相对画板',{artboardId:string,x:number,y:number,width:size,height:size,operation:enumeration('replace','add','subtract','intersect')},['artboardId','x','y','width','height'],'document',(d,a)=>{
   const points=Array.from({length:128},(_,i)=>{const t=i/128*Math.PI*2;return [a.x+a.width/2+Math.cos(t)*a.width/2,a.y+a.height/2+Math.sin(t)*a.height/2];}).flat();
-  return catalog.get('selection.polygon').apply(d,{artboardId:a.artboardId,points});
+  return catalog.get('selection.polygon').apply(d,{artboardId:a.artboardId,operation:a.operation,points});
 });
 define('selection.subject','异步本地 AI 主体选区；返回任务 ID。完成时若文档已变化则拒绝覆盖',{id:string,requestId:string},['id','requestId'],'localTask');
 define('asset.preview','查看图片素材缩略图',{id:string,maxSize:{type:'integer',minimum:64,maximum:2048}},['id'],'read');
-define('paint.stroke','绘制一次笔画并产生一次撤销；必须指定 image 或 mask 目标，点坐标相对画板',{id:string,target:enumeration('image','mask'),maskMode:enumeration('hide','reveal'),color:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},erase:bool,points:{type:'array',items:point,minItems:1,maxItems:256},size:{type:'number',minimum:2,maximum:1000},opacity:{type:'number',minimum:1,maximum:100},hardness:{type:'number',minimum:0,maximum:100}},['id','target','points','size'],'pixels');
+define('paint.stroke','绘制一次笔画并产生一次撤销；必须指定 image 或 mask 目标，点坐标相对画板',{id:string,target:enumeration('image','mask'),maskMode:enumeration('hide','reveal'),color:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},erase:bool,points:{type:'array',items:object({x:number,y:number,pressure:{type:'number',minimum:0,maximum:1}},['x','y']),minItems:1,maxItems:256},pressure:bool,smoothing:{type:'number',minimum:0,maximum:100},size:{type:'number',minimum:2,maximum:1000},opacity:{type:'number',minimum:1,maximum:100},hardness:{type:'number',minimum:0,maximum:100}},['id','target','points','size'],'pixels');
 const imageDefaults={...require('./image-tools.cjs').defaults,...require('./image-composition.cjs').compositionDefaults,...require('./cleanup-settings.cjs').cleanupDefaults,mirror:{},rotate:{},upscale:{model:'general',scale:4},cutout:{model:'birefnet',edgeShrink:0,edgeFeather:0}};
 define('image.metadata','查看素材中的可清理元数据；保留色彩配置和显示方向。需手动下载元数据工具',{id:string},['id'],'read');
+define('image.processNode','运行画布超分或抠图节点；先完成上游处理并确认本地组件已安装，结果写回节点且保留原图',{nodeId:string,requestId:string},['nodeId','requestId'],'localTask');
 define('image.process','异步执行本地图像处理；返回任务 ID，结果进入素材库。抠图/超分需已安装模型；cutout.model 可选 u2netp（轻量 CPU）或 birefnet（精细，默认）。watermark 支持 auto/region/mask 本地可见水印修复；metadata 清理元数据并保留显示信息，均需手动下载组件。先查 tools.status',{ids,requestId:string,settings:{oneOf:Object.entries(imageDefaults).map(([operation,defaults])=>object({operation:{const:operation},...Object.fromEntries(Object.entries(defaults).map(([k,v])=>[k,operation==='watermark'&&k==='mode'?enumeration('auto','region','mask'):operation==='watermark'&&k==='radius'?{type:'integer',minimum:1,maximum:20}:operation==='metadata'&&k==='preserveDisplay'?{const:true}:operation==='cutout'&&k==='model'?enumeration('birefnet','u2netp'):operation==='cutout'&&k==='edgeShrink'?{type:'integer',minimum:0,maximum:4,description:'按原图像素收缩边缘，默认 0；可能损失细发丝'}:operation==='cutout'&&k==='edgeFeather'?{type:'number',minimum:0,maximum:4,description:'按原图像素向内羽化，默认 0；不会扩大透明区域的可见范围'}:typeof v==='number'?number:typeof v==='boolean'?bool:{type:'string',maxLength:512}])),...(operation==='resize'?{scale:{type:'number',minimum:.01,maximum:16}}:{}),...(operation==='extend'?{padding:{type:'number',minimum:0,maximum:10000}}:{})},['operation']))}},['ids','settings','requestId'],'localTask');
 
 function validate(name,args) {
@@ -191,6 +203,7 @@ define('semantic.read','读取当前工程已完成的类别识别方案',{id:st
 define('semantic.generate','按已审阅的类别方案逐项生成蒙版并提取原图；可能收费',{assetId:string,plan:{type:'string',minLength:1,maxLength:6000},requestId:string},['assetId','plan','requestId'],'network');
 define('generation.angle','从图片节点生成新视角，保留来源关系；可能收费',{nodeId:string,assetId:string,requestId:string,params:object({horizontalAngle:{type:'integer',minimum:-60,maximum:60},pitchAngle:{type:'integer',minimum:-45,maximum:45},cameraDistance:{type:'number',minimum:1,maximum:10},wideAngle:bool})},['nodeId','assetId','requestId'],'network');
 define('analysis.review','保存分析草稿的人工审阅文本、选用和全局设置；之后用 analysis.apply 的 useReview 应用',{id:string,review:object({modules:{type:'array',minItems:1,maxItems:40,items:object({name:{type:'string',minLength:1,maxLength:120},kind:{type:'string',minLength:1,maxLength:40},text:{type:'string',minLength:1,maxLength:4000},enabled:bool,global:bool},['name','kind','text'])},createRecipe:bool,recipeName:{type:'string',maxLength:120},reference:bool},['modules'])},['id','review'],'file');
+require('./automation-editing.cjs').register(define,{string,object,enumeration,ids,find,fail,editable,adjustmentSchema});
 require('./automation-ui.cjs').register({define,object,string,enumeration});
 require('./automation-pages.cjs').register({define,string,enumeration});
 module.exports={listCommands,validate,batch,fail,find,editable,object,string,ids,enumeration};

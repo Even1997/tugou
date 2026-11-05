@@ -2,6 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),sharp=requi
 const {captureUi}=require('../core/ui-capture.cjs'),{validate,batch}=require('../core/automation-commands.cjs');
 test('UI schemas reject arbitrary selectors, scripts, unbounded output and batched navigation',()=>{
   validate('ui.inspect',{limit:200});validate('ui.capture',{region:'modules',maxSize:1024});validate('ui.navigate',{nodeId:'a'});validate('ui.restore',{restoreToken:'t'});
+  validate('ui.navigate',{workspace:'home'});validate('workspace.show',{workspace:'home'});
   for(const [name,args] of [['ui.capture',{maxSize:9999}],['ui.inspect',{limit:9999}],['ui.navigate',{script:'alert(1)'}],['ui.navigate',{selector:'body'}],['ui.restore',{}]])assert.throws(()=>validate(name,args));
   assert.throws(()=>batch({},[{name:'nav',command:'ui.navigate',args:{workspace:'canvas'}}]));
 });

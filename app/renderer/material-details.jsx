@@ -115,7 +115,7 @@ export function MaterialDetails({
                 close();
               }}
             >
-              加入画面
+              加入图层
             </Button>
             <Button
               onClick={() => {

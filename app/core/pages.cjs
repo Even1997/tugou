@@ -1,7 +1,7 @@
 // The active page stays in the existing editor fields; only inactive pages store content.
 const kinds=['canvas','layers'];
 const fields={canvas:['tugouCanvas'],layers:['width','height','background','layers','selection','layout','compositionView']};
-const label=kind=>kind==='canvas'?'画布':'合成';
+const label=kind=>kind==='canvas'?'画布':'图层页';
 const initialId=kind=>kind==='canvas'?'canvas-main':'composition-main';
 const blank=kind=>kind==='canvas'?{tugouCanvas:{version:1,nodes:[],edges:[],viewport:{x:0,y:0,zoom:1}}}:{width:1024,height:1536,background:'#fffdf8',layers:[]};
 const pick=(doc,kind)=>Object.fromEntries(fields[kind].filter(key=>doc[key]!==undefined).map(key=>[key,doc[key]]));

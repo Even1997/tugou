@@ -16,7 +16,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
  try{
  if(reopen){await wait(`document.documentElement.lang==='en'&&document.documentElement.dataset.theme==='light'&&document.body.textContent.includes('设置恢复验收')`);check('full process restart restores language, theme and last project',true);check('MCP automatically reconnects after restart',!!JSON.parse(fs.readFileSync(path.join(profile,'mcp-session.json'),'utf8')).port);report.profile=profile;finish(0);return;}
  await wait(`!!document.querySelector('.rail-bottom [aria-label="设置"]')`);await click('.rail-bottom [aria-label="设置"]');await wait(`!!document.querySelector('[data-settings-tab="general"]')`);
- check('settings opens without a project and preserves global rail',await js(`document.querySelectorAll('[data-settings-tab]').length===7&&document.querySelectorAll('.workspace-rail > button').length===6`));
+ check('settings opens without a project and preserves global rail',await js(`document.querySelectorAll('[data-settings-tab]').length===7&&document.querySelectorAll('.workspace-rail > button').length===7`));
  await wait(`!document.querySelector('[aria-label="显示语言"]').disabled`);
  check('initial settings loaded',await js(`document.documentElement.lang==='zh-CN'`));
  check('normal launch disables development preview',await js(`!document.querySelector('.dev-preview-notice')`)&&!(await js(`window.tugou.devPreview('status')`)).enabled);
@@ -33,7 +33,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   if(language==='en'){w.setSize(940,640);await delay(160);check('English narrow window keeps close button visible',await js(`document.querySelector('.window-controls').getBoundingClientRect().right<=innerWidth`));await capture('general-en-narrow');w.setSize(1380,900);await delay(120);}
  }
  await click('[data-settings-tab="appearance"]');await click('button[aria-label="浅色"]');await wait(`document.documentElement.dataset.theme==='light'`);await capture('appearance-light');
- await click('button[aria-label="跟随系统"]');check('system theme persisted',(await js(`window.tugou.settings('get')`)).preferences.theme==='system');
+ await click('button[aria-label="跟随系统"]');await wait(`window.tugou.settings('get').then(value=>value.preferences.theme==='system')`);check('system theme persisted',(await js(`window.tugou.settings('get')`)).preferences.theme==='system');
  await click('button[aria-label="深色"]');await wait(`document.documentElement.dataset.theme==='dark'`);
  await click('[data-settings-tab="storage"]');await wait(`document.querySelector('.settings-storage-summary strong').textContent!=='—'`);
  const sentinel=path.join(profile,'workspace','resources','keep-original.bin');fs.writeFileSync(sentinel,'original-do-not-delete');

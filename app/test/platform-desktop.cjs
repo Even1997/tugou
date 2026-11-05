@@ -24,7 +24,7 @@ app.on('browser-window-created',(_event,window)=>{
       check('platform bridge does not expose Node',await js(`window.tugou.platform===${JSON.stringify(process.platform)}&&typeof require==='undefined'&&typeof process==='undefined'`));
       await click('新建工程');await wait('document.querySelector(".prompt-workbench")');
       const id=await js('document.querySelector("[aria-label=当前工程]").closest(".studio-select").dataset.value');
-      for(const [label,selector] of [['无限画布','.canvas-workspace'],['图层合成','.layer-editor'],['图像工具','.image-tools'],['素材库','.asset-library'],['提示词工作台','.prompt-workbench']]){
+      for(const [label,selector] of [['无限画布','.canvas-workspace'],['图层','.layer-editor'],['图像工具','.image-tools'],['素材库','.asset-library'],['提示词工作台','.prompt-workbench']]){
         await click(label);await wait(`document.querySelector(${JSON.stringify(selector)})`);check(`${label} opens`,true);
       }
       await click('无限画布');await click('文字');await wait('document.querySelectorAll(".react-flow__node").length===1');

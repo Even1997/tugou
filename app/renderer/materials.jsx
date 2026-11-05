@@ -145,7 +145,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
                 <div className="asset-actions">
                   {(!asset.kind||asset.kind==='image')&&<Button iconOnly icon="export" size="small" onClick={()=>saveImage(asset.id)}>保存图片</Button>}
                   <Button iconOnly icon="layers" size="small" disabled={asset.kind&&asset.kind!=='image'} onClick={() => addToLayers(asset)}>
-                    加入画面
+                    加入图层
                   </Button>
                   <Button iconOnly icon="canvas"
                     size="small"
@@ -171,7 +171,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
           </Button>
         </EmptyState>
       )}
-      {detail&&<aside className="library-details" aria-label="素材详情"><div className="panel-heading"><h2>素材详情</h2><Button iconOnly icon="maximize" aria-label="放大预览" onClick={()=>setPreview(detail.id)}/></div><MediaPreview asset={detail} className="material-preview"/><div className="material-identity"><h3>{detail.name}</h3><AssetTime asset={detail}/></div><dl><dt>尺寸</dt><dd>{detail.width&&detail.height?detail.width+' × '+detail.height:detail.kind}</dd><dt>来源</dt><dd>{({processed:'处理结果',generated:'生成结果',imported:'导入素材'})[materialSource(detail)]}</dd></dl><div className="detail-actions">{(!detail.kind||detail.kind==='image')&&<Button icon="export" onClick={()=>saveImage(detail.id)}>保存图片</Button>}<Button primary icon="canvas" onClick={()=>addToCanvas('asset',detail.id)}>添加到画布</Button><Button icon="layers" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>addToLayers(detail)}>添加到合成</Button><Button icon="tools" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>editImages([detail.id])}>处理图片</Button><Button onClick={()=>setPreview(detail.id)}>查看完整详情</Button></div></aside>}
+      {detail&&<aside className="library-details" aria-label="素材详情"><div className="panel-heading"><h2>素材详情</h2><Button iconOnly icon="maximize" aria-label="放大预览" onClick={()=>setPreview(detail.id)}/></div><MediaPreview asset={detail} className="material-preview"/><div className="material-identity"><h3>{detail.name}</h3><AssetTime asset={detail}/></div><dl><dt>尺寸</dt><dd>{detail.width&&detail.height?detail.width+' × '+detail.height:detail.kind}</dd><dt>来源</dt><dd>{({processed:'处理结果',generated:'生成结果',imported:'导入素材'})[materialSource(detail)]}</dd></dl><div className="detail-actions">{(!detail.kind||detail.kind==='image')&&<Button icon="export" onClick={()=>saveImage(detail.id)}>保存图片</Button>}<Button primary icon="canvas" onClick={()=>addToCanvas('asset',detail.id)}>添加到画布</Button><Button icon="layers" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>addToLayers(detail)}>添加到图层</Button><Button icon="tools" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>editImages([detail.id])}>处理图片</Button><Button onClick={()=>setPreview(detail.id)}>查看完整详情</Button></div></aside>}
       </div>
       {preview&&<MaterialDetails projectId={projectId} document={document} assetId={preview} change={change} close={()=>setPreview(null)} editImages={editImages} analyzeImage={analyzeImage} addToCanvas={addToCanvas} addToLayers={addToLayers}/>}
     </section>

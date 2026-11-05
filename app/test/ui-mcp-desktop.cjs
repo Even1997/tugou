@@ -3,12 +3,12 @@ const {Client}=require('@modelcontextprotocol/sdk/client/index.js'),{StdioClient
 const out=path.resolve('test-results/ui-mcp');fs.mkdirSync(out,{recursive:true});const profile=fs.mkdtempSync(path.join(out,'profile-'));
 process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.resolve('test-results/ui-mcp-dist');delete process.env.TUGOU_DEV_PREVIEW;process.argv.push('--mcp-enable');
 fs.writeFileSync(path.join(profile,'preferences.json'),JSON.stringify({...require('../core/preference-values.cjs').defaults,autoCheck:false,notifyTasks:false}));
-const report={checks:[],errors:[],timings:[]};let transport,finished=false;
+const report={checks:[],errors:[],timings:[]};let transport,finished=false,lastCommand='startup';
 const check=(name,ok)=>{assert.ok(ok,name);report.checks.push(name);console.log('PASS '+name);};
 const finish=code=>{if(finished)return;finished=true;fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));transport?.close();app.exit(code);};
 setTimeout(()=>{report.failure='timeout';finish(1);},180000);
 app.on('browser-window-created',(_,w)=>{
-  w.webContents.setBackgroundThrottling(false);w.webContents.on('console-message',e=>{if(e.level==='error')report.errors.push(e.message);});
+  w.webContents.setBackgroundThrottling(false);w.webContents.on('console-message',e=>{if(e.level==='error'){report.errors.push(e.message);(report.errorContext||=[]).push({command:lastCommand,message:e.message});}});
   w.webContents.once('did-finish-load',async()=>{
     const js=s=>w.webContents.executeJavaScript(s,true),delay=ms=>new Promise(r=>setTimeout(r,ms)),wait=async s=>{for(let i=0;i<150;i++){if(await js(s))return;await delay(50);}throw Error('Timeout '+s);};
     try{
@@ -17,10 +17,11 @@ app.on('browser-window-created',(_,w)=>{
       const client=new Client({name:'ui-acceptance',version:'1'});await client.connect(transport);
       const call=async(name,args={})=>{const result=await client.callTool({name,arguments:args});if(result.isError)throw Object.assign(Error(result.content[0].text),result.structuredContent?.error);return result;};
       const state=async()=>(await call('get_state')).structuredContent;
-      const run=async(command,args={})=>{const start=Date.now(),result=await call('run_command',{command,args,expectedRevision:(await state()).revision});report.timings.push({command,ms:Date.now()-start});return result.structuredContent||result;};
+      const run=async(command,args={})=>{lastCommand=command+' '+JSON.stringify(args);const start=Date.now(),result=await call('run_command',{command,args,expectedRevision:(await state()).revision});report.timings.push({command,ms:Date.now()-start});return result.structuredContent||result;};
       const capture=async(name,region)=>{if(w.isMinimized()){w.restore();w.showInactive();await delay(150);}else if(!w.isVisible()){w.showInactive();await delay(150);}const result=await run('ui.capture',{...(region?{region}:{}),maxSize:1440}),image=result.content.find(c=>c.type==='image'),metadata=JSON.parse(result.content.find(c=>c.type==='text').text);assert.ok(image);fs.writeFileSync(path.join(out,name+'.png'),Buffer.from(image.data,'base64'));fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify(metadata,null,2));return {metadata,data:image.data};};
       check('four UI commands discoverable',(await call('list_commands',{domain:'ui'})).structuredContent.total===4);
       await run('project.create',{name:'长列表与无限画布验收'});
+      await run('ui.navigate',{workspace:'prompts'});
       for(let page=0;page<2;page++)await call('batch',{expectedRevision:(await state()).revision,steps:Array.from({length:90},(_,i)=>({name:'m'+i,command:'prompt.create',args:{name:'模块 '+String(page*90+i+1).padStart(3,'0'),text:'检查第 '+(page*90+i+1)+' 项'}}))});
       const nodeIds=[];for(let i=0;i<5;i++)nodeIds.push((await run('canvas.create',{type:'text',position:{x:i*1800,y:i%2*1300},properties:{name:'节点 '+(i+1),text:'屏幕外定位 '+(i+1)}})).id);
       const original=await state();
@@ -32,6 +33,7 @@ app.on('browser-window-created',(_,w)=>{
       const restored=await run('ui.restore',{restoreToken:next.restoreToken});check('restore returns exact original list position after twelve pages using one checkpoint',restored.complete&&restored.regions.find(r=>r.id==='modules').scroll.y===0);
       const canvas=await run('ui.navigate',{workspace:'canvas'});await delay(300);const overview=await run('ui.navigate',{overview:true});await capture('canvas-overview','canvas');check('canvas overview includes all five nodes',overview.canvas.totalNodes===5&&overview.canvas.outsideViewport===0);
       const focused=await run('ui.navigate',{nodeId:nodeIds[4]});await capture('canvas-node','canvas');check('offscreen node can be located while remaining nodes are reported outside view',focused.canvas.visibleNodes.some(n=>n.id===nodeIds[4])&&focused.canvas.outsideViewport>0);
+      const repeated=await run('ui.navigate',{overview:true});for(let i=0;i<10;i++){await run('ui.navigate',{nodeId:nodeIds[i%nodeIds.length],restoreToken:repeated.restoreToken});await run('ui.navigate',{overview:true,restoreToken:repeated.restoreToken});}await run('ui.restore',{restoreToken:repeated.restoreToken});check('repeated focus and overview settle without resize observer errors',report.errors.length===0);
       const viewport=await js(`document.querySelector('.react-flow__viewport').style.transform`),moved=await run('ui.navigate',{nodeId:nodeIds[0]});await run('ui.restore',{restoreToken:moved.restoreToken});check('restore exactly recovers canvas pan and zoom',viewport===await js(`document.querySelector('.react-flow__viewport').style.transform`));
       await run('ui.restore',{restoreToken:focused.restoreToken});const again=await run('ui.inspect');check('restore returns canvas overview',again.canvas.outsideViewport===0);
       await run('ui.restore',{restoreToken:canvas.restoreToken});check('restore returns original workspace',(await state()).workspace==='prompts');

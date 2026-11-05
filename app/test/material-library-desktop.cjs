@@ -215,7 +215,7 @@ app.on("browser-window-created", (_, w) => {
           ),
         );
         await click("筛选与排序");
-        await click("图层合成", "nav button");
+        await click("图层", "nav button");
         await selectLayer();
         let r = await save(),
           before = await pixels(r.document);
@@ -302,7 +302,7 @@ app.on("browser-window-created", (_, w) => {
             '[...document.querySelectorAll("button")].find(b=>b.textContent.trim()==="替换图层").disabled',
           ),
         );
-        await click("图层合成", "nav button");
+        await click("图层", "nav button");
         await click("解锁 组");
         await save();
         await click("素材库", "nav button");
@@ -346,7 +346,7 @@ app.on("browser-window-created", (_, w) => {
         );
         await click("素材库", "nav button");
         await begin("原图10");
-        await hover("图层合成");
+        await hover("图层");
         await wait('document.querySelector(".layer-stage")');
         await js(
           `{const t=document.querySelector('.layer-stage'),r=t.getBoundingClientRect();t.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:dragQA,clientX:r.x+62.5,clientY:r.y+62.5}))}`,

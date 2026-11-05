@@ -11,6 +11,7 @@ import {renderScene} from './scene-render.js';
 import {sceneNode,appendCapture} from '../core/automation-scene.cjs';
 import {inspectUi,navigateUi,prepareCapture,navigationGuard,leaveGuard} from './ui-automation.js';
 import {group as pageGroup} from '../core/pages.cjs';
+import {runEditingJob,cancelAutomationJob,automationJobStatus} from './automation-editing.js';
 
 function failure(code,message){const e=new Error(message);e.code=code;throw e;}
 // Shares App's live document and history. Disk records are never used as an editing session.
@@ -37,6 +38,12 @@ export function useAutomation(context) {
     try {
       let value;const {action,args={}}=request;
       if(action==='snapshot')value=state();
+      else if(action==='job.cancel')value={cancelled:cancelAutomationJob(args.taskId)};
+      else if(action==='job.status')value=automationJobStatus(args.taskId);
+      else if(action==='job.run'){
+        guard();const source=current().present.current?.document;if(!source)failure('NO_PROJECT','请先打开工程');
+        value=await runEditingJob(args,source,commit,guard);
+      }
       else if(action==='ui.inspect')value=inspectUi(state(),args);
       else if(action==='ui.prepareCapture')value=await prepareCapture(state(),args);
       else if(action==='ui.navigate'||action==='ui.restore'){guard();const result=await navigateUi(action,args,current(),state());value={...result,...inspectUi(state())};}
@@ -103,9 +110,9 @@ export function useAutomation(context) {
             if(args.target==='mask'&&!layer?.mask)failure('INVALID_TARGET','请先添加蒙版');
             let length=0;for(let i=1;i<args.points.length;i++)length+=Math.hypot(args.points[i].x-args.points[i-1].x,args.points[i].y-args.points[i-1].y);
             if(length>20000)failure('RESOURCE_LIMIT','单次笔画过长，请拆分笔画');
-            const stroke=await createStroke(doc,layer,engine,{target:args.target,maskMode:args.maskMode||'hide',color:args.color||'#000000',erase:args.erase||false,size:args.size,opacity:args.opacity??100,hardness:args.hardness??80,smoothing:0,pressure:false,maxPixels:16000000});
+            const stroke=await createStroke(doc,layer,engine,{target:args.target,maskMode:args.maskMode||'hide',color:args.color||'#000000',erase:args.erase||false,size:args.size,opacity:args.opacity??100,hardness:args.hardness??80,smoothing:args.smoothing||0,pressure:args.pressure||false,maxPixels:16000000});
             try{
-              for(const p of args.points)stroke.add(p);stroke.finish();stroke.render();
+              for(const p of args.points)stroke.add({...p,pointerType:args.pressure?'pen':'mouse'});stroke.finish();stroke.render();
               const bitmap=await window.tugou.storeRaster(await pngBytes(stroke.canvas),'MCP 笔画');
               value=commit(artboards.replace(normalized,boardId,{...doc,layers:doc.layers.map(l=>l.id===args.id?{...l,...(stroke.mask?{mask:{...stroke.mask,bitmap}}:{bitmap})}:l)}));
             }finally{stroke.dispose();}

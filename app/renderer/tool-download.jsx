@@ -1,7 +1,6 @@
 import React, {useEffect,useRef,useState} from 'react';
 import {Progress} from 'antd';
-import {CloudDownloadOutlined,CheckCircleOutlined} from '@ant-design/icons';
-import {Button} from './components.jsx';
+import {Button,Icon} from './components.jsx';
 import manifest from '../runtime/components.json';
 import cleanupManifest from '../runtime/cleanup-tools/components.json';
 import {cleanupNames} from '../core/cleanup-settings.cjs';
@@ -32,7 +31,7 @@ export function ToolDownload({operation,model,runtime,provider,disabled,onInstal
   const size=cleanup?operation==='metadata'?`${((cleanupManifest.metadata[window.tugou.platform]?.bytes||0)/1e6).toFixed(1)} MB`:'独立 Python 与 CPU 图像依赖':operation==='upscale'?`${((manifest.upscale[window.tugou.platform]?.bytes||0)/1e6).toFixed(1)} MB`:'494.2 MB 模型＋独立运行环境';
   return <section className="tool-download" aria-label="工具下载" data-installed={Boolean(installed)}>
     <div className="tool-download-heading">
-      {running?<span role="progressbar" aria-label="工具下载进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={task.progress||0}><Progress type="circle" percent={task.progress||0} size={34} strokeColor="var(--accent)" trailColor="var(--line)" showInfo={false}/></span>:installed?<CheckCircleOutlined aria-label="工具已下载"/>:<CloudDownloadOutlined aria-label="工具在云端"/>}
+      {running?<span role="progressbar" aria-label="工具下载进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={task.progress||0}><Progress type="circle" percent={task.progress||0} size={34} strokeColor="var(--accent)" trailColor="var(--line)" showInfo={false}/></span>:installed?<Icon name="checkCircle" aria-label="工具已下载"/>:<Icon name="cloudDownload" aria-label="工具在云端"/>}
       <strong>{running?'正在下载并安装':installed?'已下载 · 离线可用':'云端组件 · 未下载'}</strong>
     </div>
     {!installed&&!running&&<p>{size}。{cleanup?operation==='metadata'?'需预留 128 MB。':'需预留 2 GB，无需显卡。':operation==='cutout'?'含轻量与精细模型，需预留 3 GB。':'包含三种超分模型，需预留 256 MB。'}只在点击下载后联网。</p>}

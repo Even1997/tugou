@@ -2,7 +2,7 @@ const fs=require('node:fs/promises');
 const {compileWorkflow,nodeName}=require('./workflow-nodes.cjs');
 const {safePath,atomicWrite,validateDocument}=require('./storage.cjs');
 const {saveImage,referenceBytes}=require('./generation.cjs');
-const {boundedBytes,requestImages}=require('./image-api.cjs');
+const {boundedBytes,requestImages,imageProgress}=require('./image-api.cjs');
 const {validateImageSettings,imageResultWarning}=require('./image-settings.cjs');
 const fail=s=>Object.assign(Error(s),{safeMessage:s});
 const endpoint=(settings,route)=>settings.baseUrl.replace(/\/$/,'')+(settings.baseUrl.endsWith('/v1')?'':'/v1')+route;
@@ -53,9 +53,11 @@ class WorkflowService{
         const text=responses?(payload.output_text||payload.output?.flatMap(o=>o.content||[]).filter(c=>c.type==='output_text').map(c=>c.text).join('\n')):payload.choices?.[0]?.message?.content;if(typeof text!=='string'||!text.trim())throw fail('文本模型未返回文本');
         assets.push({kind:'text',text,name:(label||'文本')+' · 结果'});
       }else if(c.mode==='image'){
-        const outcomes=await Promise.allSettled(Array.from({length:c.count},async()=>{
-          const images=await requestImages(settings,{prompt:c.prompt,size:c.size,quality:c.quality,count:1,images:refs.map(r=>r.bytes)},signal),saved=[];
+        const outcomes=await Promise.allSettled(Array.from({length:c.count},async(_,index)=>{
+          const progress=imageProgress(this.tasks,journal,index);
+          const images=await requestImages(settings,{prompt:c.prompt,size:c.size,quality:c.quality,count:1,images:refs.map(r=>r.bytes)},signal,progress),saved=[];
           for(const bytes of images){signal.throwIfAborted();saved.push({...await saveImage(this.root,bytes,this.inspectImage),kind:'image',projection:c.projection});}
+          progress('saved');
           return saved;
         }));
         cancelSignal.throwIfAborted();

@@ -1,6 +1,6 @@
 import React, {useEffect,useRef,useState} from 'react';
 import {Select,Progress} from 'antd';
-import {CloudDownloadOutlined,ReloadOutlined} from '@ant-design/icons';
+import {Icon} from './components.jsx';
 import {loadTextFont} from './font-face.js';
 import {findBuiltinFont} from '../core/builtin-fonts.cjs';
 import {fontFaces,builtinFace,requestedWeight,textFontWeight,nearestWeight,weightLabel} from '../core/font-weights.cjs';
@@ -19,7 +19,7 @@ export function FontPicker({layer,onChange}) {
   useEffect(()=>{alive.current=true;refresh();const off=window.tugou.onFontDownload(state=>setDownloads(previous=>({...previous,[state.id]:state})));return()=>{alive.current=false;off();};},[]);
   function label(text,face,family=shown.fontFamily){
     const state=face&&downloads[face.id];
-    return <span className="font-option-label"><span>{text}</span>{face&&state?.status!=='ready'&&(state?.status==='downloading'?<span role="progressbar" aria-label="字体下载进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.percent} title={`下载中 ${state.percent}%`}><Progress type="circle" strokeColor="var(--accent)" trailColor="var(--line)" percent={state.percent} size={18} strokeWidth={10} showInfo={false}/></span>:<button type="button" className="font-cloud" data-font-id={face.id} disabled={layer.locked||applying} title={state?.status==='error'?'下载失败，点击重试':'点击下载，完成后离线可用'} aria-label={state?.status==='error'?'重试字体下载':'下载字体'} onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={e=>{e.stopPropagation();choose('builtin:'+family,face.weight);}}>{state?.status==='error'?<ReloadOutlined/>:<CloudDownloadOutlined/>}</button>)}</span>;
+    return <span className="font-option-label"><span>{text}</span>{face&&state?.status!=='ready'&&(state?.status==='downloading'?<span role="progressbar" aria-label="字体下载进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.percent} title={`下载中 ${state.percent}%`}><Progress type="circle" strokeColor="var(--accent)" trailColor="var(--line)" percent={state.percent} size={18} strokeWidth={10} showInfo={false}/></span>:<button type="button" className="font-cloud" data-font-id={face.id} disabled={layer.locked||applying} title={state?.status==='error'?'下载失败，点击重试':'点击下载，完成后离线可用'} aria-label={state?.status==='error'?'重试字体下载':'下载字体'} onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={e=>{e.stopPropagation();choose('builtin:'+family,face.weight);}}>{state?.status==='error'?<Icon name="sync"/>:<Icon name="cloudDownload"/>}</button>)}</span>;
   }
   const custom=library.custom.map(f=>({value:`custom:${f.projectId}:${f.jobId||''}`,label:f.name+(f.ready?'':' · 未生成'),searchText:f.name,disabled:!f.ready,font:f}));
   const builtin=(library.builtin||[]).map(f=>({value:'builtin:'+f.family,label:label(f.name,builtinFace({fontFamily:f.family,fontWeight:requestedWeight(shown)}),f.family),title:f.name,searchText:[f.family,f.name,...f.aliases].join(' ')}));
@@ -58,13 +58,13 @@ export function FontPicker({layer,onChange}) {
   }
   return <div className="font-picker" onKeyDown={e=>e.stopPropagation()}>
     <label>字体
-    <span className="studio-select"><Select ref={select} aria-label="字体" value={value} options={options} disabled={layer.locked||applying} loading={loading}
+    <span className="studio-select"><Select ref={select} aria-label="字体" value={value} options={options} suffixIcon={<Icon name={loading?'loading':'collapse'}/>} disabled={layer.locked||applying} loading={loading}
       showSearch={{optionFilterProp:'searchText'}} placeholder="搜索字体" virtual listHeight={280}
       classNames={{popup:{root:'studio-select-popup'}}} notFoundContent={loading?'正在读取字体…':'没有匹配的字体'}
       onOpenChange={open=>{if(open)refresh().then(()=>requestAnimationFrame(()=>select.current?.scrollTo({index:0})));}} onSelect={next=>choose(next)}/></span>
     </label>
     <label>粗细
-      <span className="studio-select"><Select aria-label="字体粗细" value={weight} options={weightOptions} disabled={layer.locked||applying||weights.length===1}
+      <span className="studio-select"><Select aria-label="字体粗细" value={weight} options={weightOptions} suffixIcon={<Icon name="collapse"/>} disabled={layer.locked||applying||weights.length===1}
         classNames={{popup:{root:'studio-select-popup'}}} onSelect={chooseWeight}/></span>
     </label>
     {error&&<small role="alert">{error}</small>}

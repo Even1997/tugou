@@ -51,6 +51,8 @@ import {SceneView} from './scene-view.jsx';
 import {groupNodes,ungroupNodes,fitGroups} from '../core/canvas-groups.cjs';
 import {layoutSelection,arrangeNodes} from '../core/canvas-layout.cjs';
 import {MediaTools} from './media-tools.jsx';
+import {CanvasToolNode,CanvasToolSettings} from './canvas-tool-node.jsx';
+import {compileTool,names as toolNames} from '../core/canvas-tools.cjs';
 import { ReferenceEditor, PromptPreview, statusLabels } from "./recipes.jsx";
 import { ReplaceImageDialog } from "./replace-image.jsx";
 import { copyAssetPrompt } from "./material-details.jsx";
@@ -76,6 +78,7 @@ const nodeTypes = {
   recipe: ContentNode,
   asset: ContentNode,
   text: ContentNode,
+  imageTool: CanvasToolNode,
   ...Object.fromEntries(workflowTypes.map(type=>[type,ContentNode])),
 };
 
@@ -149,8 +152,8 @@ function CanvasWorkspace({
   const moveUi=async action=>{uiMoving.current=true;try{await action();await new Promise(r=>setTimeout(r,0));}finally{uiMoving.current=false;}};
   useUiView('canvas',{
     get:()=>({viewport:flow.getViewport(),nodes:current.current.nodes.filter(n=>n.selected).map(n=>n.id),edges:current.current.edges.filter(e=>e.selected).map(e=>e.id),palette,query,minimap}),
-    restore:v=>moveUi(async()=>{setPalette(v.palette);setQuery(v.query);setMinimap(v.minimap);setNodes(ns=>ns.map(n=>({...n,selected:v.nodes.includes(n.id)})));setEdges(es=>es.map(e=>({...e,selected:v.edges.includes(e.id)})));await flow.setViewport(v.viewport);}),
-    navigate:a=>moveUi(async()=>{if(a.nodeId)setNodes(ns=>ns.map(n=>({...n,selected:n.id===a.nodeId})));await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));await flow.fitView({...(a.nodeId?{nodes:[{id:a.nodeId}]}:{}),padding:.25,minZoom:.05,maxZoom:1,duration:0});})
+    restore:v=>moveUi(async()=>{setPalette(v.palette);setQuery(v.query);setMinimap(v.minimap);await flow.setViewport(v.viewport);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));setNodes(ns=>ns.map(n=>({...n,selected:v.nodes.includes(n.id)})));setEdges(es=>es.map(e=>({...e,selected:v.edges.includes(e.id)})));}),
+    navigate:a=>moveUi(async()=>{await flow.fitView({...(a.nodeId?{nodes:[{id:a.nodeId}]}:{}),padding:.25,minZoom:.05,maxZoom:1,duration:0});await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));if(a.nodeId)setNodes(ns=>ns.map(n=>({...n,selected:n.id===a.nodeId})));})
   });
   const fitCanvas=()=>{
     const visible=current.current.nodes.filter(n=>!n.parentId);
@@ -233,6 +236,7 @@ function CanvasWorkspace({
     setCreateMenu(null);setInsertPoint(null);
     if(disabled)return;
     if(workflowTypes.includes(type))return add(type,undefined,point);
+    if(Object.hasOwn(toolNames,type))return add('imageTool',type,point);
     if(type==='text')return add('text',undefined,point);
     if(type==='emptyImage')return add('asset',undefined,point);
     const bounds=holder.current.getBoundingClientRect();
@@ -241,7 +245,7 @@ function CanvasWorkspace({
   };
   const canCreateLinked=type=>{
     const link=pendingLink.current;if(!link)return true;
-    const candidate=createNode(document,type==='emptyImage'?'asset':type,undefined,{x:0,y:0});
+    const candidate=createNode(document,Object.hasOwn(toolNames,type)?'imageTool':type==='emptyImage'?'asset':type,Object.hasOwn(toolNames,type)?type:undefined,{x:0,y:0});
     return canConnect({nodes:[...nodes,candidate],edges},link.type==='source'?link.id:candidate.id,link.type==='source'?candidate.id:link.id);
   };
   const remove = () => {
@@ -402,7 +406,7 @@ function CanvasWorkspace({
     if(disabled||pendingSubmissions.current.has(id)||tasks.some(t=>t.context?.nodeId===id&&['queued','running'].includes(t.status)))return;
     setNodeErrors(previous=>({...previous,[id]:''}));
     pendingSubmissions.current.add(id);setSubmittingIds(new Set(pendingSubmissions.current));
-    try{await run(async()=>{const target=current.current.nodes.find(n=>n.id===id);if(target?.type==='recipe')await generate(id);else await window.tugou.generateWorkflow(projectId,current.current.document,id);await refreshTasks();},e=>setNodeErrors(previous=>({...previous,[id]:e.message})));}
+    try{await run(async()=>{const target=current.current.nodes.find(n=>n.id===id);if(target?.type==='imageTool')await window.tugou.startCanvasTool(projectId,current.current.document,id);else if(target?.type==='recipe')await generate(id);else await window.tugou.generateWorkflow(projectId,current.current.document,id);await refreshTasks();},e=>setNodeErrors(previous=>({...previous,[id]:e.message})));}
     finally{pendingSubmissions.current.delete(id);if(mounted.current)setSubmittingIds(new Set(pendingSubmissions.current));}
   };
   const cancelNode=id=>run(async()=>{const task=tasks.find(t=>t.context?.nodeId===id&&['queued','running'].includes(t.status));if(task){await window.tugou.cancelTask(task.id);await refreshTasks();}});
@@ -421,11 +425,11 @@ function CanvasWorkspace({
     });}finally{importingNodes.current.delete(id);}
   };
   const compiled = useMemo(() => {
-    if (node?.type !== "recipe"&&!workflowTypes.includes(node?.type)) return null;
+    if (!['recipe','imageTool'].includes(node?.type)&&!workflowTypes.includes(node?.type)) return null;
     if(node.type==='director')return null;
     try {
       return {
-        result: (node.type==='recipe'?compileNode:compileWorkflow)(
+        result: (node.type==='imageTool'?compileTool:node.type==='recipe'?compileNode:compileWorkflow)(
           { ...document, tugouCanvas: { ...graph, nodes, edges } },
           node.id,
         ),
@@ -493,7 +497,7 @@ function CanvasWorkspace({
                 disabled={
                   disabled ||
                   submittingIds.has(node?.id) ||
-                  (node?.type !== "recipe" && (!workflowTypes.includes(node?.type)||node?.type==='director')) ||
+                  (!['recipe','imageTool'].includes(node?.type) && (!workflowTypes.includes(node?.type)||node?.type==='director')) ||
                   Boolean(activeTask) ||
                   Boolean(compiled?.error)
                 }
@@ -502,12 +506,12 @@ function CanvasWorkspace({
                 {activeTask
                   ? activeTask.status === "queued"
                     ? "等待中"
-                    : "生成中"
+                    : node?.type==='imageTool'?'处理中':"生成中"
                   : submittingIds.has(node?.id)
                     ? "提交中"
-                  : node?.type==='config'?'开始生成':node?.type==='textgen'?'生成文本':"生成图片"}
+                  : node?.type==='imageTool'?'开始处理':node?.type==='config'?'开始生成':node?.type==='textgen'?'生成文本':"生成图片"}
               </Button>
-              {activeTask&&<Button iconOnly icon="stop" onClick={()=>run(async()=>{await window.tugou.cancelTask(activeTask.id);await refreshTasks();})}>取消生成</Button>}
+              {activeTask&&<Button iconOnly icon="stop" onClick={()=>run(async()=>{await window.tugou.cancelTask(activeTask.id);await refreshTasks();})}>{node?.type==='imageTool'?'取消处理':'取消生成'}</Button>}
               {node?.type==='director'&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>打开导演台</Button>}
               {selectedMedia&&<><Button iconOnly icon="tools" onClick={()=>setMediaTool({asset:selectedMedia,nodeId:node.id})}>媒体工具</Button><Button iconOnly icon="export" onClick={()=>run(()=>window.tugou.exportAsset(projectId,current.current.document,selectedMedia.id))}>导出媒体</Button></>}
               {node?.type==='panorama'&&node.data.outputAssetId&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>环视全景</Button>}
@@ -875,6 +879,7 @@ function CanvasWorkspace({
                   </>
                 )}
                 {node.type==='group'&&<label>分组名称<Input aria-label="分组名称" disabled={disabled} value={node.data.name} onChange={e=>patchNode({name:e.target.value})}/></label>}
+                {node.type==='imageTool'&&<CanvasToolSettings key={`tool-${node.id}`} node={node} document={{...document,tugouCanvas:{...graph,nodes,edges}}} patch={patchNode} disabled={disabled} task={tasks.filter(t=>t.context?.nodeId===node.id).at(-1)}/>}
                 {workflowTypes.includes(node.type)&&<WorkflowSettings node={node} compiled={compiled?.result} sharedModel={connection?.model} document={{...document,tugouCanvas:{...graph,nodes,edges}}} patch={patchNode} disabled={disabled} task={tasks.filter(t=>t.context?.nodeId===node.id).at(-1)} run={run} openScene={()=>setSceneNode(node.id)} openPanorama={()=>setSceneNode(node.id)}/>}
                 {workflowTypes.includes(node.type)&&node.type!=='director'&&(compiled.error?<p role="alert">{compiled.error}</p>:<details><summary>合成提示词</summary><PromptPreview document={document} result={compiled.result}/></details>)}
                 {node.type === "asset" && (

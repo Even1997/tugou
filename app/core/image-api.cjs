@@ -2,6 +2,17 @@ const failure = (message) =>
   Object.assign(new Error(message), { safeMessage: message });
 const imageRequests = require('p-limit').default(require('./preference-values.cjs').defaults.imageConcurrency);
 function setImageConcurrency(value) { imageRequests.concurrency = value; }
+// Record timings only: never persist provider bodies, URLs or credentials here.
+function imageProgress(tasks, task, index = 0) {
+  const start = performance.now(), timing = { startedAt: new Date().toISOString() };
+  (task.imageTimings ||= [])[index] = timing;
+  const stages = { queued: 'request-queued', sent: 'generating', headers: 'receiving', download: 'downloading', ready: 'saving', saved: 'saving' };
+  return phase => {
+    timing[phase] = Math.round(performance.now() - start);
+    if ((task.context.count || 1) === 1 && stages[phase]) task.stage = stages[phase];
+    tasks.emit('changed');
+  };
+}
 async function boundedBytes(response, limit) {
   if (Number(response.headers.get("content-length")) > limit)
     throw failure("模型返回的数据过大，未入库");
@@ -37,16 +48,17 @@ function outputPrompt({ prompt, size }) {
   // Add only on the wire so saved prompts and explicit retries keep the user text.
   return `${prompt}\n\n输出画幅要求（仅用于构图，不要在图中绘制这些文字）：采用 ${width / a}:${height / a} ${orientation}构图，目标输出尺寸为 ${width} × ${height} 像素。`;
 }
-async function requestImages(settings, request, signal) {
+async function requestImages(settings, request, signal, progress = () => {}) {
   signal = AbortSignal.any([signal]);
   signal.throwIfAborted();
+  progress('queued');
   let abort;
   const cancelled = new Promise((_,reject) => { abort = () => reject(signal.reason); signal.addEventListener('abort',abort,{once:true}); });
   try {
-    return await Promise.race([imageRequests(() => { signal.throwIfAborted(); return sendImages(settings,request,signal); }),cancelled]);
+    return await Promise.race([imageRequests(() => { signal.throwIfAborted(); return sendImages(settings,request,signal,progress); }),cancelled]);
   } finally { signal.removeEventListener('abort',abort); }
 }
-async function sendImages(settings, request, signal) {
+async function sendImages(settings, request, signal, progress) {
   require('./image-settings.cjs').validateImageSettings(settings.model,request);
   const prompt = outputPrompt(request);
   const refs = request.images || [];
@@ -88,6 +100,7 @@ async function sendImages(settings, request, signal) {
     });
   }
   let response;
+  progress('sent');
   try {
     response = await fetch(endpoint, {
       method: "POST",
@@ -100,6 +113,7 @@ async function sendImages(settings, request, signal) {
     if (signal.aborted) throw error;
     throw failure("模型连接失败，请检查 API 地址和网络");
   }
+  progress('headers');
   if (!response.ok) {
     await response.body?.cancel();
     throw failure(
@@ -108,9 +122,9 @@ async function sendImages(settings, request, signal) {
   }
   let payload;
   try {
-    payload = JSON.parse(
-      (await boundedBytes(response, 96 * 1024 * 1024)).toString("utf8"),
-    );
+    const bytes = await boundedBytes(response, 96 * 1024 * 1024);
+    progress('body');
+    payload = JSON.parse(bytes.toString("utf8"));
   } catch (error) {
     throw error.safeMessage
       ? error
@@ -138,6 +152,7 @@ async function sendImages(settings, request, signal) {
           ))
       )
         throw failure("结果图片地址不安全");
+      progress('download');
       const download = await fetch(url, { signal, redirect: "error" });
       if (!download.ok)
         throw failure(`结果下载失败（HTTP ${download.status}）`);
@@ -145,6 +160,7 @@ async function sendImages(settings, request, signal) {
     } else throw failure("模型返回了不支持的图片格式");
     images.push(bytes);
   }
+  progress('ready');
   return images;
 }
-module.exports = { boundedBytes, imageExtension, requestImages, setImageConcurrency };
+module.exports = { boundedBytes, imageExtension, requestImages, setImageConcurrency, imageProgress };

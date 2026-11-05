@@ -102,6 +102,13 @@ jobs:
           node --test test/gif.test.cjs
           node_modules/.bin/electron test/gif-desktop.cjs
           node_modules/.bin/electron test/canvas-pan-desktop.cjs
+      - name: Test packaged full MCP creative commands
+        env:
+          TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+          TUGOU_TEST_OUTPUT: test-results/mcp-regression
+        run: |
+          node_modules/.bin/electron test/automation-desktop.cjs
+          node_modules/.bin/electron test/automation-editing-desktop.cjs
       - name: Launch actual packaged executable with isolated profile
         run: |
           # macOS /var is a symlink; the app deliberately rejects linked data paths.
@@ -140,6 +147,8 @@ jobs:
         with:
           name: mac-evidence-${{ matrix.arch }}
           path: |
+            app/test-results/mcp-full/*.json
+            app/test-results/mcp-regression/*.json
             app/test-results/gif/*.json
             app/test-results/gif/*.png
             app/test-results/canvas-pan/*.json

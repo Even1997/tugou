@@ -11,7 +11,7 @@ export function PageTabs({document,kind,disabled,activate,edit}){
   const run=fn=>{try{setError('');fn();}catch(e){setError(e.message);}};
   const open=action=>{setName(action==='create'?label+' '+(items.length+1):current.name);setDialog(action);setError('');};
   return <div className="page-strip">
-    <div className="page-tabs" role="tablist" aria-label={label+'页面'} ref={holder}>
+    <div className="page-tabs" role="tablist" aria-label={kind==='layers'?label+'面':label+'页面'} ref={holder}>
       {items.map((p,index)=><button key={p.id} type="button" role="tab" aria-selected={p.active} tabIndex={p.active?0:-1} disabled={disabled} title={p.name} data-page-id={p.id} onClick={()=>run(()=>activate(kind,p.id))} onKeyDown={e=>{const next=e.key==='ArrowRight'?(index+1)%items.length:e.key==='ArrowLeft'?(index+items.length-1)%items.length:e.key==='Home'?0:e.key==='End'?items.length-1:-1;if(next>=0){e.preventDefault();run(()=>{activate(kind,items[next].id);holder.current?.querySelectorAll('[role="tab"]')[next]?.focus();});}}}>{p.name}</button>)}
     </div>
     <Button icon="add" iconOnly aria-label={'新建'+label} disabled={disabled} onClick={()=>open('create')}/>

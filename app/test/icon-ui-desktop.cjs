@@ -40,7 +40,7 @@ app.on('browser-window-created',(_,w)=>{
       const original=await save();
       for(const theme of ['dark','light']){
         if(theme==='light')await click('切换浅色主题');
-        for(const [label,name] of [['无限画布','canvas'],['图层合成','layers'],['素材库','materials'],['图像工具','tools'],['提示词工作台','prompts']]){
+        for(const [label,name] of [['无限画布','canvas'],['图层','layers'],['素材库','materials'],['图像工具','tools'],['提示词工作台','prompts']]){
           await click(label,'nav button');await delay(250);await audit(name+'-'+theme);await snapshot(name+'-'+theme);
         }
       }
@@ -55,7 +55,7 @@ app.on('browser-window-created',(_,w)=>{
       check('zoom icon still changes the viewport',await js('document.querySelector(".react-flow__viewport").style.transform')!==beforeZoom);await click('缩小画布');
       await click('添加节点');await wait('document.querySelector(".ant-dropdown:not(.ant-dropdown-hidden)")');await click('文字提示词','.ant-dropdown:not(.ant-dropdown-hidden) [role=menuitem]');
       check('icon menu still creates nodes',(await save()).tugouCanvas.nodes.length===3);await click('撤销');check('undo works through the shared icon control',(await save()).tugouCanvas.nodes.length===2);await click('重做');check('redo restores the node',(await save()).tugouCanvas.nodes.length===3);
-      await click('图层合成','nav button');
+      await click('图层','nav button');
       for(const label of ['画笔','橡皮','平移','选择']){await click(label,'#canvas-actions button');check(label+' still selects its tool',await js(`document.querySelector('#canvas-actions [aria-label="${label}"]').getAttribute('aria-pressed')==='true'`));}
       for(const label of ['修图','添加','调整','特效','图层','排版','变换','选区','蒙版']){await click(label,'.layer-menu summary');check(label+' opens its original commands',await js(`document.querySelector('.layer-menu summary[aria-label="${label}"]').parentElement.open`));await click(label,'.layer-menu summary');}
       await click('添加','.layer-menu summary');await click('文字','.layer-menu[open] button');check('layer add menu still adds editable text',(await save()).layers.some(l=>l.kind==='text'));
@@ -68,8 +68,8 @@ app.on('browser-window-created',(_,w)=>{
       await click('模型连接','.toolbar-end button');await wait('document.querySelector(".ant-modal input[type=password]")');check('model dialog opens without exposing secrets',await js('document.querySelector(".ant-modal input[type=password]").value===""'));await click('关闭模型连接');
       await click('任务','.statusbar button');await wait('document.querySelector(".task-dialog")');check('task icon opens the task center',true);await click('关闭任务');
       w.setSize(960,720);
-      for(const zoom of [1,1.25]){w.webContents.setZoomFactor(zoom);for(const [label,name] of [['无限画布','canvas'],['图层合成','layers'],['素材库','materials'],['图像工具','tools'],['提示词工作台','prompts']]){await click(label,'nav button');await audit(name+'-compact-'+zoom);}}
-      await click('图层合成','nav button');await snapshot('layers-compact-125');w.webContents.setZoomFactor(1);
+      for(const zoom of [1,1.25]){w.webContents.setZoomFactor(zoom);for(const [label,name] of [['无限画布','canvas'],['图层','layers'],['素材库','materials'],['图像工具','tools'],['提示词工作台','prompts']]){await click(label,'nav button');await audit(name+'-compact-'+zoom);}}
+      await click('图层','nav button');await snapshot('layers-compact-125');w.webContents.setZoomFactor(1);
       check('no renderer or CSP errors',report.errors.length===0);check('test window stayed hidden',!w.isVisible());
       report.bundleBytes=fs.statSync(path.join(process.env.TUGOU_BUILD_DIR||path.join(path.dirname(process.env.TUGOU_TEST_APP),'dist'),'ui.js')).size;finish(0);
     }catch(e){report.failure=e.stack;report.text=await js('document.body.innerText');await snapshot('failure');finish(1);}

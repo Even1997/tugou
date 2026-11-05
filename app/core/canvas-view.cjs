@@ -48,7 +48,7 @@ function angleRequest(document, nodeId, assetId, value) {
 }
 function resizeAssetNode(node, rect) {
   if (
-    !['asset','text','module','recipe',...require('./workflow-nodes.cjs').types].includes(node.type) ||
+    !['asset','text','module','recipe','imageTool',...require('./workflow-nodes.cjs').types].includes(node.type) ||
     ![rect.width, rect.height, rect.x, rect.y].every(Number.isFinite) ||
     rect.width < 160 ||
     rect.height < 140 ||

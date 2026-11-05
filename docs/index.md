@@ -14,6 +14,9 @@
 
 ## 开发文档
 
+- [MCP 全量创作命令与任务调用](engineering/mcp-creative-commands.md)
+- [MCP 当前验收与发布边界](engineering/mcp-readiness-review.md)
+
 - [v0.8.11 发布说明](releases/v0.8.11.md)
 - [v0.8.11 发布验收](engineering/release-v0.8.11.md)
 

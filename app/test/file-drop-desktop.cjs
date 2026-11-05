@@ -283,7 +283,7 @@ app.on("browser-window-created", (_, w) => {
             (r.document.tugouCanvas?.nodes.length || 0) === 0,
         );
         await click("重做");
-        await click("图层合成", "nav button");
+        await click("图层", "nav button");
         await files([b]);
         await drop(".layer-stage", 85, 85);
         await wait(

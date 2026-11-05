@@ -43,7 +43,7 @@ import { CanvasImageViewer } from './canvas-image-viewer.jsx';
 const toolGroups = [
   ['智能工具', {cloudEdit:cloudNames.cloudEdit,cloudExtend:cloudNames.cloudExtend,upscale:'AI 超分辨率',cutout:'主体抠图',watermark:cleanupNames.watermark}],
   ['基础处理', {...rasterOperations,metadata:cleanupNames.metadata}],
-  ['图像合成', compositionNames],
+  ['素材处理', compositionNames],
   ['动图', {gif:'GIF 动图制作'}],
 ];
 const operations = Object.assign({}, ...toolGroups.map(([, entries])=>entries));
@@ -472,7 +472,7 @@ export function ImageTools({
         </details>
       </aside>
       <aside className="tools-settings" aria-label="输出设置">
-        <header className="tools-settings-heading"><span className="muted">{isCloud ? '云端 AI' : isAI ? '本地 AI' : isCleanup ? '本地工具' : isComposition ? '图像合成' : '基础处理'}</span><h2>{operations[operation]}</h2><p>{source ? `原尺寸 ${source.width} × ${source.height} px` : '选择素材后开始处理'}</p></header>
+        <header className="tools-settings-heading"><span className="muted">{isCloud ? '云端 AI' : isAI ? '本地 AI' : isCleanup ? '本地工具' : isComposition ? '素材处理' : '基础处理'}</span><h2>{operations[operation]}</h2><p>{source ? `原尺寸 ${source.width} × ${source.height} px` : '选择素材后开始处理'}</p></header>
         <div className="tools-setting-fields" ref={settingsPanel}>
       {operation === "cloudSplit" ? (
         <SemanticControls
@@ -806,7 +806,7 @@ export function ImageTools({
             : "来源：共享素材库"}
         </span>
         <Button icon="layers" disabled={!result} onClick={() => addToLayers(result)}>
-          加入画面
+          加入图层
         </Button>
         {result?.toolResult?.operation === "cloudSplit" && document.layers.some(l=>l.kind==="image"&&l.assetId===result.toolResult.sourceId) && (
           <ToolPopover label="对齐入层" icon="layers">
@@ -817,7 +817,7 @@ export function ImageTools({
           </ToolPopover>
         )}
         {resultGroup.length > 1 && (
-          <Button iconOnly icon="layers" onClick={() => addToLayers(resultGroup)}>本组加入画面</Button>
+          <Button iconOnly icon="layers" onClick={() => addToLayers(resultGroup)}>本组加入图层</Button>
         )}
         <Button icon="canvas"
           disabled={!result}

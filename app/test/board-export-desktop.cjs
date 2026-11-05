@@ -35,7 +35,8 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   const id=await js(`(async()=>{const r=await tugou.create('画板保存检查');await tugou.save(r.id,{...r.document,...${JSON.stringify(doc)}},r.revision);return r.id})()`);
   await js(`sessionStorage.setItem('tugou-reload-view',JSON.stringify({id:${JSON.stringify(id)},workspace:'layers'}))`);let loaded=new Promise(r=>w.webContents.once('did-finish-load',r));w.webContents.reload();await loaded;await wait(`!!document.querySelector('.layer-stage')`);await delay(650);
   const unchanged=await js(`document.querySelector('.statusbar [role=status]').textContent`);
-  await context('artboard-main');await menu('编辑画板');await click('聚焦画板');await delay(300);
+  w.showInactive();await delay(300);
+  await context('artboard-main');await menu('编辑画板');await click('聚焦画板');await delay(300);await wait(`document.querySelector('canvas[aria-label="图层画布"]').dataset.rendering==='false'`);
   if(!process.argv.includes('--export-only')){
   const beforeMove=await js(`document.querySelector('canvas[aria-label="图层画布"]').toDataURL()`);
   const imagePoint=await js(`(()=>{const g=document.querySelector('.layer-overlay > g'),p=new DOMPoint(512,256).matrixTransform(g.getScreenCTM());return {x:Math.round(p.x),y:Math.round(p.y)}})()`);

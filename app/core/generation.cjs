@@ -4,7 +4,7 @@ const { compileNode } = require('./prompts.cjs');
 const { angleRequest } = require('./canvas-view.cjs');
 
 const failure = (message) => Object.assign(new Error(message), { safeMessage: message });
-const {boundedBytes,imageExtension,requestImages}=require('./image-api.cjs');
+const {boundedBytes,imageExtension,requestImages,imageProgress}=require('./image-api.cjs');
 const imageWrites = require('p-limit').default(1);
 const {validateImageSettings}=require('./image-settings.cjs');
 async function saveImage(root, bytes, inspectImage) {
@@ -71,7 +71,8 @@ class GenerationService {
     const task = await this.tasks.start(label, async (cancelSignal, taskId) => {
       await atomicWrite(await safePath(this.root, 'requests', `${taskId}.json`), JSON.stringify({ ...extra, projectId, nodeId, compiled, referenceAssets: snapshot.assets.filter(a => compiled.references.some(r => r.assetId === a.id)), node: snapshot.tugouCanvas.nodes.find(n => n.id === nodeId) }));
       const signal = AbortSignal.any([cancelSignal, AbortSignal.timeout(600000)]);
-      const images = await requestImages(settings, { prompt:compiled.prompt, size:compiled.size,quality:compiled.quality, images:refs }, signal);
+      const entry = this.tasks.tasks.find(t => t.id === taskId), progress = imageProgress(this.tasks,entry);
+      const images = await requestImages(settings, { prompt:compiled.prompt, size:compiled.size,quality:compiled.quality, images:refs }, signal, progress);
       const assets = [];
       for (const [i, bytes] of images.entries()) {
         signal.throwIfAborted();
@@ -79,8 +80,8 @@ class GenerationService {
         assets.push({ id: `${taskId}-${i}`, name: `${label} · ${i + 1}`, ...image, generation: { ...extra, taskId, nodeId, model: settings.model, requestedSize: compiled.size,quality:compiled.quality||'auto' } });
       }
       signal.throwIfAborted();
+      progress('saved');
       const result = { id: taskId, projectId, nodeId, createdAt: new Date().toISOString(), prompt: compiled.prompt, references: compiled.references, assets };
-      const entry = this.tasks.tasks.find(t => t.id === taskId);
       entry.actualSizes = assets.map(a => `${a.width}x${a.height}`);
       if (compiled.size !== 'auto' && entry.actualSizes.some(size => size !== compiled.size)) entry.message = `模型返回 ${entry.actualSizes.join('、')}，与请求 ${compiled.size} 不同；已按原图保存`;
       await atomicWrite(await safePath(this.root, 'results', `${taskId}.json`), JSON.stringify(result));

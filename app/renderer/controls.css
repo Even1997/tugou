@@ -1,4 +1,4 @@
-.studio-select { display:inline-flex;min-width:0;max-width:100%;vertical-align:middle;height:38px; }
+.studio-select { display:inline-flex;min-width:0;max-width:100%;vertical-align:middle;height:34px; }
 .font-picker { display:block;min-width:0; }
 .font-picker > label { display:grid;gap:6px;margin-bottom:10px; }
 .font-picker .studio-select { width:100%; }

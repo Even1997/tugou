@@ -32,6 +32,7 @@ import {FontWorkspace} from './font-workspace.jsx';
 import {PreferencesProvider,usePreferences} from './preferences.jsx';
 import {commandFor,shortcutBlocked} from '../core/shortcuts.cjs';
 import {SettingsWorkspace} from './settings.jsx';
+import {HomeWorkspace} from './home.jsx';
 import {UpdatePrompt} from './update-prompt.jsx';
 import {useDevPreview} from './dev-preview.jsx';
 import * as pages from '../core/pages.cjs';
@@ -53,9 +54,10 @@ function App() {
     return()=>{window.removeEventListener('dragover',preventFileNavigation);window.removeEventListener('drop',preventFileNavigation);};
   },[]);
   const [projects, setProjects] = useState(previewBootstrap.snapshot?.projects||[]);
+  const [projectsReady,setProjectsReady]=useState(!!previewBootstrap.snapshot);
   const [record, setRecord] = useState(previewBootstrap.snapshot?.record||null);
   useEffect(()=>{document.title=record?.document.name?`${record.document.name} · 土狗`:'土狗';},[record?.document.name]);
-  const [workspace, setWorkspace] = useState(previewBootstrap.snapshot?.workspace||"prompts");
+  const [workspace, setWorkspace] = useState(previewBootstrap.snapshot?.workspace||"home");
 
   const [recipeId, setRecipeId] = useState(previewBootstrap.snapshot?.recipeId||null);
   const [moduleId, setModuleId] = useState(previewBootstrap.snapshot?.moduleId||null);
@@ -71,6 +73,7 @@ function App() {
   const [notice, setNotice] = useState("");
   const [tasks, setTasks] = useState([]),
     [tasksOpen, setTasksOpen] = useState(false);
+  const [tasksReady,setTasksReady]=useState(false);
   const seenResults = useRef(new Set(previewBootstrap.snapshot?.seenResults||[]));
   const history = useRef(previewBootstrap.snapshot?.history||{ past: [], future: [] });
   const pageViews=useRef(previewBootstrap.snapshot?.pageViews||{});
@@ -86,7 +89,7 @@ function App() {
       setError(failure.message);
     }
   };
-  const refresh = async () => setProjects(await api.list());
+  const refresh = async () => {setProjects(await api.list());setProjectsReady(true);};
   useEffect(() => {
     run(refresh);
     if(!previewBootstrap.snapshot&&!sessionStorage.getItem('tugou-reload-view'))run(async()=>{const restored=prepareRecord(await api.settings('lastProject'));if(restored&&!present.current){present.current=restored;setRecord(restored);if(restored.promptsExtracted)markDirty(true);}});
@@ -104,7 +107,7 @@ function App() {
         if(next.promptsExtracted)markDirty(true);
       }
       if (
-        ["layers", "canvas", "prompts", "assets", "tools", "fonts", "settings"].includes(
+        ["home", "layers", "canvas", "prompts", "assets", "tools", "fonts", "settings"].includes(
           view.workspace,
         )
       )
@@ -140,17 +143,19 @@ function App() {
       change(next,{history:false});
     }
   };
-  const refreshTasks = async () => {const list=await api.tasks();setTasks(list);syncOutputs(list);};
+  const refreshTasks = async () => {const list=await api.tasks();setTasks(list);setTasksReady(true);syncOutputs(list);};
   useEffect(() => {
     let stopped = false,
-      polling = false;
+      polling = false, pending = false;
     const poll = async () => {
-      if (polling || busyRef.current) return;
+      if (stopped || busyRef.current) return;
+      if (polling) { pending = true; return; }
       polling = true;
       try {
         const list = await api.tasks();
         if (stopped) return;
         setTasks(list);
+        setTasksReady(true);
         syncOutputs(list);
         const id = present.current?.id;
         if (!id) return;
@@ -177,15 +182,22 @@ function App() {
         if (!stopped) setError(failure.message);
       } finally {
         polling = false;
+        if (pending && !stopped) { pending = false; void poll(); }
       }
     };
+    const unsubscribe = api.onTasksChanged?.(poll);
+    window.addEventListener('focus', poll);
+    document.addEventListener('visibilitychange', poll);
     poll();
     const timer = setInterval(poll, 1200);
     return () => {
       stopped = true;
       clearInterval(timer);
+      unsubscribe?.();
+      window.removeEventListener('focus', poll);
+      document.removeEventListener('visibilitychange', poll);
     };
-  }, [record?.id]);
+  }, [record?.id, busy]);
   const generate = async (nodeId) =>
     run(async () => {
       const current = present.current;
@@ -278,7 +290,7 @@ function App() {
   const addAssetLayer = (asset, sourceLayerId) => {
     const doc = present.current.document;
     const assets = Array.isArray(asset) ? asset : [asset];
-    if(assets.some(a=>a.kind&&a.kind!=='image')){setNotice('图层合成仅接受图片，请先从视频提取画面');return;}
+    if(assets.some(a=>a.kind&&a.kind!=='image')){setNotice('图层编辑器仅接受图片，请先从视频提取画面');return;}
     const sourceLayer = sourceLayerId && doc.layers.find(l=>l.id===sourceLayerId&&l.kind==='image');
     if (sourceLayerId && (!sourceLayer || assets.some(a=>a.toolResult?.sourceId!==sourceLayer.assetId))) {setNotice('来源图层已变化，请重新选择');return;}
     const pending = sourceLayer ? assets.filter(a=>!doc.layers.some(l=>l.assetId===a.id&&l.semanticSourceLayerId===sourceLayer.id)) : assets;
@@ -404,6 +416,7 @@ function App() {
         seenResults.current = new Set();
         setRecord(next);
         setModuleId(null);
+        if(workspace==='home')setWorkspace('canvas');
         setLayerSelection([]);
         setRecipeId(null);
         setToolSession(null);
@@ -491,7 +504,7 @@ function App() {
               addToCanvas={addToCanvas} addToLayers={(...args)=>{if(!busyRef.current){addAssetLayer(...args);setToolSession(null);}}} />
           </div>
         </FormDialog>}
-        {workspace === 'settings' ? <SettingsWorkspace openModels={()=>setConnectionOpen(true)} modelsOpen={connectionOpen} /> : workspace === "fonts" ? <FontWorkspace /> : record ? (
+        {workspace === 'home' ? <HomeWorkspace projects={projects} projectsReady={projectsReady} record={record} tasks={tasks} tasksReady={tasksReady} busy={busy} create={()=>switchProject(()=>api.create('未命名创作'))} open={id=>switchProject(()=>api.open(id))} navigate={setWorkspace} showTasks={()=>setTasksOpen(true)}/> : workspace === 'settings' ? <SettingsWorkspace openModels={()=>setConnectionOpen(true)} modelsOpen={connectionOpen} /> : workspace === "fonts" ? <FontWorkspace /> : record ? (
           <>
             <div className="document-heading">
               <input

@@ -25,18 +25,18 @@ app.on('browser-window-created',(_e,window)=>{
    await click('素材库','nav button');await wait('Array.from(document.querySelectorAll(".asset-image img")).every(i=>i.complete&&i.naturalWidth>0)');
    check('material library retains every original image',await js('document.querySelectorAll(".asset-image img").length===4'));
    await capture('materials-dark');
-   await click('图层合成','nav button');await wait('document.querySelector(".layer-editor")');await delay(600);await capture('layers-dark');
+   await click('图层','nav button');await wait('document.querySelector(".layer-editor")');await delay(600);await capture('layers-dark');
    await click('图像工具','nav button');await capture('tools-dark');
    await click('无限画布','nav button');await wait('document.querySelector(".react-flow")');await capture('canvas-dark');
    await click('切换浅色主题');await wait('document.documentElement.dataset.theme==="light"');
    check('canvas inherits shared light theme',await js('!!document.querySelector(".react-flow.light")'));
-   for(const [label,name] of [['无限画布','canvas'],['图层合成','layers'],['素材库','materials'],['图像工具','tools'],['提示词工作台','workbench']]){await click(label,'nav button');await capture(name+'-light');}
+   for(const [label,name] of [['无限画布','canvas'],['图层','layers'],['素材库','materials'],['图像工具','tools'],['提示词工作台','workbench']]){await click(label,'nav button');await capture(name+'-light');}
    await click('模型连接','.toolbar-end button');await wait('document.querySelector(".ant-modal input[type=password]")');
    check('connection dialog uses shared component library and does not expose saved secret',await js('document.querySelector(".ant-modal input[type=password]").value===""'));
    await capture('connection-light');await click('关闭模型连接');
    await click('任务','.statusbar button');await wait('document.querySelector(".task-dialog")');await capture('tasks-light');await click('关闭任务');
    window.setSize(960,720);await delay(200);
-   for(const label of ['提示词工作台','无限画布','图层合成','图像工具','素材库']){await click(label,'nav button');check(label+' at 960px stays inside viewport',await js('document.documentElement.scrollWidth<=innerWidth'));window.webContents.setZoomFactor(1.25);await delay(120);check(label+' at 125% stays inside viewport',await js('document.documentElement.scrollWidth<=innerWidth'));window.webContents.setZoomFactor(1);}
+   for(const label of ['提示词工作台','无限画布','图层','图像工具','素材库']){await click(label,'nav button');check(label+' at 960px stays inside viewport',await js('document.documentElement.scrollWidth<=innerWidth'));window.webContents.setZoomFactor(1.25);await delay(120);check(label+' at 125% stays inside viewport',await js('document.documentElement.scrollWidth<=innerWidth'));window.webContents.setZoomFactor(1);}
    await click('提示词工作台','nav button');check('960px document does not overflow',await js('document.documentElement.scrollWidth<=innerWidth'));
    await capture('workbench-960');
    window.webContents.setZoomFactor(1.25);await delay(150);check('125% content zoom remains within window',await js('document.documentElement.scrollWidth<=innerWidth'));await capture('workbench-125');window.webContents.setZoomFactor(1);

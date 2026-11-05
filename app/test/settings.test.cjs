@@ -40,6 +40,21 @@ test('unsaved work and active tasks block install, second guard catches new edit
 test('preview builds do not contact update feed or start installer',async t=>{const f=await fixture(t,{supported:false});await f.updates.check({automatic:true});assert.equal(f.updates.state.status,'portable');await assert.rejects(f.updates.download());await assert.rejects(f.updates.install());assert.deepEqual(f.counts(),{checks:0,downloads:0,installs:0});});
 test('concurrent checks and downloads are not submitted twice',async t=>{const f=await fixture(t);let release,count=0;f.u.checkForUpdates=async()=>{count++;await new Promise(r=>release=r);f.u.emit('update-available',{version:'1.0.0'});};const first=f.updates.check();await f.updates.check();assert.equal(count,1);release();await first;let done;f.u.downloadUpdate=async()=>{count++;await new Promise(r=>done=r);f.u.emit('update-downloaded',{version:'1.0.0'});};const download=f.updates.download();await f.updates.download();assert.equal(count,2);done();await download;});
 test('update handoff is invoked only after guards and flush succeed',async t=>{const calls=[];let reason='unsaved';const f=await fixture(t,{guard:async()=>reason,prepare:async()=>calls.push('flush'),beforeInstall:async()=>calls.push('handoff')});await f.updates.check();await f.updates.download();await f.updates.install();assert.deepEqual(calls,[]);reason=null;await f.updates.install();assert.deepEqual(calls,['flush','handoff']);assert.equal(f.counts().installs,1);});
+test('skipping a version persists across launches and prevents only its automatic download',async t=>{
+ const f=await fixture(t);await assert.rejects(f.updates.skip(),/UPDATE_NOT_AVAILABLE/);await f.updates.check();await f.updates.skip();
+ const next=await fixture(t,{profile:f.profile});assert.equal(next.updates.state.skippedVersion,'0.8.2');
+ await next.updates.check({automatic:true,autoDownload:true});assert.equal(next.updates.state.status,'available');assert.equal(next.counts().downloads,0);
+ await next.updates.check({autoDownload:true});assert.equal(next.updates.state.status,'ready');assert.equal(next.counts().downloads,1);assert.equal(next.counts().installs,0);
+ next.u.checkForUpdates=async()=>next.u.emit('update-available',{version:'0.8.3'});next.updates.lastAttempt=null;
+ let downloaded=false;next.u.downloadUpdate=async()=>{downloaded=true;next.u.emit('update-downloaded',{version:'0.8.3'});};
+ await next.updates.check({automatic:true,autoDownload:true});assert.equal(next.updates.state.version,'0.8.3');assert.equal(next.updates.state.status,'ready');assert.equal(downloaded,true);
+});
+test('skip and check persistence cannot overwrite each other; save failure remains retryable',async t=>{
+ const f=await fixture(t);await f.updates.check();await Promise.all([f.updates.check(),f.updates.skip()]);
+ const saved=JSON.parse(await fs.readFile(path.join(f.profile,'update-state.json'),'utf8'));assert.equal(saved.skippedVersion,'0.8.2');assert.ok(saved.lastChecked);
+ f.updates.set({skippedVersion:null});const persist=f.updates.persist;f.updates.persist=async()=>{throw Error('disk failure');};
+ await assert.rejects(f.updates.skip(),/disk failure/);assert.equal(f.updates.state.skippedVersion,null);f.updates.persist=persist;await f.updates.skip();assert.equal(f.updates.state.skippedVersion,'0.8.2');
+});
 test('MCP stdio exits cooperatively for updates and read calls report restart status',async t=>{
  const dir=await folder(t),session=path.join(dir,'mcp-session.json'),state={version:1,port:65500,token:'a'.repeat(64),pid:process.pid};await fs.writeFile(session,JSON.stringify(state));
  const {Client}=require('@modelcontextprotocol/sdk/client/index.js'),{StdioClientTransport}=require('@modelcontextprotocol/sdk/client/stdio.js');const transport=new StdioClientTransport({command:process.execPath,args:[path.resolve(__dirname,'../core/mcp.cjs'),'--session',session],stderr:'pipe'}),client=new Client({name:'update-test',version:'1.0'});t.after(()=>client.close());await client.connect(transport);

@@ -226,7 +226,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       y: (viewport.height - height * zoom) / 2-top*zoom,
     });
   };
-  useUiView('layers',{get:()=>({view,tool}),restore:v=>{setView(v.view);setTool(v.tool);},blocked:()=>draft||pathDraft||selectionBusy?'合成编辑尚未完成，请先完成当前操作':null});
+  useUiView('layers',{get:()=>({view,tool}),restore:v=>{setView(v.view);setTool(v.tool);},blocked:()=>draft||pathDraft||selectionBusy?'图层编辑尚未完成，请先完成当前操作':null});
   useEffect(() => {
     let previous;
     const observer = new ResizeObserver(([entry]) => {
@@ -450,7 +450,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   };
   const addAssets = (assets, dropPoint) => {
     if (!assets.length) return;
-    if(assets.some(a=>a.kind&&a.kind!=='image'))throw Error('图层合成仅接受图片，请先从视频提取画面');
+    if(assets.some(a=>a.kind&&a.kind!=='image'))throw Error('图层编辑器仅接受图片，请先从视频提取画面');
     const v = latest.current.document;
     const added = assets.map((asset, i) => {
       const scale = Math.min(
@@ -1315,8 +1315,8 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     if(['clone','heal'].includes(tool)&&paintSource?.layerId===single.id)sourceMarker=geometry.world(paintSource.u,paintSource.v);
   }
   return (
-    <div className="layer-editor composition-editor" data-dev-update-blocked={painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||boardDraft||shapeDraft||polygon.length||tool!=='select'?'请先完成合成编辑，并切换到移动工具后更新':undefined}>
-      {(animation.frames.length>1||animation.error)&&<div className="gif-timeline">{animation.error?<span role="alert">{animation.error}</span>:<><Button onClick={()=>setGifPlaying(v=>!v)}>{gifPlaying?'暂停动画':'播放动画'}</Button><input aria-label="合成动画帧" type="range" min={1} max={animation.frames.length} value={gifIndex+1} onChange={e=>{setGifPlaying(false);setGifFrame(+e.target.value-1)}}/><span>第 {gifIndex+1} / {animation.frames.length} 帧 · {gifTime} ms</span></>}</div>}
+    <div className="layer-editor composition-editor" data-dev-update-blocked={painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||boardDraft||shapeDraft||polygon.length||tool!=='select'?'请先完成图层编辑，并切换到移动工具后更新':undefined}>
+      {(animation.frames.length>1||animation.error)&&<div className="gif-timeline">{animation.error?<span role="alert">{animation.error}</span>:<><Button onClick={()=>setGifPlaying(v=>!v)}>{gifPlaying?'暂停动画':'播放动画'}</Button><input aria-label="图层动画帧" type="range" min={1} max={animation.frames.length} value={gifIndex+1} onChange={e=>{setGifPlaying(false);setGifFrame(+e.target.value-1)}}/><span>第 {gifIndex+1} / {animation.frames.length} 帧 · {gifTime} ms</span></>}</div>}
       <div className="composition-tools">
         <div className="composition-primary-tools">
           <Button icon="action" aria-pressed={tool==='select'&&!boardTool} onClick={()=>{setTool('select');setBoardTool(false)}}>移动</Button>
@@ -2038,7 +2038,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
               )
             )}
           />
-          </>:<div className="composition-history"><div className="board-actions"><Button icon="undo" disabled={!editHistory?.past.length||disabled} onClick={editHistory?.undo}>撤销</Button><Button icon="redo" disabled={!editHistory?.future.length||disabled} onClick={editHistory?.redo}>重做</Button></div><p className="inspector-caption">本次打开工程的记录 · {editHistory?.past.length||0} 步可撤销</p><div className="history-current"><Icon name="edit"/> 当前状态</div>{[...(editHistory?.past||[])].reverse().map((snapshot,i)=><div className="history-entry" key={i}><Icon name="tasks"/><span>编辑前 {i+1}<small>{snapshot.layers.length} 个图层 · {snapshot.name}</small></span></div>)}</div>}
+          </>:<div className="composition-history"><div className="board-actions"><Button icon="undo" disabled={!editHistory?.past.length||disabled} onClick={editHistory?.undo}>撤销</Button><Button icon="redo" disabled={!editHistory?.future.length||disabled} onClick={editHistory?.redo}>重做</Button></div><p className="inspector-caption">本次打开工程的记录 · {editHistory?.past.length||0} 步可撤销</p><div className="history-current"><Icon name="edit"/> 当前状态</div>{[...(editHistory?.past||[])].reverse().map((snapshot,i)=><div className="history-entry" key={i}><Icon name="clock"/><span>编辑前 {i+1}<small>{snapshot.layers.length} 个图层 · {snapshot.name}</small></span></div>)}</div>}
           <div className="composition-layer-footer">
             <Button iconOnly icon="mask" disabled={!single||disabled||inherited(document.layers,single,'locked')} onClick={()=>{setPaintOptions({...paintOptions,target:'mask'});setTool('brush');setInspectorTab('properties')}}>编辑所选蒙版</Button>
             <Button iconOnly icon="adjust" onClick={()=>setInspectorTab('adjustments')}>添加调整图层</Button>

@@ -1,0 +1,83 @@
+// Local HTTP fixture and isolated profile; deliberately suspend the 1200 ms result poll.
+const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
+const out=path.resolve('test-results/generation-latency');fs.mkdirSync(out,{recursive:true});
+const profile=fs.realpathSync(fs.mkdtempSync(path.join(out,'profile-')));
+process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.join(out,'ui');delete process.env.TUGOU_DEV_PREVIEW;
+process.argv.push('--mcp-enable');
+fs.writeFileSync(path.join(profile,'preferences.json'),JSON.stringify({...require('../core/preference-values.cjs').defaults,autoCheck:false,notifyTasks:false}));
+const report={checks:[],errors:[],profile},pending=[];let ended=false,png;
+const bundle=path.join(process.env.TUGOU_BUILD_DIR,'ui.js'),source=fs.readFileSync(bundle,'utf8');
+if(!source.includes('window.__resultPollSuspended='))fs.writeFileSync(bundle,`(()=>{window.__resultPollSuspended=false;const interval=window.setInterval;window.setInterval=(fn,ms,...args)=>{if(ms===1200){window.__resultPollSuspended=true;return interval(()=>{},ms);}return interval(fn,ms,...args);};})();\n`+source);
+let holdResults=false,releaseResults,held=false;
+const generation=require('../core/generation.cjs').GenerationService.prototype,results=generation.results;
+generation.results=async function(...args){const snapshot=await results.apply(this,args);if(holdResults){holdResults=false;held=true;await new Promise(resolve=>{releaseResults=resolve;});}return snapshot;};
+const server=http.createServer(async(req,res)=>{for await(const chunk of req){}pending.push(res);});
+const finish=code=>{if(ended)return;ended=true;fs.writeFileSync(path.join(out,'desktop.json'),JSON.stringify(report,null,2));server.closeAllConnections();server.close();app.exit(code);};
+setTimeout(()=>{report.failure='timeout';finish(1);},45000);
+app.on('browser-window-created',(_,w)=>{
+  w.show=()=>{};w.focus=()=>{};
+  w.webContents.on('console-message',event=>{if(event.level==='error'&&!event.message.startsWith('ResizeObserver loop'))report.errors.push(event.message);});
+  w.webContents.once('did-finish-load',async()=>{
+    const js=code=>w.webContents.executeJavaScript(code,true),sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+    const assetCount=async()=>{const state=await require('../core/mcp.cjs').bridge(path.join(profile,'mcp-session.json'),'get_state',{}, {reconnectTimeoutMs:0,signal:AbortSignal.timeout(5000)});if(!state.ok)throw Error(JSON.stringify(state.error));return state.value.counts.assets;};
+    const wait=async(condition,timeout=4000)=>{const end=Date.now()+timeout;while(Date.now()<end){if(await condition())return true;await sleep(25);}return false;};
+    const check=(label,value)=>{assert.ok(value,label);report.checks.push(label);console.log('PASS '+label);};
+    try{
+      png=await require('sharp')({create:{width:64,height:64,channels:4,background:'#75a7bb'}}).png().toBuffer();
+      await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+      const record=await js('tugou.create("结果刷新延迟验收")');
+      const node={...require('../core/workflow-nodes.cjs').workflowNode('config',{x:30,y:30}),id:'desk'};
+      Object.assign(node.data,{count:1,prompt:'本地测试',size:'auto'});
+      record.document.tugouCanvas=require('../core/prompts.cjs').emptyCanvas();record.document.tugouCanvas.nodes=[node];
+      await js(`tugou.save(${JSON.stringify(record.id)},${JSON.stringify(record.document)},${record.revision})`);
+      await js(`tugou.saveConnection({baseUrl:'http://127.0.0.1:${server.address().port}/v1',apiKey:'local-fixture',model:'custom-image'})`);
+      await js(`sessionStorage.setItem('tugou-reload-view',JSON.stringify({id:${JSON.stringify(record.id)},workspace:'canvas'}))`);
+      const loaded=new Promise(resolve=>w.webContents.once('did-finish-load',resolve));w.webContents.reload();await loaded;
+      check('polling suspended in hidden native window',await wait(()=>js('window.__resultPollSuspended===true&&!!document.querySelector(".react-flow__pane")'))&&!w.isVisible());
+      await sleep(200);
+      const start=()=>js(`tugou.generateWorkflow(${JSON.stringify(record.id)},${JSON.stringify(record.document)},'desk')`);
+      const latest=()=>js('(async()=> (await tugou.tasks()).at(-1))()');
+      await start();check('one request submitted',await wait(()=>pending.length===1));await sleep(200);
+      const releasedAt=Date.now();pending.shift().end(JSON.stringify({data:[{b64_json:png.toString('base64')}]}));
+      check('main process saves the result',await wait(async()=>(await latest()).status==='completed'));
+      const appeared=await wait(()=>js('document.querySelectorAll(".node-picture img").length===1'),1800);
+      report.responseToDisplayMs=Date.now()-releasedAt;
+      check('result appears without waiting for a polling timer',appeared);
+      check('display delay stays below one second in local fixture',report.responseToDisplayMs<1000);
+      // Repeated notifications must not duplicate assets or output nodes.
+      for(let i=0;i<5;i++)w.webContents.send('tugou:tasks-changed');
+      await sleep(250);check('repeated completion notifications are idempotent',await js('document.querySelectorAll(".node-picture img").length===1'));
+      await start();check('second request submitted',await wait(()=>pending.length===1));
+      await js(`tugou.cancelTask(${JSON.stringify((await latest()).id)})`);
+      pending.shift().end(JSON.stringify({data:[{b64_json:png.toString('base64')}]}));
+      check('cancellation updates without a polling timer',await wait(()=>js('[...document.querySelectorAll(".generation-output-placeholder")].some(e=>e.textContent.includes("已取消"))')));
+      check('cancelled generation publishes no additional image',await js('document.querySelectorAll(".node-picture img").length===1'));
+      await start();check('race fixture request submitted',await wait(()=>pending.length===1));await sleep(200);
+      holdResults=true;w.webContents.send('tugou:tasks-changed');check('old result read held in flight',await wait(()=>held));
+      pending.shift().end(JSON.stringify({data:[{b64_json:png.toString('base64')}]}));
+      check('task completes while an earlier refresh is pending',await wait(async()=>(await latest()).status==='completed'));
+      await sleep(100);releaseResults();
+      check('notification during refresh is replayed instead of lost',await wait(async()=>await assetCount()===2));
+      // Simulate a missed IPC event; returning to the window must reconcile results.
+      const send=w.webContents.send.bind(w.webContents);w.webContents.send=(channel,...args)=>{if(channel!=='tugou:tasks-changed')send(channel,...args);};
+      await sleep(150);await start();check('focus fixture request submitted',await wait(()=>pending.length===1));
+      pending.shift().end(JSON.stringify({data:[{b64_json:png.toString('base64')}]}));
+      check('focus fixture completes in main process',await wait(async()=>(await latest()).status==='completed'));
+      check('missed-event fixture has not refreshed prematurely',await assetCount()===2);
+      await js('window.dispatchEvent(new Event("focus"))');
+      check('window focus reconciles missed results without a timer',await wait(async()=>await assetCount()===3));
+      w.webContents.send=send;
+      await js('document.querySelector("[aria-label=任务]").click()');
+      check('timing breakdown is accessible in task details',await wait(()=>js('document.querySelectorAll(".task-timings").length===4')));
+      await js('document.querySelectorAll(".task-timings").forEach(e=>e.open=true)');
+      check('timing description distinguishes network wait from generation',await js('document.querySelector(".task-dialog").textContent.includes("等待响应包含上传、服务端处理及网络等待")'));
+      const timing=(await latest()).imageTimings[0];check('timings survive task persistence',Number.isFinite(timing.saved)&&JSON.parse(fs.readFileSync(path.join(profile,'workspace/tasks.json'))).at(-1).imageTimings[0].saved===timing.saved);
+      w.setSize(960,760);fs.writeFileSync(path.join(out,'timings.png'),(await w.capturePage()).toPNG());
+      await js('document.querySelector("[aria-label=切换浅色主题]").click()');w.setSize(1380,900);await sleep(150);
+      fs.writeFileSync(path.join(out,'timings-light.png'),(await w.capturePage()).toPNG());
+      check('timing details remain inside the dialog at both window sizes',await js('[...document.querySelectorAll(".task-timings")].every(e=>e.scrollWidth<=e.clientWidth+1)'));
+      check('no renderer errors',report.errors.length===0);finish(0);
+    }catch(error){report.failure=error.stack;finish(1);}
+  });
+});
+require('../desktop-main.cjs');

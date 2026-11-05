@@ -5,18 +5,18 @@ import {ReleaseNotes} from './release-notes.jsx';
 import './update-prompt.css';
 
 const reminderKey='tugou.update-reminder';
-function readReminder(){try{return JSON.parse(localStorage.getItem(reminderKey))||{};}catch{return {};}}
+function readReminder(){try{return JSON.parse(sessionStorage.getItem(reminderKey))||{};}catch{return {};}}
 export function UpdatePrompt(){
   const {update,setUpdate,t,updatePromptRequest}=usePreferences();
   const [opened,setOpened]=useState(null),[reminder,setReminder]=useState(readReminder),[busy,setBusy]=useState(false),[failure,setFailure]=useState(''),[confirm,setConfirm]=useState(false);
   const handledRequest=useRef(0);
   const current=update||{},phase=current.status==='ready'?'ready':'available';
-  const eligible=current.supported&&current.version&&['available','downloading','ready'].includes(current.status);
+  const eligible=current.supported&&current.version&&['available','downloading','ready','error'].includes(current.status);
   useEffect(()=>{
     if(opened){handledRequest.current=updatePromptRequest;return;}
     if(!eligible)return;
     const requested=updatePromptRequest!==handledRequest.current;
-    if(!requested&&reminder.version===current.version&&reminder[phase]>Date.now())return;
+    if(!requested&&(current.skippedVersion===current.version||(reminder.version===current.version&&reminder[phase])))return;
     let idleSince=Date.now(),dragging=false;
     const activity=()=>{idleSince=Date.now();};
     const down=()=>{dragging=true;activity();},up=()=>{dragging=false;activity();};
@@ -31,16 +31,16 @@ export function UpdatePrompt(){
       handledRequest.current=updatePromptRequest;setFailure('');setConfirm(false);setOpened({version:current.version});
     },400);
     return()=>{clearInterval(timer);document.removeEventListener('pointerdown',down,true);document.removeEventListener('pointerup',up,true);document.removeEventListener('pointercancel',up,true);document.removeEventListener('keydown',activity,true);document.removeEventListener('wheel',activity,true);document.removeEventListener('pointermove',move,true);window.removeEventListener('blur',up);};
-  },[opened,eligible,current.version,phase,reminder,updatePromptRequest]);
+  },[opened,eligible,current.version,current.skippedVersion,phase,reminder,updatePromptRequest]);
   useEffect(()=>{if(['latest','portable'].includes(current.status))setOpened(null);},[current.status]);
   function close(){
-    const next={...(reminder.version===opened.version?reminder:{}),version:opened.version,[phase]:Date.now()+86400000};
-    try{localStorage.setItem(reminderKey,JSON.stringify(next));}catch{/* Session reminder still works when storage is unavailable. */}
+    const next={...(reminder.version===opened.version?reminder:{}),version:opened.version,[phase]:true};
+    try{sessionStorage.setItem(reminderKey,JSON.stringify(next));}catch{/* In-memory reminder still works when storage is unavailable. */}
     setReminder(next);setOpened(null);setConfirm(false);
   }
   async function act(action){
     setBusy(true);setFailure('');setConfirm(false);
-    try{setUpdate(await window.tugou.update(action));}catch{setFailure('updateFailed');}finally{setBusy(false);}
+    try{setUpdate(await window.tugou.update(action));if(action==='skip')close();}catch{setFailure('updateFailed');}finally{setBusy(false);}
   }
   if(!opened)return null;
   const dmg=current.installMode==='dmg',downloading=current.status==='downloading',ready=current.status==='ready';
@@ -55,6 +55,7 @@ export function UpdatePrompt(){
     </>}
     {(failure||current.error||current.blocked)&&<p className="update-prompt-error" role="alert">{t(failure||current.error||current.blocked)}</p>}
     <div className="dialog-footer">
+      {!confirm&&<Button className="update-skip" disabled={busy} onClick={()=>act('skip')}>{t('updateSkip')}</Button>}
       <Button disabled={locked} onClick={()=>confirm?setConfirm(false):close()}>{t(confirm?'cancel':downloading?'updateBackground':'updateLater')}</Button>
       {current.status==='available'&&<Button primary disabled={busy} onClick={()=>act('download')}>{t(dmg?'downloadDmg':'download')}</Button>}
       {ready&&<Button primary disabled={busy} onClick={()=>dmg?act('openInstaller'):confirm?act('install'):setConfirm(true)}>{t(dmg?'openInstaller':'install')}</Button>}

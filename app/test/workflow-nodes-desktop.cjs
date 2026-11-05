@@ -109,7 +109,7 @@ app.on('browser-window-created',(_,w)=>{
       const output=path.join(base,'export.wav');dialog.showSaveDialog=async()=>({canceled:false,filePath:output});await js(`tugou.exportAsset(${JSON.stringify(report.id)},${JSON.stringify(doc)},${JSON.stringify(doc.assets.at(-1).id)})`);check('media exports exact original bytes',fs.readFileSync(output).equals(fs.readFileSync(path.join(base,'sample.wav'))));
       const saved=JSON.stringify(doc);await load();doc=await save();check('reload preserves all node types scene data and media',JSON.stringify(doc)===saved);
       await click('素材库');await wait('document.querySelector(".asset-grid")');await snapshot('library');check('mixed media library renders',await js('document.body.innerText.includes("视频")&&document.body.innerText.includes("音频")'));
-      await click('图层合成');await delay(150);check('image-only editor remains usable with mixed assets',await js('Boolean(document.querySelector(".layer-stage"))'));
+      await click('图层');await delay(150);check('image-only editor remains usable with mixed assets',await js('Boolean(document.querySelector(".layer-stage"))'));
       check('no renderer errors',report.errors.length===0);check('test window stays hidden',!w.isVisible());finish(0);
     }catch(e){report.failure=e.stack;report.text=await js('document.body.innerText');await snapshot('failure');finish(1);}
   });

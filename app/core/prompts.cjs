@@ -100,6 +100,7 @@ function compileRecipe(document, recipe) {
 
 const emptyCanvas = () => ({ version: 1, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } });
 function createNode(document, type, sourceId, position) {
+  if(type==='imageTool')return require('./canvas-tools.cjs').createTool(sourceId,position);
   if(require('./workflow-nodes.cjs').types.includes(type))return require('./workflow-nodes.cjs').workflowNode(type,position);
   let data;
   if (type === 'module') {
@@ -119,6 +120,7 @@ function createNode(document, type, sourceId, position) {
 }
 
 function canConnect(graph, source, target) {
+  if(graph.nodes.find(n=>n.id===target)?.type==='imageTool')return require('./workflow-nodes.cjs').canLink(graph,source,target);
   if(require('./workflow-nodes.cjs').types.includes(graph.nodes.find(n=>n.id===target)?.type))return require('./workflow-nodes.cjs').canLink(graph,source,target);
   if(['group','config','video','audio'].includes(graph.nodes.find(n=>n.id===source)?.type))return false;
   if (source === target || !graph.nodes.some((node) => node.id === source) || !graph.nodes.some((node) => node.id === target && node.type === 'recipe')) return false;
@@ -149,7 +151,8 @@ function compileNode(document, nodeId) {
       references.push(...(node.data.snapshot.references || []));
       if (node.id !== nodeId && node.data.snapshot.output) texts.push(`【${node.data.snapshot.name}的输出要求】\n${node.data.snapshot.output}`);
     }
-    for (const edge of graph.edges.filter((entry) => entry.target === id)) visit(edge.source);
+    if(node.type!=='imageTool')for (const edge of graph.edges.filter((entry) => entry.target === id)) visit(edge.source);
+    if(node.type==='imageTool')references.push({assetId:require('./canvas-tools.cjs').toolOutput(document,node).id,role:node.data.name});
     if (node.type === 'module') bindings.push(node.data.binding);
     if (node.type === 'text') texts.push(node.data.text);
     if (node.type === 'asset') {

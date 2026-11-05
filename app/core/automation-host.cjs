@@ -38,6 +38,7 @@ class RequestJournal {
 
 async function createDispatcher({ui,capture,projects,connections,tasks,workflow,generation,analysis,localAI,imageTools,cloud,semantic,root,filesRoot,fonts=new (require('./font-service.cjs').FontService)(root,tasks)}){
   const journal=new RequestJournal(await safePath(root,'mcp-requests.json'));await journal.init();
+  const rendererJobs=new Map();
   const snapshot=()=>ui('snapshot');
   const guard=(state,expected)=>{if(state.busy)fail('BUSY','界面正在处理操作');if(expected!==state.revision)fail('CONFLICT','请使用 get_state 返回的实时 revision');};
   const project=state=>{if(!state.document)fail('NO_PROJECT','请先打开工程');return state.document;};
@@ -119,6 +120,49 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
       return {task,timedOut:['queued','running'].includes(task.status)};
     }
     const doc=project(state);
+    if(name==='asset.search'){
+      const list=require('./materials.cjs').filterMaterials(doc.assets,input),offset=input.offset||0,limit=input.limit||50;
+      return {revision:state.revision,total:list.length,offset,nextOffset:offset+limit<list.length?offset+limit:null,objects:list.slice(offset,offset+limit)};
+    }
+    if(name==='artboard.timeline'){
+      const b=require('./artboards.cjs');find(b.boards(doc),input.artboardId);
+      return {revision:state.revision,frames:require('./gif-timeline.cjs').timeline(b.extract(doc,input.artboardId)).map((f,i)=>({...f,frame:i+1}))};
+    }
+    if(name==='project.importLegacy'||name==='project.migrateCanvas'){
+      const file=await filePath(input.path);if((await fs.stat(file)).size>32*1024*1024)fail('RESOURCE_LIMIT','工程快照不能超过 32 MiB');
+      const records=name==='project.importLegacy'?[await projects.importLegacy(file)]:await require('./legacy-canvas.cjs').migrateCanvases(projects,JSON.parse((await fs.readFile(file,'utf8')).replace(/^\uFEFF/,'')),bytes=>require('electron').nativeImage.createFromBuffer(bytes).getSize());
+      return {projects:records.map(r=>r.document?{id:r.id,name:r.document.name,revision:r.revision}:r)};
+    }
+    if(name==='task.result'){
+      const task=find(tasks.list(),input.id);if(task.context?.projectId!==state.projectId||task.context?.engine!=='mcp-renderer')fail('INVALID_TARGET','任务不属于当前工程的 MCP 本地处理');
+      if(task.status!=='completed')return {status:task.status,message:task.message};
+      return {status:task.status,result:JSON.parse(await fs.readFile(await safePath(root,'mcp-results',task.id+'.json'),'utf8'))};
+    }
+    if(command.effect==='rendererTask'){
+      if(input.id||input.artboardId)commands.editable(doc,[input.id||input.artboardId]);
+      if(input.artboardId&&!find(doc.layers,input.artboardId).artboard)fail('INVALID_TARGET','请选择画板');
+      if(input.nodeId)sceneNode(doc,input.nodeId);
+      if(input.path){await filePath(input.path);if(path.extname(input.path).toLowerCase()!=='.'+input.format)fail('INVALID_ARGUMENT','导出扩展名必须与格式一致');}
+      return journal.execute(`${state.projectId}:${input.requestId}`,{projectId:state.projectId,command:name,args:input},async()=>{
+        const task=await tasks.start('MCP · '+require('./automation-editing.cjs').taskLabels[name],async(signal,taskId)=>{
+          const cancel=()=>{ui('job.cancel',{taskId}).catch(()=>{});};signal.addEventListener('abort',cancel,{once:true});
+          let polling=false;
+          const timer=setInterval(async()=>{if(polling||signal.aborted)return;polling=true;try{const progress=await ui('job.status',{taskId});if(progress)await tasks.report(taskId,{...progress,progress:progress.progress*100});}catch{}finally{polling=false;}},1000);
+          try{
+            signal.throwIfAborted();rendererJobs.set(taskId,'running');const result=await ui('job.run',{taskId,command:name,input},state.revision);signal.throwIfAborted();rendererJobs.set(taskId,'finalizing');
+            if(input.path){const bytes=await require('./generation.cjs').referenceBytes(root,result);signal.throwIfAborted();Object.assign(result,await writeNew(input.path,bytes));}
+            await atomicWrite(await safePath(root,'mcp-results',taskId+'.json'),JSON.stringify(result));await tasks.report(taskId,{progress:100,message:'处理完成'});return taskId;
+          }catch(error){cancel();error.safeMessage=error.message;throw error;}
+          finally{clearInterval(timer);signal.removeEventListener('abort',cancel);}
+        },{kind:'local-tool',engine:'mcp-renderer',projectId:state.projectId,operation:name},{canCancel:async taskId=>{
+          // Shared by the desktop task panel and MCP: never relabel a committed result as cancelled.
+          const phase=rendererJobs.get(taskId);
+          return phase==='finalizing'?false:phase==='running'?(await ui('job.cancel',{taskId})).cancelled:true;
+        }});
+        task.completion.then(()=>rendererJobs.delete(task.id),()=>rendererJobs.delete(task.id));
+        return {taskId:task.id};
+      });
+    }
     if(name==='asset.details'){find(doc.assets,input.id);return generation.assetDetails(state.projectId,doc,input.id,input.nodeId);}
     if(name==='semantic.read')return semantic.read(state.projectId,input.id);
     if(name==='cloud.cancelBatch'){
@@ -182,8 +226,8 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
       const {data,info}=await require('sharp')(bytes).resize({width:max,height:max,fit:'inside',withoutEnlargement:true}).png().toBuffer({resolveWithObject:true});
       return {mimeType:'image/png',data:data.toString('base64'),width:info.width,height:info.height,revision:state.revision};
     }
-    if(name==='image.process')return journal.execute(`${state.projectId}:${input.requestId}`,{projectId:state.projectId,command:name,args:input},async()=>{
-      const result=await imageTools.start(state.projectId,doc,input.ids,input.settings);return {taskId:result.id};
+    if(name==='image.process'||name==='image.processNode')return journal.execute(`${state.projectId}:${input.requestId}`,{projectId:state.projectId,command:name,args:input},async()=>{
+      const result=name==='image.processNode'?await imageTools.startNode(state.projectId,doc,input.nodeId):await imageTools.start(state.projectId,doc,input.ids,input.settings);return {taskId:result.id};
     });
     if(name==='selection.subject'){
       const normalized=require('./artboards.cjs').normalize(doc),layer=find(normalized.layers,input.id);commands.editable(normalized,[layer.id]);
@@ -234,11 +278,15 @@ async function startAutomationHost({window,ipcMain,app,entryUrl,...services}){
     const request=pending.get(id);if(!request)return;pending.delete(id);clearTimeout(request.timer);
     if(result?.ok)request.resolve(result.value);else{const e=new Error(result?.error?.message||'界面操作失败');e.code=result?.error?.code||'UI_ERROR';request.reject(e);}
   };
-  const ui=(action,args={},expectedRevision)=>new Promise((resolve,reject)=>{
+  const ui=(action,args={},expectedRevision)=>{
+    const active=action==='job.run'&&!window.isDestroyed(),throttled=active?window.webContents.getBackgroundThrottling():null;
+    if(active)window.webContents.setBackgroundThrottling(false);
+    return new Promise((resolve,reject)=>{
     if(disposed||window.isDestroyed()){reject(Error('会话已关闭'));return;}
-    const id=randomUUID(),timer=setTimeout(()=>{pending.delete(id);const e=Error('界面响应超时，请读取状态确认结果后再决定是否重试');e.code='UI_TIMEOUT';reject(e);},45000);
+    const id=randomUUID(),timer=setTimeout(()=>{pending.delete(id);const e=Error('界面响应超时，请读取状态确认结果后再决定是否重试');e.code='UI_TIMEOUT';reject(e);},action==='job.run'?300000:45000);
     pending.set(id,{resolve,reject,timer});window.webContents.send('tugou:automation',{id,action,args,expectedRevision});
-  });
+    }).finally(()=>{if(active&&!window.isDestroyed())window.webContents.setBackgroundThrottling(throttled);});
+  };
   const profile=app.getPath('userData'),filesRoot=path.resolve(process.env.TUGOU_MCP_FILES||path.join(profile,'automation'));
   await fs.mkdir(filesRoot,{recursive:true});await safePath(filesRoot,'.');
   const dispatch=await createDispatcher({...services,ui,filesRoot,capture:args=>require('./ui-capture.cjs').captureUi(window,ui,args)});

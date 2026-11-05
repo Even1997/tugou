@@ -1,0 +1,75 @@
+const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),sharp=require('sharp');
+const {Client}=require('@modelcontextprotocol/sdk/client/index.js'),{StdioClientTransport}=require('@modelcontextprotocol/sdk/client/stdio.js');
+const out=path.resolve('test-results/mcp-full');fs.mkdirSync(out,{recursive:true});const profile=fs.mkdtempSync(path.join(out,'profile-'));
+process.env.TUGOU_DATA_DIR=profile;if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;else process.env.TUGOU_BUILD_DIR=path.join(out,'build');delete process.env.TUGOU_DEV_PREVIEW;process.argv.push('--mcp-enable');
+fs.writeFileSync(path.join(profile,'preferences.json'),JSON.stringify({...require('../core/preference-values.cjs').defaults,autoCheck:false,notifyTasks:false}));
+const report={checks:[],errors:[],tasks:[]},sleep=ms=>new Promise(r=>setTimeout(r,ms));let transport,finished=false;
+const check=(name,ok)=>{assert.ok(ok,name);report.checks.push(name);console.log('PASS '+name);};
+const finish=code=>{if(finished)return;finished=true;fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));transport?.close();app.exit(code);};
+setTimeout(()=>{report.failure='timeout';finish(1);},240000);
+app.on('browser-window-created',(_,w)=>{
+  w.show=()=>{};w.focus=()=>{};w.webContents.setBackgroundThrottling(false);w.webContents.on('console-message',e=>{if(e.level==='error')report.errors.push(e.message);});
+  w.webContents.once('did-finish-load',async()=>{
+    try{
+      const js=s=>w.webContents.executeJavaScript(s,true);for(let i=0;i<100&&!fs.existsSync(path.join(profile,'mcp-session.json'));i++)await sleep(50);
+      transport=new StdioClientTransport({command:process.execPath,args:[process.env.TUGOU_TEST_APP?path.join(path.dirname(process.env.TUGOU_TEST_APP),'core/mcp.cjs'):path.resolve('core/mcp.cjs'),'--session',path.join(profile,'mcp-session.json')],env:{...process.env,ELECTRON_RUN_AS_NODE:'1'},stderr:'pipe'});
+      const client=new Client({name:'creative-acceptance',version:'1'});await client.connect(transport);
+      const call=async(name,args={})=>{const r=await client.callTool({name,arguments:args});if(r.isError)throw Error(r.content[0].text);return r.structuredContent;};
+      const state=()=>call('get_state'),run=async(command,args={})=>call('run_command',{command,args,expectedRevision:(await state()).revision});
+      const object=async(kind,id)=>(await call('get_object',{kind,id})).object;
+      const wait=async id=>{for(let i=0;i<30;i++){const {task}=await run('task.wait',{id,timeoutMs:1000});if(!['queued','running'].includes(task.status)){report.tasks.push(task);return task;}}throw Error('task timeout '+id);};
+      let request=0;
+      const job=async(command,args={})=>{const {taskId}=await run(command,{...args,requestId:'r'+(++request)}),task=await wait(taskId);assert.equal(task.status,'completed',task.message);return (await run('task.result',{id:taskId})).result;};
+      await run('project.create',{name:'MCP 全量创作验收'});const initial=await state();
+      report.commandCount=initial.capabilities.commands;check('all extended commands discoverable',report.commandCount===require('../core/automation-commands.cjs').listCommands().length);
+      const board=(await run('artboard.create',{name:'animation',width:32,height:32})).id;
+      for(const [name,color] of [['red','#ff0000'],['blue','#0000ff']])fs.writeFileSync(path.join(initial.filesRoot,name+'.png'),await sharp({create:{width:32,height:32,channels:4,background:color}}).png().toBuffer());
+      const red=(await run('asset.import',{path:'red.png'})).ids[0],blue=(await run('asset.import',{path:'blue.png'})).ids[0];
+      const gifArgs={frames:[{assetId:red,delay:100},{assetId:blue,delay:200}],width:32,height:32,loop:0,requestId:'gif-once'};
+      const submitted=await run('gif.create',gifArgs),repeated=await run('gif.create',gifArgs);check('GIF request deduplicates before and after task completion',submitted.taskId===repeated.taskId&&repeated.replayed);
+      assert.equal((await wait(submitted.taskId)).status,'completed');const gif=(await run('task.result',{id:submitted.taskId})).result.assetId;
+      const gifAsset=await object('asset',gif);check('GIF keeps ordered frames, timing and loop',gifAsset.gif.frames===2&&gifAsset.gif.delays.join(',')==='100,200'&&gifAsset.gif.loop===0);
+      const layer=(await run('layer.create',{artboardId:board,kind:'image',properties:{assetId:gif,width:32,height:32,x:0,y:0}})).id;
+      const frames=await run('artboard.timeline',{artboardId:board});check('timeline exposes one-based frame numbers and elapsed times',frames.frames[1].frame===2&&frames.frames[1].time===100);
+      const png=await job('artboard.exportAnimation',{artboardId:board,path:'frame2.png',format:'png',frame:2});const pixel=await sharp(png.path).ensureAlpha().raw().toBuffer();check('selected PNG is second blue frame',pixel[2]>240&&pixel[0]<10);
+      const exported=await job('artboard.exportAnimation',{artboardId:board,path:'range.gif',format:'gif',startFrame:1,endFrame:2});const meta=await sharp(exported.path,{animated:true}).metadata();check('GIF export retains both frames and delays',meta.pages===2&&meta.delay.join(',')==='100,200');
+      const beforeExport=await state();const invalid=await run('artboard.exportAnimation',{artboardId:board,path:'bad.png',format:'png',frame:3,requestId:'bad-frame'});check('invalid frame fails without document mutation',(await wait(invalid.taskId)).status==='failed'&&(await state()).revision===beforeExport.revision);
+      await assert.rejects(run('artboard.exportAnimation',{artboardId:board,path:'../escape.gif',format:'gif',requestId:'escape'}));check('export path traversal rejected before job starts',true);
+      const noOverwrite=await run('artboard.exportAnimation',{artboardId:board,path:'frame2.png',format:'png',frame:1,requestId:'overwrite'});assert.equal((await wait(noOverwrite.taskId)).status,'failed');check('export never overwrites an existing file',(await sharp(png.path).raw().toBuffer())[2]>240);
+      await run('layer.replaceImage',{id:layer,assetId:red});
+      const history=(await state()).history.undo,paint=await job('paint.create',{artboardId:board,name:'绘画层'});check('blank paint layer is transparent and creates one undo',(await state()).history.undo===history+1&&!!paint.id);
+      await run('paint.stroke',{id:paint.id,target:'image',points:[{x:6,y:6,pressure:.2},{x:20,y:20,pressure:1}],pressure:true,smoothing:25,size:6,color:'#00ff00'});
+      const painted=await object('layer',paint.id);check('pressure stroke stores edited bitmap',!!painted.bitmap);
+      await run('history.undo');check('undo removes only brush result',!(await object('layer',paint.id)).bitmap);await run('history.redo');
+      await job('selection.color',{artboardId:board,id:layer,x:2,y:2,tolerance:5,contiguous:true});check('wand creates bitmap selection',!!(await object('artboard',board)).selection.bitmap);
+      await run('selection.rectangle',{artboardId:board,x:5,y:5,width:20,height:20});await run('selection.ellipse',{artboardId:board,x:8,y:8,width:5,height:5,operation:'subtract'});
+      await run('selection.feather',{artboardId:board,radius:1});await job('selection.grow',{artboardId:board,radius:2});check('combined feathered selection supports expansion',!!(await object('artboard',board)).selection.bitmap);
+      const adjusted=await job('layer.adjustmentFromSelection',{artboardId:board,adjustment:{type:'brightnessContrast',brightness:10}});check('adjustment from selection has independent mask',!!(await object('layer',adjusted.id)).mask.bitmap);
+      await run('selection.clear',{artboardId:board});
+      for(const tool of ['clone','heal','blur','smudge','liquify']){
+        const r=await job('paint.retouch',{id:layer,tool,points:[{x:12,y:12},{x:15,y:15}],size:4,...(['clone','heal'].includes(tool)?{source:{u:.25,v:.25}}:{})});check(tool+' brush completes through shared pixel engine',r.id===layer);
+      }
+      await run('selection.rectangle',{artboardId:board,x:12,y:12,width:4,height:4});await job('image.contentFill',{id:layer});check('content-aware fill persists edited image',!!(await object('layer',layer)).bitmap);
+      await run('mask.create',{id:layer});await run('mask.fill',{id:layer,mode:'hide'});await run('mask.link',{id:layer,linked:false});
+      await run('mask.transform',{id:layer,matrix:[1,0,0,1,2,0],width:32,height:32});await job('mask.relink',{id:layer});check('independent mask transforms and relinks',!(await object('layer',layer)).mask.anchor);
+      await run('layer.update',{id:layer,patch:{x:-8}});await run('mask.link',{id:layer,linked:false});const preview=async()=>{const r=await client.callTool({name:'preview',arguments:{artboardId:board,maxSize:64}});return r.content.find(c=>c.type==='image').data;};const beforeRelink=await preview();await job('mask.relink',{id:layer});check('relink preserves off-board mask pixels',await preview()===beforeRelink);await run('layer.update',{id:layer,patch:{x:0}});
+      await run('layout.update',{artboardId:board,patch:{grid:true,snap:true,gridSize:8,guides:[{axis:'x',position:8}]}});await job('artboard.cropSelection',{artboardId:board});check('crop updates board size and translates guides',(await object('artboard',board)).width===4&&(await object('artboard',board)).layout.guides[0].position===-4);
+      const search=await run('asset.search',{source:'imported',shape:'square',sort:'pixels',limit:1});check('material filters remain paginated',search.objects.length===1&&search.total>=2&&search.nextOffset===1);
+      const director=(await run('canvas.create',{type:'director',position:{x:0,y:0}})).id;
+      await run('scene.object.create',{nodeId:director,kind:'box'});const angles=await job('scene.captureAngles',{nodeId:director,count:4,maxSize:64});check('four-angle capture creates connected result nodes',angles.assetIds.length===4&&angles.nodeIds.length===4);
+      await run('canvas.selectResult',{id:director,assetId:angles.assetIds[2]});check('downstream result choice persists',(await object('canvasNode',director)).data.outputAssetId===angles.assetIds[2]);
+      const twelve=await job('scene.captureAngles',{nodeId:director,count:12,maxSize:64});check('twelve-angle capture returns every independent frame',twelve.assetIds.length===12&&twelve.nodeIds.length===12);
+      w.webContents.setBackgroundThrottling(true);
+      const movie=await job('scene.record',{nodeId:director,duration:1,maxSize:64});check('camera recording produces real video asset',(await object('asset',movie.assetIds[0])).kind==='video');
+      check('background recording restores idle throttling',w.webContents.getBackgroundThrottling());w.webContents.setBackgroundThrottling(false);
+      const beforeCancel=await state(),cancelled=await run('scene.record',{nodeId:director,duration:5,maxSize:64,requestId:'cancel-video'});await sleep(200);await run('task.cancel',{id:cancelled.taskId});check('recording can be cancelled without changing document',(await wait(cancelled.taskId)).status==='cancelled'&&(await state()).revision===beforeCancel.revision);
+      const stale=await run('scene.record',{nodeId:director,duration:1,maxSize:64,requestId:'stale-video'});await sleep(150);await run('project.rename',{name:'保留手动更新'});check('late recording refuses stale revision',(await wait(stale.taskId)).status==='failed'&&(await state()).name==='保留手动更新');
+      const legacy={format:'canvas-studio',version:5,id:'legacy',name:'旧工程',width:32,height:32,background:'#fff',modules:[],recipes:[],assets:[],layers:[],jobs:[]};fs.writeFileSync(path.join(initial.filesRoot,'legacy.json'),JSON.stringify(legacy));
+      const imported=await run('project.importLegacy',{path:'legacy.json'});check('legacy project imports without replacing active document',imported.projects.length===1&&(await state()).projectId===initial.projectId);
+      fs.writeFileSync(path.join(initial.filesRoot,'canvas.json'),JSON.stringify({state:{state:{projects:[{id:'old-canvas',title:'旧画布',nodes:[],connections:[]}]}},images:[]}));const migrated=await run('project.migrateCanvas',{path:'canvas.json'});check('legacy canvas snapshot migrates',migrated.projects.length===1);
+      await run('project.save');const saved=await state();await run('project.create',{name:'temporary'});await run('project.open',{id:saved.projectId});check('saved GIF and recording survive reopen',(await object('asset',gif)).gif.frames===2&&(await object('asset',movie.assetIds[0])).kind==='video');
+      await run('history.undo').then(()=>{throw Error('reopen should have empty history');},()=>{});
+      check('no renderer errors',report.errors.length===0);finish(0);
+    }catch(e){report.failure=e.stack;console.error(e);finish(1);}
+  });
+});require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');

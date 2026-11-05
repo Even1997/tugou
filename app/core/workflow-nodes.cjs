@@ -1,7 +1,7 @@
 const types=['textgen','image','video','audio','panorama','config','director'];
 // Keep legacy types readable in saved projects, but never create or run them.
 const retiredMode=node=>['video','audio'].includes(modeOf(node));
-const nodeWidth=type=>types.includes(type)&&type!=='director'?400:300;
+const nodeWidth=type=>type==='imageTool'?320:types.includes(type)&&type!=='director'?400:300;
 const labels={textgen:'文本生成',image:'图片生成',video:'视频生成',audio:'音频参考',panorama:'全景图',config:'生成台',director:'3D 导演台'};
 const nodeName=node=>node.type==='config'&&node.data.name==='配置节点'?'生成台':node.data.name;
 const modeOf=node=>node.type==='config'?(node.data.mode||'image'):node.type==='textgen'?'text':node.type==='panorama'?'image':node.type;
@@ -18,7 +18,8 @@ function canLink(graph,source,target){
   if(!a||!b||source===target||graph.edges.some(e=>e.source===source&&e.target===target))return false;
   if(retiredMode(b)||a.type==='group'||b.type==='group'||(a.type==='config'&&b.type==='config'))return false;
   if(b.type==='director'&&!['asset','image','panorama'].includes(a.type))return false;
-  if(!['recipe',...types].includes(b.type))return false;
+  if(!['recipe','imageTool',...types].includes(b.type))return false;
+  if(b.type==='imageTool'&&(!['asset','image','panorama','director','imageTool','config'].includes(a.type)||a.type==='config'&&modeOf(a)!=='image'||graph.edges.some(e=>e.target===target)))return false;
   const visited=new Set();
   const reaches=id=>{if(id===source)return true;if(visited.has(id))return false;visited.add(id);return graph.edges.filter(e=>e.source===id).some(e=>reaches(e.target));};
   return !reaches(target);
@@ -40,7 +41,7 @@ function compileWorkflow(document,id){
     const n=graph.nodes.find(x=>x.id===id);if(!n)throw Error('输入节点不存在');
     visiting.add(id);
     const generatedConfig=n.type==='config'&&!!n.data.outputAssetId;
-    if((assembling||n.type==='recipe')&&!generatedConfig&&n.type!=='asset')for(const e of inputsOf(graph,n))visit(e.source,e);
+    if((assembling||n.type==='recipe')&&!generatedConfig&&!['asset','imageTool'].includes(n.type))for(const e of inputsOf(graph,n))visit(e.source,e);
     const addText=(text,origin='prompt',details={})=>{
       const part={text,include:!assembling||!mentions.includes(id),source:{nodeId:id,name:n.data.binding?.snapshot.name||n.data.snapshot?.name||nodeName(n)||labels[n.type]||'文字节点',category:n.data.binding?.snapshot.kind||n.data.kind||'text',text,origin:mentions.includes(id)?'mention':origin,...details}};
       texts.push(part);return part;
@@ -63,7 +64,8 @@ function compileWorkflow(document,id){
       }
     };
     if(n.type==='config')configs.push(n.data);
-    if(generatedConfig){
+    if(n.type==='imageTool')addAsset(require('./canvas-tools.cjs').toolOutput(document,n),n.data.name);
+    else if(generatedConfig){
       const asset=document.assets.find(a=>a.id===n.data.outputAssetId);
       if(!asset)throw Error(`输入「${nodeName(n)}」尚无可用结果，请先添加素材或生成内容`);
       addAsset(asset);

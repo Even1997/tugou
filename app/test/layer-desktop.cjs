@@ -93,7 +93,7 @@ app.on("browser-window-created", (_event, window) => {
       const id = await js(
         'document.querySelector("select[aria-label=当前工程]").value',
       );
-      await click("nav button", "图层合成");
+      await click("nav button", "图层");
       await wait('document.querySelectorAll(".layer-row").length===5');
       await new Promise((r) => setTimeout(r, 500));
       check(

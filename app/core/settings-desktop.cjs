@@ -40,7 +40,7 @@ async function registerSettings({app,window,handle,preferences,projects,fonts,ta
     if(action==='lastProject'){try{const {id}=JSON.parse(await fs.readFile(path.join(profile,'last-project.json'),'utf8'));return preferences.value.restoreProject?await projects.read(id):null;}catch(e){if(e.code==='ENOENT')return null;throw e;}}
     throw Error('INVALID_SETTINGS_ACTION');
   });
-  handle('update',async action=>{if(action==='status')return updates.snapshot();if(action==='check')return updates.check({autoDownload:preferences.value.autoDownload});if(action==='download')return updates.download();if(action==='install')return updates.install();if(action==='openInstaller')return updates.openInstaller();throw Error('INVALID_UPDATE_ACTION');});
+  handle('update',async action=>{if(action==='status')return updates.snapshot();if(action==='check')return updates.check({autoDownload:preferences.value.autoDownload});if(action==='skip')return updates.skip();if(action==='download')return updates.download();if(action==='install')return updates.install();if(action==='openInstaller')return updates.openInstaller();throw Error('INVALID_UPDATE_ACTION');});
   window.webContents.on('did-start-loading',()=>window.webContents.setIgnoreMenuShortcuts(false));
   window.webContents.setZoomFactor(preferences.value.zoom/100);
   const automatic=()=>{if(preferences.value.autoCheck)updates.check({automatic:true,autoDownload:preferences.value.autoDownload}).catch(()=>{});};

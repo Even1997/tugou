@@ -1,6 +1,6 @@
 import React, {Children, isValidElement, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Select as AntSelect, AutoComplete, Input} from 'antd';
-import {DownOutlined} from '@ant-design/icons';
+import {Icon} from './components.jsx';
 import './controls.css';
 
 const textOf=value=>Children.toArray(value).map(child=>isValidElement(child)?textOf(child.props.children):String(child)).join('');
@@ -19,7 +19,7 @@ export function Select({children,value,onChange,disabled,className='',showSearch
   const options=useMemo(()=>optionsOf(children),[children]);
   useLayoutEffect(()=>{setInheritedDisabled(!!host.current?.closest('fieldset:disabled'))});
   return <span ref={host} className={`studio-select ${className}`} data-value={String(value??'')} data-option-count={options.length} onKeyDown={event=>event.stopPropagation()}>
-    <AntSelect {...props} value={String(value??'')} options={options} disabled={disabled||inheritedDisabled}
+    <AntSelect {...props} value={String(value??'')} options={options} suffixIcon={<Icon name="collapse"/>} disabled={disabled||inheritedDisabled}
       showSearch={showSearch??(options.length>=8?{optionFilterProp:'label'}:false)}
       classNames={{popup:{root:'studio-select-popup'}}}
       notFoundContent={notFoundContent} virtual={options.length>50}
@@ -42,6 +42,6 @@ export function EditableSelect({value='',options=[],onChange,disabled,id,'aria-l
     classNames={{popup:{root:'studio-select-popup'}}}
     onKeyDown={e=>{if(e.key==='Enter')e.preventDefault();if(e.key==='Escape'&&open){e.stopPropagation();setOpen(false);}}}>
     <Input id={id} aria-label={label} autoComplete="off" placeholder="选择或直接输入模型 ID"
-      suffix={<DownOutlined onMouseDown={e=>e.preventDefault()} onClick={()=>{setQuery('');setOpen(!open);}}/>}/>
+      suffix={<Icon name="collapse" onMouseDown={e=>e.preventDefault()} onClick={()=>{setQuery('');setOpen(!open);}}/>}/>
   </AutoComplete>;
 }

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, safeStorage, protocol, nativeImage, clipboard, Menu, autoUpdater } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, safeStorage, protocol, nativeImage, clipboard, Menu, autoUpdater, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { randomUUID } = require('node:crypto');
@@ -103,11 +103,14 @@ async function boot() {
     } catch { return new Response(null, { status: 404 }); }
   });
   window = new BrowserWindow({
-    title: '土狗', width: 1380, height: 900, minWidth: 940, minHeight: 640, ...require('./core/desktop-platform.cjs').windowChrome(process.platform),
+    title: '土狗', ...require('./core/desktop-platform.cjs').initialWindowBounds(screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea), ...require('./core/desktop-platform.cjs').windowChrome(process.platform),
     backgroundColor: '#15171c', show: false, icon: path.join(__dirname, 'assets/brand/icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  const notifyTasks = () => { if (!window.isDestroyed() && !window.webContents.isDestroyed()) window.webContents.send('tugou:tasks-changed'); };
+  tasks.on('changed', notifyTasks);
+  window.once('closed', () => tasks.off('changed', notifyTasks));
   window.webContents.on('will-navigate', (event) => event.preventDefault());
   window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   window.webContents.session.setPermissionCheckHandler(() => false);
@@ -225,6 +228,7 @@ async function boot() {
     return choice.canceled ? null : localAI.configure(choice.filePaths[0], provider);
   });
   handle('startLocalTool', (id, document, sourceIds, settings) => imageTools.start(id, document, Array.isArray(sourceIds) ? sourceIds : [sourceIds], settings));
+  handle('startCanvasTool', (id, document, nodeId) => imageTools.startNode(id, document, nodeId));
   handle('startRasterTool', (id, document, sourceIds, settings) => imageTools.start(id, document, sourceIds, settings));
   handle('retryImageTool', id => imageTools.retry(id));
   handle('startCloudTool', (id, document, sourceId, settings) => cloud.start(id, document, sourceId, settings));

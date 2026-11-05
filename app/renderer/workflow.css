@@ -445,29 +445,6 @@
 .canvas-tools-bottom input {
   width: 110px;
 }
-.task-list {
-  max-height: 60vh;
-  overflow: auto;
-}
-.task-row {
-  padding: 20px;
-  margin-bottom:12px;
-  border:1px solid var(--line);
-  border-radius:12px;
-  background:var(--surface);
-}
-.task-row[data-status=failed] { border-color:color-mix(in srgb,var(--danger) 55%,var(--line)); }
-.task-row[data-status=completed] > div > span { color:var(--success); }
-.task-row[data-status=running] > div > span { color:var(--accent); }
-.task-row progress { width:100%; accent-color:var(--accent); height:5px; border:0; }
-.task-row > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-}
-.task-row p {
-  margin: 8px 0;
-}
 @media (max-width: 1150px) {
   .canvas-inspector {
     width: 250px;
