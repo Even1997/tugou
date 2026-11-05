@@ -104,4 +104,4 @@ app.on('browser-window-created',(_,w)=>{
   }catch(e){report.failure=e.stack;console.error(e);await capture('failure');await finish(1);}
  });
 });
-require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');
+require(process.env.TUGOU_TEST_APP?path.resolve(process.env.TUGOU_TEST_APP):'../desktop-main.cjs');

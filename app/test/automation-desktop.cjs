@@ -131,5 +131,5 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   await client.close();finish(0);
  }catch(e){report.failure=e.stack;report.text=await js('document.body.innerText').catch(()=>null);await shot('failure').catch(()=>{});finish(1);}
 });});
-require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');
+require(process.env.TUGOU_TEST_APP?path.resolve(process.env.TUGOU_TEST_APP):'../desktop-main.cjs');
 
