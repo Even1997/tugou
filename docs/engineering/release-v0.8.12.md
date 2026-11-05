@@ -2,7 +2,7 @@
 
 范围见 [版本说明](../releases/v0.8.12.md)。用户已授权代码与 Windows x64、Mac arm64 / x64 安装包一起发布。
 
-完成定义：版本 / 标签 / 包体一致；Windows 与两种 Mac 架构原生包内检查通过；全部附件摘要正确且更新发现可用后公开。当前处于构建验收阶段，尚未公开。
+完成定义：版本 / 标签 / 包体一致；Windows 与两种 Mac 架构原生包内检查通过；全部附件摘要正确且更新发现可用后公开。已完成并公开为 [最新稳定版 v0.8.12](https://github.com/Even1997/tugou/releases/tag/v0.8.12)，生产源码标签 `d4e8dd3`。后续提交仅补充测试、CI 与验收文档，应用生产文件与标签一致。
 
 ## 已完成检查
 
@@ -18,10 +18,31 @@ Windows x64 安装包已构建；包体 / 更新清单 46 项通过，关键源�
 
 旧 `icon-ui-desktop.cjs` 仍使用更早的“无限画布”等入口和工具栏结构，不能直接用于本版；本次采用与当前界面对应的首页 46 项检查，覆盖七个工作区图标、圆润描边、可访问标签和缩放。MCP 二次进程测试已补传真实包内可执行文件，复核通过。
 
-Windows EXE 为 105864261 字节，SHA256 `d62068c727792825f2c64f710be825a36b53b1c02257f3a9a1cd4d9e6c32ec78`。证据：`app/test-results/release-v0.8.12-*.log`、`release-v0.8.12-package.json`、`release-v0.8.12-mcp/packaged.json` 及 `mcp-full/report.json`、`home/desktop.json`、`task-panel/desktop.json`、`ui-mcp/report.json`、`update-prompt/report.json`。
+Windows EXE 为 105864261 字节，SHA256 `d62068c727792825f2c64f710be825a36b53b1c02257f3a9a1cd4d9e6c32ec78`。103 个核心文件与包内内容逐一一致。补充页面、GIF、图片时间、空白图层页、生成参数、图片保存、画布平移及对比回归均通过。证据：`app/test-results/release-v0.8.12-*.log`、`release-v0.8.12-package.json`、`release-v0.8.12-mcp/packaged.json` 及 `mcp-full/report.json`、`home/desktop.json`、`task-panel/desktop.json`、`ui-mcp/report.json`、`update-prompt/report.json`。
 
-## 待完成门禁
+## Mac 与公开发布
 
-Mac 双架构原生构建 / 包内回归、公开附件与更新发现。
+[最终发布工作流](https://github.com/Even1997/tugou/actions/runs/42021129154)双架构构建及附件上传全部成功。arm64 / x64 各 450 项原生包内检查通过，0 个渲染错误，包含 MCP 综合 96 项、新增创作 36 项、更新提醒 60 项，以及字体、页面、并发与重启、GIF、平移、图片保存、对比和完整 DMG 下载挂载。实际应用启动返回 179 条 MCP 命令；架构、ad-hoc 签名、DMG 和 ZIP 完整性检查通过。
+
+最终报告分别在 `app/test-results/release-v0.8.12-mac-arm64-final/` 与 `release-v0.8.12-mac-x64-final/`；已查看原生窄窗口 GIF 导出与持续更新入口截图。原生验收修正了旧页面名称、入口相对路径、未等工程可编辑就设置测试文本的时序。托管虚拟机使用软件 WebGL；arm64 构建缓存导致空闲内存不足，清理系统文件缓存后完整流程通过，应用的内存保护阈值保持不变。虚拟机验证不替代实体 Mac GPU 性能验收。
+
+10 个附件全部上传后公开。三份 SHA256 清单的 7 个文件摘要与 GitHub 附件 digest 一致。公开后匿名检查 23 项通过：Windows 从 v0.8.11 发现 v0.8.12，Mac 双架构选择正确 DMG，7 个安装 / 更新文件均可实际 Range 下载；Windows 发布字节与本机构建一致。证据 `app/test-results/release-v0.8.12-public.json`。
+
+| 安装包 | 字节 | SHA256 |
+|---|---:|---|
+| Windows x64 EXE | 105864261 | `d62068c727792825f2c64f710be825a36b53b1c02257f3a9a1cd4d9e6c32ec78` |
+| Mac arm64 DMG | 113066369 | `d5230d32ee9c53a39d885fc8216f29398dedea930b93621c447721599297f2c0` |
+| Mac x64 DMG | 118584205 | `eeb4f56d6452aa32c9ffaac5a18b31f2e6a92285c287f6f89425379d32ca5028` |
 
 风险：Windows 无商业签名，Mac 无 Apple 公证；低配置大工程、真实第三方 MCP 客户端长流程及用户现有安装环境升级仍不在本次自动验收范围。
+
+## 质量自评
+
+| 维度 | 评分 | 证据与改进点 |
+|---|---|---|
+| 功能 / 代码 | 9.5/10 | 全量逻辑、三平台包内回归、源码一致性与公开更新检查通过 |
+| UI / UX | 9.4/10 | 首页分页、千条任务、窄窗口和原生截图通过；真实客户端长流程与更多缩放体验待补 |
+| 性能 | 9.4/10 | 千条任务样例 296 ms、资源预算与取消验证；低配置大工程、实体 Mac GPU 压力待补 |
+| 安全 | 9.3/10 | 密钥候选扫描、依赖审计、文件边界、摘要和安装保护通过；商业签名与 Apple 公证待补 |
+| 美术 | N/A | 本次发布未新增美术资源，现有图标与界面表现计入 UI |
+| 整体 | 9.4/10 | 在上述证据及边界内合格、可交付 |
