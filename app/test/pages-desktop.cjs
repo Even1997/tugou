@@ -26,7 +26,7 @@ app.on('browser-window-created',(_,w)=>{
       check('legacy-compatible default pages',(await run('page.list',{kind:'canvas'})).pages.length===1&&(await run('page.list',{kind:'layers'})).pages.length===1);
       const clickConfirm=async(text='确定')=>{const p=await js(`(()=>{const b=Array.from(document.querySelectorAll('[role="dialog"] button')).find(e=>e.textContent.trim()===${JSON.stringify(text)}),r=b.getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)};})()`);w.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...p});w.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,...p});};
       const input=async(label,value)=>{await js(`(()=>{const e=document.querySelector('[aria-label="${label}"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);await delay(80);};
-      for(const [kind,label,id] of [['canvas','画布','canvas-main'],['layers','合成','composition-main']]){
+      for(const [kind,label,id] of [['canvas','画布','canvas-main'],['layers','图层页','composition-main']]){
         await run('page.activate',{kind,id});await js(`document.querySelector('[aria-label="新建${label}"]').click()`);await wait(`!!document.querySelector('[aria-label="${label}名称"]')`);
         await clickConfirm();await wait(`!document.querySelector('[role="dialog"]')`);
         const created=(await state()).pages[kind].find(p=>p.active);check(label+' creation submits by mouse click',created.id!==id&&created.name===label+' 2');
