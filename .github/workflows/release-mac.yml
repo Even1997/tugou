@@ -68,7 +68,9 @@ jobs:
           TUGOU_MCP_BINARY: release/${{ matrix.bundle }}/Tugou.app/Contents/MacOS/Tugou
           TUGOU_TEST_OUTPUT: test-results/mcp-regression
         run: |
+          sudo purge
           node_modules/.bin/electron test/automation-editing-desktop.cjs
+          sudo purge
           node_modules/.bin/electron test/automation-desktop.cjs
       - name: Test packaged renderer, native image module, fonts, editing and MCP
         env:
