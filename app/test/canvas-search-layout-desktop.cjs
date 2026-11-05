@@ -39,8 +39,8 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
     await click('添加节点');await wait('document.activeElement.getAttribute("aria-label")==="搜索节点类型"');
     check('common node types lead the searchable menu',JSON.stringify((await labels()).slice(0,3))===JSON.stringify(['文字提示词','图片节点','生成台']));
     check('removed panorama stays absent',!(await labels()).some(s=>s.includes('全景')));
-    await search('生图');check('Chinese keyword filters node types',JSON.stringify(await labels())===JSON.stringify(['生成台','图片生成']));
-    await search('TEXT');check('English search is case insensitive',JSON.stringify(await labels())===JSON.stringify(['文字提示词','文本生成']));
+    await search('生图');check('Chinese keyword filters node types',JSON.stringify(await labels())===JSON.stringify(['生成台']));
+    await search('TEXT');check('English search is case insensitive',JSON.stringify(await labels())===JSON.stringify(['文字提示词']));
     await search('xyz-no-result');await key('Enter');check('empty results are explained and Enter creates nothing',await js('Boolean(document.querySelector(".node-search-empty"))')&&(await graph()).nodes.length===4);
     await key('Escape');await wait('!document.querySelector(".canvas-node-picker")&&document.activeElement.getAttribute("aria-label")==="添加节点"');check('Escape closes menu and restores focus',true);
     await js('document.querySelector(".canvas-workspace").focus()');await key('a',['control']);await key('Tab');await wait('document.activeElement.getAttribute("aria-label")==="搜索节点类型"');
@@ -48,7 +48,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
     check('IME confirmation does not add a node',(await graph()).nodes.length===4&&await js('Boolean(document.querySelector(".canvas-node-picker"))'));
     await js('document.activeElement.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",isComposing:true,bubbles:true}))');await key('g',['control']);await key('Delete');
     check('search input shields selected nodes from canvas shortcuts',await js('Boolean(document.querySelector(".canvas-node-picker"))')&&(await graph()).nodes.length===4&&!(await graph()).nodes.some(n=>n.type==='group'));
-    await search('');await key('Up');check('Up focuses and scrolls the last result into view',await js('document.activeElement.textContent.trim()==="导入视频或音频"&&document.querySelector(".canvas-node-picker [role=menu]").scrollTop>0'));
+    await search('');await key('Up');check('Up focuses the last remaining result',await js('document.activeElement.textContent.trim()==="生成台"'));
     await search('');await key('Down');check('Down moves from search to the first result',await js('document.activeElement.getAttribute("role")==="menuitem"&&document.activeElement.textContent.trim()==="文字提示词"'));
     await key('Down');await snapshot('search-keyboard');await key('Enter');await wait('!document.querySelector(".canvas-node-picker")');
     check('keyboard result navigation creates the highlighted image node',(await graph()).nodes.at(-1).type==='asset');await click('撤销');check('one undo removes the newly created node',(await graph()).nodes.length===4);

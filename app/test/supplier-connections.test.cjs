@@ -17,6 +17,14 @@ test('supplier projection is read-only and preserves existing per-purpose routin
  const view=await store.listSuppliers();assert.deepEqual(await fs.readFile(file),before);assert.equal(view.activeId,null);assert.equal(view.connections[0].models.length,2);assert.equal(view.routes.text,'a'.repeat(80));assert.ok(!JSON.stringify(view).includes('old-secret'));
  await store.saveManager(view);assert.equal((await store.readPrivate('text')).textModel,'old-vision');assert.equal((await store.readPrivate('image')).apiKey,'old-secret');assert.deepEqual((await store.listSuppliers()).providers,view.providers);
 });
+
+test('removed CLI connections are excluded without changing API credentials or silently selecting another image route',async t=>{
+ const {store,root}=await fixture(t);await setup(store);const file=path.join(root,'connection.enc'),stored=JSON.parse(await fs.readFile(file,'utf8'));
+ stored.connections.push({id:'retired-cli',type:'cli',cli:'codex',name:'Codex CLI',model:'codex-image',models:[{id:'codex-image',purposes:['image']}]});stored.routes.image='retired-cli';stored.activeId='retired-cli';await fs.writeFile(file,JSON.stringify(stored));
+ const before=await fs.readFile(file),view=await store.listSuppliers();assert.equal(view.connections.length,2);assert.equal(view.routes.image,null);assert.equal(view.activeId,null);assert.equal((await store.readPrivate('image')).apiKey,'');assert.equal((await store.readPrivate('analysis')).apiKey,'key-b');assert.deepEqual(await fs.readFile(file),before);
+ await assert.rejects(store.save({type:'cli',cli:'codex',name:'Removed'}),/已移除/);await assert.rejects(store.probe({type:'cli',cli:'codex'}),/已移除/);assert.deepEqual(await fs.readFile(file),before);
+ await store.saveManager(view);const saved=JSON.parse(await fs.readFile(file,'utf8'));assert.deepEqual(saved.connections,stored.connections.filter(c=>c.type!=='cli'));assert.equal(saved.revision,stored.revision+1);
+});
 test('same supplier URL has isolated Keys and model catalogs, saved blanks preserve exact credentials',async t=>{
  const {store}=await fixture(t);let m=await setup(store);m.connections.forEach(c=>c.apiKey='');await store.saveManager(m);
  assert.equal((await store.readPrivate('image')).apiKey,'key-a');assert.equal((await store.readPrivate('analysis')).apiKey,'key-b');assert.notDeepEqual((await store.listSuppliers()).connections[0].models,(await store.listSuppliers()).connections[1].models);

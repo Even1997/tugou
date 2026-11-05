@@ -14,9 +14,9 @@ async function importImages(root, filenames, inspectImage) {
     if (
       typeof filename !== "string" ||
       !path.isAbsolute(filename) ||
-      !/\.(png|jpe?g|webp)$/i.test(filename)
+      !/\.(png|jpe?g|webp|gif)$/i.test(filename)
     )
-      throw new Error("请拖入本机 PNG、JPEG 或 WebP 图片文件");
+      throw new Error("请拖入本机 PNG、JPEG、WebP 或 GIF 图片文件");
     const file = await safePath(
       path.dirname(filename),
       path.basename(filename),

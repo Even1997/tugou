@@ -1,3 +1,4 @@
+import {GifMaker} from './gif-maker.jsx';
 import {AssetTime} from './asset-time.jsx';
 import {Select} from './select.jsx';
 import React, { useState, useRef, useEffect } from "react";
@@ -43,10 +44,12 @@ const toolGroups = [
   ['智能工具', {cloudEdit:cloudNames.cloudEdit,cloudExtend:cloudNames.cloudExtend,upscale:'AI 超分辨率',cutout:'主体抠图',watermark:cleanupNames.watermark}],
   ['基础处理', {...rasterOperations,metadata:cleanupNames.metadata}],
   ['图像合成', compositionNames],
+  ['动图', {gif:'GIF 动图制作'}],
 ];
 const operations = Object.assign({}, ...toolGroups.map(([, entries])=>entries));
 const toolIcons = {cloudEdit:'brush',cloudExtend:'maximize',upscale:'zoomIn',cutout:'mask'};
 const defaults = {
+  gif: {},
   ...cleanupDefaults,
   ...cloudDefaults,
   cloudEdit: { ...cloudDefaults.cloudEdit, maskMode: 'asset' },
@@ -412,6 +415,7 @@ export function ImageTools({
         <div className="tools-navigation-heading"><div className="tools-categories" role="group" aria-label="工具分类">{toolGroups.map(([title,entries])=><Button key={title} aria-pressed={activeGroup[0]===title} disabled={working} onClick={()=>selectOperation(Object.keys(entries)[0])}>{title}</Button>)}</div><SearchField label="搜索工具" value={toolQuery} onChange={setToolQuery}/></div>
         <div className="tools-options" role="group" aria-label={toolQuery.trim()?'工具搜索结果':activeGroup[0]}>{visibleTools.map(([id,label])=><Button key={id} data-tool={id} icon={toolIcons[id]} aria-pressed={operation===id} disabled={working} onClick={()=>selectOperation(id)}>{label}</Button>)}{!visibleTools.length&&<span className="muted" role="status">没有匹配的工具</span>}</div>
       </nav>
+      {operation==='gif'?<GifMaker document={document} change={change} addToLayers={addToLayers} addToCanvas={addToCanvas} onBusy={setWorking}/>:<>
       <aside className="tools-materials" aria-label="图片素材">
         <div className="tools-materials-heading"><PanelHeader title="素材" count={materialAssets.length}><Button icon="import" disabled={disabled||imageImport.importing} onClick={imageImport.open}>{imageImport.importing?'导入中…':'上传图片'}</Button></PanelHeader><SearchField label="搜索素材" value={materialQuery} onChange={setMaterialQuery}/></div>
         <div className="tools-material-list" role="group" aria-label="处理来源" data-value={sourceId}>
@@ -834,6 +838,7 @@ export function ImageTools({
           导出结果
         </Button>
       </div>
+      </>}
     </section>
   );
 }

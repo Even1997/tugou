@@ -67,10 +67,11 @@ export async function processImage(
 }
 
 export async function exportMaterial(asset) {
-  const choice = await window.tugou.chooseExport(asset.name);
+  const choice = await window.tugou.chooseExport(asset.name,asset.gif?'gif':'png');
   if (!choice) return false;
   let canvas;
   try {
+    if(asset.gif){const response=await fetch(originalUrl(asset));if(!response.ok)throw Error('GIF 素材读取失败');await window.tugou.writeExport(choice.token,new Uint8Array(await response.arrayBuffer()));return true;}
     const image = await loadOriginal(asset);
     canvas = surface(image.naturalWidth, image.naturalHeight);
     canvas.getContext("2d").drawImage(image, 0, 0);

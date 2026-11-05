@@ -1,3 +1,5 @@
+import {timeline} from '../core/gif-timeline.cjs';
+import './gif.css';
 import {ColorControl} from './color-control.jsx';
 import {CanvasRulers,SelectionSizeBadge,CanvasSelection} from './canvas-chrome.jsx';
 import {Select} from './select.jsx';
@@ -9,7 +11,7 @@ import {useUiView} from './ui-view.js';
 import {useSubjectStatus} from './use-subject-status.js';
 import {Button, Icon, Input, EmptyState} from './components.jsx';
 import {Tooltip} from 'antd';
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   createLayer,
@@ -164,6 +166,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   };
   if (!engine.current) engine.current = new Compositor();
   const painting = usePainting({latest,engine,change,setMessage});
+  const animation=useMemo(()=>{try{return {frames:timeline(workspace?workspace.compose(document):document)}}catch(e){return {frames:[{time:0,delay:100}],error:e.message}}},[document.layers,document.assets,workspace?.layers]);
+  const [gifFrame,setGifFrame]=useState(0),[gifPlaying,setGifPlaying]=useState(true);
+  const gifIndex=Math.min(gifFrame,animation.frames.length-1),gifTime=animation.frames[gifIndex].time;
+
   useEffect(()=>{if(selected.length!==1||selected[0]!==maskViewId||paintOptions.target!=='mask'||!document.layers.find(l=>l.id===maskViewId)?.mask)setMaskViewId(null)},[selected,paintOptions.target,document.layers,maskViewId]);
   const single = shown.layers.find(
     (l) => selected.length === 1 && l.id === selected[0],
@@ -265,6 +271,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     };
   }, []);
   useEffect(() => {
+    let animationTimer;
     const controller = new AbortController(),
       output = window.document.createElement("canvas");
     if (!size.width || !size.height) return;
@@ -277,6 +284,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       output.width=mask.width;output.height=mask.height;output.getContext('2d').drawImage(mask,0,0);mask.width=mask.height=1;
     }:()=>engine.current
       .render(workspace ? workspace.compose(painting.preview?.document || shown,boardDraft) : painting.preview?.document || shown, output, {
+        time:gifTime,
         maskPreview: maskViewId?{id:maskViewId,mode:maskPreviewMode}:undefined,
         overrides: painting.preview?.overrides,
         maskOverrides: painting.preview?.maskOverrides,
@@ -295,6 +303,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
         canvas.current.getContext("2d").drawImage(output, 0, 0);
         setRenderError("");
         canvas.current.dataset.rendering='false';
+        if(gifPlaying&&animation.frames.length>1&&tool==='select'&&!disabled)animationTimer=setTimeout(()=>setGifFrame(i=>(i+1)%animation.frames.length),animation.frames[gifIndex].delay);
       })
       .catch((error) => {
         if (!controller.signal.aborted) setRenderError(error.message);
@@ -303,8 +312,8 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
         output.width = output.height = 1;
       });
     });
-    return () => {cancelAnimationFrame(frame);controller.abort()};
-  }, [shown, view, size, painting.preview,boardDraft,maskViewId,maskPreviewMode]);
+    return () => {clearTimeout(animationTimer);cancelAnimationFrame(frame);controller.abort()};
+  }, [shown, view, size, painting.preview,boardDraft,maskViewId,maskPreviewMode,gifTime,gifPlaying,animation,tool,disabled]);
   useEffect(() => {
     let disposed = false;
     if (!selectionPreview.current || !size.width) return;
@@ -1307,6 +1316,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   }
   return (
     <div className="layer-editor composition-editor" data-dev-update-blocked={painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||boardDraft||shapeDraft||polygon.length||tool!=='select'?'请先完成合成编辑，并切换到移动工具后更新':undefined}>
+      {(animation.frames.length>1||animation.error)&&<div className="gif-timeline">{animation.error?<span role="alert">{animation.error}</span>:<><Button onClick={()=>setGifPlaying(v=>!v)}>{gifPlaying?'暂停动画':'播放动画'}</Button><input aria-label="合成动画帧" type="range" min={1} max={animation.frames.length} value={gifIndex+1} onChange={e=>{setGifPlaying(false);setGifFrame(+e.target.value-1)}}/><span>第 {gifIndex+1} / {animation.frames.length} 帧 · {gifTime} ms</span></>}</div>}
       <div className="composition-tools">
         <div className="composition-primary-tools">
           <Button icon="action" aria-pressed={tool==='select'&&!boardTool} onClick={()=>{setTool('select');setBoardTool(false)}}>移动</Button>
@@ -1725,10 +1735,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
                   : `取消导出 ${Math.round(exportState.progress * 100)}%`}
               </Button>
             ) : (
-              <Button icon="export" aria-label="导出 PNG"
+              <Button icon="export" aria-label="导出图片"
                 className="primary"
                 disabled={disabled || Boolean(renderError) || issues.length > 0}
-                onClick={exportPng}
+                onClick={()=>workspace?.export?workspace.export(gifIndex):exportPng()}
               >
                 导出
               </Button>

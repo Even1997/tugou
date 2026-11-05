@@ -15,6 +15,7 @@ async function boundedBytes(response, limit) {
   return Buffer.concat(parts);
 }
 function imageExtension(bytes) {
+  if (/^GIF8[79]a$/.test(bytes.toString('ascii',0,6))) return 'gif';
   if (
     bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
   )
@@ -25,7 +26,7 @@ function imageExtension(bytes) {
     bytes.toString("ascii", 8, 12) === "WEBP"
   )
     return "webp";
-  throw failure("模型没有返回有效的 PNG、JPEG 或 WebP 图片");
+  throw failure("模型没有返回有效的 PNG、JPEG、WebP 或 GIF 图片");
 }
 function outputPrompt({ prompt, size }) {
   if (!size || size === "auto") return prompt;

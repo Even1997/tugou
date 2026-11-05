@@ -3,7 +3,7 @@ const path = require('node:path');
 const { createHash, randomUUID } = require('node:crypto');
 
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
-const resourcePattern = /^[a-f0-9]{64}\.(png|jpe?g|webp|mp4|webm|weba|mp3|wav|ogg|m4a|flac|obj|fbx|ttf)$/;
+const resourcePattern = /^[a-f0-9]{64}\.(png|jpe?g|webp|gif|mp4|webm|weba|mp3|wav|ogg|m4a|flac|obj|fbx|ttf)$/;
 const projectPattern = /^[a-f0-9-]{36}$/;
 
 // Reject junctions/symlinks as well as lexical traversal at the filesystem boundary.

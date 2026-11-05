@@ -95,6 +95,13 @@ jobs:
           node_modules/.bin/electron test/generation-inspector-desktop.cjs
           node_modules/.bin/electron test/image-save-desktop.cjs
           node_modules/.bin/electron test/image-save-desktop.cjs --reopen
+      - name: Test GIF codec and packaged animation, sliders and canvas panning
+        env:
+          TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+        run: |
+          node --test test/gif.test.cjs
+          node_modules/.bin/electron test/gif-desktop.cjs
+          node_modules/.bin/electron test/canvas-pan-desktop.cjs
       - name: Launch actual packaged executable with isolated profile
         run: |
           # macOS /var is a symlink; the app deliberately rejects linked data paths.
@@ -133,6 +140,10 @@ jobs:
         with:
           name: mac-evidence-${{ matrix.arch }}
           path: |
+            app/test-results/gif/*.json
+            app/test-results/gif/*.png
+            app/test-results/canvas-pan/*.json
+            app/test-results/canvas-pan/*.png
             app/test-results/asset-time/*.json
             app/test-results/asset-time/*.png
             app/test-results/empty-composition/*.json

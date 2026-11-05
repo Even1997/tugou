@@ -92,11 +92,11 @@ async function boot() {
         const bytes=await fs.readFile(file);if(hash(bytes)!==name.split('.')[0])throw Error('字体校验失败');
         return new Response(bytes,{headers:{'Access-Control-Allow-Origin':'*','Content-Type':'font/ttf','Cache-Control':'private, max-age=31536000'}});
       }
-      if(!/\.(png|jpe?g|webp)$/.test(name))return mediaResponse(file,request.headers.get('range'));
-      if (url.hostname === 'original') {
+      if(!/\.(png|jpe?g|webp|gif)$/.test(name))return mediaResponse(file,request.headers.get('range'));
+      if (url.hostname === 'original' || name.endsWith('.gif')) {
         const bytes = await fs.readFile(file);
         if (hash(bytes) !== name.split('.')[0]) throw new Error('素材校验失败');
-        return new Response(bytes, { headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': `image/${name.endsWith('.png') ? 'png' : name.endsWith('.webp') ? 'webp' : 'jpeg'}`, 'Cache-Control': 'private, max-age=31536000' } });
+        return new Response(bytes, { headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': `image/${name.endsWith('.gif') ? 'gif' : name.endsWith('.png') ? 'png' : name.endsWith('.webp') ? 'webp' : 'jpeg'}`, 'Cache-Control': 'private, max-age=31536000' } });
       }
       const thumbnail = await nativeImage.createThumbnailFromPath(file, { width: 384, height: 384 });
       return new Response(thumbnail.toPNG(), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'private, max-age=31536000' } });
@@ -173,7 +173,7 @@ async function boot() {
   handle('generateWorkflow',(id,document,nodeId)=>workflow.start(id,document,nodeId));
   handle('retryWorkflow',id=>workflow.retry(id));
   handle('importMedia',async()=>{const choice=await dialog.showOpenDialog(window,{title:'导入视频或音频',properties:['openFile','multiSelections'],filters:[{name:'视频和音频',extensions:['mp4','webm','weba','mp3','wav','ogg','m4a','flac']}]});return choice.canceled?[]:importMedia(root,choice.filePaths);});
-  handle('importMediaPaths',async files=>{if(!Array.isArray(files)||files.length>32)throw Error('一次最多导入 32 个文件');const assets=[];for(const file of [...new Set(files)])assets.push(...await (/\.(png|jpe?g|webp)$/i.test(file)?importImages(root,[file],inspectImage):importMedia(root,[file])));return assets;});
+  handle('importMediaPaths',async files=>{if(!Array.isArray(files)||files.length>32)throw Error('一次最多导入 32 个文件');const assets=[];for(const file of [...new Set(files)])assets.push(...await (/\.(png|jpe?g|webp|gif)$/i.test(file)?importImages(root,[file],inspectImage):importMedia(root,[file])));return assets;});
   handle('storeMedia',async(bytes,name)=>saveMedia(root,Buffer.from(bytes),name));
   handle('importModel',async()=>{
     const choice=await dialog.showOpenDialog(window,{title:'导入本地模型',properties:['openFile'],filters:[{name:'3D 模型',extensions:['obj','fbx']}]});if(choice.canceled)return null;
@@ -183,9 +183,9 @@ async function boot() {
     await projects.read(projectId);require('./core/storage.cjs').validateDocument(document);
     const asset=document.assets.find(a=>a.id===assetId);if(!asset)throw Error('素材不存在');
     const image=!asset.kind||asset.kind==='image';
-    const extension=asset.kind==='text'?'txt':(asset.resource||asset.dataUrl?.split('/api/studio/resource/')[1])?.split('.').at(-1)||asset.dataUrl?.match(/^data:image\/(png|jpe?g|webp);/)?.[1];
+    const extension=asset.kind==='text'?'txt':(asset.resource||asset.dataUrl?.split('/api/studio/resource/')[1])?.split('.').at(-1)||asset.dataUrl?.match(/^data:image\/(png|jpe?g|webp|gif);/)?.[1];
     if(!extension||!(/^[a-z0-9]+$/i.test(extension)))throw Error('素材格式不可导出');
-    const filename=pngName(asset.name||'素材').replace(image?/\.(png|jpe?g|webp)$/i:new RegExp('\\.'+extension+'$','i'),'')+'.'+extension;
+    const filename=pngName(asset.name||'素材').replace(image?/\.(png|jpe?g|webp|gif)$/i:new RegExp('\\.'+extension+'$','i'),'')+'.'+extension;
     const choice=await dialog.showSaveDialog(window,{title:image?'保存图片':'导出素材',defaultPath:await imageDestination(filename),filters:[{name:image?'原始图片':'素材',extensions:[extension]}]});
     if(choice.canceled||!choice.filePath)return false;
     const bytes=asset.kind==='text'?Buffer.from(asset.text||''):await require('./core/generation.cjs').referenceBytes(root,asset);
@@ -241,31 +241,56 @@ async function boot() {
   handle('analyses', id => analysis.results(id));
   handle('saveAnalysisReview', (id, taskId, review) => analysis.saveReview(id, taskId, review));
   handle('importImage', async (single=false) => {
-    const choice = await dialog.showOpenDialog(window, { title: '导入素材', properties: single===true ? ['openFile'] : ['openFile', 'multiSelections'], filters: [{ name: '图片', extensions: ['png','jpg','jpeg','webp'] }] });
+    const choice = await dialog.showOpenDialog(window, { title: '导入素材', properties: single===true ? ['openFile'] : ['openFile', 'multiSelections'], filters: [{ name: '图片', extensions: ['png','jpg','jpeg','webp','gif'] }] });
     if (choice.canceled) return [];
     return importImages(root,single===true ? choice.filePaths.slice(0,1) : choice.filePaths,inspectImage);
   });
   handle('importImagePaths', filenames => importImages(root,filenames,inspectImage));
   handle('storeRaster', async (bytes, name) => ({ id:randomUUID(),name:String(name||'合并图层'),...await saveImage(root,Buffer.from(bytes),inspectImage) }));
-  handle('chooseExport', async (name) => {
+  let encodingGif=false;
+  handle('encodeGif', async (frames,settings) => {
+    if(encodingGif)throw Error('已有 GIF 正在编码，请稍后重试');
+    if(!Array.isArray(frames)||frames.length<1||frames.length>240)throw Error('请选择 1–240 帧');
+    require('./core/gif.cjs').limits(settings?.width,settings?.height,frames.length);
+    encodingGif=true;
+    try{
+      const inputs=[];let total=0;
+      for(const frame of frames){
+        let bytes;
+        if(typeof frame==='string'){
+          if(!resourcePattern.test(frame)||!/\.(png|jpe?g|webp|gif)$/.test(frame))throw Error('帧素材无效');
+          const file=await safePath(root,'resources',frame),stat=await fs.stat(file);
+          if(stat.size>64*1024*1024)throw Error('单帧文件过大');
+          bytes=await fs.readFile(file);if(hash(bytes)!==frame.split('.')[0])throw Error('帧素材校验失败');
+        }else bytes=Buffer.from(frame);
+        total+=bytes.length;if(total>128*1024*1024)throw Error('帧文件合计不能超过 128 MiB');inputs.push(bytes);
+      }
+      return await require('./core/gif.cjs').encodeGif(inputs,settings);
+    }finally{encodingGif=false;}
+  });
+  handle('chooseExport', async (name, format='png') => {
+    if(!['png','gif'].includes(format))throw Error('导出格式无效');
     if(Array.isArray(name)){
       if(!name.length||name.length>500||name.some(n=>typeof n!=='string'||n.length>256))throw Error('请选择 1–500 个画板');
       const choice=await dialog.showOpenDialog(window,{title:'选择画板图片保存文件夹',defaultPath:await imageDestination(),properties:['openDirectory','createDirectory']});
       if(choice.canceled)return null;
-      const targets=await require('./core/image-export.cjs').batchTargets(choice.filePaths[0],name);
-      return {files:targets.map(target=>{const token=randomUUID();exports.set(token,{target,exclusive:true});return {token,name:path.basename(target)};})};
+      const targets=await require('./core/image-export.cjs').batchTargets(choice.filePaths[0],name,format);
+      return {files:targets.map(target=>{const token=randomUUID();exports.set(token,{target,exclusive:true,format});return {token,name:path.basename(target)};})};
     }
-    const choice=await dialog.showSaveDialog(window,{title:'保存原尺寸 PNG',defaultPath:await imageDestination(pngName(name||'土狗').replace(/\.png$/i,'')+'.png'),filters:[{name:'PNG 图片',extensions:['png']}]});
+    const choice=await dialog.showSaveDialog(window,{title:`保存 ${format.toUpperCase()}`,defaultPath:await imageDestination(pngName(name||'土狗').replace(/\.(png|gif)$/i,'')+'.'+format),filters:[{name:format==='gif'?'GIF 动图':'PNG 图片',extensions:[format]}]});
     if(choice.canceled||!choice.filePath)return null;
     const target=await safePath(path.dirname(choice.filePath),path.basename(choice.filePath));
-    const token=randomUUID();exports.set(token,target);return {token};
+    const token=randomUUID();exports.set(token,{target,format});return {token};
   });
   handle('cancelExport', token => exports.delete(token));
   handle('writeExport', async (token, bytes) => {
     const choice=exports.get(token);if(!choice)throw new Error('导出目标已失效，请重新选择');
     const target=typeof choice==='string'?choice:choice.target;
     const buffer=Buffer.from(bytes);
-    if(buffer.length<24||buffer.length>512*1024*1024||!buffer.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))||buffer.readUInt32BE(16)*buffer.readUInt32BE(20)>100000000)throw new Error('导出内容不是有效尺寸的 PNG');
+    if(choice.format==='gif'){
+      if(buffer.length>64*1024*1024)throw Error('GIF 文件不能超过 64 MiB');
+      await require('./core/gif.cjs').inspectGif(buffer);
+    }else if(buffer.length<24||buffer.length>512*1024*1024||!buffer.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))||buffer.readUInt32BE(16)*buffer.readUInt32BE(20)>100000000)throw new Error('导出内容不是有效尺寸的 PNG');
     await safePath(path.dirname(target),path.basename(target));
     if(choice.exclusive)await require('./core/image-export.cjs').writeExclusive(target,buffer);else await atomicWrite(target,buffer);
     await rememberExportDirectory(app.getPath('userData'),target);

@@ -11,7 +11,7 @@ async function saveImage(root, bytes, inspectImage) {
   if (!bytes.length || bytes.length > 64 * 1024 * 1024) throw failure('图片大小超出支持范围');
   const extension = imageExtension(bytes);
   if (extension === 'png' && (bytes.length < 24 || bytes.readUInt32BE(16) * bytes.readUInt32BE(20) > 100000000)) throw failure('图片无效或超过一亿像素');
-  const dimensions = inspectImage(bytes);
+  const dimensions = extension === 'gif' ? await require('./gif.cjs').inspectGif(bytes) : inspectImage(bytes);
   if (!dimensions.width || !dimensions.height || dimensions.width * dimensions.height > 100000000) throw failure('图片无效或超过一亿像素');
   const resource = `${hash(bytes)}.${extension}`;
   const file = await safePath(root, 'resources', resource);

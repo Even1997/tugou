@@ -1,4 +1,5 @@
 const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
+if(!process.env.TUGOU_TEST_APP)app.setAppPath(path.resolve('.'));
 const out=path.resolve('test-results/supplier-single-url'),kind=process.env.TUGOU_QA_KIND||'source';fs.mkdirSync(out,{recursive:true});
 const profile=fs.mkdtempSync(path.join(out,'profile-'));process.env.TUGOU_DATA_DIR=profile;
 if(!process.env.TUGOU_TEST_APP)process.env.TUGOU_BUILD_DIR=path.join(out,'build');else delete process.env.TUGOU_BUILD_DIR;
@@ -34,6 +35,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   w.setSize(1380,900);await wait('!!document.querySelector(".studio-header")');await button('新建工程');await wait('!!document.querySelector(".prompt-workbench")');
   await js(`tugou.saveConnection({baseUrl:${JSON.stringify(baseUrl)},apiKey:'key-a',model:'existing-image',analysisModel:'existing-vision'})`);const original=fs.readFileSync(file);
   await button('模型连接');await wait('!!document.querySelector("#supplier-url")');
+  check('model connections expose API providers only and retain aligned navigation',await js("(()=>{const nav=document.querySelector('.supplier-sidebar'),x=[...nav.querySelectorAll('button')].map(b=>b.firstElementChild.getBoundingClientRect().left);return !document.querySelector('.cli-connections')&&!nav.textContent.includes('CLI')&&Math.max(...x)-Math.min(...x)<=1.5;})()"));
   check('supplier URL and Key are on one page',await js("!!document.querySelector('#supplier-name')&&!!document.querySelector('#supplier-url')&&document.querySelectorAll('.supplier-key').length===1"));
   check('existing Key is masked and never returned',await js("document.querySelector('.supplier-key input[type=password]').value===''&&tugou.listSuppliers().then(m=>!JSON.stringify(m).includes('key-a'))"));
   check('opening supplier view does not write config',original.equals(fs.readFileSync(file)));

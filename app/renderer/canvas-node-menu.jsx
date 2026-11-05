@@ -6,9 +6,6 @@ const entries = [
   ['text', '文字提示词', 'text', '文本 prompt text'],
   ['emptyImage', '图片节点', 'assets', '图像 image picture'],
   ['config', '生成台', 'tools', '生成 生图 generator'],
-  ['textgen', '文本生成', 'text', '文案 text'],
-  ['image', '图片生成', 'tools', '生图 image'],
-  ['import', '导入图片', 'import', '上传 image upload'],
 ];
 
 export function CanvasNodeMenu({ position, close, choose, disabled, canChoose }) {
@@ -30,10 +27,7 @@ export function CanvasNodeMenu({ position, close, choose, disabled, canChoose })
     document.addEventListener('pointerdown',outside,true);
     return ()=>document.removeEventListener('pointerdown',outside,true);
   },[position,close]);
-  const items=filtered.flatMap(([key,label,icon],index)=>[
-    ...(!query.trim()&&index>0&&key==='textgen'?[{type:'divider',key:'more'}]:[]),
-    {key,label,icon:<Icon name={icon}/>,onFocus:()=>setActiveKey(key)},
-  ]);
+  const items=filtered.map(([key,label,icon])=>({key,label,icon:<Icon name={icon}/>,onFocus:()=>setActiveKey(key)}));
   return <Dropdown
     overlayClassName="canvas-node-dropdown"
     disabled={disabled}
@@ -54,7 +48,6 @@ export function CanvasNodeMenu({ position, close, choose, disabled, canChoose })
         }else if(event.key==='Enter'&&filtered.length){event.preventDefault();event.stopPropagation();pick(filtered[0][0]);}
       }}/>
       {filtered.length?menu:<p className="node-search-empty" role="status">没有匹配的节点，试试“图片”或“生成”</p>}
-      <small className="node-picker-hint">↑↓ 选择 · Enter 添加 · Esc 关闭</small>
     </div>}
     menu={{ items, activeKey, style:{maxHeight:'min(420px, 55vh)',overflowY:'auto'}, onClick: ({key}) => pick(key) }}
   >

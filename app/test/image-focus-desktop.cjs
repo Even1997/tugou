@@ -19,7 +19,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   await run('workspace.show',{workspace:'canvas'});await wait(`!!document.querySelector('.canvas-workspace')`);await click('添加节点');
   await wait(`!!document.querySelector('.canvas-node-picker')`);
   check('node menu removes video audio and media import',await js(`!(/视频|音频/.test(document.querySelector('.canvas-node-picker').textContent))`));
-  check('image and text nodes remain available',await js(`['图片节点','生成台','文本生成','图片生成'].every(s=>document.querySelector('.canvas-node-picker').textContent.includes(s))`));await shot('node-menu');
+  check('image and text nodes remain available',await js(`['文字提示词','图片节点','生成台'].every(s=>document.querySelector('.canvas-node-picker').textContent.includes(s))`));await shot('node-menu');
   await js(`document.querySelector('.canvas-node-picker input').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);await delay(120);
   const text=await run('canvas.create',{type:'text',position:{x:0,y:0},properties:{text:'一只猫'}}),desk=await run('canvas.create',{type:'config',position:{x:350,y:0}});
   await run('canvas.connect',{source:text.id,target:desk.id});await wait(`!!document.querySelector('.generation-desk')`);await click('节点选项');

@@ -1,3 +1,4 @@
+import {GifFrames} from './gif-frames.js';
 import {shapePoints} from '../core/shapes.cjs';
 import {loadTextFont,textFontFamily} from './font-face.js';
 import {textFontWeight} from '../core/font-weights.cjs';
@@ -276,10 +277,12 @@ export class Compositor {
   constructor({imageBudget}={}) {
     this.images = new ImageCache(imageBudget);
     this.warp = null;
+    this.gifs=new GifFrames();
   }
-  async image(asset) {
+  async image(asset,time=0) {
     const url = originalUrl(asset);
     if (!url) throw new Error("图层素材缺失，请检查素材库");
+    if(asset?.gif?.frames>1)return this.gifs.frame(asset,url,time);
     return this.images.load(url,()=>new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
@@ -293,12 +296,13 @@ export class Compositor {
   prime(asset,image){return this.images.put(originalUrl(asset),image);}
   dispose() {
     this.images.clear();
+    this.gifs.dispose();
     this.warp?.dispose();
   }
-  async content(l, doc, scale) {
+  async content(l, doc, scale, time=0) {
     const face=l.kind==='text'?await loadTextFont(l):null;
     if (l.kind === "image")
-      return this.image(l.bitmap || doc.assets.find((a) => a.id === l.assetId));
+      return this.image(l.bitmap || doc.assets.find((a) => a.id === l.assetId),time);
     const resolution = Math.min(4, Math.max(0.01, scale)),
       c = surface(l.width * resolution, l.height * resolution),
       ctx = c.getContext("2d", { willReadFrequently: true });
@@ -484,6 +488,7 @@ export class Compositor {
           doc,
           frame.scale *
             Math.max(Math.abs(l.scaleX || 1), Math.abs(l.scaleY || 1)),
+          frame.time,
         ));
       this.geometry(
         ctx,
@@ -637,7 +642,7 @@ export class Compositor {
           if(unclipped&&!frame.overrides?.size&&l.kind==='image'&&l.opacity===1&&(!l.blend||l.blend==='source-over')&&!l.mask&&!l.maskSourceId&&!l.warp&&!l.effects?.length){
             if(base){base.width=base.height=1;base=null;}
             if(!this.intersects(l,doc,frame))continue;
-            const content=await this.content(l,doc,frame.scale);
+            const content=await this.content(l,doc,frame.scale,frame.time);
             frame.signal?.throwIfAborted();
             const points=corners(doc.layers,l).map(p=>({x:p.x*frame.scale+frame.transform[4],y:p.y*frame.scale+frame.transform[5]}));
             const left=Math.max(0,Math.floor(Math.min(...points.map(p=>p.x)))-2),top=Math.max(0,Math.floor(Math.min(...points.map(p=>p.y)))-2);
@@ -756,6 +761,7 @@ export class Compositor {
       maskOverrides,
       maskPreview,
       padded = false,
+      time = 0,
     } = {},
   ) {
     signal?.throwIfAborted();
@@ -788,6 +794,7 @@ export class Compositor {
             maskOverrides,
             maskPreview,
             padded: true,
+            time,
           });
           target.width = Math.ceil(width * scale);
           target.height = Math.ceil(height * scale);
@@ -823,10 +830,12 @@ export class Compositor {
     }
     for (const url of this.images.keys())
       if (!retained.has(url)) this.images.delete(url);
+    this.gifs.retain(retained);
     target.width = Math.ceil(width * scale);
     target.height = Math.ceil(height * scale);
     const ctx = target.getContext("2d", { willReadFrequently: true }),
       frame = {
+        time,
         width: target.width,
         height: target.height,
         scale,
@@ -856,7 +865,7 @@ export class Compositor {
     signal?.throwIfAborted();
     return target;
   }
-  async export(doc, { transparent = false, signal, progress = () => {} } = {}) {
+  async export(doc, { transparent = false, time = 0, signal, progress = () => {} } = {}) {
     const issues = unsupported(doc.layers);
     if (issues.length) throw new Error(issues.join("；"));
     if (
@@ -892,6 +901,7 @@ export class Compositor {
             width,
             height,
             transparent,
+            time,
             signal,
           });
           ctx.drawImage(

@@ -1,3 +1,5 @@
+import {useImageImport} from './use-image-import.js';
+import {createLayer} from '../core/layers.cjs';
 import {ColorControl} from './color-control.jsx';
 import {useUiView} from './ui-view.js';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
@@ -60,11 +62,18 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     const next=artboards.relocate(normalized,ids,targetId,placement);
     if(save(next)!==false)activate(artboards.owner(next,ids[0]).id,ids);
   });
-  if(!board)return <div className="composite-workspace composite-empty">
+  const emptyImport=useImageImport(assets=>run(()=>{
+    const result=artboards.create(normalized,{width:assets[0].width,height:assets[0].height});
+    const next={...result.document,assets:[...result.document.assets,...assets],layers:[...result.document.layers,...assets.map(a=>createLayer('image',{parentId:result.id,name:a.name,assetId:a.id,width:a.width,height:a.height,x:0,y:0}))]};
+    if(save(next)!==false)activate(result.id);
+  }),setError,props.disabled);
+  if(!board)return <div className="composite-workspace composite-empty" onDragOver={emptyImport.over} onDrop={emptyImport.drop}>
     <div className="composition-tools"><BoardSizeControl board={normalized} creating apply={createBoard} disabled={props.disabled}><Button icon="add" disabled={props.disabled}>新建画板</Button></BoardSizeControl></div>
+    <div className="empty"><p>新建画板，或拖入图片 / GIF 开始合成</p><Button icon="import" disabled={props.disabled||emptyImport.importing} onClick={emptyImport.open}>导入图片 / GIF</Button></div>
     {error&&<div className="message error" role="alert">{error}</div>}
   </div>;
   const workspace={
+    export:frame=>{setNotice('');setExportRequest({document:normalized,id:board.id,single:true,frame});},
     contextMenu:(event,id)=>{event.preventDefault();event.stopPropagation();if(!props.disabled)setContext({id,x:event.clientX,y:event.clientY});},
     board,boards:list.map(b=>({...b,x:b.x-board.x,y:b.y-board.y})),layers:normalized.layers,
     parameters:<fieldset className="board-tool-options" disabled={props.disabled||board.locked}>
@@ -103,7 +112,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
       {key:'copy',label:'复制画板'},
       {key:'delete',label:'删除画板',danger:true,disabled:list.length<2||list.find(b=>b.id===context.id)?.locked},
     ],onClick:({key})=>{const id=context.id;setContext(null);if(key==='save'||key==='batch'){setNotice('');setExportRequest({document:normalized,id,single:key==='save'});}else if(key==='copy')run(()=>{const result=artboards.duplicate(normalized,id);if(save(result.document)!==false)activate(result.id);});else{activate(id);if(key==='delete')setDialog('delete');}}}}><span style={{position:'fixed',left:context.x,top:context.y,width:1,height:1,pointerEvents:'none'}}/></Dropdown>}
-    {exportRequest&&<BoardExport document={exportRequest.document} initialId={exportRequest.id} single={exportRequest.single} close={()=>setExportRequest(null)} complete={setNotice}/>}
+    {exportRequest&&<BoardExport document={exportRequest.document} initialId={exportRequest.id} single={exportRequest.single} initialFrame={exportRequest.frame} close={()=>setExportRequest(null)} complete={setNotice}/>}
     {dialog==='delete'&&<Modal open getContainer={()=>window.document.getElementById('dialogs')} transitionName="" maskTransitionName="" title={`删除“${board.name}”？`} onCancel={()=>setDialog(null)} onOk={()=>run(()=>{if(save(artboards.remove(normalized,board.id))===false)return;activate(list.find(b=>b.id!==board.id).id);setDialog(null)})} okText="删除画板" cancelText="取消" okButtonProps={{danger:true}}><p>画板内的 {local.layers.length} 个图层会一起删除。可通过撤销恢复。</p></Modal>}
   </div>;
 }

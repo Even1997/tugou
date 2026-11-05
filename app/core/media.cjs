@@ -1,6 +1,6 @@
 const fs=require('node:fs/promises'),path=require('node:path'),{randomUUID}=require('node:crypto');
 const {safePath,atomicWrite,hash}=require('./storage.cjs');
-const mime={mp4:'video/mp4',webm:'video/webm',weba:'audio/webm',mp3:'audio/mpeg',wav:'audio/wav',ogg:'audio/ogg',m4a:'audio/mp4',flac:'audio/flac',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp'};
+const mime={mp4:'video/mp4',webm:'video/webm',weba:'audio/webm',mp3:'audio/mpeg',wav:'audio/wav',ogg:'audio/ogg',m4a:'audio/mp4',flac:'audio/flac',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',gif:'image/gif'};
 function mediaType(bytes,name=''){
   if(bytes.length<12)throw Error('媒体文件不完整');
   if(bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WAVE')return 'wav';

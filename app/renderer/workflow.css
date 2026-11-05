@@ -239,7 +239,6 @@
 .canvas-node-picker { width:280px; max-width:calc(100vw - 24px); padding:8px; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
 .canvas-node-picker .ant-dropdown-menu { box-shadow:none; background:transparent; margin-top:6px; }
 .canvas-node-picker [role=menuitem]:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
-.node-picker-hint { display:block; padding:8px 8px 2px; color:var(--muted); font-size:12px; }
 .node-search-empty { padding:18px 8px; margin:0; color:var(--muted); }
 .canvas-arrange-menu { display:flex; flex-direction:column; min-width:210px; }
 .canvas-arrange-menu > .ant-btn { justify-content:flex-start; }
@@ -393,6 +392,8 @@
 .canvas-workspace .react-flow__pane:not(.draggable),
 .canvas-workspace .react-flow__node,
 .canvas-workspace .react-flow__nodesselection-rect { cursor:default; }
+/* Let the pane receive the gesture before node dragging, resizing or connecting. */
+.canvas-workspace.space-pan :is(.react-flow__node,.react-flow__node *,.react-flow__edge,.react-flow__edge *,.react-flow__nodesselection,.react-flow__nodesselection *) { pointer-events:none!important; }
 .react-flow__handle::after {
   content: '';
   position: absolute;

@@ -213,7 +213,7 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     if(name==='asset.import'){
       const file=await filePath(input.path);if((await fs.stat(file)).size>256*1024*1024)fail('RESOURCE_LIMIT','文件超过 256 MiB');
       const inspect=bytes=>require('electron').nativeImage.createFromBuffer(bytes).getSize();
-      const assets=await (/\.(png|jpe?g|webp)$/i.test(file)?require('./import-images.cjs').importImages(root,[file],inspect):require('./media.cjs').importMedia(root,[file]));
+      const assets=await (/\.(png|jpe?g|webp|gif)$/i.test(file)?require('./import-images.cjs').importImages(root,[file],inspect):require('./media.cjs').importMedia(root,[file]));
       return {...await commit(state,{...doc,assets:[...doc.assets,...assets]}),ids:assets.map(a=>a.id)};
     }
     if(name==='asset.export'){

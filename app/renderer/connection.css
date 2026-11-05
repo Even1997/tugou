@@ -4,7 +4,8 @@
 .connection-dialog .ant-modal-header { padding:0 24px 20px;margin:0;border-bottom:1px solid var(--line); }
 .connection-dialog .supplier-layout { display:grid;grid-template-columns:210px minmax(0,1fr);height:min(550px,calc(100vh - 216px));min-height:240px; }
 .connection-dialog .supplier-sidebar { display:flex;flex-direction:column;gap:8px;padding:20px 14px;border-right:1px solid var(--line);background:var(--surface);min-height:0; }
-.connection-dialog .supplier-sidebar>.ant-btn:first-child,.supplier-provider-list>.ant-btn { display:flex;flex-direction:column;align-items:flex-start;gap:6px;height:auto;min-height:62px;padding:12px;text-align:left;width:100%; }
+.connection-dialog .supplier-sidebar .ant-btn { justify-content:flex-start;text-align:left;width:100%;padding-inline:12px; }
+.connection-dialog .supplier-sidebar>.ant-btn:not(:last-child),.supplier-provider-list>.ant-btn { display:flex;flex-direction:column;align-items:flex-start;gap:6px;height:auto;min-height:62px;padding:12px; }
 .connection-dialog .supplier-sidebar .ant-btn span,.connection-dialog .supplier-sidebar .ant-btn strong { max-width:100%;overflow:hidden;text-overflow:ellipsis; }
 .connection-dialog .supplier-sidebar .ant-btn>span:last-child:not(:first-child) { font-size:11px;color:var(--muted); }
 .connection-dialog .supplier-sidebar .selected { background:var(--accent-bg);color:var(--accent); }

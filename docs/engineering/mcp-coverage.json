@@ -19,7 +19,8 @@
     {"area":"云端单张、批量、审阅和重试", "status":"covered", "handlers":["startCloudTool","startCloudBatch","cancelCloudBatch","cloudReview","resumeCloudTool","keepCloudRaw","retryCloudTool"], "commands":["cloud.process","cloud.batch","cloud.cancelBatch","cloud.review","cloud.resolve","task.retry"]},
     {"area":"对象类别识别、读取和拆分", "status":"covered", "handlers":["analyzeCategories","readCategories","splitCategories"], "commands":["semantic.analyze","semantic.read","semantic.generate"]},
     {"area":"视觉分析和审阅", "status":"covered", "handlers":["analyze","analyses","saveAnalysisReview"], "commands":["analysis.start","analysis.results","analysis.review","analysis.apply"]},
-    {"area":"画板 PNG 导出", "status":"partial", "handlers":["chooseExport","cancelExport","writeExport"], "commands":["artboard.export"], "note":"MCP 使用交换目录，不调用保存对话框；尚无导出进度与中途取消命令"},
+    {"area":"画板 PNG / GIF 导出", "status":"partial", "handlers":["chooseExport","cancelExport","writeExport"], "commands":["artboard.export"], "note":"MCP 仍导出 PNG；GIF 格式、选帧及进度取消使用桌面界面"},
+    {"area":"GIF 编码", "status":"uiOnly", "handlers":["encodeGif"], "commands":[], "note":"工具页合并图片及合成页动画导出；原 GIF 可通过 asset.import / asset.export 保留动画"},
     {"area":"原生编辑和剪贴板", "status":"partial", "handlers":["editCommand"], "commands":["history.undo","history.redo"], "note":"业务对象可查询和新建；不直接操纵系统剪贴板、输入框全选或剪切"},
     {"area":"宿主窗口、剪贴板和脏状态", "status":"uiOnly", "handlers":["copyText","dirty","window"], "commands":[], "note":"脏状态由编辑自动维护，窗口与剪贴板不属于文档创作命令"}
   ],

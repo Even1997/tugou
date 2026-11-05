@@ -29,6 +29,7 @@ import {
   applyEdgeChanges,
   ReactFlowProvider,
   useReactFlow,
+  useKeyPress,
   ConnectionLineType,
   getNodesBounds,
   getViewportForBounds,
@@ -94,6 +95,8 @@ function CanvasWorkspace({
 }) {
   const graph = document.tugouCanvas || emptyCanvas();
   const preferences=usePreferences(),background=graph.background??preferences.value.grid;
+  const panKey=bindings(window.tugou.platform,preferences.value.shortcuts).pan;
+  const panHeld=useKeyPress(panKey,{target:window,actInsideInputWithModifier:false});
   const [nodes, setNodes] = useState(graph.nodes);
   const [edges, setEdges] = useState(graph.edges);
   const displayedEdges=useMemo(()=>edges.map(edge=>({...edge,type:'default',interactionWidth:24})),[edges]);
@@ -232,14 +235,12 @@ function CanvasWorkspace({
     if(workflowTypes.includes(type))return add(type,undefined,point);
     if(type==='text')return add('text',undefined,point);
     if(type==='emptyImage')return add('asset',undefined,point);
-    if(type==='import')return imageImport.openAt(point);
     const bounds=holder.current.getBoundingClientRect();
     setInsertPoint(point||flow.screenToFlowPosition({x:bounds.x+bounds.width/2-100,y:bounds.y+110}));
     setPalette(type);setQuery('');
   };
   const canCreateLinked=type=>{
     const link=pendingLink.current;if(!link)return true;
-    if(type==='import')return false;
     const candidate=createNode(document,type==='emptyImage'?'asset':type,undefined,{x:0,y:0});
     return canConnect({nodes:[...nodes,candidate],edges},link.type==='source'?link.id:candidate.id,link.type==='source'?candidate.id:link.id);
   };
@@ -445,12 +446,13 @@ function CanvasWorkspace({
   return (
     <CanvasContext.Provider value={nodeContext}>
       <div
-        className="canvas-workspace"
+        className={`canvas-workspace${panHeld?' space-pan':''}`}
         tabIndex={-1}
         onPointerDownCapture={event=>{if(event.target.closest('.react-flow')&&!event.target.closest('input,textarea,select,button,a,[contenteditable]'))event.currentTarget.focus({preventScroll:true});}}
         onKeyDown={(event) => {
           if(shortcutBlocked(event)||disabled)return;
           const shortcut=commandFor(event,window.tugou.platform,preferences.value.shortcuts);
+          if(shortcut==='pan'){event.preventDefault();return;}
           if(shortcut==='group'||shortcut==='ungroup'){event.preventDefault();if(!event.repeat){if(shortcut==='ungroup')dissolveGroup();else createGroup();}return;}
           if(shortcut==='delete'){event.preventDefault();remove();return;}
           if(event.key==='Tab'&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!disabled&&!createMenu&&
@@ -733,7 +735,7 @@ function CanvasWorkspace({
               selectionKeyCode={null}
               selectionOnDrag
               panOnDrag={false}
-              panActivationKeyCode={bindings(window.tugou.platform,preferences.value.shortcuts).pan}
+              panActivationKeyCode={panKey}
               nodeDragThreshold={3}
               connectionDragThreshold={3}
               defaultEdgeOptions={{ type: "default", interactionWidth: 24 }}

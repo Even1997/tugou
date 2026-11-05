@@ -37,7 +37,7 @@ app.on('browser-window-created',(_,w)=>{
    await run('ui.navigate',{workspace:'canvas',overview:true});await run('project.save');await delay(250);
    const initial=await state();await open(a);
    check('drag from output to blank opens picker without white screen',await js(`!!document.querySelector('.studio-header')&&document.querySelector('[aria-label="搜索节点类型"]').placeholder.includes('可连接')`));
-   const choices=await labels();check('output picker lists compatible generators only',choices.includes('生成台')&&choices.includes('图片生成')&&choices.includes('文本生成')&&!choices.includes('文字提示词')&&!choices.includes('图片节点')&&!choices.includes('导入图片'));
+   const choices=await labels();check('output picker lists compatible generators only',choices.length===1&&choices[0]==='生成台');
    check('picker stays inside the window',await js(`(()=>{const r=document.querySelector('.canvas-node-picker').getBoundingClientRect();return r.x>=0&&r.y>=0&&r.right<=innerWidth&&r.bottom<=innerHeight})()`));await capture('output-menu-dark');
    const opened=await state();report.opening={before:{revision:initial.revision,dirty:initial.dirty,history:initial.history},after:{revision:opened.revision,dirty:opened.dirty,history:opened.history}};
    check('opening picker changes no document or undo state',equalState(initial,opened));await key('Escape');await wait(`!document.querySelector('.canvas-node-picker')`);

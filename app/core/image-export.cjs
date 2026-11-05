@@ -18,11 +18,12 @@ function pngName(value){
   if(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name))name='_'+name;
   return name;
 }
-async function batchTargets(folder,names){
+async function batchTargets(folder,names,format='png'){
+  if(!['png','gif'].includes(format))throw Error('导出格式无效');
   if(!Array.isArray(names)||!names.length||names.length>500||names.some(n=>typeof n!=='string'||n.length>256))throw Error('请选择 1–500 个画板');
   const used=new Set((await fs.readdir(folder)).map(n=>n.normalize('NFC').toLowerCase()));
   const targets=[];
-  for(const value of names){const base=pngName(value);let name=base+'.png',index=2;while(used.has(name.normalize('NFC').toLowerCase()))name=`${base} (${index++}).png`;used.add(name.normalize('NFC').toLowerCase());targets.push(await safePath(folder,name));}
+  for(const value of names){const base=pngName(value);let name=base+'.'+format,index=2;while(used.has(name.normalize('NFC').toLowerCase()))name=`${base} (${index++}).${format}`;used.add(name.normalize('NFC').toLowerCase());targets.push(await safePath(folder,name));}
   return targets;
 }
 async function writeExclusive(target,bytes){

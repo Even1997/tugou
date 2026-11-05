@@ -18,6 +18,7 @@ function selectedConnection(db,purpose) {
 }
 
 function connectionSettings(update,previous,index) {
+  if(update.type==='cli')throw Error('本地 CLI 生图接入已移除，请使用 API Key 连接');
   const name=String(update.name??previous.name??`连接 ${index+1}`).trim();
   if(!name||name.length>60)throw Error('连接名称请填写 1–60 个字符');
   const apiKey=update.clearKey===true?'':(typeof update.apiKey==='string'&&update.apiKey.trim()?update.apiKey.trim():previous.apiKey||'');
@@ -48,7 +49,15 @@ class ConnectionStore {
       const bytes = await fs.readFile(file);
       if (!this.encryption.isEncryptionAvailable()) throw new Error('系统密钥保护不可用');
       const stored=JSON.parse(this.encryption.decryptString(bytes));
-      if(Array.isArray(stored.connections))return stored;
+      if(Array.isArray(stored.connections)){
+        const removed=new Set(stored.connections.filter(c=>c.type==='cli').map(c=>c.id));
+        if(removed.size){
+          stored.connections=stored.connections.filter(c=>!removed.has(c.id));
+          stored.routes=Object.fromEntries(Object.entries(stored.routes||{}).map(([purpose,id])=>[purpose,removed.has(id)?null:id]));
+          if(removed.has(stored.activeId))stored.activeId=null;
+        }
+        return stored;
+      }
       // Preserve the user's existing encrypted single connection when adding multi-connection management.
       return {revision:0,activeId:'default',routes:{},connections:[{...stored,id:'default',name:'原有连接'}]};
     } catch (error) { if (error.code === 'ENOENT') return {revision:0,activeId:null,routes:{},connections:[]}; throw error; }
@@ -71,6 +80,7 @@ class ConnectionStore {
     return settings;
   }
   async probe(input, includeModels = false, timeoutMs = 15000) {
+    if(input?.type==='cli')throw Error('本地 CLI 生图接入已移除，请使用 API Key 连接');
     const db=await this.readDatabase();
     const previous = input?.id===undefined ? selectedConnection(db) : db.connections.find(c=>c.id===input.id)||emptyConnection();
     const baseUrl = connectionAddress(input?.baseUrl ?? previous.baseUrl);
