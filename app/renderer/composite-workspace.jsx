@@ -5,6 +5,7 @@ import {useUiView} from './ui-view.js';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Modal,Dropdown} from 'antd';
 import {BoardExport} from './board-export.jsx';
+import {PsdDialog} from './psd-dialog.jsx';
 import {Button, Input, Icon} from './components.jsx';
 import {NumberField} from './number-field.jsx';
 import {LayerEditor} from './layers.jsx';
@@ -29,6 +30,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
   const [activeId,setActiveId]=useState(null),[dialog,setDialog]=useState(null),[error,setError]=useState('');
   const [maskId,setMaskId]=useState(null);
   const [context,setContext]=useState(null),[exportRequest,setExportRequest]=useState(null),[notice,setNotice]=useState('');
+  const [psdRequest,setPsdRequest]=useState(null);
   useEffect(()=>{
     if(!context)return;
     const outside=e=>{if(!e.target.closest('.board-context-menu'))setContext(null);};
@@ -42,7 +44,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
   const selectedOwner=selected.length ? artboards.owner(normalized,selected[0]) : null;
   const board=selectedOwner || list.find(b=>b.id===activeId) || list[0];
   const local=useMemo(()=>board?artboards.extract(normalized,board.id):null,[normalized,board?.id]);
-  latest.current={normalized,board};
+  latest.current={normalized,board,source:document,disabled:props.disabled};
   const run=fn=>{try{setError('');return fn()}catch(e){setError(e.message);return false}};
   const activate=(id,ids=[])=>{setActiveId(id);setSelected(ids)};
   const save=next=>{artboards.validate(next);return change(next)};
@@ -67,12 +69,22 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     const next={...result.document,assets:[...result.document.assets,...assets],layers:[...result.document.layers,...assets.map(a=>createLayer('image',{parentId:result.id,name:a.name,assetId:a.id,width:a.width,height:a.height,x:0,y:0}))]};
     if(save(next)!==false)activate(result.id);
   }),setError,props.disabled);
-  if(!board)return <div className="composite-workspace composite-empty" onDragOver={emptyImport.over} onDrop={emptyImport.drop}>
+  const openPsd=exporting=>setPsdRequest({source:document,document:exporting?local:null});
+  const psdDialog=psdRequest&&<PsdDialog document={psdRequest.document} close={()=>setPsdRequest(null)} complete={setNotice} apply={data=>{
+    if(latest.current.disabled||latest.current.source!==psdRequest.source)throw Error('当前工程已变化，请关闭窗口后重新导入，避免覆盖编辑');
+    const result=artboards.create(latest.current.normalized,{width:data.width,height:data.height,name:data.name});
+    const next=artboards.replace(result.document,result.id,{...data,background:'transparent',assets:[...result.document.assets,...data.assets]});
+    if(save(next)===false)throw Error('当前无法修改工程，请稍后重试');
+    view.current=null;activate(result.id);setNotice(`已导入 ${data.name}，可撤销恢复`);
+  }}/>;
+  if(!board)return <div className="composite-workspace composite-empty" data-dev-update-blocked={psdRequest?'请先完成 PSD 导入':undefined} onDragOver={emptyImport.over} onDrop={emptyImport.drop}>
     <div className="composition-tools"><BoardSizeControl board={normalized} creating apply={createBoard} disabled={props.disabled}><Button icon="add" disabled={props.disabled}>新建画板</Button></BoardSizeControl></div>
-    <div className="empty"><p>新建画板，或拖入图片 / GIF 开始编辑</p><Button icon="import" disabled={props.disabled||emptyImport.importing} onClick={emptyImport.open}>导入图片 / GIF</Button></div>
+    <div className="empty"><p>新建画板，或拖入图片 / GIF 开始编辑</p><Button icon="import" disabled={props.disabled||emptyImport.importing||!!psdRequest} onClick={emptyImport.open}>导入图片 / GIF</Button><Button disabled={props.disabled||emptyImport.importing||!!psdRequest} onClick={()=>openPsd(false)}>导入 PSD</Button></div>
     {error&&<div className="message error" role="alert">{error}</div>}
+    {psdDialog}
   </div>;
   const workspace={
+    importPsd:()=>openPsd(false),exportPsd:()=>openPsd(true),
     export:frame=>{setNotice('');setExportRequest({document:normalized,id:board.id,single:true,frame});},
     contextMenu:(event,id)=>{event.preventDefault();event.stopPropagation();if(!props.disabled)setContext({id,x:event.clientX,y:event.clientY});},
     board,boards:list.map(b=>({...b,x:b.x-board.x,y:b.y-board.y})),layers:normalized.layers,
@@ -100,10 +112,11 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
       duplicate={()=>run(()=>{const result=artboards.duplicate(normalized,board.id);if(save(result.document)!==false){view.current=null;activate(result.id)}})}
       remove={()=>setDialog('delete')}/>,
   };
-  return <div className="composite-workspace" data-dev-update-blocked={exportRequest?'请先完成画板保存':undefined} onContextMenu={e=>{const row=e.target.closest('[data-artboard="true"]');if(row)workspace.contextMenu(e,row.dataset.treeId);}}>
+  return <div className="composite-workspace" data-dev-update-blocked={exportRequest||psdRequest?'请先完成画板文件处理':undefined} onContextMenu={e=>{const row=e.target.closest('[data-artboard="true"]');if(row)workspace.contextMenu(e,row.dataset.treeId);}}>
     {error&&<div className="message error" role="alert">{error}<Button iconOnly icon="close" onClick={()=>setError('')}>关闭错误</Button></div>}
     {notice&&<div className="message" role="status">{notice}<Button iconOnly icon="close" onClick={()=>setNotice('')}>关闭保存提示</Button></div>}
-    <LayerEditor key={board.id} {...props} disabled={props.disabled||!!exportRequest} document={local} change={edit} selected={selected.filter(id=>local.layers.some(l=>l.id===id))} setSelected={setSelected} workspace={workspace}/>
+    <LayerEditor key={board.id} {...props} disabled={props.disabled||!!exportRequest||!!psdRequest} document={local} change={edit} selected={selected.filter(id=>local.layers.some(l=>l.id===id))} setSelected={setSelected} workspace={workspace}/>
+    {psdDialog}
     {context&&<Dropdown open trigger={[]} autoFocus overlayClassName="board-context-menu" onOpenChange={open=>{if(!open)setContext(null);}} menu={{items:[
       {key:'save',label:'保存图片',icon:<Icon name="export"/>},
       {key:'batch',label:'批量保存画板…'},

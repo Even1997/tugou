@@ -1,9 +1,23 @@
 import {ColorControl} from './color-control.jsx';
 import {Select} from './select.jsx';
 import React, { useEffect, useState, useRef } from "react";
-import { Button, ToolPopover } from "./components.jsx";
+import { Button } from "./components.jsx";
 import { NumberField } from "./number-field.jsx";
 import { fields, defaults, curveTable } from "../core/adjustments.cjs";
+
+function AdjustmentSlider({label,value,min,max,step=1,onChange,onPreview}){
+  const [draft,setDraft]=useState(null),pending=useRef(null),callbacks=useRef(null);
+  callbacks.current={onChange,onPreview};
+  const cancel=()=>{pending.current=null;setDraft(null);callbacks.current.onPreview(null);};
+  const commit=()=>{const next=pending.current;if(next===null)return;pending.current=null;setDraft(null);callbacks.current.onChange(next);};
+  useEffect(()=>{pending.current=null;setDraft(null);},[value]);
+  useEffect(()=>()=>{if(pending.current!==null)callbacks.current.onPreview(null);},[]);
+  return <div className="photo-adjustment-row"><NumberField label={label} value={draft??value} min={min} max={max} step={step} onChange={onChange}/><input aria-label={`${label}滑块`} type="range" min={min} max={max} step={step} value={draft??value}
+    onPointerDown={e=>e.currentTarget.setPointerCapture(e.pointerId)} onLostPointerCapture={commit}
+    onChange={e=>{const next=+e.target.value;pending.current=next;setDraft(next);onPreview(next);}}
+    onPointerUp={commit} onPointerCancel={cancel} onBlur={commit} onKeyUp={e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(e.key))commit();}}
+    onKeyDown={e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();cancel();}}}/></div>;
+}
 
 function CurveEditor({ value, onChange }) {
   const [channel, setChannel] = useState("rgb"),
@@ -58,7 +72,7 @@ function CurveEditor({ value, onChange }) {
       });
   };
   return (
-    <div data-keep-open onKeyDown={(e) => e.stopPropagation()} style={{ width: 300 }}>
+    <div onKeyDown={(e) => e.stopPropagation()} style={{ width: '100%' }}>
       <label>
         通道{" "}
         <Select
@@ -85,7 +99,7 @@ function CurveEditor({ value, onChange }) {
         viewBox="0 0 255 255"
         preserveAspectRatio="none"
         style={{
-          width: 280,
+          width: '100%',
           height: 220,
           display: "block",
           background: "var(--panel)",
@@ -213,10 +227,16 @@ function CurveEditor({ value, onChange }) {
     </div>
   );
 }
-export function AdjustmentTools({ layer, patch, onDone }) {
+export function AdjustmentTools({ layer, patch, onDone, onCompare, comparing, onPreview, onAdjustmentCommit }) {
+  const closeRef=useRef(onDone);closeRef.current=onDone;
+  useEffect(()=>{
+    const escape=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeRef.current();}};
+    window.addEventListener('keydown',escape,true);
+    return()=>window.removeEventListener('keydown',escape,true);
+  },[]);
   const a = layer.adjustment,
     spec = fields[a.type],
-    update = (values) => patch({ adjustment: { ...a, ...values } });
+    update = (values) => onAdjustmentCommit?onAdjustmentCommit({...a,...values}):patch({ adjustment: { ...a, ...values } });
   const controls = Object.entries(spec.values).map(
     ([key, [label, , min, max, step = 1]]) => (
       <NumberField
@@ -231,23 +251,26 @@ export function AdjustmentTools({ layer, patch, onDone }) {
     ),
   );
   return (
-    <fieldset disabled={layer.locked} style={{ display: "contents" }}>
-      <span>{spec.label}</span>
+    <section className="adjustment-panel" role="region" aria-label="调整属性">
+      <header><div><strong>{spec.label}</strong><span title={layer.name}>{layer.name}</span></div><Button iconOnly icon="close" onClick={onDone}>关闭调整面板</Button></header>
+      <fieldset disabled={layer.locked} className="adjustment-panel-body">
+      {onCompare&&<Button disabled={layer.visible===false} aria-pressed={!!comparing} onPointerDown={e=>{if(e.button!==0)return;e.currentTarget.setPointerCapture(e.pointerId);onCompare(true);}} onPointerUp={()=>onCompare(false)} onPointerCancel={()=>onCompare(false)} onLostPointerCapture={()=>onCompare(false)} onBlur={()=>onCompare(false)} onKeyDown={e=>{if([' ','Enter'].includes(e.key)){e.preventDefault();onCompare(true);}}} onKeyUp={e=>{if([' ','Enter'].includes(e.key)){e.preventDefault();onCompare(false);}}}>按住对比</Button>}
       <NumberField
         label="调整强度"
+        shortLabel="强度"
         value={Math.round(layer.opacity * 100)}
         min={0}
         max={100}
         onChange={(v) => patch({ opacity: v / 100 })}
       />
-      {controls.slice(0, 1)}
+      {a.type!=='photo'&&controls}
       {a.type === "curves" && (
-        <ToolPopover label="编辑曲线" className="curve-popover">
+        <div className="curve-popover">
           <CurveEditor
             value={a}
             onChange={(adjustment) => patch({ adjustment })}
           />
-        </ToolPopover>
+        </div>
       )}
       {a.type === "gradientMap" &&
         [
@@ -263,8 +286,8 @@ export function AdjustmentTools({ layer, patch, onDone }) {
             />
           </label>
         ))}
-      <ToolPopover label="调整选项">
-        {controls.slice(1)}
+
+        {a.type==='photo'?<><p className="muted">拖动预览，松开应用 · 冷暖为相对调整，非 RAW</p>{Object.entries(spec.values).map(([key,[label,,min,max,step]])=><AdjustmentSlider key={key} label={label} value={a[key]} min={min} max={max} step={step} onChange={value=>update({[key]:value})} onPreview={value=>onPreview?.(value===null?null:{...a,[key]:value})}/>)}</>:null}
         <label className="check">
           <input
             aria-label="调整剪贴"
@@ -326,15 +349,15 @@ export function AdjustmentTools({ layer, patch, onDone }) {
           </>
         )}
         <Button
-          onClick={() => patch({ adjustment: { ...a, ...defaults(a.type) } })}
+          onClick={() => update(defaults(a.type))}
         >
           重置调整
         </Button>
-      </ToolPopover>
+
       <Button onClick={() => patch({ visible: layer.visible === false })}>
         {layer.visible === false ? "启用调整" : "停用调整"}
       </Button>
-      <Button onClick={onDone}>完成</Button>
-    </fieldset>
+      </fieldset>
+    </section>
   );
 }

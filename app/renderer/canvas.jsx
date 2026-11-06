@@ -106,8 +106,9 @@ function CanvasWorkspace({
   const displayedEdges=useMemo(()=>edges.map(edge=>({...edge,type:'default',interactionWidth:24})),[edges]);
   const [palette, setPalette] = useState("node"),
     [query, setQuery] = useState(""),
-    [minimap, setMinimap] = useState(false),
+    [minimapOverride, setMinimap] = useState(null),
     [toolbarHost, setToolbarHost] = useState(null);
+  const minimap=minimapOverride??preferences.value.canvasMinimap;
   const theme = useTheme(),
     [clipboard, setClipboard] = useState(null),
     mounted = useRef(true);
@@ -718,6 +719,10 @@ function CanvasWorkspace({
             <ReactFlow
               onlyRenderVisibleElements
               zoomOnDoubleClick={false}
+              snapToGrid={preferences.value.canvasSnap}
+              snapGrid={[preferences.value.canvasGridSize,preferences.value.canvasGridSize]}
+              zoomOnScroll={preferences.value.canvasWheel==='zoom'}
+              panOnScroll={preferences.value.canvasWheel==='pan'}
               onMoveStart={()=>setCreateMenu(null)}
               onPaneClick={()=>setCreateMenu(null)}
               onNodeClick={()=>setCreateMenu(null)}
@@ -814,7 +819,7 @@ function CanvasWorkspace({
               {background !== "none" && (
                 <Background
                   variant={background === "lines" ? "lines" : "dots"}
-                  gap={24}
+                  gap={preferences.value.canvasGridSize}
                   size={1}
                 />
               )}{" "}

@@ -24,6 +24,8 @@ export function PaintTools({
   options,
   onChange,
   onNew,
+  onCopy,
+  canCopy=false,
   busy,
   maskDisabled=false,
   tool = "brush",
@@ -36,6 +38,7 @@ export function PaintTools({
   const paint = ["brush", "eraser"].includes(tool);
   return (
     <>
+      {!paint&&<Button icon="copy" disabled={busy||!canCopy} onClick={onCopy}>在副本修图</Button>}
       {paint && (
         <label>
           目标

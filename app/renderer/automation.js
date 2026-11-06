@@ -9,7 +9,8 @@ import {worldMatrix} from '../core/layers.cjs';
 import {createStroke} from './painting.js';
 import {renderScene} from './scene-render.js';
 import {sceneNode,appendCapture} from '../core/automation-scene.cjs';
-import {inspectUi,navigateUi,prepareCapture,navigationGuard,leaveGuard} from './ui-automation.js';
+import {views} from './ui-view.js';
+import {inspectUi,navigateUi,prepareCapture,navigationGuard,leaveGuard,settle} from './ui-automation.js';
 import {group as pageGroup} from '../core/pages.cjs';
 import {runEditingJob,cancelAutomationJob,automationJobStatus} from './automation-editing.js';
 
@@ -28,7 +29,7 @@ export function useAutomation(context) {
     const state=()=>{
       const c=current(),r=c.present.current;
       return {revision:revision(),projectId:r?.id||null,savedRevision:r?.revision,dirty:c.dirtyRef.current,busy:c.busyRef.current,
-        workspace:c.workspace,layerSelection:c.layerSelection,history:{undo:c.history.current.past.length,redo:c.history.current.future.length},document:r?.document||null};
+        workspace:c.workspace,presentation:views.get('ppt')?.get()||null,layerSelection:c.layerSelection,history:{undo:c.history.current.past.length,redo:c.history.current.future.length},document:r?.document||null};
     };
     const guard=()=>{
       if(current().busyRef.current)failure('BUSY','界面正在处理操作，请稍后重试');
@@ -49,6 +50,12 @@ export function useAutomation(context) {
       else if(action==='ui.navigate'||action==='ui.restore'){guard();const result=await navigateUi(action,args,current(),state());value={...result,...inspectUi(state())};}
       else if(action==='models.changed'){window.dispatchEvent(new Event('tugou-connection-changed'));value={notified:true};}
       else if(action==='commit')value=commit(args.document);
+      else if(['ppt.open','ppt.close','ppt.preview','ppt.present'].includes(action)){
+        guard();const c=current();navigationGuard(c,document.querySelector('.ppt-player'));leaveGuard(c,'ppt');c.setWorkspace('ppt');
+        for(let i=0;i<100&&!views.has('ppt');i++)await new Promise(r=>setTimeout(r,20));
+        if(!views.has('ppt'))failure('UI_NOT_READY','PPT 工作区尚未就绪');
+        await views.get('ppt').navigate({command:action,args});await settle();guard();value=state();
+      }
       else if(action==='page.activate'){guard();const c=current();navigationGuard(c);leaveGuard(c,args.kind);c.activatePage(args.kind,args.id);value=state();}
       else if(action==='project.create'||action==='project.open'){
         guard();const c=current();if(c.dirtyRef.current)failure('UNSAVED_CHANGES','请先保存当前工程');

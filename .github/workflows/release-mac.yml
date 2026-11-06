@@ -62,6 +62,15 @@ jobs:
           codesign --verify --deep --strict "$BUNDLE"
           hdiutil verify release/*.dmg
           unzip -tq release/*.zip
+      - name: Test packaged PPT MCP, element effects, PSD and photo editing
+        env:
+          TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+          TUGOU_MCP_BINARY: release/${{ matrix.bundle }}/Tugou.app/Contents/MacOS/Tugou
+        run: |
+          node_modules/.bin/electron test/presentation-mcp-desktop.cjs
+          node_modules/.bin/electron test/element-effects-desktop.cjs
+          node_modules/.bin/electron test/psd-desktop.cjs
+          node_modules/.bin/electron test/photo-desktop.cjs
       - name: Test packaged full MCP creative commands
         env:
           TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
@@ -159,6 +168,14 @@ jobs:
         with:
           name: mac-evidence-${{ matrix.arch }}
           path: |
+            app/test-results/presentation-mcp/*.json
+            app/test-results/presentation-mcp/*.png
+            app/test-results/element-effects/*.json
+            app/test-results/element-effects/*.png
+            app/test-results/psd/*.json
+            app/test-results/psd/*.png
+            app/test-results/photo-retouch/*.json
+            app/test-results/photo-retouch/*.png
             app/test-results/canvas-all-tools/*.json
             app/test-results/canvas-all-tools/*.png
             app/test-results/canvas-local-edit/*.json

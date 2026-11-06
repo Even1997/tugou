@@ -8,7 +8,7 @@ const {
   curveTable,
 } = require("../core/adjustments.cjs");
 test("adjustments validate parameters without dropping opaque fields", () => {
-  assert.equal(Object.keys(fields).length, 12);
+  assert.equal(Object.keys(fields).length, 13);
   for (const type of Object.keys(fields)) {
     const a = { ...defaults(type), future: { keep: true } };
     assert.equal(validateAdjustment(a).future.keep, true);

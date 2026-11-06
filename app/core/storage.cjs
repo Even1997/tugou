@@ -72,6 +72,7 @@ function validateDocument(document) {
     if (!asset || typeof asset.id !== 'string') throw new Error('素材格式无效');
   }
   if (document.tugouCanvas !== undefined) validateCanvas(document.tugouCanvas);
+  require('./presentations.cjs').validate(document.presentations,document.assets);
   if(document.compositionView!==undefined){const v=document.compositionView;if(!v||![v.x,v.y,v.zoom].every(Number.isFinite)||v.zoom<.02||v.zoom>8)throw Error('合成视图无效');}
   if (document.layers.some(l => l.artboard)) require('./artboards.cjs').validate(document);
   require('./pages.cjs').validate(document,validateDocument);

@@ -1,3 +1,4 @@
+import {ElementEffects} from './element-effects.jsx';
 import {ColorControl} from './color-control.jsx';
 import {Select} from './select.jsx';
 import {FontPicker} from './font-picker.jsx';
@@ -369,6 +370,7 @@ export function LayerProperties({ layer, patch, document, change, maskEditing, m
             />
           </div>
         </details>
+        {layer.kind!=='adjustment'&&<ElementEffects effects={layer.effects} onChange={effects=>patch({effects})}/>}
         {layer.mask && (
           <details open>
             <summary>蒙版</summary>

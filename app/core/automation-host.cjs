@@ -12,16 +12,23 @@ const MAX_BYTES=32*1024*1024;
 const toolSchemas={
   get_state:object({}),
   list_commands:object({domain:string,search:{type:'string',maxLength:256},schemas:{type:'boolean'}}),
-  query_objects:object({kind:enumeration('canvasNode','edge','layer','artboard','asset','prompt','recipe','sceneObject','camera'),nodeId:string,search:{type:'string',maxLength:256},offset:{type:'integer',minimum:0},limit:{type:'integer',minimum:1,maximum:100}},['kind']),
-  get_object:object({kind:enumeration('canvasNode','edge','layer','artboard','asset','prompt','recipe','sceneObject','camera'),nodeId:string,id:string},['kind','id']),
+  query_objects:object({kind:enumeration('canvasNode','edge','layer','artboard','asset','prompt','recipe','sceneObject','camera','presentation','slide','slideElement'),presentationId:string,slideId:string,nodeId:string,search:{type:'string',maxLength:256},offset:{type:'integer',minimum:0},limit:{type:'integer',minimum:1,maximum:100}},['kind']),
+  get_object:object({kind:enumeration('canvasNode','edge','layer','artboard','asset','prompt','recipe','sceneObject','camera','presentation','slide','slideElement'),presentationId:string,slideId:string,nodeId:string,id:string},['kind','id']),
   run_command:object({command:string,args:{type:'object'},expectedRevision:string},['command']),
   batch:object({expectedRevision:string,steps:{type:'array',minItems:1,maxItems:100,items:object({name:string,command:string,args:{type:'object'}},['name','command'])}},['expectedRevision','steps']),
   preview:object({artboardId:string,id:string,mode:enumeration('composite','mask','overlay','original'),maxSize:{type:'integer',minimum:64,maximum:2048}},['artboardId']),
 };
 const ajv=new Ajv(),checks=Object.fromEntries(Object.entries(toolSchemas).map(([n,s])=>[n,ajv.compile(s)]));
-const compact = ({document,...state}) => ({...state,name:document?.name,pages:document?{canvas:require('./pages.cjs').list(document,'canvas'),layers:require('./pages.cjs').list(document,'layers')}:null,counts:document?{nodes:document.tugouCanvas?.nodes.length||0,edges:document.tugouCanvas?.edges.length||0,layers:document.layers.length,artboards:document.layers.filter(l=>l.artboard).length,assets:document.assets.length,prompts:document.modules.length,recipes:document.recipes.length}:null});
-function collection(document,kind){return ({canvasNode:document.tugouCanvas?.nodes||[],edge:document.tugouCanvas?.edges||[],layer:document.layers,artboard:document.layers.filter(l=>l.artboard),asset:document.assets,prompt:document.modules,recipe:document.recipes})[kind];}
-function summary(item,kind){return {id:item.id,kind,type:item.type||item.kind,name:item.name||item.data?.name||item.data?.binding?.snapshot?.name,parentId:item.parentId,position:item.position,...(kind==='layer'||kind==='artboard'?{x:item.x,y:item.y,width:item.width,height:item.height,rotation:item.rotation,visible:item.visible,locked:item.locked,hasMask:!!item.mask,coordinateSpace:'parent-local'}:{}),...(kind==='edge'?{source:item.source,target:item.target}:{})};}
+const compact = ({document,...state}) => ({...state,name:document?.name,pages:document?{canvas:require('./pages.cjs').list(document,'canvas'),layers:require('./pages.cjs').list(document,'layers')}:null,counts:document?{nodes:document.tugouCanvas?.nodes.length||0,edges:document.tugouCanvas?.edges.length||0,layers:document.layers.length,artboards:document.layers.filter(l=>l.artboard).length,assets:document.assets.length,prompts:document.modules.length,recipes:document.recipes.length,presentations:document.presentations?.length||0}:null});
+function collection(document,kind,args){
+  if(kind==='presentation')return document.presentations||[];
+  if(['slide','slideElement'].includes(kind)){if(!args.presentationId)fail('INVALID_ARGUMENT','请指定 presentationId');const p=find(document.presentations||[],args.presentationId);if(kind==='slide')return p.slides;if(!args.slideId)fail('INVALID_ARGUMENT','请指定 slideId');return find(p.slides,args.slideId).elements;}
+  return ({canvasNode:document.tugouCanvas?.nodes||[],edge:document.tugouCanvas?.edges||[],layer:document.layers,artboard:document.layers.filter(l=>l.artboard),asset:document.assets,prompt:document.modules,recipe:document.recipes})[kind];}
+function summary(item,kind){
+  if(kind==='presentation')return {...require('./automation-presentations.cjs').deckSummary(item),kind};
+  if(kind==='slide')return {...require('./automation-presentations.cjs').slideSummary(item),kind};
+  if(kind==='slideElement')return {id:item.id,kind,type:item.kind,text:item.text?.slice(0,120),assetId:item.assetId,x:item.x,y:item.y,w:item.w,h:item.h,rotation:item.rotation,visible:item.visible!==false,locked:!!item.locked};
+  return {id:item.id,kind,type:item.type||item.kind,name:item.name||item.data?.name||item.data?.binding?.snapshot?.name,parentId:item.parentId,position:item.position,...(kind==='layer'||kind==='artboard'?{x:item.x,y:item.y,width:item.width,height:item.height,rotation:item.rotation,visible:item.visible,locked:item.locked,hasMask:!!item.mask,coordinateSpace:'parent-local'}:{}),...(kind==='edge'?{source:item.source,target:item.target}:{})};}
 
 // The journal records intent BEFORE a paid operation. An ambiguous crash is never retried automatically.
 class RequestJournal {
@@ -67,10 +74,10 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     if(method==='query_objects'||method==='get_object'){
       const doc=project(state),isScene=['sceneObject','camera'].includes(args.kind);
       if(isScene&&!args.nodeId)fail('INVALID_ARGUMENT','查询 3D 物体或机位必须指定 nodeId');
-      const list=isScene?sceneNode(doc,args.nodeId).data.scene[args.kind==='camera'?'cameras':'objects']:collection(doc,args.kind);
-      if(method==='get_object')return {revision:state.revision,kind:args.kind,object:find(list,args.id)};
-      const matched=list.filter(v=>!args.search||[v.id,v.name,v.data?.name,v.data?.text].some(s=>String(s||'').toLowerCase().includes(args.search.toLowerCase()))),offset=args.offset||0,limit=args.limit||50;
-      return {revision:state.revision,total:matched.length,offset,nextOffset:offset+limit<matched.length?offset+limit:null,objects:matched.slice(offset,offset+limit).map(v=>summary(v,args.kind))};
+      const list=isScene?sceneNode(doc,args.nodeId).data.scene[args.kind==='camera'?'cameras':'objects']:collection(doc,args.kind,args);
+      if(method==='get_object'){const item=find(list,args.id);return {revision:state.revision,kind:args.kind,object:args.kind==='presentation'?{...require('./automation-presentations.cjs').deckSummary(item),slides:item.slides.map(require('./automation-presentations.cjs').slideSummary)}:item};}
+      const matched=list.filter(v=>!args.search||[v.id,v.name,v.text,v.data?.name,v.data?.text].some(s=>String(s||'').toLowerCase().includes(args.search.toLowerCase()))),offset=args.offset||0,limit=args.limit||50;
+      return {revision:state.revision,total:matched.length,offset,nextOffset:offset+limit<matched.length?offset+limit:null,objects:matched.slice(offset,offset+limit).map(v=>({...summary(v,args.kind),...(['slide','slideElement'].includes(args.kind)?{index:list.indexOf(v)}:{})}))};
     }
     if(method==='preview'){project(state);return ui('preview',args);}
     if(method==='batch'){
@@ -81,6 +88,23 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     if(!['read','task'].includes(command.effect))guard(state,args.expectedRevision);
     if(name==='ui.capture'){if(!capture)fail('UNAVAILABLE','当前会话不支持界面截图');return capture(input);}
     if(name.startsWith('ui.'))return ui(name,input,state.revision);
+    if(name==='ppt.list')return {revision:state.revision,presentations:(project(state).presentations||[]).map(require('./automation-presentations.cjs').deckSummary)};
+    if(name==='ppt.get'){
+      const p=find(project(state).presentations||[],input.presentationId),{deckSummary,slideSummary}=require('./automation-presentations.cjs');
+      return {revision:state.revision,presentation:deckSummary(p),...(input.slideId?{slide:find(p.slides,input.slideId)}:{slides:p.slides.map(slideSummary)})};
+    }
+    if(['ppt.open','ppt.close','ppt.preview','ppt.present'].includes(name)){
+      project(state);const result=await ui(name,input,state.revision);
+      if(name==='ppt.preview'){if(!capture)fail('UNAVAILABLE','当前会话不支持界面截图');return {...await capture({region:'pptSlide',maxSize:input.maxSize}),presentation:result.presentation};}
+      return compact(result);
+    }
+    if(name==='ppt.export'){
+      const p=find(project(state).presentations||[],input.presentationId);await filePath(input.path);
+      if(path.extname(input.path).toLowerCase()!=='.pptx')fail('INVALID_ARGUMENT','导出文件必须为 .pptx');
+      const bytes=await require('./presentation-export.cjs').exportPresentation(p,state.document.assets,root);
+      signal?.throwIfAborted();guard(await snapshot(),state.revision);
+      return {revision:state.revision,presentationId:p.id,...await writeNew(input.path,bytes)};
+    }
     if(name==='page.list')return {pages:require('./pages.cjs').list(project(state),input.kind),revision:state.revision};
     if(name==='page.activate')return ui(name,input,state.revision);
     if(command.effect==='document'){

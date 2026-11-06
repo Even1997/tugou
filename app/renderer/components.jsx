@@ -17,7 +17,7 @@ import {
   theme as antTheme,
 } from "antd";
 import {
-  House, PenLine, ArrowLeftRight, Camera, Video, Volume2, Bot, Square,
+  Presentation, Play, ArrowLeft, Circle, House, PenLine, ArrowLeftRight, Camera, Video, Volume2, Bot, Square,
   Wrench, LayoutGrid, NotebookPen, Workflow, Layers, Images, Plus, Search,
   Trash2, Copy, Upload, Download, Save, Settings, Sun, Moon,
   Ellipsis, Undo2, Redo2, X, Minus, Maximize, Eye, EyeOff,
@@ -37,6 +37,9 @@ import koKR from 'antd/locale/ko_KR';
 const commonLabels=Object.fromEntries(Object.entries(messages['zh-CN']).map(([key,label])=>[label,key]));
 
 const icons = {
+  ppt: Presentation,
+  play: Play,
+  back: ArrowLeft,
   home: House,
   edit: PenLine,
   replace: ArrowLeftRight,
@@ -45,6 +48,8 @@ const icons = {
   audio: Volume2,
   model: Bot,
   stop: Square,
+  rectangle: Square,
+  circle: Circle,
   tools: Wrench,
   brand: LayoutGrid,
   prompts: NotebookPen,
@@ -130,6 +135,7 @@ export function ThemeProvider({ children }) {
     document.documentElement.dataset.theme = mode;
     localStorage.setItem("tugou-theme", mode);
   }, [mode]);
+  useLayoutEffect(()=>{document.documentElement.dataset.reduceMotion=String(value.reduceMotion);},[value.reduceMotion]);
   const dark = mode === "dark";
   return (
     <ThemeContext.Provider

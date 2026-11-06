@@ -76,6 +76,7 @@ for(const [name,description,handler] of [
   ['group','组合图层',(d,a)=>{const r=layers.groupLayers(d.layers,a.ids);d.layers=r.layers;return {ids:r.ids};}],
 ])define('layer.'+name,description,layerArgs,['ids'],'document',(d,a)=>{contentLayers(d,a.ids);return handler(d,a);});
 define('layer.ungroup','解除图层组合',{id:string},['id'],'document',(d,a)=>{editable(d,[a.id]);if(find(d.layers,a.id).artboard)fail('INVALID_TARGET','不能解除画板');const result=layers.ungroupLayers(d.layers,a.id);d.layers=result.layers;return {ids:result.ids};});
+define('layer.retouchCopy','原位创建图片修图副本并隐藏原层，保留当前外观和原像素；一次撤销恢复',{id:string},['id'],'document',(d,a)=>{editable(d,[a.id]);const result=require('./retouch-copy.cjs').retouchCopy(d.layers,a.id);d.layers=result.layers;return {id:result.id};});
 define('layer.move','以世界坐标增量移动图层',{ids,dx:number,dy:number},['ids','dx','dy'],'document',(d,a)=>{contentLayers(d,a.ids);d.layers=layers.moveLayers(d.layers,a.ids,a.dx,a.dy);});
 define('layer.reorder','调整图层顺序',{ids,action:enumeration('top','bottom','up','down')},['ids','action'],'document',(d,a)=>{editable(d,a.ids);d.layers=layers.reorder(d.layers,a.ids,a.action);});
 define('layer.reparent','将图层移动到画板或分组',{ids,targetId:string},['ids','targetId'],'document',(d,a)=>{editable(d,[...a.ids,a.targetId]);return {document:boards.relocate(d,a.ids,a.targetId)};});
@@ -110,7 +111,7 @@ define('layer.adjustment','新建或更新调整图层；未填参数使用该�
   if(a.id){editable(normalized,[a.id]);const l=find(normalized.layers,a.id);if(l.kind!=='adjustment'||boards.owner(normalized,l.id)?.id!==board.id)fail('INVALID_TARGET','调整图层不属于指定画板');Object.assign(l,{adjustment,...(a.name?{name:a.name}:{})});return {document:normalized,id:l.id};}
   const l=layers.createLayer('adjustment',{name:a.name||adjustments.fields[adjustment.type].label,x:0,y:0,width:board.width,height:board.height,parentId:board.id,adjustment});normalized.layers.push(l);return {document:normalized,id:l.id};
 });
-define('layer.effects','设置图层完整特效列表；空列表清除特效',{id:string,effects:{type:'array',maxItems:12,items:{oneOf:Object.entries(effects.types).map(([type,spec])=>object({type:{const:type},enabled:bool,color,opacity:{type:'number',minimum:0,maximum:100},blend:enumeration(...effects.blends),...ranges(spec.values)},['type']))}}},['id','effects'],'document',(d,a)=>{
+define('layer.effects','设置图层完整特效列表；空列表清除特效',{id:string,effects:{type:'array',maxItems:12,items:{oneOf:Object.entries(effects.types).map(([type,spec])=>object({type:{const:type},enabled:bool,color,opacity:{type:'number',minimum:0,maximum:100},blend:enumeration(...effects.blends),...ranges(spec.values),...(type==='stroke'?{position:enumeration('inside','center','outside')}:{})},['type']))}}},['id','effects'],'document',(d,a)=>{
   editable(d,[a.id]);const l=find(d.layers,a.id);l.effects=a.effects.map(e=>({...effects.defaults(e.type),...e}));l.effects.forEach(effects.validateEffect);
 });
 
@@ -121,7 +122,7 @@ define('project.open','打开已保存工程；有未保存修改时拒绝',{id:
 define('project.save','保存当前实时文档，使用磁盘版本检查',{},[],'session');
 define('history.undo','撤销一次编辑或整个批次',{},[],'session');
 define('history.redo','重做一次编辑或整个批次',{},[],'session');
-define('workspace.show','切换工作区',{workspace:enumeration('home','canvas','layers','prompts','assets','tools','fonts'),layerIds:ids},['workspace'],'session');
+define('workspace.show','切换工作区',{workspace:enumeration('home','canvas','layers','prompts','assets','tools','fonts','ppt'),layerIds:ids},['workspace'],'session');
 define('models.status','读取供应商及模型可用状态；不返回 Key',{},[],'read');
 define('models.imageCapabilities','读取生图模型的合法比例、分辨率、尺寸与质量；省略 model 时使用共享生图模型。规则不代表供应商已验证',{model:string},[],'read');
 define('tools.status','读取本地图像工具与主体识别组件状态',{},[],'read');
@@ -207,4 +208,5 @@ define('analysis.review','保存分析草稿的人工审阅文本、选用和全
 require('./automation-editing.cjs').register(define,{string,object,enumeration,ids,find,fail,editable,adjustmentSchema});
 require('./automation-ui.cjs').register({define,object,string,enumeration});
 require('./automation-pages.cjs').register({define,string,enumeration});
+require('./automation-presentations.cjs').register({define,string,object,enumeration,find,fail});
 module.exports={listCommands,validate,batch,fail,find,editable,object,string,ids,enumeration};

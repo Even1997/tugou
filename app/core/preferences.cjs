@@ -2,7 +2,7 @@ const fs=require('node:fs/promises'),path=require('node:path');
 const {atomicWrite}=require('./storage.cjs');
 const {defaults,languageFor}=require('./preference-values.cjs');
 const {validateShortcuts}=require('./shortcuts.cjs');
-const choices={language:['zh-CN','zh-TW','en','ja','ko'],theme:['dark','light','system'],zoom:[80,90,100,110,125],grid:['dots','lines','none'],imageConcurrency:Array.from({length:32},(_,i)=>i+1)};
+const choices={startupWorkspace:['home','canvas','layers','prompts'],canvasGridSize:[16,24,32,48,64],canvasWheel:['zoom','pan'],language:['zh-CN','zh-TW','en','ja','ko'],theme:['dark','light','system'],zoom:[80,90,100,110,125],grid:['dots','lines','none'],imageConcurrency:Array.from({length:32},(_,i)=>i+1)};
 function validate(patch){
   if(!patch||typeof patch!=='object'||Array.isArray(patch))throw Error('INVALID_SETTINGS');
   for(const [key,value] of Object.entries(patch)){

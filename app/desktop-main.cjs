@@ -57,6 +57,12 @@ async function boot() {
   const localAI = new LocalAIService(projects);
   const installer = new RuntimeInstaller(localAI,tasks);
   const exports = new Map();
+  const psdJobs=new Map();
+  const psdJob=async(id,action)=>{
+    if(typeof id!=='string'||id.length>64||psdJobs.size)throw Error('请先完成或取消当前 PSD 处理');
+    const control=new AbortController();psdJobs.set(id,control);
+    try{return await action(control.signal);}finally{psdJobs.delete(id);}
+  };
   const imageDestination=name=>{
     let fallback;
     try{fallback=app.getPath('pictures');}catch{fallback=app.getPath('home');}
@@ -111,9 +117,11 @@ async function boot() {
   const notifyTasks = () => { if (!window.isDestroyed() && !window.webContents.isDestroyed()) window.webContents.send('tugou:tasks-changed'); };
   tasks.on('changed', notifyTasks);
   window.once('closed', () => tasks.off('changed', notifyTasks));
+  window.webContents.once('destroyed',()=>{for(const control of psdJobs.values())control.abort();});
   window.webContents.on('will-navigate', (event) => event.preventDefault());
-  window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-  window.webContents.session.setPermissionCheckHandler(() => false);
+  const allowFullscreen = (contents, permission, details) => !window.isDestroyed() && contents === window.webContents && permission === 'fullscreen' && details.isMainFrame && details.requestingUrl === entryUrl;
+  window.webContents.session.setPermissionRequestHandler((contents, permission, callback, details) => callback(allowFullscreen(contents, permission, details)));
+  window.webContents.session.setPermissionCheckHandler((contents, permission, _origin, details) => allowFullscreen(contents, permission, details));
   let activeOperations=0,settings;
   const handle = (name, action) => ipcMain.handle(`tugou:${name}`, async (event, ...args) => {
     if (window.isDestroyed() || event.sender.isDestroyed() || event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame || event.senderFrame.url !== entryUrl) {
@@ -272,8 +280,24 @@ async function boot() {
       return await require('./core/gif.cjs').encodeGif(inputs,settings);
     }finally{encodingGif=false;}
   });
+  handle('psdCancel',id=>{psdJobs.get(id)?.abort();return true;});
+  handle('psdRead',(id,merged=false)=>psdJob(id,async signal=>{
+    if(typeof merged!=='boolean')throw Error('PSD 导入模式无效');
+    const choice=await dialog.showOpenDialog(window,{title:'导入 PSD 为新画板',properties:['openFile'],filters:[{name:'Photoshop 文档',extensions:['psd']}]});
+    if(choice.canceled)return null;signal.throwIfAborted();
+    return require('./core/psd-service.cjs').importPsd(root,choice.filePaths[0],merged,signal,inspectImage);
+  }));
+  handle('psdWrite',(id,token,input)=>psdJob(id,async signal=>{
+    const choice=exports.get(token);if(choice?.format!=='psd')throw Error('PSD 保存位置已失效，请重新选择');
+    const bytes=Buffer.from(await require('./core/psd-service.cjs').runPsd({action:'encode',input},signal));
+    signal.throwIfAborted();
+    await safePath(path.dirname(choice.target),path.basename(choice.target));
+    signal.throwIfAborted();await atomicWrite(choice.target,bytes);
+    exports.delete(token);await rememberExportDirectory(app.getPath('userData'),choice.target);
+    return {name:path.basename(choice.target),bytes:bytes.length};
+  }));
   handle('chooseExport', async (name, format='png') => {
-    if(!['png','gif'].includes(format))throw Error('导出格式无效');
+    if(!['png','gif','psd','pptx'].includes(format)||(['psd','pptx'].includes(format)&&Array.isArray(name)))throw Error('导出格式无效');
     if(Array.isArray(name)){
       if(!name.length||name.length>500||name.some(n=>typeof n!=='string'||n.length>256))throw Error('请选择 1–500 个画板');
       const choice=await dialog.showOpenDialog(window,{title:'选择画板图片保存文件夹',defaultPath:await imageDestination(),properties:['openDirectory','createDirectory']});
@@ -281,14 +305,22 @@ async function boot() {
       const targets=await require('./core/image-export.cjs').batchTargets(choice.filePaths[0],name,format);
       return {files:targets.map(target=>{const token=randomUUID();exports.set(token,{target,exclusive:true,format});return {token,name:path.basename(target)};})};
     }
-    const choice=await dialog.showSaveDialog(window,{title:`保存 ${format.toUpperCase()}`,defaultPath:await imageDestination(pngName(name||'土狗').replace(/\.(png|gif)$/i,'')+'.'+format),filters:[{name:format==='gif'?'GIF 动图':'PNG 图片',extensions:[format]}]});
+    const choice=await dialog.showSaveDialog(window,{title:`保存 ${format.toUpperCase()}`,defaultPath:await imageDestination(pngName(name||'土狗').replace(/\.(png|gif|psd|pptx)$/i,'')+'.'+format),filters:[{name:format==='pptx'?'PowerPoint 演示文稿':format==='psd'?'Photoshop 文档':format==='gif'?'GIF 动图':'PNG 图片',extensions:[format]}]});
     if(choice.canceled||!choice.filePath)return null;
     const target=await safePath(path.dirname(choice.filePath),path.basename(choice.filePath));
     const token=randomUUID();exports.set(token,{target,format});return {token};
   });
   handle('cancelExport', token => exports.delete(token));
+  handle('presentationExport',async(token,deck,assets)=>{
+    const choice=exports.get(token);if(choice?.format!=='pptx')throw Error('PPT 保存位置已失效，请重新选择');
+    exports.delete(token);
+    const bytes=await require('./core/presentation-export.cjs').exportPresentation(deck,assets,root);
+    await safePath(path.dirname(choice.target),path.basename(choice.target));await atomicWrite(choice.target,bytes);
+    await rememberExportDirectory(app.getPath('userData'),choice.target);return {name:path.basename(choice.target),bytes:bytes.length};
+  });
   handle('writeExport', async (token, bytes) => {
     const choice=exports.get(token);if(!choice)throw new Error('导出目标已失效，请重新选择');
+    if(['psd','pptx'].includes(choice.format))throw Error('请使用对应文档编码保存');
     const target=typeof choice==='string'?choice:choice.target;
     const buffer=Buffer.from(bytes);
     if(choice.format==='gif'){

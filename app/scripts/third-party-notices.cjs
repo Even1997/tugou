@@ -6,6 +6,8 @@ module.exports = async function writeNotices(output = 'dist', bundledInputs = []
   for (const font of require('../core/builtin-fonts.cjs').builtinFonts) sections.push(`${font.family} / ${font.name} ${font.version} (weights: ${require('../core/font-weights.cjs').fontFaces(font).map(f=>f.weight).join(', ')})\n${font.source}\n`+await fs.readFile(path.join('assets/fonts',font.licenseFile),'utf8'));
   for (const [folder, metadata] of Object.entries(packages)) {
     if (!folder || (metadata.dev && !bundledInputs.some(input=>input.startsWith(folder+'/')))) continue;
+    // PptxGenJS declares this metadata-only stub; Node resolves its built-in HTTPS module.
+    if(folder==='node_modules/https'&&metadata.version==='1.0.0'){sections.push('https 1.0.0 (metadata-only package, no source files)\nDeclared license: ISC. Author: hardus van der berg. Node HTTPS is provided by Electron.');continue;}
     let entries;
     try { entries = await fs.readdir(folder); }
     catch (error) { if (error.code === 'ENOENT' && metadata.optional) continue; throw error; }
@@ -21,7 +23,7 @@ module.exports = async function writeNotices(output = 'dist', bundledInputs = []
       if (start < 0) throw new Error(`依赖缺少组件许可声明：${folder}`);
       texts.push(readme.slice(start));
     }
-    if (!texts.length && folder === 'node_modules/is-mobile') {
+    if (!texts.length && ['node_modules/is-mobile','node_modules/isarray'].includes(folder)) {
       const readme = await fs.readFile(path.join(folder,'README.md'),'utf8');
       if (readme.includes('## License')) texts.push(readme.slice(readme.indexOf('## License')));
     }

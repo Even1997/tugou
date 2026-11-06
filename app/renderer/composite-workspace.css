@@ -4,6 +4,9 @@
 .composite-workspace { height:100%; min-width:0; position:relative; }
 .composite-workspace > .message { position:absolute; z-index:50; bottom:52px; left:24px; max-width:70%; }
 .composition-editor { --inspector-width:296px; display:grid;grid-template-columns:minmax(0,1fr) var(--inspector-width);grid-template-rows:44px 44px 34px minmax(0,1fr);background:var(--bg);font-size:12px; }
+.composition-editor:has(.adjustment-panel) { grid-template-columns:minmax(0,1fr) 280px var(--inspector-width); }
+.composition-editor:has(.adjustment-panel) .composition-breadcrumb { overflow-x:auto;scrollbar-width:thin; }
+.composition-editor:has(.adjustment-panel) .composition-breadcrumb > * { flex-shrink:0; }
 [data-theme=dark] .composition-editor { --bg:#151619;--panel:#24262b;--shell:#1d1f23;--surface:#30333a;--line:#3a3d45;--text:#f1f2f5;--muted:#afb4c0;--accent:#bcc9ff;--accent-bg:#343d56;--input:#191b1f; }
 [data-theme=light] .composition-editor { --input:var(--bg); }
 .composition-tools { grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 16px;border-bottom:1px solid var(--line);background:var(--panel);z-index:12; }
@@ -58,7 +61,7 @@
 .composition-breadcrumb-space { flex:1; }
 .composition-editor .layer-workspace { display:contents; }
 .composition-editor .layer-stage { grid-column:1;grid-row:4;background:var(--bg);min-height:0; }
-.composition-editor .layer-sidebar { grid-column:2;grid-row:2/5;width:auto;min-height:0;background:var(--panel);overflow:hidden; }
+.composition-editor .layer-sidebar { grid-column:-2/-1;grid-row:2/5;width:auto;min-height:0;background:var(--panel);overflow:hidden; }
 .composition-editor .layer-sidebar > .inspector-tabs { height:44px;min-height:44px;padding:0 14px;display:flex;align-items:stretch;gap:22px;border-bottom:1px solid var(--line); }
 .composition-editor .inspector-tabs > button,.composition-layer-heading > button:not(.icon-button) { padding:0;height:auto;font-size:12px;color:var(--muted);border-radius:0;position:relative;background:transparent; }
 .composition-editor .inspector-tabs > button[aria-pressed=true],.composition-layer-heading > button[aria-pressed=true] { color:var(--text);font-weight:600; }

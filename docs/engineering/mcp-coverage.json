@@ -1,9 +1,11 @@
 {
   "scope": "独立桌面 app 的业务 IPC 与主要编辑动作；不包含历史 web 项目、第三方模型内部功能和每个视觉控件",
   "ipc": [
+    {"area":"PPT 文件导出","status":"covered","handlers":["presentationExport"],"commands":["ppt.export"],"note":"界面使用一次性保存令牌；MCP 使用受限 filesRoot 相对路径，拒绝覆盖与越界，导出前后校验实时 revision；均使用相同原生 PPTX 导出器"},
+    {"area":"PSD 文件互通","status":"uiOnly","handlers":["psdRead","psdWrite","psdCancel"],"commands":[],"note":"当前经图层界面选择本机文件，导入前审阅转换报告；PSD 文件读写尚未新增 MCP 命令，导入后的像素图层可沿用 layer/paint/mask 命令编辑"},
     {"area":"工程删除","status":"uiOnly","handlers":["deleteProject"],"commands":[],"note":"管理项目中确认删除；校验持久化版本和运行任务，保留共享资源及本地恢复副本"},
     {"area":"开发预览编辑现场","status":"internal","handlers":["devPreview"],"commands":[],"note":"仅未打包开发模式启用，保存内存检查点和应用界面构建，不向 MCP 暴露"},
-    {"area":"本机设置与应用更新","status":"uiOnly","handlers":["settings","update"],"commands":[],"note":"用户在设置页管理语言、存储、MCP 开关与安装更新；不向 AI 暴露退出安装或修改更新源"},
+    {"area":"本机设置与应用更新","status":"uiOnly","handlers":["settings","update"],"commands":[],"note":"用户在设置页管理语言、启动页、动效、画布交互、存储、MCP 开关与安装更新；不向 AI 暴露偏好写入、退出安装或修改更新源"},
     {"area":"独立字体项目与图集工作台","status":"covered","handlers":["fontCommand","fontImport","fontExport"],"commands":["font.status","font.library","font.face","font.publish","font.unpublish","font.project.delete","font.atlas.remove","font.project.create","font.project.list","font.project.get","font.atlas.plan","font.atlas.import","font.atlas.preview","font.atlas.recognize","font.atlas.review","font.atlas.process","font.revision.apply","font.glyph.query","font.glyph.preview","font.review.record","font.build","font.outline.refine","font.job.get","font.artifact.preview","font.artifact.export"],"note":"字体单独保存；支持任意字数导入、本地 OCR 默认保留与独立复核草稿；显式模板工具兼容旧工程，merge 合并已应用字形；原生文件对话框对应 MCP 交换目录"},
     {"area":"字体运行环境目录选择","status":"uiOnly","handlers":["fontConfigure"],"commands":["font.status"],"note":"仅选择已安装环境；MCP 可查询状态，不自动安装依赖"},
     {"area":"工程","status":"covered","handlers":["list","create","open","save"],"commands":["project.list","project.create","project.open","project.save"]},
@@ -19,14 +21,15 @@
     {"area":"云端单张、批量、审阅和重试","status":"covered","handlers":["startCloudTool","startCloudBatch","cancelCloudBatch","cloudReview","resumeCloudTool","keepCloudRaw","retryCloudTool"],"commands":["cloud.process","cloud.batch","cloud.cancelBatch","cloud.review","cloud.resolve","task.retry"]},
     {"area":"对象类别识别、读取和拆分","status":"covered","handlers":["analyzeCategories","readCategories","splitCategories"],"commands":["semantic.analyze","semantic.read","semantic.generate"]},
     {"area":"视觉分析和审阅","status":"covered","handlers":["analyze","analyses","saveAnalysisReview"],"commands":["analysis.start","analysis.results","analysis.review","analysis.apply"]},
-    {"area":"画板 PNG / GIF 导出","status":"covered","handlers":["chooseExport","cancelExport","writeExport"],"commands":["artboard.export","artboard.timeline","artboard.exportAnimation","task.result","task.cancel"],"note":"PNG 单帧或 GIF 帧范围异步导出，帧号从 1 起；受控目录、不覆盖文件"},
+    {"area":"画板 PNG / GIF 导出","status":"covered","handlers":["chooseExport","cancelExport","writeExport"],"commands":["artboard.export","artboard.timeline","artboard.exportAnimation","task.result","task.cancel"],"note":"PNG 单帧或 GIF 帧范围异步导出，帧号从 1 起；受控目录、不覆盖文件。PSD 复用界面保存位置令牌，但需专用编码写入；PSD 未接 MCP，见对应条目"},
     {"area":"GIF 编码","status":"covered","handlers":["encodeGif"],"commands":["gif.create","task.result","task.cancel"],"note":"有序图片、逐帧时长、尺寸与循环；输出素材可直接加入图层或画布"},
     {"area":"原生编辑和剪贴板","status":"uiOnly","handlers":["editCommand"],"commands":["history.undo","history.redo"],"note":"业务对象复制使用 canvas.duplicate / layer.duplicate，撤销重做已有命令；系统剪贴板和输入框剪切仍由用户控制"},
     {"area":"宿主窗口、剪贴板和脏状态","status":"uiOnly","handlers":["copyText","dirty","window"],"commands":[],"note":"脏状态由编辑自动维护，窗口与剪贴板不属于文档创作命令"}
   ],
   "editor": [
+    {"area":"PPT 文稿、页面、元素与演示","source":"app/renderer/presentations.jsx","status":"covered","commands":["ppt.list","ppt.get","ppt.create","ppt.rename","ppt.duplicate","ppt.delete","ppt.slide.create","ppt.slide.update","ppt.slide.duplicate","ppt.slide.delete","ppt.slide.move","ppt.element.create","ppt.element.update","ppt.element.duplicate","ppt.element.delete","ppt.element.move","ppt.element.effects","ppt.open","ppt.close","ppt.preview","ppt.present","ppt.export"],"note":"共用字体和素材库；元素图层排序、隐藏、锁定及内外阴影和边框；可批次撤销、PNG 预览和全屏翻页。PPTX 导入按原定范围后续提供"},
     {"area":"项目内多画布与多合成","source":"app/renderer/page-tabs.jsx","status":"covered","commands":["page.list","page.activate","page.create","page.rename","page.duplicate","page.delete"],"note":"素材与提示词共享；对象编辑针对各自当前页；生成回原画布，统一工程历史"},
-    {"area":"界面检查、截图与可恢复导航","source":"app/renderer/ui-automation.js","status":"covered","commands":["ui.inspect","ui.capture","ui.navigate","ui.restore"],"note":"只读可见界面与覆盖信息；长列表分段滚动，画布定位/概览，支持视图恢复；不含原生系统窗口与任意控件点击"},
+    {"area":"界面检查、截图与可恢复导航","source":"app/renderer/ui-automation.js","status":"covered","commands":["ui.inspect","ui.capture","ui.navigate","ui.restore"],"note":"只读可见界面与覆盖信息；长列表分段滚动，画布定位/概览，支持视图恢复与全部十个设置分类导航；不含原生系统窗口与任意控件点击"},
     {"area":"提示词模块","source":"app/renderer/prompt-workbench.jsx","status":"covered","commands":["prompt.create","prompt.update","prompt.delete","prompt.sync","canvas.create"]},
     {"area":"配方及引用","source":"app/renderer/recipes.jsx","status":"covered","commands":["recipe.create","recipe.update","recipe.delete","prompt.sync","recipe.references","prompt.binding","canvas.refreshBinding"],"note":"参考图职责和顺序、绑定覆盖/重置/冲突保留或使用源版本；配方节点保留快照，需要显式刷新"},
     {"area":"画布节点、连接与组合","source":"app/renderer/canvas.jsx","status":"covered","commands":["canvas.create","canvas.update","canvas.connect","canvas.disconnect","canvas.delete","canvas.group","canvas.ungroup","canvas.arrange","canvas.viewport","canvas.duplicate","canvas.resize","canvas.selectResult"],"note":"复制组和内部连线并重映射引用；统一显示尺寸；切换后续连线使用的结果图"},
@@ -34,12 +37,12 @@
     {"area":"素材库","source":"app/renderer/materials.jsx","status":"covered","commands":["asset.import","asset.export","asset.preview","asset.rename","asset.delete","asset.details","layer.replaceImage","asset.search"],"note":"来源、形状、名称筛选与像素/名称/时间排序，支持分页"},
     {"area":"画板","source":"app/renderer/composite-workspace.jsx","status":"covered","commands":["artboard.create","artboard.update","artboard.duplicate","artboard.delete","artboard.export"],"note":"导出受 MCP 1600 万像素预算约束"},
     {"area":"图层基本编辑","source":"app/renderer/layers.jsx","status":"covered","commands":["layer.create","layer.update","layer.delete","layer.duplicate","layer.group","layer.ungroup","layer.move","layer.reorder","layer.reparent","layer.align","layer.distribute","layer.lock","layer.merge","artboard.cropSelection"],"note":"layer.update 支持缩放、倾斜、透视四角、剪贴及外部蒙版；完整混合模式与直线；选区裁切画板"},
-    {"area":"调整和特效","source":"app/renderer/adjustment-tools.jsx","status":"covered","commands":["layer.adjustment","layer.effects","layer.adjustmentFromSelection"],"note":"从当前选区创建带独立蒙版的调整图层"},
+    {"area":"调整和特效","source":"app/renderer/adjustment-tools.jsx","status":"covered","commands":["layer.adjustment","layer.effects","layer.adjustmentFromSelection"],"note":"从当前选区创建带独立蒙版的调整图层；photo 支持冷暖、色调、曝光、高光、阴影、自然饱和度和饱和度。临时按住对比及滑块预览属于界面状态，不写入文档"},
     {"area":"选区","source":"app/renderer/selection-tools.jsx","status":"covered","commands":["selection.rectangle","selection.ellipse","selection.polygon","selection.invert","selection.clear","selection.rasterize","selection.subject","selection.color","selection.grow","selection.feather"],"note":"魔棒/非连续颜色范围、扩展/收缩/羽化；矩形/椭圆支持加减交；反选后的矢量组合先 rasterize，与桌面使用同一选区算法"},
     {"area":"蒙版","source":"app/renderer/mask-view.js","status":"covered","commands":["mask.create","mask.update","mask.delete","mask.fill","mask.loadSelection","mask.link","mask.transform","mask.relink"],"note":"解除链接固定世界坐标，独立仿射变换，再栅格固化并链接；保持当前外观"},
-    {"area":"绘画与修图","source":"app/renderer/retouch.js","status":"covered","commands":["paint.stroke","image.fillSelection","paint.create","image.contentFill","paint.retouch"],"note":"透明绘画层、内容识别填充、仿制/修复/模糊/涂抹/液化；paint.stroke 支持压感与平滑"},
+    {"area":"绘画与修图","source":"app/renderer/retouch.js","status":"covered","commands":["paint.stroke","image.fillSelection","paint.create","image.contentFill","paint.retouch","layer.retouchCopy"],"note":"layer.retouchCopy 原位创建副本并隐藏原层，拒绝关联蒙版来源；透明绘画层、内容识别填充、仿制/修复/模糊/涂抹/液化；paint.stroke 支持压感与平滑"},
     {"area":"排版辅助","source":"app/renderer/layers.jsx","status":"covered","commands":["layout.update"],"note":"画板网格、吸附、参考线；标尺与提示为界面反馈"},
     {"area":"3D 导演台","source":"app/renderer/scene-view.jsx","status":"covered","commands":["scene.update","scene.object.create","scene.object.update","scene.object.duplicate","scene.object.delete","scene.camera.create","scene.camera.update","scene.camera.activate","scene.camera.delete","scene.frame.set","scene.frame.delete","scene.frame.apply","scene.model.import","scene.preview","scene.capture","scene.record","scene.captureAngles","task.result","task.cancel"],"note":"1–60 秒后台录制及取消、4/12 方位截图；预览/录制长边仍限 2048，场景限 200 物体和 100 万顶点"},
-    {"area":"工作区导航与编辑历史","source":"app/renderer/index.jsx","status":"covered","commands":["workspace.show","history.undo","history.redo"]}
+    {"area":"工作区导航与编辑历史","source":"app/renderer/index.jsx","status":"covered","commands":["workspace.show","history.undo","history.redo"],"note":"workspace.show 和 ui.navigate 支持 ppt 工作区；PPT 内容编辑、预览、演示与导出通过 ppt 命令接入"}
   ]
 }

@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import {materialMime} from './material-drag.js';
 import {usePreferences} from './preferences.jsx';
 import {ProjectManager} from './removal-dialog.jsx';
+import GithubOutlined from '@ant-design/icons/GithubOutlined';
 import {
   Button,
   Icon,
@@ -33,6 +34,7 @@ export function StudioHeader({
   canRedo,
   rename,
   deleteProject,
+  openGithub,
 }) {
   const {t,update}=usePreferences();
   const dragTimer=useRef(null);
@@ -156,6 +158,7 @@ export function StudioHeader({
             ["prompts", "提示词工作台"],
             ["canvas", "无限画布"],
             ["layers", "图层编辑器"],
+            ["ppt", "PPT"],
             ["tools", "图像工具"],
             ["assets", "素材库"],
             ["fonts", "字体"],
@@ -176,7 +179,7 @@ export function StudioHeader({
               onDrop={()=>{clearTimeout(dragTimer.current);dragTimer.current=null;}}
             ><span>{t(id)}</span></Button>
           ))}
-          <div className="rail-bottom"><IconButton label={t('settings')} className={['available','ready'].includes(update?.status)&&update.skippedVersion!==update.version?'has-update':''} icon="settings" aria-current={workspace==='settings'?'page':undefined} onClick={()=>setWorkspace('settings')}/><IconButton
+          <div className="rail-bottom"><IconButton label="GitHub" icon={<GithubOutlined />} onClick={openGithub}/><IconButton label={t('settings')} className={['available','ready'].includes(update?.status)&&update.skippedVersion!==update.version?'has-update':''} icon="settings" aria-current={workspace==='settings'?'page':undefined} onClick={()=>setWorkspace('settings')}/><IconButton
             label={theme.mode === "dark" ? "切换浅色主题" : "切换深色主题"}
             icon={theme.mode === "dark" ? "sun" : "moon"}
             onClick={theme.toggle}

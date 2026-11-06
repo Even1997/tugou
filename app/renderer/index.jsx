@@ -32,6 +32,7 @@ import {FontWorkspace} from './font-workspace.jsx';
 import {PreferencesProvider,usePreferences} from './preferences.jsx';
 import {commandFor,shortcutBlocked} from '../core/shortcuts.cjs';
 import {SettingsWorkspace} from './settings.jsx';
+import {PresentationsWorkspace} from './presentations.jsx';
 import {HomeWorkspace} from './home.jsx';
 import {UpdatePrompt} from './update-prompt.jsx';
 import {useDevPreview} from './dev-preview.jsx';
@@ -92,7 +93,7 @@ function App() {
   const refresh = async () => {setProjects(await api.list());setProjectsReady(true);};
   useEffect(() => {
     run(refresh);
-    if(!previewBootstrap.snapshot&&!sessionStorage.getItem('tugou-reload-view'))run(async()=>{const restored=prepareRecord(await api.settings('lastProject'));if(restored&&!present.current){present.current=restored;setRecord(restored);if(restored.promptsExtracted)markDirty(true);}});
+    if(!previewBootstrap.snapshot&&!sessionStorage.getItem('tugou-reload-view'))run(async()=>{const [last,settings]=await Promise.all([api.settings('lastProject'),api.settings('get')]);const restored=prepareRecord(last);if(restored&&!present.current){present.current=restored;setRecord(restored);setWorkspace(current=>current==='home'?settings.preferences.startupWorkspace:current);if(restored.promptsExtracted)markDirty(true);}});
   }, []);
   useEffect(() => {
     const raw = sessionStorage.getItem("tugou-reload-view");
@@ -107,7 +108,7 @@ function App() {
         if(next.promptsExtracted)markDirty(true);
       }
       if (
-        ["home", "layers", "canvas", "prompts", "assets", "tools", "fonts", "settings"].includes(
+        ["home", "layers", "canvas", "prompts", "assets", "tools", "fonts", "settings", "ppt"].includes(
           view.workspace,
         )
       )
@@ -451,6 +452,7 @@ function App() {
   return (
     <div className={"app-shell workspace-" + workspace}>
       <StudioHeader
+        openGithub={() => run(() => api.settings('sourcePage'))}
         deleteProject={deleteProject}
         rename={(name) => change({ ...present.current.document, name })}
         projects={projects}
@@ -504,7 +506,7 @@ function App() {
               addToCanvas={addToCanvas} addToLayers={(...args)=>{if(!busyRef.current){addAssetLayer(...args);setToolSession(null);}}} />
           </div>
         </FormDialog>}
-        {workspace === 'home' ? <HomeWorkspace projects={projects} projectsReady={projectsReady} record={record} tasks={tasks} tasksReady={tasksReady} busy={busy} create={()=>switchProject(()=>api.create('未命名创作'))} open={id=>switchProject(()=>api.open(id))} navigate={setWorkspace} showTasks={()=>setTasksOpen(true)}/> : workspace === 'settings' ? <SettingsWorkspace openModels={()=>setConnectionOpen(true)} modelsOpen={connectionOpen} /> : workspace === "fonts" ? <FontWorkspace /> : record ? (
+        {workspace === 'ppt' ? <PresentationsWorkspace key={record?.id||'empty'} record={record} change={change} disabled={busy} save={save} undo={()=>travel('undo')} redo={()=>travel('redo')} canUndo={Boolean(history.current.past.length)} canRedo={Boolean(history.current.future.length)} createProject={()=>switchProject(()=>api.create('演示文稿工程'))}/> : workspace === 'home' ? <HomeWorkspace projects={projects} projectsReady={projectsReady} record={record} tasks={tasks} tasksReady={tasksReady} busy={busy} create={()=>switchProject(()=>api.create('未命名创作'))} open={id=>switchProject(()=>api.open(id))} navigate={setWorkspace} showTasks={()=>setTasksOpen(true)}/> : workspace === 'settings' ? <SettingsWorkspace openModels={()=>setConnectionOpen(true)} modelsOpen={connectionOpen} /> : workspace === "fonts" ? <FontWorkspace /> : record ? (
           <>
             <div className="document-heading">
               <input

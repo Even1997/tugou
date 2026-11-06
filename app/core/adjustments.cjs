@@ -1,4 +1,16 @@
 const fields = {
+  photo: {
+    label: "照片调色",
+    values: {
+      temperature: ["冷暖", 0, -100, 100],
+      tint: ["绿—洋红", 0, -100, 100],
+      exposure: ["曝光补偿", 0, -3, 3, 0.1],
+      highlights: ["高光", 0, -100, 100],
+      shadows: ["阴影", 0, -100, 100],
+      vibrance: ["自然饱和度", 0, -100, 100],
+      saturation: ["饱和度", 0, -100, 100],
+    },
+  },
   brightnessContrast: {
     label: "亮度与对比度",
     values: {
@@ -172,6 +184,8 @@ function noise(x, y, seed) {
 function adjustPixels(data, width, a, { scale = 1, x = 0, y = 0 } = {}) {
   validateAdjustment(a);
   const type = a.type;
+  // Relative SDR color controls, not Kelvin white balance or RAW highlight recovery.
+  const photoGains=type==='photo'?[2**(a.exposure+a.temperature*.0035+a.tint*.0015),2**(a.exposure-a.tint*.0015),2**(a.exposure-a.temperature*.0035+a.tint*.0015)]:null;
   const lut = ["levels", "exposure", "brightnessContrast", "invert"].includes(
     type,
   )
@@ -231,6 +245,17 @@ function adjustPixels(data, width, a, { scale = 1, x = 0, y = 0 } = {}) {
       continue;
     }
     const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    if(photoGains){
+      const red=clamp(r*photoGains[0]),green=clamp(g*photoGains[1]),blue=clamp(b*photoGains[2]);
+      const light=(.2126*red+.7152*green+.0722*blue)/255;
+      const shift=255*light*(1-light)*(a.shadows/100*(1-light)**2+a.highlights/100*light**2);
+      const max=Math.max(red,green,blue),chroma=max? (max-Math.min(red,green,blue))/max:0;
+      const saturation=(1+a.saturation/100)*(1+a.vibrance/100*(1-chroma));
+      data[i]=clamp(light*255+(red-light*255)*saturation+shift);
+      data[i+1]=clamp(light*255+(green-light*255)*saturation+shift);
+      data[i+2]=clamp(light*255+(blue-light*255)*saturation+shift);
+      continue;
+    }
     if (type === "blackWhite") {
       data[i] =
         data[i + 1] =

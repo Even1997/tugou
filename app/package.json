@@ -1,6 +1,6 @@
 {
   "name": "tugou-app",
-  "version": "0.8.13",
+  "version": "0.8.14",
   "private": true,
   "description": "土狗独立桌面实现",
   "main": "main.cjs",
@@ -16,9 +16,13 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
+    "@xmldom/xmldom": "0.8.15",
+    "ag-psd": "34.1.0",
     "ajv": "8.20.0",
     "electron-updater": "6.8.11",
+    "jszip": "3.10.2",
     "p-limit": "7.2.0",
+    "pptxgenjs": "4.0.1",
     "semver": "7.8.5",
     "sharp": "0.35.5",
     "tar": "7.5.22",
@@ -38,5 +42,10 @@
     "three": "0.185.1"
   },
   "license": "Apache-2.0",
-  "author": "Even"
+  "author": "Even",
+  "overrides": {
+    "pptxgenjs": {
+      "image-size": "2.0.3"
+    }
+  }
 }

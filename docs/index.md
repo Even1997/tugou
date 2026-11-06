@@ -14,6 +14,8 @@
 
 ## 开发文档
 
+- [PPT 模块、开源方案与验收边界](engineering/presentations.md)
+
 - [MCP 全量创作命令与任务调用](engineering/mcp-creative-commands.md)
 - [MCP 当前验收与发布边界](engineering/mcp-readiness-review.md)
 

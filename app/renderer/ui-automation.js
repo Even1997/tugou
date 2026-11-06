@@ -1,6 +1,6 @@
 import {views} from './ui-view.js';
 import {group} from '../core/pages.cjs';
-const regions={main:'main',canvas:'.flow-surface',palette:'.canvas-palette',inspector:'.canvas-inspector,.layer-inspector',modules:'.module-list',prompt:'.module-editor',recipe:'.recipe-sidebar',settings:'.settings-content',fonts:'.font-workspace',assets:'.library-content',dialog:'.ant-modal-wrap:not([style*="display: none"]) .ant-modal-content'};
+const regions={ppt:'.ppt-workspace',pptSlide:'.ppt-player .ppt-stage',main:'main',canvas:'.flow-surface',palette:'.canvas-palette',inspector:'.canvas-inspector,.layer-inspector',modules:'.module-list',prompt:'.module-editor',recipe:'.recipe-sidebar',settings:'.settings-content',fonts:'.font-workspace',assets:'.library-content',dialog:'.ant-modal-wrap:not([style*="display: none"]) .ant-modal-content'};
 const privateSelector='[data-ui-private],.ant-input-password,input[type="password"],.settings-config-code,.settings-connection-fields';
 const ids=new WeakMap(),elements=new Map(),checkpoints=new Map();let serial=0,viewRevision=0,started=false,pointerDown=false;
 const fail=(code,message)=>{throw Object.assign(Error(message),{code});};
@@ -43,10 +43,10 @@ export function inspectUi(state,{offset=0,limit=80}={}){
     canvas:state.workspace==='canvas'?{totalNodes:canvas.length,visibleNodes:nodes,outsideViewport:Math.max(0,canvas.length-nodes.length),nodeIdsComplete:false}:null,
     coverage:{scope:'visible-viewport',scanTruncated:truncated,scrollAreasTruncated:scroll.length>100,obscuredByDialog:!!activeDialog,controlsScope:activeDialog?'top-dialog':'viewport',foldedContentIncluded:false,offscreenContentIncluded:false,nativeDialogsIncluded:false,nativeWindowFrameIncluded:false},redactedRegions:Array.from(document.querySelectorAll(privateSelector)).filter(visible).map(rect)};
 }
-export function navigationGuard(context){
+export function navigationGuard(context,allowedDialog=null){
   if(pointerDown)fail('UI_EDITING','正在拖拽或绘制，请先完成当前操作');
   if(context.busyRef.current)fail('BUSY','界面正在处理操作');
-  if(Array.from(document.querySelectorAll('[role="dialog"],.ant-popover,.ant-select-dropdown')).some(visible))fail('UI_BLOCKED','请先完成或关闭当前弹窗/下拉菜单');
+  if(Array.from(document.querySelectorAll('[role="dialog"],.ant-popover,.ant-select-dropdown')).some(e=>e!==allowedDialog&&visible(e)))fail('UI_BLOCKED','请先完成或关闭当前弹窗/下拉菜单');
   if(document.activeElement?.matches('input,textarea,[contenteditable="true"],[role="combobox"]'))fail('UI_EDITING','当前正在输入，请先完成编辑并离开输入框');
   for(const v of views.values()){const reason=v.blocked();if(reason)fail('UI_EDITING',reason);}
 }

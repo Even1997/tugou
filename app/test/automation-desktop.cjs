@@ -50,7 +50,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   assert.deepEqual(summary.commands.map(c=>c.name),full.commands.map(c=>c.name));
   const focused=await value('list_commands',{domain:'scene.camera',search:'activate',schemas:true});check('command search returns focused schema on demand',focused.commands.length===1&&focused.commands[0].name==='scene.camera.activate'&&!!focused.commands[0].inputSchema);
   check('SDK initializes actual stdio MCP and discovers tools',(await client.listTools()).tools.length===7);
-  check('resources and task templates discoverable',(await client.listResources()).resources.length===2&&(await client.listPrompts()).prompts.length===3);
+  check('resources and task templates discoverable',(await client.listResources()).resources.length===2&&(await client.listPrompts()).prompts.length===4);
   const started=Date.now();await state();report.stateLatencyMs=Date.now()-started;
   const created=await run('project.create',{name:'MCP 实机验收'});check('creates project in live window',created.projectId&&created.name==='MCP 实机验收');
   const initial=await state(),setup=await batch([
