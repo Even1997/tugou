@@ -14,6 +14,9 @@
 
 ## 开发文档
 
+- [v0.8.14 发布说明](releases/v0.8.14.md)
+- [v0.8.14 发布验收](engineering/release-v0.8.14.md)
+
 - [PPT 模块、开源方案与验收边界](engineering/presentations.md)
 
 - [MCP 全量创作命令与任务调用](engineering/mcp-creative-commands.md)
