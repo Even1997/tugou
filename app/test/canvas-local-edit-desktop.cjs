@@ -146,7 +146,7 @@ app.on('browser-window-created',(_,w)=>{
    const previewSample=`(()=>{const c=document.querySelector('[aria-label="涂画修改区域画布"]');return [...c.getContext('2d').getImageData(Math.round(c.width*.25),Math.round(c.height*.25),1,1).data]})()`;
    const blankPreview=await js(previewSample),beforeDragRevision=await js(`document.querySelector('[aria-label="涂画修改区域画布"]').dataset.revision`);
    await draw([[.45,.4],[.3,.2],[.1,.1]],async()=>{
-     await delay(50);check('rectangle previews before releasing pointer',JSON.stringify(await js(previewSample))!==JSON.stringify(blankPreview)&&await js(`document.querySelector('[aria-label="涂画修改区域画布"]').dataset.revision===${JSON.stringify(beforeDragRevision)}`));
+     await wait(`JSON.stringify(${previewSample})!==${JSON.stringify(JSON.stringify(blankPreview))}`);check('rectangle previews before releasing pointer',JSON.stringify(await js(previewSample))!==JSON.stringify(blankPreview)&&await js(`document.querySelector('[aria-label="涂画修改区域画布"]').dataset.revision===${JSON.stringify(beforeDragRevision)}`));
      fs.writeFileSync(path.join(out,'rectangle-drag.png'),(await w.webContents.capturePage()).toPNG());
    });
    await click('圆形');await draw([[.6,.6],[.9,.95]]);await draw([[.35,.9],[.1,.6]]);
