@@ -55,7 +55,10 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   await screenshot('maker-large-preview');
   for(let i=0;i<24;i++){await js(`document.querySelector('[title="添加 方图"]').click()`);await sleep(10);}
   check('long frame list cannot shrink preview into controls',await previewFits());
-  await js(`document.querySelector('.gif-frame-list li:last-child').scrollIntoView({block:'nearest'})`);await sleep(100);
+  await wait(`document.querySelectorAll('.gif-frame-list li').length===29`);
+  await js(`new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`);
+  await js(`document.querySelector('.gif-frame-list li:last-child').scrollIntoView({block:'nearest',behavior:'instant'})`);
+  await wait(`(()=>{const r=document.querySelector('.gif-frame-list li:last-child').getBoundingClientRect(),p=document.querySelector('.gif-main').getBoundingClientRect();return r.top>=p.top&&r.bottom<=p.bottom+1})()`);
   check('last frame remains reachable by scrolling',await js(`(()=>{const r=document.querySelector('.gif-frame-list li:last-child').getBoundingClientRect(),p=document.querySelector('.gif-main').getBoundingClientRect();return r.top>=p.top&&r.bottom<=p.bottom+1})()`));
   while(await js(`document.querySelectorAll('.gif-frame-list li').length>2`)){
    const index=await js(`[...document.querySelectorAll('.gif-frame-name')].findIndex(e=>/方图|竖图|横图/.test(e.textContent))+1`);await click(`移除第 ${index} 帧`);
