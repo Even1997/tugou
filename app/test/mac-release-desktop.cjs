@@ -44,7 +44,7 @@ app.on('browser-window-created',(_,w)=>{
     check('Mac system and bundled fonts available',fonts.system.length>0&&fonts.builtin.length>0&&!fonts.warning);
     check('macOS credential encryption available',safeStorage.isEncryptionAvailable());
     await js(`document.querySelector('.rail-bottom [aria-label="设置"]').click()`);
-    await wait(`document.querySelectorAll('[data-settings-tab]').length===7`);check('all settings sections open',true);
+    await wait(`document.querySelectorAll('[data-settings-tab]').length===10`);check('all ten settings sections open',await js(`JSON.stringify([...document.querySelectorAll('[data-settings-tab]')].map(e=>e.dataset.settingsTab).sort())===JSON.stringify(['general','appearance','canvas','notifications','storage','models','mcp','shortcuts','updates','about'].sort())`));
     for(const theme of ['light','dark']){
       await js(`window.tugou.settings('save',{theme:${JSON.stringify(theme)}})`);await delay(250);
       w.show();await delay(150);fs.writeFileSync(path.join(out,theme+'.png'),(await w.webContents.capturePage()).toPNG());
