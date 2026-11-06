@@ -80,6 +80,9 @@ app.on('browser-window-created',(_,w)=>{
    const first=(await run('canvas.create',{type:'asset',sourceId:portrait.id,position:{x:0,y:0}})).id;
    const target=(await run('canvas.create',{type:'asset',sourceId:asset.id,position:{x:340,y:0}})).id;
    await run('ui.navigate',{workspace:'canvas',nodeId:first});
+   await run('ui.navigate',{overview:true});
+   await wait(`!!document.querySelector('[data-id="${target}"] [aria-label="局部修改"]')`);
+   check('both images are visible while the first remains selected',await js(`document.querySelector('.react-flow__node.selected').dataset.id===${JSON.stringify(first)}`));
    const openPaint=async(id=target)=>{await js(`document.querySelector('[data-id="${id}"] [aria-label="局部修改"]').click()`);await wait(`document.querySelector('[aria-label="涂画修改区域画布"]')?.dataset.ready==='true'`);};
    // A hovered node must edit itself, even while a different image remains selected.
    await openPaint();
