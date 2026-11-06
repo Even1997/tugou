@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Dropdown } from 'antd';
+import {names as toolNames,icons as toolIcons} from '../core/canvas-tools.cjs';
 import { Button, Icon, Input } from './components.jsx';
 
 const entries = [
   ['text', '文字提示词', 'text', '文本 prompt text'],
   ['emptyImage', '图片节点', 'assets', '图像 image picture'],
   ['config', '生成台', 'tools', '生成 生图 generator'],
-  ['upscale', 'AI 超分辨率', 'zoomIn', '超分 放大 upscale'],
-  ['cutout', '主体抠图', 'mask', '抠图 去背景 cutout'],
+  ...Object.entries(toolNames).map(([id,name])=>[id,name,toolIcons[id]||'tools',id]),
 ];
 
 export function CanvasNodeMenu({ position, close, choose, disabled, canChoose }) {

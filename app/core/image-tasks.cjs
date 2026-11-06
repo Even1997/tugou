@@ -24,11 +24,17 @@ const {
 const {cleanupNames, cleanupDefaults} = require('./cleanup-settings.cjs');
 const aiNames = { upscale: "AI 超分辨率", cutout: "主体抠图", ...cleanupNames };
 const aiDefaults = { upscale: { model: "general", scale: 4 }, cutout: { model: 'birefnet', edgeShrink: 0, edgeFeather: 0 }, ...cleanupDefaults };
-const names = { ...operations, ...compositionNames, ...aiNames };
+const names = { ...operations, ...compositionNames, ...aiNames, gif:'GIF 动图制作' };
 const fail = (message) =>
   Object.assign(new Error(message), { safeMessage: message });
 function validateJob(job) {
   const { inputs, secondary, settings: s } = job;
+  if(s?.operation==='gif'){
+    if(!Array.isArray(inputs)||inputs.length<2)throw fail('GIF 至少需要两张图片');
+    require('./gif.cjs').limits(s.width,s.height,inputs.length);
+    if(![0,1].includes(s.loop)||!Array.isArray(s.delays)||s.delays.length!==inputs.length||s.delays.some(n=>!Number.isInteger(n)||n<20||n>60000||n%10))throw fail('GIF 帧时长或循环参数无效');
+    return;
+  }
   if (
     !s ||
     !Object.hasOwn(names, s.operation) ||
@@ -55,13 +61,14 @@ function validateJob(job) {
     throw fail('涂画修复一次处理一张，蒙版须与原图尺寸相同');
 }
 class ImageTaskService {
-  constructor(projects, tasks, inspectImage, execute, localAI) {
+  constructor(projects, tasks, inspectImage, execute, localAI, cloud) {
     Object.assign(this, {
       projects,
       tasks,
       inspectImage,
       execute,
       localAI,
+      cloud,
       root: projects.root,
     });
   }
@@ -84,8 +91,9 @@ class ImageTaskService {
   }
   async startNode(projectId,document,nodeId){
     validateDocument(document);
-    const {asset,settings,signature}=require('./canvas-tools.cjs').compileTool(document,nodeId);
-    return this.start(projectId,document,[asset.id],settings,{nodeId,signature});
+    const {asset,inputs,settings,signature}=require('./canvas-tools.cjs').compileTool(document,nodeId);
+    if(settings.operation==='cloudExtend')return this.cloud.startNode(projectId,document,nodeId);
+    return this.start(projectId,document,settings.operation==='gif'?inputs.map(i=>i.asset.id):[asset.id],settings,{nodeId,signature});
   }
   async start(projectId, document, sourceIds, options, canvas) {
     await this.projects.read(projectId);
@@ -93,14 +101,14 @@ class ImageTaskService {
     if (
       !Array.isArray(sourceIds) ||
       sourceIds.length < 1 ||
-      sourceIds.length > 64 ||
-      new Set(sourceIds).size !== sourceIds.length
+      sourceIds.length > (options?.operation==='gif'?240:64) ||
+      options?.operation!=='gif'&&new Set(sourceIds).size !== sourceIds.length
     )
       throw fail("请选择 1–64 张不同素材");
     if (!options || !Object.hasOwn(names, options.operation))
       throw fail("不支持的图像工具");
     const base =
-      { ...defaults, ...compositionDefaults, ...aiDefaults }[
+      { ...defaults, ...compositionDefaults, ...aiDefaults, gif:{width:512,height:512,loop:0,delays:[]} }[
         options.operation
       ] || {};
     const settings = {
@@ -201,7 +209,13 @@ class ImageTaskService {
         let nextInput = 0;
         const entry = this.tasks.tasks.find((t) => t.id === id);
         try {
-          const execute = isAI
+          const execute = job.settings.operation==='gif'
+            ? async(job,signal,onPart)=>{
+                const frames=[];for(const input of job.inputs){signal.throwIfAborted();frames.push(await referenceBytes(this.root,input));}
+                const bytes=await require('./gif.cjs').encodeGif(frames,job.settings);signal.throwIfAborted();
+                await onPart({inputIndex:0,index:0,count:1,bytes});
+              }
+            : isAI
             ? (job, signal, part, progress) =>
                 this.localAI.execute(job, runtime, signal, id, part, progress)
             : this.execute;
@@ -253,7 +267,7 @@ class ImageTaskService {
                   input.width,
                   input.height,
                 );
-              if (["crop", "pattern", "tile"].includes(job.settings.operation))
+              if (["crop", "pattern", "tile", "gif"].includes(job.settings.operation))
                 expected = job.settings;
               if (
                 output.width !== expected.width ||
@@ -270,6 +284,7 @@ class ImageTaskService {
                   ...settings,
                   sourceId: input.id,
                   source: input,
+                  ...(job.settings.operation==='gif'?{sources:job.inputs}:{}),
                   secondary: job.secondary,
                   ...(job.mask ? {mask:job.mask} : {}),
                   ...(part.report ? {report:part.report} : {}),
@@ -302,7 +317,7 @@ class ImageTaskService {
             },
           );
           signal.throwIfAborted();
-          if (nextInput !== job.inputs.length || !outputs.length)
+          if (nextInput !== (job.settings.operation==='gif'?1:job.inputs.length) || !outputs.length)
             throw fail("图像结果不完整，未入库");
           await atomicWrite(
             await safePath(this.root, "results", `${id}.json`),

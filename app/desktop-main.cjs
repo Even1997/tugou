@@ -71,7 +71,7 @@ async function boot() {
   await analysis.recover();
   const entry = path.join(process.env.TUGOU_DATA_DIR && process.env.TUGOU_BUILD_DIR ? path.resolve(process.env.TUGOU_BUILD_DIR) : path.join(__dirname, 'dist'), 'index.html');
   const entryUrl = pathToFileURL(entry).href;
-  const imageTools = new ImageTaskService(projects, tasks, inspectImage, createRasterRunner(path.dirname(entry)), localAI);
+  const imageTools = new ImageTaskService(projects, tasks, inspectImage, createRasterRunner(path.dirname(entry)), localAI, cloud);
   protocol.handle('tugou-media', async (request) => {
     try {
       const url = new URL(request.url);

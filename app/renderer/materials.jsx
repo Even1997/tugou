@@ -46,20 +46,22 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
           assets: [...latest.current.assets, ...added],
         });
     },setError,disabled);
-  const remove = () => {
-    const { assets, ...content } = document;
+  const remove = (ids) => {
+    if(disabled||!ids.length)return;
+    setError('');setNotice('');
+    const { assets, ...content } = latest.current;
     const source = JSON.stringify(content);
-    const used = selected.filter((id) => source.includes(JSON.stringify(id)));
+    const used = ids.filter((id) => source.includes(JSON.stringify(id)));
     if (used.length) {
       setError(`${used.length} 项素材仍被图层、画布或配方引用，请先解除引用。`);
       return;
     }
-    if (confirm(`从素材库移除 ${selected.length} 项素材？原文件不会删除。`)) {
+    if (confirm(`从素材库移除 ${ids.length} 项素材？原文件不会删除。`)) {
       change({
-        ...document,
-        assets: assets.filter((a) => !selected.includes(a.id)),
+        ...latest.current,
+        assets: assets.filter((a) => !ids.includes(a.id)),
       });
-      setSelected([]);
+      setSelected(current=>current.filter(id=>!ids.includes(id)));
     }
   };
   return (
@@ -86,7 +88,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
           <option value="medium">中缩略图</option>
           <option value="large">大缩略图</option>
         </Select>
-        <Button iconOnly aria-label={`移除${selected.length ? ` (${selected.length})` : ""}`} disabled={!selected.length} icon="delete" onClick={remove}>
+        <Button iconOnly aria-label={`移除${selected.length ? ` (${selected.length})` : ""}`} disabled={disabled||!chosen.length} icon="delete" onClick={()=>remove(chosen)}>
           移除{selected.length ? ` (${selected.length})` : ""}
         </Button>
         <Button iconOnly aria-label={`处理所选${selected.length ? ` (${selected.length})` : ""}`} disabled={!selected.length||selected.some(id=>document.assets.some(a=>a.id===id&&a.kind&&a.kind!=='image'))} icon="tools" onClick={()=>editImages(selected)}>处理所选{selected.length ? ` (${selected.length})` : ""}</Button>
@@ -106,7 +108,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
       {assets.length ? (
         <MaterialGrid items={assets} density={density}>
           {(asset) => (
-            <ImageSaveMenu key={asset.id} asset={asset} save={saveImage}>
+            <ImageSaveMenu key={asset.id} asset={asset} save={saveImage} remove={id=>remove([id])} disabled={disabled}>
             <article
               className={`asset-card ${selected.includes(asset.id)||detail?.id===asset.id ? "selected" : ""}`}
               key={asset.id}

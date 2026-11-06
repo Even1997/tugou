@@ -12,6 +12,7 @@ export function CompositionControls({
   secondary,
   assets,
   disabled,
+  connected=false,
 }) {
   const number = (key, label, min, max) => (
     <NumberField
@@ -31,7 +32,7 @@ export function CompositionControls({
       disabled={disabled}
       aria-label="组合工具参数"
     >
-      {["mattePair", "texture", "patch"].includes(operation) && (
+      {!connected && ["mattePair", "texture", "patch"].includes(operation) && (
         <label>
           {operation === "mattePair"
             ? "白底版本"

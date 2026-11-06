@@ -459,3 +459,15 @@ test("cloud cancellation rejects late output, duplicate concurrent submission ma
   assert.ok(!f.tasks.tasks[1].message.includes("dummy-private-key"));
   assert.equal(f.requests.length, 2);
 });
+
+
+test('canvas AI extension snapshots node identity through retry and offline size review',async t=>{
+  const f=await fixture(t),{createTool,compileTool}=require('../core/canvas-tools.cjs'),{createNode,emptyCanvas}=require('../core/prompts.cjs');
+  const node=createTool('cloudExtend',{x:400,y:0}),image=createNode(f.document,'asset',f.source.id,{x:0,y:0});node.data.parameters={width:10,height:8,left:2,top:2};
+  const d={...f.document,tugouCanvas:{...emptyCanvas(),nodes:[image,node],edges:[{id:'in',source:image.id,target:node.id}]}};
+  const signature=compileTool(d,node.id).signature;f.behavior('error');const failed=await f.service.startNode(f.r.id,d,node.id);await f.tasks.execution;assert.equal(f.tasks.list().find(t=>t.id===failed.id).status,'failed');
+  node.data.parameters.width=12;f.behavior('large');const retry=await f.service.retry(failed.id);await f.tasks.execution;assert.equal(f.tasks.list().find(t=>t.id===retry.id).status,'review');
+  assert.equal(f.tasks.list().find(t=>t.id===retry.id).context.nodeId,node.id);f.offline();const resumed=await f.service.resume(retry.id,true);await f.tasks.execution;
+  const result=await f.result(resumed.id);assert.equal(result.nodeId,node.id);assert.equal(result.outputSignature,signature);assert.equal(result.assets[0].width,10);assert.equal(f.requests.length,2);
+  const request=await fs.readFile(path.join(f.root,'requests','cloud-'+f.tasks.list().find(t=>t.id===retry.id).context.requestId+'.json'),'utf8');assert.ok(!request.includes('dummy-private-key'));
+});

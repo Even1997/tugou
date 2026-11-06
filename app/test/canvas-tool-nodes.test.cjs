@@ -26,6 +26,7 @@ test('tool links accept one image input, reject text/duplicate input/cycles and 
   const text=createNode(f.document,'text',undefined,{x:0,y:0});graph.nodes.push(text);assert.equal(canConnect(graph,text.id,f.up.id),false);
   graph.edges=[{id:'x',source:f.up.id,target:f.cut.id}];assert.equal(canConnect(graph,f.image.id,f.cut.id),false);assert.equal(canConnect(graph,f.cut.id,f.up.id),false);
   assert.throws(()=>compileTool(f.document,f.cut.id),/尚无当前结果/);assert.throws(()=>compileWorkflow(f.document,f.gen.id),/尚无当前结果/);
+  assert.equal(compileTool(f.document,f.up.id).signature,JSON.stringify({settings:{operation:'upscale',model:'general',scale:4},sourceId:f.image.id,assetId:f.asset.id,resource:f.asset.resource,width:8,height:6}));
   validateDocument(f.document);const invalid=structuredClone(f.document);invalid.tugouCanvas.nodes.find(n=>n.id===f.up.id).data.parameters.scale=20;assert.throws(()=>validateDocument(invalid),/超分/);
 });
 
@@ -105,4 +106,45 @@ test('tool outputs are separate right-side snapshots, fan out to tools and survi
   assert.deepEqual(mergeResults(applied.document,[first,second]),applied.document);
   assert.deepEqual(applied.history.past[0].tugouCanvas,doc.tugouCanvas);
   const saved=await f.projects.save(f.record.id,applied.document,f.record.revision);assert.deepEqual((await f.projects.read(saved.id)).document.tugouCanvas,applied.document.tugouCanvas);
+});
+
+
+test('all current tool nodes validate, dual inputs and GIF order are deterministic, invalid links and parameters fail closed',async t=>{
+  const f=await fixture(t),{names}=require('../core/canvas-tools.cjs'),{validate}=require('../core/automation-commands.cjs');
+  assert.equal(Object.keys(names).length,20);for(const removed of ['extract','patch','cloudEdit'])assert.throws(()=>createTool(removed,{x:0,y:0}));
+  for(const operation of Object.keys(names)){
+    const n=createTool(operation,{x:0,y:0});validateDocument({...f.document,tugouCanvas:{...emptyCanvas(),nodes:[n]}});
+    validate('canvas.create',{type:'imageTool',sourceId:operation,position:{x:0,y:0},properties:{parameters:n.data.parameters}});
+  }
+  const second={...f.asset,id:'second'},n2=createNode({...f.document,assets:[second]},'asset',second.id,{x:0,y:0}),pair=createTool('texture',{x:400,y:0});
+  const d={...f.document,assets:[f.asset,second],tugouCanvas:{...emptyCanvas(),nodes:[f.image,n2,pair],edges:[{id:'1',source:f.image.id,target:pair.id}]}};
+  assert.throws(()=>compileTool(d,pair.id),/两张/);assert.ok(canConnect(d.tugouCanvas,n2.id,pair.id));d.tugouCanvas.edges.push({id:'2',source:n2.id,target:pair.id});
+  assert.equal(compileTool(d,pair.id).settings.secondaryId,second.id);assert.equal(compileTool(d,pair.id).settings.width,8);
+  const third=createNode(f.document,'asset',f.asset.id,{x:0,y:0});d.tugouCanvas.nodes.push(third);assert.equal(canConnect(d.tugouCanvas,third.id,pair.id),false);
+  const before=compileTool(d,pair.id).signature;pair.data.inputOrder=[n2.id,f.image.id];assert.equal(compileTool(d,pair.id).asset.id,second.id);assert.notEqual(before,compileTool(d,pair.id).signature);
+  pair.data.operation='gif';pair.data.parameters={delay:100,frameDelays:{[n2.id]:200}};
+  assert.deepEqual(compileTool(d,pair.id).settings.delays,[200,100]);assert.ok(canConnect(d.tugouCanvas,third.id,pair.id));
+  d.tugouCanvas.edges.push({id:'3',source:third.id,target:pair.id});assert.equal(compileTool(d,pair.id).inputs.length,3);
+  pair.data.parameters.frameDelays[n2.id]=21;assert.throws(()=>validateDocument(d),/帧时长/);
+  pair.data.parameters={unexpected:1};assert.throws(()=>validateDocument(d),/参数无效/);
+  pair.data.parameters=[];assert.throws(()=>validateDocument(d),/参数格式/);
+});
+
+test('GIF node encodes a durable ordered snapshot, supports cancellation and retry without current graph',async t=>{
+  const f=await fixture(t),gif=createTool('gif',{x:400,y:0});
+  const bytes=await sharp({create:{width:8,height:6,channels:4,background:'red'}}).png().toBuffer();
+  const a2={id:'red',name:'红色',...await saveImage(f.root,bytes,b=>({width:b.readUInt32BE(16),height:b.readUInt32BE(20)}))},n2=createNode({...f.document,assets:[a2]},'asset',a2.id,{x:0,y:0});
+  gif.data.parameters={frameDelays:{[n2.id]:200}};
+  const d={...f.document,assets:[f.asset,a2],tugouCanvas:{...emptyCanvas(),nodes:[f.image,n2,gif],edges:[{id:'1',source:f.image.id,target:gif.id},{id:'2',source:n2.id,target:gif.id}]}};
+  const result=await f.run(d,gif.id);assert.equal(result.assets[0].gif.frames,2);assert.deepEqual(result.assets[0].gif.delays,[100,200]);assert.equal(result.assets[0].width,8);
+  const merged=mergeResults(d,[result]);assert.equal(toolOutput(merged,merged.tugouCanvas.nodes.find(n=>n.id===gif.id)).id,result.assets[0].id);
+  const codec=require('../core/gif.cjs'),encode=codec.encodeGif;let started,release;
+  const began=new Promise(r=>started=r),gate=new Promise(r=>release=r);codec.encodeGif=async(...args)=>{started();await gate;return encode(...args);};
+  try{
+    const pending=await f.service.startNode(f.record.id,d,gif.id);await began;await f.tasks.cancel(pending.id);release();await f.tasks.execution;
+    assert.equal(f.tasks.list().find(t=>t.id===pending.id).status,'cancelled');assert.equal((await f.generation.results(f.record.id)).length,1);
+    codec.encodeGif=encode;gif.data.parameters.delay=500;
+    const retry=await f.service.retry(pending.id);await f.tasks.execution;
+    const retried=(await f.generation.results(f.record.id)).find(r=>r.id===retry.id);assert.deepEqual(retried.assets[0].gif.delays,[100,200]);assert.equal(retried.nodeId,gif.id);
+  }finally{release?.();codec.encodeGif=encode;}
 });

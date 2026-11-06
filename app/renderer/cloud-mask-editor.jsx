@@ -4,6 +4,7 @@ import { NumberField } from './number-field.jsx';
 import { loadOriginal } from './image-processing.js';
 import { surface, pngBytes } from './selection.js';
 import { maskValue } from '../core/cloud-settings.cjs';
+const isShape=mode=>mode==='rectangle'||mode==='circle';
 
 // Strokes stay in source-image coordinates; preview resolution never limits export resolution.
 function drawMask(canvas, source, base, settings, actions) {
@@ -27,6 +28,13 @@ function drawMask(canvas, source, base, settings, actions) {
     ctx.globalCompositeOperation=stroke.mode==='erase'?'destination-out':'source-over';
     ctx.lineWidth=stroke.size;ctx.beginPath();
     const [first,...rest]=stroke.points;
+    if(isShape(stroke.mode)){
+      const last=rest.at(-1)||first,dx=last.x-first.x,dy=last.y-first.y;
+      if(!dx||!dy)continue;
+      if(stroke.mode==='rectangle')ctx.fillRect(Math.min(first.x,last.x),Math.min(first.y,last.y),Math.abs(dx),Math.abs(dy));
+      else{const radius=Math.min(Math.abs(dx),Math.abs(dy))/2;ctx.arc(first.x+Math.sign(dx)*radius,first.y+Math.sign(dy)*radius,radius,0,Math.PI*2);ctx.fill();}
+      continue;
+    }
     if(!rest.length){ctx.arc(first.x,first.y,stroke.size/2,0,Math.PI*2);ctx.fill();}
     else{ctx.moveTo(first.x,first.y);for(const p of rest)ctx.lineTo(p.x,p.y);ctx.stroke();}
   }
@@ -35,9 +43,25 @@ function drawMask(canvas, source, base, settings, actions) {
 
 export function CloudMaskEditor({source,mask,settings,close,apply,description='蓝色区域将交给 AI 修改，未涂区域保留原图。应用只保存区域，不会立即调用模型。'}){
   const canvas=useRef(null),original=useRef(null),base=useRef(null),overlay=useRef(null);
+  const stage=useRef(null),cursor=useRef(null),pointer=useRef(null);
   const actions=useRef([]),redo=useRef([]),draft=useRef(null),frame=useRef(null),alive=useRef(true);
   const [revision,setRevision]=useState(0),[ready,setReady]=useState(false),[saving,setSaving]=useState(false),[error,setError]=useState('');
   const [mode,setMode]=useState('paint'),[size,setSize]=useState(Math.max(1,Math.min(2048,Math.round(Math.min(source.width,source.height)/12))));
+  const refreshCursor=()=>{
+    const ring=cursor.current;if(!ring||!canvas.current||!stage.current)return;
+    const r=canvas.current.getBoundingClientRect(),p=pointer.current;
+    if(!ready||saving||isShape(draft.current?.mode||mode)||!p||p.x<r.left||p.x>r.right||p.y<r.top||p.y>r.bottom){ring.style.visibility='hidden';return;}
+    const origin=stage.current.getBoundingClientRect(),diameter=draft.current?.size||size;
+    Object.assign(ring.style,{visibility:'visible',left:`${p.x-origin.left}px`,top:`${p.y-origin.top}px`,width:`${diameter*r.width/source.width}px`,height:`${diameter*r.height/source.height}px`});
+    ring.dataset.mode=draft.current?.mode||mode;
+  };
+  const moveCursor=e=>{pointer.current={x:e.clientX,y:e.clientY};refreshCursor();};
+  const hideCursor=()=>{pointer.current=null;refreshCursor();};
+  useEffect(()=>{
+    refreshCursor();const observer=new ResizeObserver(refreshCursor);
+    observer.observe(canvas.current);observer.observe(stage.current);
+    return()=>observer.disconnect();
+  },[size,mode,ready,saving]);
   const repaint=()=>{
     if(!original.current||!canvas.current)return;
     const c=canvas.current,o=overlay.current,ctx=c.getContext('2d');
@@ -66,7 +90,10 @@ export function CloudMaskEditor({source,mask,settings,close,apply,description='�
   const pointCount=()=>actions.current.reduce((n,a)=>n+(a.points?.length||1),0)+(draft.current?.points.length||0);
   const end=e=>{
     if(!draft.current||draft.current.pointerId!==e.pointerId)return;
-    actions.current.push(draft.current);draft.current=null;redo.current=[];
+    const stroke=draft.current;
+    if(isShape(stroke.mode))stroke.points[1]=point(e);
+    if(!isShape(stroke.mode)||(stroke.points[0].x!==stroke.points[1].x&&stroke.points[0].y!==stroke.points[1].y)){actions.current.push(stroke);redo.current=[];}
+    draft.current=null;
     canvas.current.releasePointerCapture(e.pointerId);changed();
   };
   const save=async()=>{
@@ -90,16 +117,20 @@ export function CloudMaskEditor({source,mask,settings,close,apply,description='�
       <p>{description}</p>
       <div className="mask-paint-toolbar">
         <Button disabled={!ready||saving} aria-pressed={mode==='paint'} onClick={()=>setMode('paint')}>涂画</Button>
+        <Button disabled={!ready||saving} aria-pressed={mode==='rectangle'} onClick={()=>setMode('rectangle')}>矩形</Button>
+        <Button disabled={!ready||saving} aria-pressed={mode==='circle'} title="拖动框选正圆区域" onClick={()=>setMode('circle')}>圆形</Button>
         <Button disabled={!ready||saving} aria-pressed={mode==='erase'} onClick={()=>setMode('erase')}>擦除</Button>
-        <NumberField label="涂画笔刷大小（原图 px）" value={size} min={1} max={Math.max(1,Math.min(2048,Math.max(source.width,source.height)))} disabled={saving} onChange={n=>setSize(Math.round(n))}/>
+        <NumberField label="涂画笔刷大小（原图 px）" value={size} min={1} max={Math.max(1,Math.min(2048,Math.max(source.width,source.height)))} disabled={saving||isShape(mode)} onChange={n=>setSize(Math.round(n))}/>
         <Button disabled={saving||!actions.current.length} onClick={undo}>撤销涂画</Button>
         <Button disabled={saving||!redo.current.length} onClick={()=>{actions.current.push(redo.current.pop());changed();}}>重做涂画</Button>
         <Button disabled={!ready||saving} onClick={()=>{actions.current.push({mode:'clear'});redo.current=[];changed();}}>清空区域</Button>
       </div>
-      <div className="mask-paint-stage"><canvas ref={canvas} aria-label="涂画修改区域画布" data-ready={ready} data-revision={revision}
-        onPointerDown={e=>{if(!ready||saving||e.button!==0||draft.current)return;e.preventDefault();if(pointCount()>=20000){setError('笔迹较多，请先应用区域，再继续编辑');return;}draft.current={mode,size,points:[point(e)],pointerId:e.pointerId};canvas.current.setPointerCapture(e.pointerId);setError('');schedule();}}
-        onPointerMove={e=>{if(!draft.current||draft.current.pointerId!==e.pointerId)return;if(pointCount()>=20000){end(e);setError('笔迹较多，请先应用区域，再继续编辑');return;}draft.current.points.push(point(e));schedule();}}
-        onPointerUp={end} onPointerCancel={()=>{draft.current=null;schedule();}} onLostPointerCapture={()=>{draft.current=null;schedule();}}/>
+      <div className="mask-paint-stage" ref={stage}><canvas ref={canvas} aria-label="涂画修改区域画布" data-ready={ready} data-revision={revision}
+        onPointerEnter={moveCursor} onPointerLeave={hideCursor}
+        onPointerDown={e=>{if(!ready||saving||e.button!==0||draft.current)return;e.preventDefault();moveCursor(e);if(pointCount()>=20000){setError('笔迹较多，请先应用区域，再继续编辑');return;}draft.current={mode,size,points:[point(e)],pointerId:e.pointerId};canvas.current.setPointerCapture(e.pointerId);setError('');schedule();}}
+        onPointerMove={e=>{moveCursor(e);if(!draft.current||draft.current.pointerId!==e.pointerId)return;if(pointCount()>=20000){end(e);setError('笔迹较多，请先应用区域，再继续编辑');return;}if(isShape(draft.current.mode))draft.current.points[1]=point(e);else draft.current.points.push(point(e));schedule();}}
+        onPointerUp={end} onPointerCancel={()=>{draft.current=null;hideCursor();schedule();}} onLostPointerCapture={()=>{draft.current=null;refreshCursor();schedule();}}/>
+        <span ref={cursor} className="mask-brush-cursor" aria-hidden="true"/>
       </div>
       {error&&<p role="alert">{error}</p>}
       <footer><Button disabled={saving} onClick={close}>取消</Button><Button primary disabled={!ready||saving} onClick={save}>{saving?'正在保存区域…':'应用修改区域'}</Button></footer>

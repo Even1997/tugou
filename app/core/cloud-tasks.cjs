@@ -132,6 +132,12 @@ class CloudTaskService {
     };
     return { job, connection, key: hash(JSON.stringify(job)) };
   }
+  async startNode(projectId,document,nodeId){
+    const {asset,settings,signature}=require('./canvas-tools.cjs').compileTool(document,nodeId);
+    const prepared=await this.prepare(projectId,document,asset.id,settings);
+    prepared.job.canvas={nodeId,signature};prepared.key=hash(JSON.stringify(prepared.job));
+    return this.submit(prepared);
+  }
   async start(projectId, document, sourceId, options) {
     return this.submit(await this.prepare(projectId, document, sourceId, options));
   }
@@ -168,7 +174,7 @@ class CloudTaskService {
     if (
       this.tasks.tasks.some(
         (t) =>
-          t.context?.requestKey === key &&
+          (t.context?.requestKey === key || job.canvas&&t.context?.projectId===projectId&&t.context.nodeId===job.canvas.nodeId) &&
           ["queued", "running"].includes(t.status),
       )
     )
@@ -181,7 +187,7 @@ class CloudTaskService {
     if (
       this.tasks.tasks.some(
         (t) =>
-          t.context?.requestKey === key &&
+          (t.context?.requestKey === key || job.canvas&&t.context?.projectId===projectId&&t.context.nodeId===job.canvas.nodeId) &&
           ["queued", "running"].includes(t.status),
       )
     )
@@ -274,6 +280,7 @@ class CloudTaskService {
       {
         kind: "cloud-tool",
         engine: "cloud",
+        ...(job.canvas?{nodeId:job.canvas.nodeId}:{}),
         projectId,
         sourceId,
         operation: settings.operation,
@@ -327,6 +334,7 @@ class CloudTaskService {
         kind: "local-tool",
         projectId: job.projectId,
         assets: [value],
+        ...(job.canvas?{nodeId:job.canvas.nodeId,outputSignature:job.canvas.signature}:{}),
       }),
     );
     signal.throwIfAborted();
@@ -360,6 +368,7 @@ class CloudTaskService {
       {
         kind: "local-tool",
         engine: "cloud-finish",
+        ...(raw.job.canvas?{nodeId:raw.job.canvas.nodeId}:{}),
         cloudParentId: id,
         action: "finish",
         projectId: raw.job.projectId,
@@ -400,6 +409,7 @@ class CloudTaskService {
       job.settings,
     );
     prepared.job.batch = job.batch;
+    if(job.canvas){prepared.job.canvas=job.canvas;prepared.key=hash(JSON.stringify(prepared.job));}
     return this.submit(prepared);
   }
   async keepRaw(id) {

@@ -19,10 +19,25 @@ function canLink(graph,source,target){
   if(retiredMode(b)||a.type==='group'||b.type==='group'||(a.type==='config'&&b.type==='config'))return false;
   if(b.type==='director'&&!['asset','image','panorama'].includes(a.type))return false;
   if(!['recipe','imageTool',...types].includes(b.type))return false;
-  if(b.type==='imageTool'&&(!['asset','image','panorama','director','imageTool','config'].includes(a.type)||a.type==='config'&&modeOf(a)!=='image'||graph.edges.some(e=>e.target===target)))return false;
+  if(b.type==='imageTool'&&(!['asset','image','panorama','director','imageTool','config'].includes(a.type)||a.type==='config'&&modeOf(a)!=='image'||graph.edges.filter(e=>e.target===target).length>=require('./canvas-tools.cjs').inputLimit(b.data.operation)))return false;
   const visited=new Set();
   const reaches=id=>{if(id===source)return true;if(visited.has(id))return false;visited.add(id);return graph.edges.filter(e=>e.source===id).some(e=>reaches(e.target));};
   return !reaches(target);
+}
+const localEditInstruction='局部修改：仅按修改要求编辑第一张参考图的蒙版区域，保留其他区域的内容与构图；其余图片仅作参考。';
+function referenceMask(document,node,asset){
+  const edit=node.data.localEdit;if(!edit)return {};
+  const mask=document.assets.find(a=>a.id===edit.maskId);
+  if(edit.assetId!==asset?.id)throw Error('局部区域对应的原图已变化，请重新涂画或清除区域');
+  if(!mask||mask.kind&&mask.kind!=='image')throw Error('局部区域素材缺失，请重新涂画');
+  if(mask.width!==asset.width||mask.height!==asset.height)throw Error('局部区域尺寸与原图不一致，请重新涂画');
+  return {maskId:mask.id};
+}
+function prioritizeEditReference(refs){
+  const masked=refs.filter(r=>r.maskId);
+  if(masked.length>1)throw Error('一次局部生图只能连接一张带修改区域的图片，请清除其他区域');
+  if(masked.length){refs.splice(refs.indexOf(masked[0]),1);refs.unshift(masked[0]);}
+  return !!masked.length;
 }
 function compileWorkflow(document,id){
   const graph=document.tugouCanvas,node=graph.nodes.find(n=>n.id===id);
@@ -58,7 +73,8 @@ function compileWorkflow(document,id){
       if(asset.kind==='text')addText(n.data.resultText??asset.text??'','result');
       else {
         const ref={assetId:asset.id,nodeId:n.id,kind:asset.kind||'image',role:node.data.inputRoles?.[n.id]||edge?.role||role||n.data.role||'参考内容'};
-        if(refs.some(r=>r.assetId===ref.assetId&&r.role===ref.role))return;
+        if(modeOf(node)==='image')Object.assign(ref,referenceMask(document,n,asset));
+        if(refs.some(r=>r.assetId===ref.assetId&&r.role===ref.role&&r.maskId===ref.maskId))return;
         refs.push(ref);
         if(assembling)sources.push({...ref,name:nodeName(n)||asset.name||'素材节点',assetName:asset.name,category:'reference',origin:'reference'});
       }
@@ -112,6 +128,7 @@ function compileWorkflow(document,id){
   if(assembling)sources.unshift(...texts.filter(part=>part.text).map(part=>part.source));
   let prompt=(assembling?[...upstream,localPrompt]:[localPrompt,...(node.data.excludeUpstreamText||mentions.length?[]:upstream)]).filter(Boolean).join('\n\n').trim();
   for(const ref of refs)ref.role=node.data.inputRoles?.[ref.nodeId]||ref.role;
+  if(prioritizeEditReference(refs))prompt+='\n\n'+localEditInstruction;
   if(mode==='image'&&refs.length)prompt+='\n\n参考图职责：\n'+refs.map((r,i)=>`${i+1}. ${r.role}`).join('\n');
   const globals=document.modules.filter(m=>(m.global??m.kind==='style')&&!bindingsUsed.has(m.id));
   if(globals.length)prompt+='\n\n'+globals.map(m=>`【${m.name}】\n${m.text}`).join('\n\n');
@@ -127,4 +144,4 @@ function compileWorkflow(document,id){
   if(assembling)for(const [key,name] of [['negativePrompt','负面提示词'],['camera','镜头要求']])if(data[key])sources.push({nodeId:node.id,name,category:'other',text:data[key],origin:'local'});
   return {...data,mode,count:mode==='image'?count:1,prompt,references:refs,sources,parameterSourceId:!assembling&&configs.length?graph.nodes.find(n=>n.type==='config'&&n.data===configs.at(-1))?.id:undefined,projection:node.type==='panorama'?'equirectangular':undefined};
 }
-module.exports={types,retiredMode,nodeWidth,labels,nodeName,modeOf,workflowNode,inputsOf,canLink,compileWorkflow};
+module.exports={types,retiredMode,nodeWidth,labels,nodeName,modeOf,workflowNode,inputsOf,canLink,compileWorkflow,referenceMask,prioritizeEditReference,localEditInstruction};

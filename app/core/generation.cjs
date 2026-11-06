@@ -66,13 +66,22 @@ class GenerationService {
     validateImageSettings(settings.model,compiled);
     const refs = [];
     for (const ref of compiled.references) refs.push(await referenceBytes(this.root, snapshot.assets.find(a => a.id === ref.assetId)));
+    let mask;
+    if(compiled.references.some(r=>r.maskId)){
+      const first=compiled.references[0];
+      if(!first?.maskId||compiled.references.filter(r=>r.maskId).length!==1)throw failure('局部生图区域绑定无效，请重新涂画');
+      const maskAsset=snapshot.assets.find(a=>a.id===first.maskId);
+      if(!maskAsset)throw failure('局部区域素材缺失，请重新涂画');
+      const prepared=await require('./cloud-pixels.cjs').prepare(refs[0],{operation:'cloudEdit',instruction:'修改涂画区域',maskMode:'asset',maskId:maskAsset.id,maskChannel:'alpha'},await referenceBytes(this.root,maskAsset));
+      refs[0]=prepared.image;mask=prepared.mask;
+    }
     const context = { ...extra, kind:extra.kind||'generation', projectId, nodeId, model: settings.model, requestedSize: compiled.size,quality:compiled.quality||'auto' };
     if (this.tasks.list().some(t => t.context?.projectId === projectId && t.context?.nodeId === nodeId && ['queued', 'running'].includes(t.status))) throw failure('这个节点已有任务，请等待或取消');
     const task = await this.tasks.start(label, async (cancelSignal, taskId) => {
-      await atomicWrite(await safePath(this.root, 'requests', `${taskId}.json`), JSON.stringify({ ...extra, projectId, nodeId, compiled, referenceAssets: snapshot.assets.filter(a => compiled.references.some(r => r.assetId === a.id)), node: snapshot.tugouCanvas.nodes.find(n => n.id === nodeId) }));
+      await atomicWrite(await safePath(this.root, 'requests', `${taskId}.json`), JSON.stringify({ ...extra, projectId, nodeId, compiled, referenceAssets: snapshot.assets.filter(a => compiled.references.some(r => r.assetId === a.id || r.maskId === a.id)), node: snapshot.tugouCanvas.nodes.find(n => n.id === nodeId) }));
       const signal = AbortSignal.any([cancelSignal, AbortSignal.timeout(600000)]);
       const entry = this.tasks.tasks.find(t => t.id === taskId), progress = imageProgress(this.tasks,entry);
-      const images = await requestImages(settings, { prompt:compiled.prompt, size:compiled.size,quality:compiled.quality, images:refs }, signal, progress);
+      const images = await requestImages(settings, { prompt:compiled.prompt, size:compiled.size,quality:compiled.quality, images:refs, ...(mask?{mask}:{}) }, signal, progress);
       const assets = [];
       for (const [i, bytes] of images.entries()) {
         signal.throwIfAborted();

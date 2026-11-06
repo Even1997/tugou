@@ -218,7 +218,7 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     });
     if(name==='canvas.compile'){
       const node=find(doc.tugouCanvas?.nodes||[],input.id);
-      return node.type==='recipe'?require('./prompts.cjs').compileNode(doc,input.id):require('./workflow-nodes.cjs').compileWorkflow(doc,input.id);
+      return node.type==='imageTool'?require('./canvas-tools.cjs').compileTool(doc,input.id):node.type==='recipe'?require('./prompts.cjs').compileNode(doc,input.id):require('./workflow-nodes.cjs').compileWorkflow(doc,input.id);
     }
     if(name==='asset.preview'){
       const asset=find(doc.assets,input.id);if(asset.kind&&asset.kind!=='image')fail('INVALID_TARGET','缩略图仅支持图片素材');

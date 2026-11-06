@@ -34,9 +34,17 @@ class WorkflowService{
     const settings={...saved,model},refs=[];
     if(c.mode==='image')validateImageSettings(model,c);
     for(const ref of c.references){const asset=snapshot.assets.find(a=>a.id===ref.assetId);if(!asset)throw fail('参考素材缺失');const bytes=await referenceBytes(this.root,asset);if(bytes.length>64*1024*1024)throw fail('单个模型参考不超过 64 MiB');refs.push({...ref,bytes,mimeType:asset.mimeType||`image/${asset.resource?.endsWith('.jpg')?'jpeg':asset.resource?.split('.').at(-1)||'png'}`});}
+    let mask;
+    if(c.mode==='image'&&refs.some(r=>r.maskId)){
+      if(!refs[0]?.maskId||refs.filter(r=>r.maskId).length!==1)throw fail('局部生图区域绑定无效，请重新涂画');
+      const maskAsset=snapshot.assets.find(a=>a.id===refs[0].maskId);
+      if(!maskAsset)throw fail('局部区域素材缺失，请重新涂画');
+      const prepared=await require('./cloud-pixels.cjs').prepare(refs[0].bytes,{operation:'cloudEdit',instruction:'修改涂画区域',maskMode:'asset',maskId:maskAsset.id,maskChannel:'alpha'},await referenceBytes(this.root,maskAsset));
+      refs[0].bytes=prepared.image;mask=prepared.mask;
+    }
     if(busy())throw fail('该节点已有任务');
     // Persist only parameters and referenced assets; credentials are read anew on an explicit retry.
-    const request={...snapshot,compiled:{...c,model},assets:snapshot.assets.filter(a=>c.references.some(r=>r.assetId===a.id))};
+    const request={...snapshot,compiled:{...c,model},assets:snapshot.assets.filter(a=>c.references.some(r=>r.assetId===a.id||r.maskId===a.id))};
     let ready,failed;const savedRequest=new Promise((resolve,reject)=>{ready=resolve;failed=reject;});savedRequest.catch(()=>{});
     const task=await this.tasks.start(label||'节点生成',async(cancelSignal,id)=>{
       await savedRequest;cancelSignal.throwIfAborted();
@@ -55,7 +63,7 @@ class WorkflowService{
       }else if(c.mode==='image'){
         const outcomes=await Promise.allSettled(Array.from({length:c.count},async(_,index)=>{
           const progress=imageProgress(this.tasks,journal,index);
-          const images=await requestImages(settings,{prompt:c.prompt,size:c.size,quality:c.quality,count:1,images:refs.map(r=>r.bytes)},signal,progress),saved=[];
+          const images=await requestImages(settings,{prompt:c.prompt,size:c.size,quality:c.quality,count:1,images:refs.map(r=>r.bytes),...(mask?{mask}:{})},signal,progress),saved=[];
           for(const bytes of images){signal.throwIfAborted();saved.push({...await saveImage(this.root,bytes,this.inspectImage),kind:'image',projection:c.projection});}
           progress('saved');
           return saved;

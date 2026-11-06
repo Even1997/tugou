@@ -54,6 +54,7 @@ import {MediaTools} from './media-tools.jsx';
 import {CanvasToolNode,CanvasToolSettings} from './canvas-tool-node.jsx';
 import {compileTool,names as toolNames} from '../core/canvas-tools.cjs';
 import { ReferenceEditor, PromptPreview, statusLabels } from "./recipes.jsx";
+import { CloudMaskEditor } from './cloud-mask-editor.jsx';
 import { ReplaceImageDialog } from "./replace-image.jsx";
 import { copyAssetPrompt } from "./material-details.jsx";
 import { CanvasImageDetails } from './canvas-image-details.jsx';
@@ -135,6 +136,7 @@ function CanvasWorkspace({
     return () => window.removeEventListener('keydown',close);
   },[]);
   const [replacement,setReplacement]=useState(null);
+  const [paintSession,setPaintSession]=useState(null);
   const [angleSource,setAngleSource]=useState(null);
   const [sceneNode,setSceneNode]=useState(null);
   const [mediaTool,setMediaTool]=useState(null);
@@ -446,7 +448,7 @@ function CanvasWorkspace({
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     flow.fitView({nodes:[{id}],padding:.4,maxZoom:1,duration:200});
   },[flow]);
-  const nodeContext=useMemo(()=>({document:document.tugouCanvas?document:{...document,tugouCanvas:graph},saveImage,resize,previewResize,disabled,tasks,patch:patchById,runNode,cancelNode,submittingIds,connection,refreshConnection,run,importNodeImage,openNodeScene:setSceneNode,showDetails,openConnection,openRecipe,nodeErrors,locateNode,moveInput,removeInput,replaceImage:(nodeId,assetId)=>setReplacement({nodeId,assetId}),updateReference:id=>commit(current.current.nodes.map(n=>n.id===id?refreshNode(current.current.document,n):n),current.current.edges),sizedIds:new Set(sizedKey?sizedKey.split('|'):[])}),[document,disabled,tasks,submittingIds,connection,nodeErrors,sizedKey,resize,previewResize,showDetails,openConnection,openRecipe,projectId,locateNode,saveImage]);
+  const nodeContext=useMemo(()=>({document:document.tugouCanvas?document:{...document,tugouCanvas:graph},saveImage,paintImage:(nodeId,assetId)=>{if(disabled)return;const source=document.assets.find(a=>a.id===assetId),node=graph.nodes.find(n=>n.id===nodeId);if(source&&node)setPaintSession({nodeId,source,document,mask:node.data.localEdit?.assetId===assetId?document.assets.find(a=>a.id===node.data.localEdit.maskId):null});},resize,previewResize,disabled,tasks,patch:patchById,runNode,cancelNode,submittingIds,connection,refreshConnection,run,importNodeImage,openNodeScene:setSceneNode,showDetails,openConnection,openRecipe,nodeErrors,locateNode,moveInput,removeInput,replaceImage:(nodeId,assetId)=>setReplacement({nodeId,assetId}),updateReference:id=>commit(current.current.nodes.map(n=>n.id===id?refreshNode(current.current.document,n):n),current.current.edges),sizedIds:new Set(sizedKey?sizedKey.split('|'):[])}),[document,disabled,tasks,submittingIds,connection,nodeErrors,sizedKey,resize,previewResize,showDetails,openConnection,openRecipe,projectId,locateNode,saveImage]);
   return (
     <CanvasContext.Provider value={nodeContext}>
       <div
@@ -540,7 +542,6 @@ function CanvasWorkspace({
                     <Button disabled={disabled||!selectedImage} onClick={()=>analyzeImage(selectedImage.id,node.id)}>图片反推</Button>
                     <Button disabled={disabled} onClick={()=>editSelectedImages("upscale")}>AI 超分辨率</Button>
                     <Button disabled={disabled} onClick={()=>editSelectedImages("cutout")}>主体抠图</Button>
-                    <Button disabled={disabled} onClick={()=>editSelectedImages("cloudEdit")}>局部修改</Button>
                     <Button disabled={disabled} onClick={()=>editSelectedImages("split")}>切图</Button>
                     <Button disabled={disabled} onClick={()=>editSelectedImages("resize")}>全部图像工具</Button>
                   </div>
@@ -879,7 +880,7 @@ function CanvasWorkspace({
                   </>
                 )}
                 {node.type==='group'&&<label>分组名称<Input aria-label="分组名称" disabled={disabled} value={node.data.name} onChange={e=>patchNode({name:e.target.value})}/></label>}
-                {node.type==='imageTool'&&<CanvasToolSettings key={`tool-${node.id}`} node={node} document={{...document,tugouCanvas:{...graph,nodes,edges}}} patch={patchNode} disabled={disabled} task={tasks.filter(t=>t.context?.nodeId===node.id).at(-1)}/>}
+                {node.type==='imageTool'&&<CanvasToolSettings projectId={projectId} change={next=>change({...next,tugouCanvas:{...next.tugouCanvas,viewport:flow.getViewport()}})} key={`tool-${node.id}`} node={node} document={{...document,tugouCanvas:{...graph,nodes,edges}}} patch={patchNode} disabled={disabled} task={tasks.filter(t=>t.context?.nodeId===node.id).at(-1)}/>}
                 {workflowTypes.includes(node.type)&&<WorkflowSettings node={node} compiled={compiled?.result} sharedModel={connection?.model} document={{...document,tugouCanvas:{...graph,nodes,edges}}} patch={patchNode} disabled={disabled} task={tasks.filter(t=>t.context?.nodeId===node.id).at(-1)} run={run} openScene={()=>setSceneNode(node.id)} openPanorama={()=>setSceneNode(node.id)}/>}
                 {workflowTypes.includes(node.type)&&node.type!=='director'&&(compiled.error?<p role="alert">{compiled.error}</p>:<details><summary>合成提示词</summary><PromptPreview document={document} result={compiled.result}/></details>)}
                 {node.type === "asset" && (
@@ -928,6 +929,16 @@ function CanvasWorkspace({
           </aside>
         </div>
       </div>
+      {paintSession&&<CloudMaskEditor source={paintSession.source} mask={paintSession.mask} settings={{maskChannel:'alpha',invertMask:false}}
+        description="涂画本次生图要修改的区域。保存后连接生图生成台，在生成台填写修改要求并开始生成；此处只保存区域，不调用模型。"
+        close={()=>setPaintSession(null)} apply={async bytes=>{
+          const snapshot=paintSession.document;
+          if(current.current.document!==snapshot)throw Error('工程内容已变化，请重新打开局部区域');
+          const mask=await window.tugou.storeRaster(bytes,`生图区域 · ${paintSession.source.name}`);
+          if(!mounted.current||current.current.document!==snapshot)throw Error('工程内容已变化，请重新打开局部区域');
+          const next={...snapshot,assets:[...snapshot.assets,mask],tugouCanvas:{...snapshot.tugouCanvas,nodes:snapshot.tugouCanvas.nodes.map(n=>n.id===paintSession.nodeId?{...n,data:{...n.data,localEdit:{assetId:paintSession.source.id,maskId:mask.id}}}:n)}};
+          if(change(next)===false)throw Error('工程正在保存，请稍后应用区域');
+        }}/>}
       {replacement&&<ReplaceImageDialog document={document} change={change} targetId={replacement.nodeId} assetId={replacement.assetId} close={()=>setReplacement(null)}/>}
       {angleSource&&<AngleDialog source={angleSource.asset} sourceUrl={assetUrl(angleSource.asset)} close={()=>setAngleSource(null)} submit={async params=>{
         await window.tugou.generateAngle(projectId,current.current.document,angleSource.nodeId,angleSource.asset.id,params);

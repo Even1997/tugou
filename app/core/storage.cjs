@@ -100,7 +100,8 @@ function validateCanvas(graph) {
     ids.add(node.id);
     if(node.type==='imageTool'){
       if(typeof node.data.name!=='string')throw Error('工具节点名称无效');
-      require('./local-ai.cjs').validateLocalSettings(require('./canvas-tools.cjs').settingsOf(node),{width:1,height:1});
+      require('./canvas-tools.cjs').validateTool(node);
+      if(['upscale','cutout'].includes(node.data.operation))require('./local-ai.cjs').validateLocalSettings(require('./canvas-tools.cjs').settingsOf(node),{width:1,height:1});
     }
     if(require('./workflow-nodes.cjs').types.includes(node.type)){
       if(typeof node.data.name!=='string'||typeof node.data.prompt!=='string'||(node.data.inputOrder!==undefined&&(!Array.isArray(node.data.inputOrder)||node.data.inputOrder.some(id=>typeof id!=='string'))))throw Error('生成节点参数格式无效');
@@ -122,6 +123,7 @@ function validateCanvas(graph) {
       validateRecipe(node.data.snapshot);
     }
     if (node.type === 'asset' && (typeof node.data.assetId !== 'string' || typeof node.data.role !== 'string')) throw new Error('素材节点格式无效');
+    if(node.data.localEdit!=null&&(node.type!=='asset'||typeof node.data.localEdit.assetId!=='string'||typeof node.data.localEdit.maskId!=='string'||!node.data.localEdit.assetId||!node.data.localEdit.maskId))throw Error('局部生图区域格式无效');
     if (node.type === 'text' && (typeof node.data.name !== 'string' || typeof node.data.text !== 'string')) throw new Error('文字节点格式无效');
   }
   const edges = new Set();

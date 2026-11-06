@@ -22,7 +22,8 @@
 .node-empty>.anticon { padding:14px; margin-bottom:6px; font-size:24px; border:1px solid var(--line); border-radius:15px; color:var(--accent); }
 .node-empty strong { font-size:13px; font-weight:500; color:var(--text); }
 .node-empty small { font-size:11px; }
-.node-media-preview { min-height:0; flex:1; overflow:hidden; border-radius:11px 11px 0 0; }
+.node-media-preview { position:relative; min-height:0; flex:1; overflow:hidden; border-radius:11px 11px 0 0; }
+.node-region-overlay { position:absolute; inset:0; pointer-events:none; background:#508cff; opacity:.45; mask-size:contain; mask-repeat:no-repeat; mask-position:center; }
 .canvas-card .node-media-preview img { width:100%; padding:0; max-height:360px; object-fit:contain; background:var(--surface); }
 .canvas-card-sized .node-media-preview { display:flex; flex-direction:column; }
 .canvas-card-sized .node-media-preview img { flex:1; min-height:0; max-height:none; }
@@ -157,3 +158,14 @@
 .canvas-card.node-picture .node-caption:has(.asset-time) { height:64px; min-height:64px; }
 .node-result-caption { padding:8px 0; }
 .node-result-caption strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; font-weight:500; }
+
+.node-local-edit { display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:6px; }
+.node-local-edit .inline-link { display:flex; align-items:center; gap:4px; font-size:11px; }
+.node-local-edit .ant-btn { width:24px; height:24px; padding:0; }
+
+.canvas-tool-inputs { display:grid; gap:8px; }
+.canvas-tool-input { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:8px; border:1px solid var(--line); border-radius:8px; }
+.canvas-tool-input>img { width:32px; height:32px; object-fit:contain; }
+.canvas-tool-input>span { flex:1; min-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.canvas-tool-input .compact-number { flex:0 0 100px; }
+.canvas-tool-inspector .tool-region { width:100%; max-height:240px; touch-action:none; }

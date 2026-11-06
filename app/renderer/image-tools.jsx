@@ -41,13 +41,13 @@ import { useImageImport } from './use-image-import.js';
 import { ImageComparison } from './image-comparison.jsx';
 import { CanvasImageViewer } from './canvas-image-viewer.jsx';
 const toolGroups = [
-  ['智能工具', {cloudEdit:cloudNames.cloudEdit,cloudExtend:cloudNames.cloudExtend,upscale:'AI 超分辨率',cutout:'主体抠图',watermark:cleanupNames.watermark}],
+  ['智能工具', {cloudExtend:cloudNames.cloudExtend,upscale:'AI 超分辨率',cutout:'主体抠图',watermark:cleanupNames.watermark}],
   ['基础处理', {...rasterOperations,metadata:cleanupNames.metadata}],
-  ['素材处理', compositionNames],
+  ['素材处理', Object.fromEntries(Object.entries(compositionNames).filter(([id])=>id!=='extract'&&id!=='patch'))],
   ['动图', {gif:'GIF 动图制作'}],
 ];
 const operations = Object.assign({}, ...toolGroups.map(([, entries])=>entries));
-const toolIcons = {cloudEdit:'brush',cloudExtend:'maximize',upscale:'zoomIn',cutout:'mask'};
+const toolIcons = {cloudExtend:'maximize',upscale:'zoomIn',cutout:'mask'};
 const defaults = {
   gif: {},
   ...cleanupDefaults,
@@ -96,13 +96,13 @@ export function ImageTools({
   tasks = [],
   refreshTasks,
   initialSourceIds = [],
-  initialOperation = "cloudEdit",
+  initialOperation = "cloudExtend",
 }) {
   const imageAssets=document.assets.filter(a=>!a.kind||a.kind==='image');
   const [viewingOriginal,setViewingOriginal]=useState(false);
   const initialSource = imageAssets.find(a=>a.id===initialSourceIds[0]) || imageAssets[0];
   const [sourceId, setSourceId] = useState(initialSource?.id || ""),
-    [operation, setOperation] = useState(operations[initialOperation] ? initialOperation : 'cloudEdit'),
+    [operation, setOperation] = useState(operations[initialOperation] ? initialOperation : 'cloudExtend'),
     [scale, setScale] = useState(2),
     [padding, setPadding] = useState(128),
     [resultId, setResultId] = useState(null),

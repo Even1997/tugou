@@ -159,15 +159,17 @@ function compileNode(document, nodeId) {
       const asset=document.assets.find(a=>a.id===node.data.assetId);
       if(asset?.kind==='text')texts.push(asset.text||'');
       else if(asset?.kind&&asset.kind!=='image')throw Error('生图配方不接受视频或音频参考');
-      else references.push({ assetId: node.data.assetId, role: node.data.role });
+      else references.push({ assetId: node.data.assetId, role: node.data.role, ...require('./workflow-nodes.cjs').referenceMask(document,node,asset) });
     }
     if(node.type==='textgen')texts.push(node.data.resultText||'');
     if(['image','panorama','director'].includes(node.type)&&node.data.outputAssetId)references.push({assetId:node.data.outputAssetId,role:'参考内容'});
     visiting.delete(id); visited.add(id);
   };
   visit(nodeId);
-  const uniqueReferences = [...new Map(references.map((reference) => [reference.assetId, reference])).values()];
-  return { prompt: compileParts(bindings, texts, uniqueReferences, root.data.snapshot.output), references: uniqueReferences, size: root.data.snapshot.size,quality:root.data.snapshot.quality||'auto' };
+  const {prioritizeEditReference,localEditInstruction}=require('./workflow-nodes.cjs');
+  const editing=prioritizeEditReference(references);
+  const uniqueReferences = [...new Map(references.map((reference) => [reference.assetId+'|'+(reference.maskId||''), reference])).values()];
+  return { prompt: compileParts(bindings, texts, uniqueReferences, root.data.snapshot.output)+(editing?"\n\n"+localEditInstruction:""), references: uniqueReferences, size: root.data.snapshot.size,quality:root.data.snapshot.quality||'auto' };
 }
 
 function syncCounts(document) {

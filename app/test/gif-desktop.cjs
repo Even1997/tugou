@@ -1,7 +1,7 @@
 // Isolated desktop: real GIF codec, renderer, IPC, resources and exports. Only file pickers are automated.
 const {app,dialog}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),sharp=require('sharp');
 app.setAppPath(path.resolve('.'));
-const out=path.resolve('test-results/gif');fs.mkdirSync(out,{recursive:true});const profile=fs.mkdtempSync(path.join(out,'profile-'));process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.join(out,'ui');if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;delete process.env.TUGOU_DEV_PREVIEW;
+const out=path.resolve('test-results/gif');fs.mkdirSync(out,{recursive:true});const profile=fs.realpathSync(fs.mkdtempSync(path.join(out,'profile-')));process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.join(out,'ui');if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;delete process.env.TUGOU_DEV_PREVIEW;
 fs.writeFileSync(path.join(profile,'preferences.json'),JSON.stringify({...require('../core/preference-values.cjs').defaults,theme:'light',autoCheck:false,notifyTasks:false}));
 const report={checks:[],errors:[]};let ended=false,output=path.join(out,'result.gif'),inputs=[];
 const finish=code=>{if(ended)return;ended=true;fs.writeFileSync(path.join(out,'desktop.json'),JSON.stringify(report,null,2));app.exit(code);};
@@ -23,13 +23,48 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   await wait(`!!document.querySelector('.studio-header')`);w.setSize(1380,950);
   const red=await sharp({create:{width:80,height:60,channels:4,background:'red'}}).png().toBuffer(),blue=await sharp({create:{width:80,height:60,channels:4,background:'blue'}}).png().toBuffer();
   const redAsset=await js(`tugou.storeRaster(new Uint8Array(${JSON.stringify([...red])}),'红色')`),blueAsset=await js(`tugou.storeRaster(new Uint8Array(${JSON.stringify([...blue])}),'蓝色')`);
-  id=await js(`(async()=>{const p=await tugou.create('GIF 验收');await tugou.save(p.id,{...p.document,assets:${JSON.stringify([redAsset,blueAsset])}},p.revision);return p.id})()`);
-  await load('tools');await click('动图');await wait(`!!document.querySelector('.gif-maker')`);check('GIF maker appears in tools',true);
+  const largeAssets=[];
+  for(const [name,width,height] of [['方图',1254,1254],['竖图',800,1600],['横图',1800,600]]){
+   const bytes=await sharp({create:{width,height,channels:4,background:'#729ee8'}}).png().toBuffer();
+   largeAssets.push(await js(`tugou.storeRaster(new Uint8Array(${JSON.stringify([...bytes])}),${JSON.stringify(name)})`));
+  }
+  id=await js(`(async()=>{const p=await tugou.create('GIF 验收');await tugou.save(p.id,{...p.document,assets:${JSON.stringify([redAsset,blueAsset,...largeAssets])}},p.revision);return p.id})()`);
+  await load('tools');check('default tool is AI extend',await js(`document.querySelector('.tools-settings-heading h2').textContent==='AI 扩图'`));await click('素材处理');
+  check('removed tools are absent from category',await js(`!document.querySelector('[data-tool="extract"]')&&!document.querySelector('[data-tool="patch"]')&&!!document.querySelector('[data-tool="crop"]')`));
+  for(const label of ['框选提取','选区替换','AI 局部修改']){
+   await js(`(()=>{const e=document.querySelector('[aria-label="搜索工具"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(label)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);await sleep(100);
+   check(label+' is absent from search',await js(`document.querySelector('.tools-options').textContent.includes('没有匹配的工具')`));
+  }
+  await click('动图');await wait(`!!document.querySelector('.gif-maker')`);check('GIF maker appears in tools',true);
   for(const title of ['添加 红色','添加 蓝色']){await js(`document.querySelector('[title="${title}"]').click()`);await sleep(80)}
   check('two source images become frames',await js(`document.querySelectorAll('.gif-frame-list li').length===2`));
+  await click('暂停预览');
+  for(const name of ['方图','竖图','横图'])await js(`document.querySelector('[title="添加 ${name}"]').click()`);
+  const previewFits=()=>js(`(()=>{const p=document.querySelector('.gif-preview').getBoundingClientRect(),i=document.querySelector('.gif-preview img').getBoundingClientRect(),c=document.querySelector('.gif-playback')?.getBoundingClientRect(),f=document.querySelector('.gif-frame-list').getBoundingClientRect();return i.width>0&&i.height>0&&i.left>=p.left&&i.right<=p.right+1&&i.top>=p.top&&i.bottom<=p.bottom+1&&(!c||c.top>=p.bottom)&&f.top>=(c?.bottom||p.bottom)})()`);
+  for(const [width,height] of [[1280,800],[960,720]]){
+   w.setSize(width,height);await sleep(200);
+   for(const name of ['方图','竖图','横图']){
+    await click(`前移第 ${await js(`([...document.querySelectorAll('.gif-frame-name')].findIndex(e=>e.textContent.includes('${name}')))+1`)} 帧`);
+    while(!await js(`document.querySelector('.gif-frame-name').textContent.includes('${name}')`)){
+     const index=await js(`([...document.querySelectorAll('.gif-frame-name')].findIndex(e=>e.textContent.includes('${name}')))+1`);await click(`前移第 ${index} 帧`);
+    }
+    await wait(`document.querySelector('.gif-preview img')?.complete`);
+    check(`${name} preview stays inside frame with controls below at ${width}x${height}`,await previewFits());
+   }
+  }
+  await screenshot('maker-large-preview');
+  for(let i=0;i<24;i++){await js(`document.querySelector('[title="添加 方图"]').click()`);await sleep(10);}
+  check('long frame list cannot shrink preview into controls',await previewFits());
+  await js(`document.querySelector('.gif-frame-list li:last-child').scrollIntoView({block:'nearest'})`);await sleep(100);
+  check('last frame remains reachable by scrolling',await js(`(()=>{const r=document.querySelector('.gif-frame-list li:last-child').getBoundingClientRect(),p=document.querySelector('.gif-main').getBoundingClientRect();return r.top>=p.top&&r.bottom<=p.bottom+1})()`));
+  while(await js(`document.querySelectorAll('.gif-frame-list li').length>2`)){
+   const index=await js(`[...document.querySelectorAll('.gif-frame-name')].findIndex(e=>/方图|竖图|横图/.test(e.textContent))+1`);await click(`移除第 ${index} 帧`);
+  }
+  w.setSize(1380,950);await click('播放预览');
   await click('前移第 2 帧');check('frame ordering updates',await js(`document.querySelector('.gif-frame-name').textContent.includes('蓝色')`));await click('后移第 1 帧');
   await number('第 2 帧时长（毫秒）',250);await click('生成 GIF');await wait(`document.querySelector('.gif-settings [role=status]')?.textContent.includes('已生成')`);
   const doc=await saved(),gif=doc.assets.find(a=>a.gif);check('maker saves GIF asset with actual delays',gif.gif.frames===2&&gif.gif.delays[0]===100&&gif.gif.delays[1]===250);
+  check('generated animation remains contained',await previewFits());
   check('resource endpoint serves animated GIF',await js(`(async()=>{const r=await fetch('tugou-media://resource/${gif.resource}');return r.headers.get('Content-Type')==='image/gif'&&(await r.arrayBuffer()).byteLength===${gif.bytes}})()`));
   await screenshot('maker-light');await click('保存 GIF');check('tool exports original animation',fs.existsSync(output)&&(await sharp(output,{animated:true}).metadata()).pages===2);
   // Drag a real filesystem File into the empty composition using Chromium's native file input data.
