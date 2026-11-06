@@ -60,7 +60,7 @@ app.on('browser-window-created',(_,w)=>{
    await js(`(${card('待删除图片')}).querySelector('input').click();document.querySelector('.library-toolbar [aria-label="移除 (2)"]').click()`);await delay(150);
    check('toolbar batch deletion retains referenced materials',!await has('保留图片')&&!await has('待删除图片')&&await has('画布引用'));
    await run('history.undo');check('batch deletion remains one undo step',await has('保留图片')&&await has('待删除图片'));
-   await js(`document.querySelector('button[aria-label="切换浅色主题"]')?.click()`);w.setSize(960,720);await context('保留图片');await capture('menu-narrow-light');
+   await js(`document.querySelector('button[aria-label="切换浅色主题"]')?.click()`);w.showInactive();w.setSize(960,720);await delay(500);await context('保留图片');await capture('menu-narrow-light');
    check('narrow window menu stays within viewport',await js(`(()=>{const r=document.querySelector('.image-save-menu').getBoundingClientRect();return r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight})()`));
    check('no renderer errors',report.errors.length===0);finish(0);
   }catch(e){report.failure=e.stack;console.error(e);try{await capture('failure');}catch{}finish(1);}
