@@ -1,4 +1,6 @@
 const {app,dialog}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+// Hosted Mac runners have no supported GPU; keep the real WebGL path using software rendering.
+if(process.platform==='darwin'){app.commandLine.appendSwitch('use-angle','swiftshader');app.commandLine.appendSwitch('enable-unsafe-swiftshader');}
 const out=path.resolve('test-results/photo-retouch');fs.mkdirSync(out,{recursive:true});const profile=fs.mkdtempSync(path.join(fs.realpathSync(out),'desktop-'));
 process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.join(out,'dist');if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;delete process.env.TUGOU_DEV_PREVIEW;app.setAppPath(path.resolve('.'));
 fs.writeFileSync(path.join(profile,'preferences.json'),JSON.stringify({...require('../core/preference-values.cjs').defaults,theme:'light',autoCheck:false,notifyTasks:false}));

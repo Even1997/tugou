@@ -32,8 +32,11 @@ w.webContents.once('did-finish-load',async()=>{
   await number('内阴影模糊半径',0);await number('内阴影距离',40);await number('内阴影角度',0);await number('内阴影不透明度',100);await color('内阴影颜色','#22bb55');await number('边框粗细',8);await color('边框颜色','#2233ee');
   let doc=await save(),style=doc.presentations[0].slides[0].elements[0].effects;
   check('PPT controls save independent outer/inner shadows and coloured border',style.length===3&&style[0].color==='#ee3322'&&style[1].distance===40&&style[2].size===8);
-  await click('撤销 PPT 修改');check('border colour edit undoes once',(await save()).presentations[0].slides[0].elements[0].effects[2].color==='#000000');await click('重做 PPT 修改');await save();
-  await click('取消选择');let bytes=await capture('ppt-pixels');const samples={outside:await pixel(bytes,580,350),inside:await pixel(bytes,220,350),centre:await pixel(bytes,400,350),border:await pixel(bytes,400,220)};report.pixels=samples;
+  await click('撤销 PPT 修改');check('border colour edit undoes once',(await save()).presentations[0].slides[0].elements[0].effects[2].color==='#000000');await click('重做 PPT 修改');check('redo restores saved border colour',(await save()).presentations[0].slides[0].elements[0].effects[2].color==='#2233ee');
+  await click('取消选择');await wait(`!document.querySelector('.ppt-edit-page .ppt-element.selected')`);let bytes;
+  // Native macOS capture may briefly return the frame before undo/redo or deselection.
+  for(let i=0;i<30;i++){bytes=await capture('ppt-pixels');const p=await pixel(bytes,400,220);if(p[2]>200&&p[0]<80)break;await delay(100);}
+  const samples={outside:await pixel(bytes,580,350),inside:await pixel(bytes,220,350),centre:await pixel(bytes,400,350),border:await pixel(bytes,400,220)};report.pixels=samples;
   check('outer shadow paints outside without replacing original',samples.outside[0]>210&&samples.outside[1]<90&&samples.centre[2]>150);
   check('inner shadow paints only inset source edge',samples.inside[1]>150&&samples.inside[0]<70);
   check('border colour and width appear at element frame',samples.border[2]>200&&samples.border[0]<80);
