@@ -116,7 +116,9 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   await sleep(1600);check('exactly one provider request',paid===1);
   check('generation completion is visible through MCP',(await run('task.get',{id:task.taskId})).status==='completed');
   const nodes=(await query('canvasNode')).objects;check('generated result becomes a separate linked node',nodes.length===3&&(await query('edge')).total===2);
-  fixtureDelay=3000;const cancelled=await run('generation.start',{nodeId:desk,requestId:'cancel-request'});await require('./automation-session-checks.cjs').waits({client,script,descriptor,taskId:cancelled.taskId,check});fixtureDelay=700;check('task can be cancelled via MCP',(await run('task.get',{id:cancelled.taskId})).status==='cancelled');
+  let releaseCancelled;generationGate=new Promise(resolve=>{releaseCancelled=resolve;});const cancelled=await run('generation.start',{nodeId:desk,requestId:'cancel-request'});
+  try{await require('./automation-session-checks.cjs').waits({client,script,descriptor,taskId:cancelled.taskId,check});}finally{releaseCancelled();generationGate=undefined;}
+  check('task can be cancelled via MCP',(await run('task.get',{id:cancelled.taskId})).status==='cancelled');
   const analyzed=await run('analysis.start',{assetId:imported.ids[0],instruction:'分析',requestId:'analysis-request'});await run('task.wait',{id:analyzed.taskId,timeoutMs:10000});
   const drafts=await run('analysis.results');check('visual analysis results can be inspected',drafts.drafts[0]?.modules[0]?.text==='简洁配色');
   await run('analysis.apply',{id:analyzed.taskId,createRecipe:true});check('analysis imports editable prompts and recipe',(await query('prompt')).total===1&&(await query('recipe')).total===1);await run('history.undo');
