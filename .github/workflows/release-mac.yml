@@ -1,4 +1,4 @@
-name: Publish macOS packages
+name: Verify and publish macOS arm64 v0.8.15
 on:
   workflow_dispatch:
     inputs:
@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: mac-release-${{ inputs.tag || github.ref }}
+  group: mac-release-arm64-retry-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 jobs:
   build:
@@ -20,9 +20,6 @@ jobs:
           - arch: arm64
             runner: macos-15
             bundle: mac-arm64
-          - arch: x64
-            runner: macos-15-intel
-            bundle: mac
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     defaults:
@@ -233,6 +230,5 @@ jobs:
           gh release view "$RELEASE_TAG" --json isPrerelease --jq '.isPrerelease' | grep -x false
           cd packages
           shasum -a 256 -c SHA256SUMS-mac-arm64.txt
-          shasum -a 256 -c SHA256SUMS-mac-x64.txt
           gh release upload "$RELEASE_TAG" ./*.dmg ./*.zip ./SHA256SUMS-mac-*.txt
           # DMG updates use GitHub asset metadata; no Squirrel latest-mac.yml or automatic installation.
