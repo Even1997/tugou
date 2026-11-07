@@ -5,6 +5,68 @@ title: 待测试
 description: 当前版本已实现但仍需人工验证的变更项
 ---
 
+## v0.8.15 发布验证
+
+已整理本版 PPT 与 MCP 更新，发布代码和 Windows x64、Mac arm64 / x64 安装包。构建、摘要、包内功能和公开更新验证进行中，见 [发布验收](../engineering/release-v0.8.15.md)。功能体验待用户确认的项目继续保留。
+
+## PPT MCP 结果截图与逐页验收
+
+复用已存在的 ppt.preview / ui.capture，不增加重复命令。命令说明增加“截图”关键词，初始化、设计规范、PPT 提示模板和界面排版指令明确要求 AI 获取并实际查看 PNG，核对目标页 / revision、检查排版问题、退出预览后逐页继续、修正后重新截图。仅写大纲或讲稿不要求先制作画面；客户端需要支持 MCP image/png 图片块，窗口不能隐藏或最小化。
+
+本轮实际发现并修复截图误裁：预览播放器原先位于编辑区域内，截图区域计算套用了编辑区父级裁剪边界，1216×684 的 16:9 页面返回 1176×684。播放器移入既有 dialogs 弹层容器，保留按钮样式与键盘焦点显示；恢复完整幻灯片，原生全屏和翻页可用。
+
+验证：27 项协议 / 内容 / 命令 / 截图安全测试通过，日志 app/test-results/ppt-screenshot-unit.log；68 项隔离桌面 / MCP 检查通过，包含真实 PNG 解码、页 ID / revision / 加载状态 / 完整比例、连续两页不同结果、512 px 上限，以及所有 24 条 PPT 命令，零渲染错误。报告 app/test-results/presentation-mcp/report.json，实际图片 preview.png / preview-first.png 已查看。原 PPT 编辑桌面回归 47 项通过，包含自定义字体、4:3 预览、键盘翻页、原生全屏退出及导出，报告 app/test-results/presentations/desktop.json。测试未修改用户工程或重启用户窗口。
+
+质量自评：功能 / 代码 / 安全 9.5；UI / UX / 视觉 / 性能 9.4。未达 9.5 项：Mac / 高 DPI / 复杂字体与大图截图仍待对照，实际 Agent 能否按规则逐页看图需客户端验收。仅当前窗口渲染，不提供后台离屏或超出窗口像素的高清截图，不证明导出后 Office 显示完全一致；旧 MCP 连接需重连，未发布安装包。
+
+## PPT MCP 大纲确认与自选下一步
+
+默认先写大纲（页序、每页标题与要点），等待用户确认后再选择“先做视觉设计”或“先写讲稿”。讲稿只写 notes，不改画面、不清除整页草稿、不触发生图；设计保留已有讲稿，并遵守视觉范围确认和方案选型。完成选定步骤后再询问是否继续另一项，已有确认或顺序直接复用，不重复询问。
+
+已同步标准全文、MCP 初始化与 get_state / PPT 命令发现 / 对应资源 / 提示模板、界面复制指令和大纲提示。专项协议、内容与命令测试 25 项通过；隔离桌面 65 项检查通过，覆盖真实 stdio、复制指令及所有 24 条 PPT 命令，零渲染错误，见 app/test-results/ppt-workflow-choice-unit.log 与 app/test-results/presentation-mcp/report.json。讲稿分支另验原内容、元素及其他页不变。
+
+质量自评：规则接入 / 代码 / 安全 9.5，交互流程 9.4；本轮无视觉布局或执行性能改动。未达 9.5 项：尚需在用户实际 Agent 客户端验证“等待确认、选择分支、不自动续做”的对话行为。规则已传达不等于软件强制阶段拦截；旧 MCP 连接需重连，未发布安装包，未重启用户窗口。
+
+## PPT 内容大纲、逐页草稿与讲稿
+
+左侧增加「页面 / 大纲」切换，跟随真实页面 ID 与页序，支持拖动与按钮排序；大纲连续浏览整份内容，当前页可展开编辑。右侧增加「内容 / 设计 / 讲稿」，设计页保留现有元素、字体、圆角和图层属性；原画布底部备注移入讲稿页。按最新反馈简化为每页一个多行输入框，标题、正文、数据和配图要求自由编辑，不再按核心观点、标题、正文逐项填写；小窗口下 AI 指令按钮固定可见。浅深主题沿用现有颜色和紧凑字号。
+
+输入立即进入工程未保存状态，同一次连续输入合并撤销。原文字与辅助说明合并显示，内部文字块与元素关联保留。整页草稿保存于 content.text，不按换行强行拆分现有布局；页面修改不会覆盖整页草稿。AI 排版完成并核对整页内容后才显式 text:null 清除草稿。MCP 原有结构化 blocks 应用仍保留位置、字体与效果；存在整页草稿时返回 CONTENT_REQUIRES_LAYOUT，防止误用旧 blocks。锁定与双向冲突保护保留。大纲中的方向键不会误移动隐藏的画面选中元素。
+
+MCP 新增 ppt.content.update / ppt.content.apply，共 24 条 PPT 命令、204 条领域命令。ppt.create(layout:blank) 支持内容阶段的空白文稿；ppt.get / get_object(slide) 返回当前内容及冲突状态，ppt.open 可定位内容 / 设计 / 讲稿与大纲；UI 恢复保留页签。内容、讲稿和未应用草稿随工程保存；演示和 PPTX 仅渲染已应用元素，讲稿进入 PPTX notes。AI 写稿 / 重排入口只复制当前对象的 MCP 请求，由已连接客户端执行，没有新增自动付费或内部 Agent。
+
+制作标准与 MCP 初始化、状态和命令发现同步更新：先写大纲并等待确认，再让用户选择先做视觉设计或先写讲稿。讲稿只写 notes，不改页面、不清除整页草稿、不触发生图；设计按视觉范围确认、方案板选型、可编辑制作和预览推进，保留已有讲稿。完成所选步骤后询问是否继续另一项；已有明确选择不重复询问。规则交付不等于客户端必然执行，不设置虚假的“已确认”状态。
+
+复审修复：显式草稿改回最初文字时不再被页面同步吞掉；MCP 页面文字与草稿一致后立即更新同步记录，后续页面修改不再误报冲突；内容上限按未应用草稿与页面文字合计校验，UI 超限拒绝添加，存储拒绝重复派生 ID；选择远处页面时自动滚动到对应大纲卡片。同步状态 draft / baseText 均只读，MCP 写回仍只提交 id / elementId / label / text。三项新增逻辑用例先复现失败后通过，桌面补验原文回退、远页定位和 UI 数量边界。
+
+本轮验证证据：全量逻辑测试 529 通过、1 项平台相关跳过，见 app/test-results/ppt-single-input-unit.log。presentation-mcp-desktop.cjs 的 65 项检查覆盖全部 24 条 PPT 命令、真实 stdio 协议、单输入框与段落保留、清空、即时输入及单次撤销、切页、草稿防误覆盖、结构化应用、排序、复制、讲稿、真实导出、保存重开、双主题与 940×640 窗口，以及 51 页大纲（本机切换约 194 ms，不代表低配置或复杂图像负载）。原 presentations-desktop.cjs 47 项回归通过，字体选择测试由固定 300 ms 改为等待真实字体加载完成，未改字体业务逻辑。桌面检查均无渲染错误。
+
+截图与报告：app/test-results/presentation-mcp/report.json、outline-light.png、content-light.png、content-dark-narrow.png、outline-dark-narrow.png、notes-light.png；PPTX 实际 ZIP 验证讲稿只在 notes 中、画面保留原生文字和效果。原编辑回归报告为 app/test-results/presentations/desktop.json。仅使用隔离 profile 和测试界面资源，未覆盖当前用户工程或正式 dist。
+
+质量自评（10 分制）：功能 / 代码 / 安全 9.5；UI / UX / 美术 / 性能 9.4，可交付。未达 9.5 项需用户确认长文体验、Mac / 高 DPI / 低配置与复杂大文稿验证。未发布安装包；保存并关闭后重启开发预览加载代码，旧 MCP 连接需重连。图表数据和配图需求是内容材料，不会自动绘图；实际 AI 选型与制作仍由客户端 Agent 执行。
+
+## PPT 矩形圆角与四角独立
+
+选中 PPT 矩形后，右侧“填充颜色”下方提供 0–100 圆角程度。0 为直角，100 为短边一半；缩放保持圆角比例。默认四角联动，点击切换按钮后按左上 / 右上、左下 / 右下排列独立数值和滑块。重新联动以左上角为准，可撤销恢复四角值。旧 `cornerRadius` 像素半径不重解释，原有文稿外观保持不变；首次编辑新控件后使用程度值。
+
+拖动与长按方向键只预览，松开或失焦提交一次；一次撤销恢复调整前数值，Esc 取消，取消和无变化不增加历史。独立调整不会改动另外三个角。边框使用与四角圆弧相同的路径，内外阴影、缩略图和演示同步。小窗口滑块默认外边距导致的溢出已修正。
+
+MCP 的 `ppt.element.create.properties` / `ppt.element.update.patch` 新增 `cornerRounding`：0–100 数值表示联动，完整 `{topLeft,topRight,bottomRight,bottomLeft}` 对象表示独立，每个值均为 0–100。仅矩形可用，非法 / 缺失 / 多余字段及锁定编辑均拒绝。设置 `cornerRounding` 或旧 `cornerRadius` 时清除另一字段，不允许同时提交。统一圆角导出原生 `roundRect`，独立圆角导出带圆弧的自定义矢量；保留填充、边框、内外阴影与旋转，不用图片替代。内阴影沿用上一轮已修正的导出方向。
+
+验证：`presentations.test.cjs`、`automation-presentations.test.cjs`、`presentation-effects.test.cjs` 共 25 项通过；`ppt-radius-desktop.cjs` 的旧基础交互、真实拖动、键鼠、100 上限、四角值 / 滑块隔离、联动 / 独立切换撤销、锁定、双主题、小窗口、保存重开、演示和真实导出共 34 项通过；`element-effects-desktop.cjs` 的 PPT 与图层样式 / 像素 / 引擎共 42 项通过，零渲染错误。上一轮完整 PPT 回归 47 项通过，字体断言失败在两次复查中未复现，本轮未修改字体逻辑。
+
+证据：`app/test-results/ppt-radius/desktop.json`、`four-corners-light.png`、`four-corners-dark-narrow.png`、`four-corners-preview.png`、`four-corners.pptx` 与 `four-corners-wps.png`；WPS 实际打开导出文件，左上 / 右上 / 左下 / 右下为 100 / 50 / 25 / 0 的形状与编辑器一致。效果报告在 `app/test-results/element-effects/report.json`。使用隔离 profile 和 `app/test-results/presentations/dist` 测试界面，不覆盖用户文稿或正式 dist。
+
+用户已确认 0–100 圆角程度语义；待确认操作体验；待补 PowerPoint / Mac / 高 DPI / 大文稿对照。未发布安装包，保存并关闭当前窗口后重新启动开发预览加载源码，旧 MCP 客户端需重连。自评（10 分制）：功能 / 代码 / UX / 安全 9.5，UI / 美术 / 性能 9.4，可交付；未达 9.5 项需跨平台与大文稿验证。
+
+## PPT 设计标准接入 MCP
+
+土狗自编标准以 `app/core/ppt-design-standard.md` 为唯一全文来源，供初始化指引发现；资源 `tugou://design/ppt`、只读工具 `get_design_standard {}` 和 `ppt` 提示模板提供一致内容。兼容仅支持工具的客户端，读取不会触发任务或改变工程；不接收任意路径，不依赖仓库 docs 目录。现为 8 个 MCP 工具、3 个资源、4 个提示模板，领域命令仍为 202 条。
+
+补齐默认交互流程：先确认大纲，再由用户选择设计或讲稿；进入设计分支才询问视觉范围并等待回答，生成方案板后等待选型，再制作整稿；普通制作请求不能推断为跳过授权。`get_state`、包含 PPT 的命令发现和相应资源返回 `pptDesignWorkflow`，复用初始化规则；非 PPT 命令发现不附加。6 项协议及重连测试通过，新 stdio 进程连接当前桌面的 5 项只读检查通过，工程 revision、dirty 和对象数量不变，证据 `app/test-results/ppt-workflow-live.json`。未新增付费生成、审批界面或代码级阶段拦截；实际 Agent 是否逐项等待仍需客户端交互验收。当前工作区源码已改，旧 MCP 进程需重连，安装包未发布。
+
+全量测试 509 通过、1 平台跳过；实际 stdio SDK 协议测试验证三入口一致、非法路径拒绝、旧资源转发及独立 core 目录读取。隔离桌面 33 项检查通过、渲染错误 0，覆盖全部 22 条 PPT 命令及读取规范不改变 revision。日志 `app/test-results/mcp-design-unit.log`、`app/test-results/mcp-design-desktop.log`，报告 `app/test-results/presentation-mcp/report.json`。未改动用户工程、未调用付费生图，未构建或发布安装包；源码服务需重连加载，旧安装包须更新后使用。实际客户端采用情况、设计选型和跨主题效果仍待验证。见 [接入说明](../engineering/ppt-design-standard.md)。
+
 ## v0.8.14 发布验证
 
 PPT 与 22 条 MCP 命令、阴影边框、照片修图、基础 PSD 互通和设置优化已随 [v0.8.14](https://github.com/Even1997/tugou/releases/tag/v0.8.14) 公开，Windows x64 与 Mac arm64 / x64 安装包齐全。全量单元 506 通过 / 1 平台跳过；Windows 包内桌面 428 项、Mac 两架构各 752 项、公开更新与下载 23 项通过，渲染错误 0。见 [发布验收](../engineering/release-v0.8.14.md)。Mac 原生 CI 已覆盖当前功能；真实 Office / WPS、实体设备高 DPI、用户客户端长流程及大图压力仍待确认。

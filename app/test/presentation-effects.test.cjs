@@ -20,6 +20,12 @@ test('native PPTX includes simultaneous shadows and editable coloured borders wi
   const shadow=doc.getElementsByTagName('a:outerShdw')[0];assert.equal(shadow.getAttribute('dir'),'16200000');assert.equal(shadow.getAttribute('blurRad'),'0');assert.equal(shadow.getAttribute('dist'),'0');assert.equal(shadow.getElementsByTagName('a:alpha')[0].getAttribute('val'),'25000');
   assert(doc.getElementsByTagName('a:t').length>0);assert.equal(shapes[0].getElementsByTagName('a:xfrm')[0].getAttribute('rot'),'2100000');
 });
+test('PPTX inner shadow direction matches the editor inset edge without changing outer shadows',async()=>{
+  const d=ppt.create(),angles=[0,90,-90,180,-180,45];d.slides[0].elements=angles.map(angle=>ppt.element('rect',{cornerRadius:24,effects:[{...defaults('innerShadow'),angle},{...defaults('shadow'),angle}]}));
+  const doc=await xml(d),inside=Array.from(doc.getElementsByTagName('a:innerShdw')),outside=Array.from(doc.getElementsByTagName('a:outerShdw'));
+  assert.deepEqual(inside.map(n=>Number(n.getAttribute('dir'))),[10800000,16200000,5400000,0,0,13500000]);
+  assert.deepEqual(outside.map(n=>Number(n.getAttribute('dir'))),[0,5400000,16200000,10800000,10800000,2700000]);
+});
 test('disabled and invisible effects are omitted, including zero width and opacity',async()=>{
   const d=ppt.create();d.slides[0].elements=[ppt.element('rect',{effects:effects().map(e=>({...e,enabled:false}))}),ppt.element('rect',{visible:false,effects:effects()}),ppt.element('rect',{effects:effects().map(e=>({...e,opacity:0}))}),ppt.element('rect',{effects:[{...effects()[2],size:0}]})];
   const doc=await xml(d);assert.equal(doc.getElementsByTagName('a:outerShdw').length,0);assert.equal(doc.getElementsByTagName('a:innerShdw').length,0);assert.equal(doc.getElementsByTagName('p:sp').length,3);

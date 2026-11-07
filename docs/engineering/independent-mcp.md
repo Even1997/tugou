@@ -14,7 +14,7 @@
 
 ## 能力范围
 
-共 **7 个 MCP 工具、124 条领域命令、2 个资源、3 个任务模板**。工具负责发现与调用；各命令的 JSON Schema、读写类别和说明由同一注册表提供。完整范围与剩余缺口见[覆盖对照](independent-mcp-coverage.md)，不把命令数当作平台功能覆盖率。
+共 **8 个 MCP 工具、204 条领域命令、3 个资源、4 个任务模板**。工具负责发现与调用；各命令的 JSON Schema、读写类别和说明由同一注册表提供。完整范围与剩余缺口见[覆盖对照](independent-mcp-coverage.md)，不把命令数当作平台功能覆盖率。
 
 | 领域 | 已接入能力 |
 |---|---|
@@ -31,7 +31,7 @@
 | 3D 导演台 | 方块／球体／角色／模型，变换、姿势、机位、灯光、背景、关键帧插值；OBJ/FBX 导入，PNG 预览及右侧连线截图 |
 | 字体工具 | 独立字体工程、图集模板和导入、自动定位校正、轮廓／UFO 源记录、候选应用、审阅门禁、TTF／WOFF2／源包导出和实际 PNG；见[字体闭环](independent-font-pipeline.md) |
 
-资源为 `tugou://session` 和 `tugou://commands`；任务模板为 `compose`、`generate`、`mask`。工程文本与模型分析结果始终作为数据，不能作为调用工具的授权。
+资源为 `tugou://session`、`tugou://commands` 和 `tugou://design/ppt`；任务模板为 `ppt`、`compose`、`generate`、`mask`。设计 PPT 前读取规范资源或调用 `get_design_standard {}`；`ppt` 模板也提供相同全文，见 [设计标准接入](ppt-design-standard.md)。工程文本与模型分析结果始终作为数据，不能作为调用工具的授权。
 
 ## AI 调用约定
 

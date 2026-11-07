@@ -4,7 +4,26 @@ const base=()=>({id:'p',name:'PPT MCP',width:128,height:128,modules:[],recipes:[
 const step=(name,command,args={})=>({name,command,args}),ref=(name,key='id')=>({$ref:name+'.'+key});
 const apply=(d,command,args)=>batch(d,[step('r',command,args)]);
 const setup=()=>batch(base(),[step('p','ppt.create',{name:'中文汇报'}),step('s','ppt.slide.create',{presentationId:ref('p'),layout:'blank'}),step('e','ppt.element.create',{presentationId:ref('p'),slideId:ref('s'),kind:'text',properties:{text:'正文',fontWeight:500}})]);
+test('PPT MCP exposes rectangle radius for creation/update and rejects incompatible types and locked edits',()=>{
+ const r=setup(),page={presentationId:r.results.p.id,slideId:r.results.s.id},created=apply(r.document,'ppt.element.create',{...page,kind:'rect',properties:{cornerRadius:24}}),a={...page,id:created.results.r.id};
+ let d=apply(created.document,'ppt.element.update',{...a,patch:{cornerRadius:40}}).document;assert.equal(d.presentations[0].slides[1].elements.at(-1).cornerRadius,40);
+ const copy=apply(d,'ppt.element.duplicate',a);assert.equal(copy.document.presentations[0].slides[1].elements.at(-1).cornerRadius,40);
+ for(const cornerRadius of [-1,2501,'12',null])assert.throws(()=>apply(d,'ppt.element.update',{...a,patch:{cornerRadius}}));
+ for(const kind of ['text','ellipse','image'])assert.throws(()=>apply(d,'ppt.element.create',{...page,kind,properties:{cornerRadius:12}}),e=>e.code==='INVALID_ARGUMENT');
+ assert.throws(()=>apply(d,'ppt.element.update',{...page,id:r.results.e.id,patch:{cornerRadius:12}}),e=>e.code==='INVALID_ARGUMENT');
+ d=apply(d,'ppt.element.update',{...a,patch:{locked:true}}).document;assert.throws(()=>apply(d,'ppt.element.update',{...a,patch:{cornerRadius:0}}),e=>e.code==='LOCKED');
+ for(const command of ['ppt.element.create','ppt.element.update']){const schema=listCommands('ppt').find(c=>c.name===command);assert(schema);assert(JSON.stringify(schema).includes('cornerRadius'));}
+});
 
+test('PPT MCP sets linked or independent 0-100 corners and rejects incomplete or conflicting styles',()=>{
+ const r=setup(),page={presentationId:r.results.p.id,slideId:r.results.s.id},corners={topLeft:100,topRight:60,bottomRight:0,bottomLeft:30},created=apply(r.document,'ppt.element.create',{...page,kind:'rect',properties:{cornerRounding:corners}}),a={...page,id:created.results.r.id};let d=created.document;
+ assert.deepEqual(d.presentations[0].slides[1].elements.at(-1).cornerRounding,corners);
+ for(const cornerRounding of [101,-1,null,{},[10,20,30,40],{...corners,bottomRight:101},{...corners,extra:0}])assert.throws(()=>apply(d,'ppt.element.update',{...a,patch:{cornerRounding}}));
+ assert.throws(()=>apply(d,'ppt.element.update',{...a,patch:{cornerRounding:20,cornerRadius:20}}));assert.throws(()=>apply(d,'ppt.element.update',{...page,id:r.results.e.id,patch:{cornerRounding:20}}));
+ d=apply(d,'ppt.element.update',{...a,patch:{cornerRadius:25}}).document;assert.equal(d.presentations[0].slides[1].elements.at(-1).cornerRounding,undefined);
+ d=apply(d,'ppt.element.update',{...a,patch:{cornerRounding:100}}).document;assert.equal(d.presentations[0].slides[1].elements.at(-1).cornerRadius,undefined);assert.equal(d.presentations[0].slides[1].elements.at(-1).cornerRounding,100);
+ d=apply(d,'ppt.element.update',{...a,patch:{locked:true}}).document;assert.throws(()=>apply(d,'ppt.element.update',{...a,patch:{cornerRounding:corners}}),e=>e.code==='LOCKED');
+});
 test('PPT MCP creates multiple decks and independent pages/elements using atomic references',()=>{
  const r=setup(),a={presentationId:r.results.p.id,slideId:r.results.s.id,id:r.results.e.id};
  const next=batch(r.document,[step('meta','ppt.slide.update',{...a,id:undefined,patch:{background:'#fafafa',notes:'讲稿'}})].map(s=>{delete s.args.id;return s}));
@@ -65,7 +84,7 @@ test('PPT MCP export uses live snapshot, denies overwrite/path traversal and sta
  f.changeDuringExport();await assert.rejects(f.run('ppt.export',{presentationId:p.id,path:'stale.pptx'}),e=>e.code==='CONFLICT');await assert.rejects(fs.access(path.join(f.root,'stale.pptx')));
 });
 test('all PPT commands have strict schemas, no import/eval escape, and view/file actions reject batches',()=>{
- assert.equal(listCommands('ppt').length,22);for(const c of listCommands('ppt')){assert.equal(c.inputSchema.additionalProperties,false);assert.throws(()=>validate(c.name,{unexpected:1}));}
+ assert.equal(listCommands('ppt').length,24);for(const c of listCommands('ppt')){assert.equal(c.inputSchema.additionalProperties,false);assert.throws(()=>validate(c.name,{unexpected:1}));}
  const r=setup(),id=r.results.p.id;for(const [command,args] of [['ppt.open',{presentationId:id}],['ppt.preview',{presentationId:id}],['ppt.export',{presentationId:id,path:'a.pptx'}],['ppt.present',{action:'stop'}]])assert.throws(()=>apply(r.document,command,args),e=>e.code==='NON_TRANSACTIONAL');
  assert.throws(()=>validate('ppt.import',{}));validate('layer.effects',{id:'layer',effects:[{type:'stroke',position:'inside',size:5,color:'#ff0000'}]});
 });

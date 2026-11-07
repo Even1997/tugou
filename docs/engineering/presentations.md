@@ -67,11 +67,14 @@ MCP 本轮：`app/test-results/presentation-mcp/report.json` 29 项真实 stdio 
 
 ## MCP 调用
 
+PPT 设计先通过 `get_design_standard {}` 或 `tugou://design/ppt` 读取 [土狗设计标准](ppt-design-standard.md)；`ppt` 提示模板包含相同规范全文和操作流程。只读标准不会触发生成或修改文稿。规则随新版 MCP 服务进程提供，旧连接需重连，旧安装包需更新；不表示 Agent 被强制执行或视觉效果已获验收。
+
 先 `get_state`，再 `list_commands({domain:"ppt"})` 获取完整参数。写入使用实时 `expectedRevision`；批次只接受文档编辑，任一步失败不提交，成功后一次撤销。
 
 | 能力 | 命令 |
 | --- | --- |
 | 文稿查询与管理 | `ppt.list`、`ppt.get`、`ppt.create`、`ppt.rename`、`ppt.duplicate`、`ppt.delete` |
+| 内容草稿与显式应用 | `ppt.content.update`、`ppt.content.apply` |
 | 页面管理、背景与备注 | `ppt.slide.create/update/duplicate/delete/move` |
 | 文字、图片、形状、字体与图层 | `ppt.element.create/update/duplicate/delete/move/effects` |
 | 编辑视图、预览和演示 | `ppt.open`、`ppt.close`、`ppt.preview`、`ppt.present` |
@@ -79,8 +82,35 @@ MCP 本轮：`app/test-results/presentation-mcp/report.json` 29 项真实 stdio 
 
 `query_objects` / `get_object` 新增 `presentation`、`slide`、`slideElement`；页面必须指定 `presentationId`，元素还必须指定 `slideId`。`ppt.get` 默认返回文稿元数据与页面摘要，加 `slideId` 返回完整单页。元素顺序从 0 起，0 为底层；锁定后只允许修改 visible / locked。文字沿用 `font.library` / `font.publish` 的字体和资源；图片先 `asset.import`，使用返回的 `ids`。`ppt.element.effects` 替换完整效果列表，三类各最多一个，空数组清除。图层编辑器仍用 `layer.effects`，形状基础边框仍用 `layer.update`。
 
+矩形圆角（待用户确认）：`ppt.element.create` 的 `properties` 或 `ppt.element.update` 的 `patch` 可传 `cornerRounding:100` 联动四角，或 `cornerRounding:{topLeft:100,topRight:50,bottomRight:0,bottomLeft:25}` 独立设置。仅 `kind:"rect"` 支持；每个值为 0–100 程度，实际半径 `value*min(w,h)/200`，缩放保持比例。对象必须包含全部四角；若只改一角，先读取当前对象并保留另外三个值。UI 在填充颜色下方提供联动 / 独立切换、数值框与滑块，重新联动以左上角为准，可撤销。旧 `cornerRadius` 仍表示 0–2500 px，保留已有文稿外观；MCP 设置任一参数会清除另一参数，不允许同时提交。统一圆角导出原生 `roundRect`，独立圆角导出含圆弧的原生自定义矢量，均保留边框、阴影和旋转，不转为位图。
+
 `ppt.open` 可指定 `elementId` 同步选中页面与图层。`ppt.preview` 打开窗口预览并返回真实 PNG，窗口需可见，使用 `ppt.present {action:"stop"}` 退出。`ppt.present` 支持 start / next / previous / goto / stop；start 可传 fullscreen，实际状态读取 `get_state.presentation.fullscreen`。预览和导航不写文档；输入、拖动和其他弹窗未结束时拒绝导航，PPT 播放器自身可接收演示控制。
 
 `ppt.export {presentationId,path:"exports/demo.pptx"}` 导出实时快照到交换目录，包含未保存编辑；不会自动保存工程。使用 `project.save` 保存，`history.undo/redo` 撤销重做。没有添加任意脚本执行或 PPTX 导入命令。
 
 本轮自评按当前基础功能范围为可交付：功能 9.4、代码 9.5、UI 9.4、UX 9.4、美术 9.3、性能 9.3、安全 9.4。未达 9.5 项需要用户确认视觉与真实演讲体验、Office / Mac 对照、大图片和低配置测试；构建工具链中危告警单独跟进。未发布安装包，涉及主进程与 preload 的变化需要保存后重启开发预览生效。
+
+## 内容大纲与讲稿（待用户验收）
+
+左侧「页面 / 大纲」共用实际幻灯片顺序，支持拖动及上下移。大纲中连续浏览逐页内容，展开当前页编辑；右侧「内容 / 设计 / 讲稿」分别整理文案、元素属性和演讲备注。内容区每页只提供一个多行输入框，标题、正文、数据与配图说明自由连续编辑，不再逐块填表。已有结构化内容合并显示，内部关联仍保留。AI 和用户共用同一份工程数据。连续输入立即写入工程未保存状态，同一输入会话合并撤销；有其他修改介入时开始新的撤销记录。
+
+`ppt.create {name,layout:"blank"}` 可创建内容阶段的空白文稿；默认 cover 保持手工创建体验。`ppt.get {presentationId}` 返回页序、标题、objective 和 contentStatus；加 slideId 返回完整 slide.content、slide.notes 与元素。`get_object(kind:slide)` 同样返回当前内容。`ppt.open` 支持 sidebar:pages/outline 和 panel:content/design/notes；通用 UI 恢复也保留页签。
+
+`ppt.content.update {presentationId,slideId,patch:{text,objective,chartData,visuals,blocks}}` 只更新草稿。text 是可选整页自由文本（最多 2,040,000 字符，覆盖已有全部文字与说明）；包括空字符串均优先显示，省略保留，显式 null 清除。AI 在排版并核对整页内容全部落实后才能清除，页面修改、结构化草稿更新均不会自动覆盖 text。blocks 是完整文字块列表，项为 `{id?,elementId?,label,text}`；新草稿可省略 id，命令返回完整内容。已有块保留 id，绑定可编辑文字时设置 elementId。读取中的 baseText / draft 是只读同步状态，不作为命令入参。省略 blocks 保留原稿；从列表省略已关联块不会删除画面文字，删除画面文字用 ppt.element.delete。跨页关联、重复 ID / 关联、超限内容均拒绝。
+
+`ppt.content.apply` 仅显式应用结构化文字；存在 text 整页草稿时返回 CONTENT_REQUIRES_LAYOUT，不会误用旧 blocks。保留已有位置、字号、字体、效果及图层顺序；未关联块新增基础文字框，仍需排版。核心观点、图表数据与配图需求不直接渲染。锁定的待更新文字拒绝应用；页面与草稿同时改变时返回 CONTENT_CONFLICT，MCP 读取完整元素与草稿后核对差异并确认是否覆盖。UI 自由文本交给 AI 排版，不按空行或段落强行映射现有元素。MCP 的 confirmConflicts 仅在核对差异并获得用户覆盖指示后使用。
+
+画面修改同步未编辑的关联文字；删除、复制页面与复制文稿维护对应关系。演示和 PPTX 只使用已应用的页面元素，未应用草稿不进入画面；讲稿单独进入 PPTX notes。AI 写稿 / 重排按钮只复制含当前对象 ID 的 MCP 请求，由已连接客户端执行，不是内置生成或付费任务入口。
+
+默认 AI 流程已同步到规范及 MCP 初始化、状态和命令发现：写大纲与逐页要点 → 确认大纲 → 用户选择先设计或先写讲稿。讲稿分支只写 notes，不改画面、不清除内容草稿、不触发生图；设计分支确认视觉范围 → 展示方案板 → 用户选型 → 制作与预览，保留已有讲稿。完成所选步骤后询问是否继续另一项；已有确认和选择不重复询问。程序提供规则和内容编辑能力，尚无自主执行该流程的内部 Agent 或代码级审批门禁。
+
+
+## MCP 截图验收
+
+`ppt.preview` 直接返回真实 PNG 图片块（`content[].type=image`、`mimeType=image/png`），并在同一响应的文本元数据中附带文稿 / 页 ID、尺寸、revision 与加载状态。读取的是当前未保存的页面元素，不包含内容草稿、讲稿或工具栏。`list_commands {domain:"ppt",search:"截图"}` 可发现入口。
+
+先 `ppt.get` 查页 ID，再用 `run_command {command:"ppt.preview",args:{presentationId,slideId,maxSize:1440},expectedRevision}` 获取目标页。每页之后 `ppt.present {action:"stop"}` 退出，再截下一页；修正排版后重新截图。`ui.capture` 用于编辑界面，预览期间可传 region:pptSlide。窗口必须可见；maxSize 是上限，不会放大窗口像素。MCP 客户端需要支持图片内容，PNG 不是磁盘文件路径。
+
+设计流程要求 AI 实际查看逐页截图、核对页 ID / revision、检查截断重叠与排版，记录覆盖范围；元素数据和导出成功不能代替视觉验收。仅写大纲 / 讲稿不提前制作画面。土狗截图不等于 PowerPoint / WPS 对导出文件的显示验证。
+
+预览播放器已移入应用弹层容器，避免截图计算被编辑区父级边界误裁。修复前 16:9 页面 1216×684 被误裁为 1176×684，修复后保留完整比例；实际多页 PNG 和尺寸限制见 app/test-results/presentation-mcp/report.json。

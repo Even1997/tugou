@@ -1,6 +1,6 @@
 const fs=require('node:fs/promises');
 const PptxGenJS=require('pptxgenjs');
-const {sizes,validate,presentationFont}=require('./presentations.cjs');
+const {sizes,validate,presentationFont,rectangleRadii,rectangleOutline}=require('./presentations.cjs');
 const {textFontWeight}=require('./font-weights.cjs');
 const {safePath,resourcePattern,hash}=require('./storage.cjs');
 const {applyPresentationEffects}=require('./presentation-effects.cjs');
@@ -23,7 +23,9 @@ async function exportPresentation(deck,assets,root){
         totalPixels+=data.w*data.h;if(totalPixels>64000000)throw Error('PPT 图片累计超过 6400 万像素，请缩小图片后导出');
         const scale=Math.min(e.w/data.w,e.h/data.h),w=data.w*scale/96,h=data.h*scale/96;
         s.addImage({data:data.src,x:box.x+(box.w-w)/2,y:box.y+(box.h-h)/2,w,h,rotate:e.rotation});
-      }else s.addShape(e.kind==='ellipse'?pptx.ShapeType.ellipse:pptx.ShapeType.rect,{...box,fill:{color:e.fill.slice(1)},line:{transparency:100}});
+      }else{const radii=rectangleRadii(e),radius=radii[0],independent=!radii.every(r=>r===radius);
+        const points=independent?rectangleOutline(e).map(p=>p.close?{close:true}:{x:p.x/96,y:p.y/96,...(p.moveTo?{moveTo:true}:p.r?{curve:{type:'arc',wR:p.r/96,hR:p.r/96,stAng:p.angle,swAng:90}}:{})}):undefined;
+        s.addShape(e.kind==='ellipse'?pptx.ShapeType.ellipse:independent?pptx.ShapeType.custGeom:radius?pptx.ShapeType.roundRect:pptx.ShapeType.rect,{...box,points,rectRadius:radius/96,fill:{color:e.fill.slice(1)},line:{transparency:100}});}
     }
     if(source.notes)s.addNotes(source.notes);
   }

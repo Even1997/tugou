@@ -75,7 +75,7 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
       const doc=project(state),isScene=['sceneObject','camera'].includes(args.kind);
       if(isScene&&!args.nodeId)fail('INVALID_ARGUMENT','查询 3D 物体或机位必须指定 nodeId');
       const list=isScene?sceneNode(doc,args.nodeId).data.scene[args.kind==='camera'?'cameras':'objects']:collection(doc,args.kind,args);
-      if(method==='get_object'){const item=find(list,args.id);return {revision:state.revision,kind:args.kind,object:args.kind==='presentation'?{...require('./automation-presentations.cjs').deckSummary(item),slides:item.slides.map(require('./automation-presentations.cjs').slideSummary)}:item};}
+      if(method==='get_object'){const item=find(list,args.id);return {revision:state.revision,kind:args.kind,object:args.kind==='presentation'?{...require('./automation-presentations.cjs').deckSummary(item),slides:item.slides.map(require('./automation-presentations.cjs').slideSummary)}:args.kind==='slide'?{...item,content:require('./presentation-content.cjs').contentOf(item),contentStatus:require('./presentation-content.cjs').contentStatus(item)}:item};}
       const matched=list.filter(v=>!args.search||[v.id,v.name,v.text,v.data?.name,v.data?.text].some(s=>String(s||'').toLowerCase().includes(args.search.toLowerCase()))),offset=args.offset||0,limit=args.limit||50;
       return {revision:state.revision,total:matched.length,offset,nextOffset:offset+limit<matched.length?offset+limit:null,objects:matched.slice(offset,offset+limit).map(v=>({...summary(v,args.kind),...(['slide','slideElement'].includes(args.kind)?{index:list.indexOf(v)}:{})}))};
     }
@@ -91,7 +91,8 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     if(name==='ppt.list')return {revision:state.revision,presentations:(project(state).presentations||[]).map(require('./automation-presentations.cjs').deckSummary)};
     if(name==='ppt.get'){
       const p=find(project(state).presentations||[],input.presentationId),{deckSummary,slideSummary}=require('./automation-presentations.cjs');
-      return {revision:state.revision,presentation:deckSummary(p),...(input.slideId?{slide:find(p.slides,input.slideId)}:{slides:p.slides.map(slideSummary)})};
+      const s=input.slideId?find(p.slides,input.slideId):null,{contentOf,contentStatus}=require('./presentation-content.cjs');
+      return {revision:state.revision,presentation:deckSummary(p),...(s?{slide:{...s,content:contentOf(s)},contentStatus:contentStatus(s)}:{slides:p.slides.map(slideSummary)})};
     }
     if(['ppt.open','ppt.close','ppt.preview','ppt.present'].includes(name)){
       project(state);const result=await ui(name,input,state.revision);

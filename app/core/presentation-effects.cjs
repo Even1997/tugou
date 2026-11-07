@@ -36,7 +36,8 @@ async function applyPresentationEffects(bytes,deck,imageSizes){
       const border=effects.find(f=>f.type==='stroke');
       if(border){remove(props,'ln');const line=node('ln',{w:Math.round(border.size*9525),algn:'ctr'}),fill=node('solidFill');fill.appendChild(color(border.color,border.opacity));line.appendChild(fill);props.appendChild(line);}
       const shadows=effects.filter(f=>f.type!=='stroke').sort((a,b)=>a.type==='innerShadow'?-1:b.type==='innerShadow'?1:0);
-      if(shadows.length){const list=node('effectLst');for(const f of shadows){const n=node(f.type==='shadow'?'outerShdw':'innerShdw',{blurRad:Math.round(f.radius*9525),dist:Math.round(f.distance*9525),dir:Math.round(((f.angle+360)%360)*60000),...(f.type==='shadow'?{rotWithShape:1}:{})});n.appendChild(color(f.color,f.opacity));list.appendChild(n);}props.appendChild(list);}
+      // SVG's inset mask offsets the cutout; DrawingML offsets the shadow itself.
+      if(shadows.length){const list=node('effectLst');for(const f of shadows){const n=node(f.type==='shadow'?'outerShdw':'innerShdw',{blurRad:Math.round(f.radius*9525),dist:Math.round(f.distance*9525),dir:Math.round(((f.angle+(f.type==='innerShadow'?180:0)+360)%360)*60000),...(f.type==='shadow'?{rotWithShape:1}:{})});n.appendChild(color(f.color,f.opacity));list.appendChild(n);}props.appendChild(list);}
     }
     zip.file(name,new XMLSerializer().serializeToString(doc));
   }

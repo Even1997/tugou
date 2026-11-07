@@ -77,7 +77,7 @@ test('MCP unused asset deletion is undoable document data; referenced assets rej
   const result=batch(d,[{name:'remove',command:'asset.delete',args:{ids:['b']}}]);assert.deepEqual(result.document.assets,[{id:'a'}]);assert.equal(d.assets.length,2);
 });
 test('new commands have strict schemas and shared workflow fields are writable',()=>{
-  assert.equal(listCommands().length,202);
+  assert.equal(listCommands().length,204);
   validate('image.processNode',{nodeId:'tool',requestId:'once'});
   validate('canvas.update',{id:'tool',properties:{parameters:{model:'anime',scale:2}}});
   assert.ok(!listCommands().some(c=>c.name==='models.cli.save'));

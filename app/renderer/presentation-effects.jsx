@@ -1,4 +1,5 @@
 import React,{useId} from 'react';
+import {rectanglePath} from '../core/presentations.cjs';
 
 export function PresentationEffects({element:e,children}){
   const id=useId().replace(/[^a-z0-9_-]/gi,''),active=(e.effects||[]).filter(f=>f.enabled&&f.opacity>0);
@@ -16,7 +17,7 @@ export function PresentationEffects({element:e,children}){
       <feMerge>{shadows.some(f=>f.type==='shadow')&&<feMergeNode in="shadow-paint"/>}<feMergeNode in={shadows.some(f=>f.type==='innerShadow')?'inner-content':'SourceGraphic'}/></feMerge>
     </filter></defs></svg>}
     <div className="ppt-element-content" style={{filter:shadows.length?`url(#${id})`:undefined}}>{children}
-      {border&&border.size>0&&<svg className="ppt-element-border" width={e.w} height={e.h} aria-hidden="true">{e.kind==='ellipse'?<ellipse cx={e.w/2} cy={e.h/2} rx={e.w/2} ry={e.h/2} fill="none" stroke={border.color} strokeWidth={border.size} opacity={border.opacity/100}/>:<rect width={e.w} height={e.h} fill="none" stroke={border.color} strokeWidth={border.size} opacity={border.opacity/100}/>}</svg>}
+      {border&&border.size>0&&<svg className="ppt-element-border" width={e.w} height={e.h} aria-hidden="true">{e.kind==='ellipse'?<ellipse cx={e.w/2} cy={e.h/2} rx={e.w/2} ry={e.h/2} fill="none" stroke={border.color} strokeWidth={border.size} opacity={border.opacity/100}/>:e.kind==='rect'?<path d={rectanglePath(e)} fill="none" stroke={border.color} strokeWidth={border.size} opacity={border.opacity/100}/>:<rect width={e.w} height={e.h} fill="none" stroke={border.color} strokeWidth={border.size} opacity={border.opacity/100}/>}</svg>}
     </div>
   </>;
 }
