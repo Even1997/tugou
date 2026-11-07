@@ -7,7 +7,7 @@ description: 当前版本已实现但仍需人工验证的变更项
 
 ## v0.8.15 发布验证
 
-已整理本版 PPT 与 MCP 更新，发布代码和 Windows x64、Mac arm64 / x64 安装包。构建、摘要、包内功能和公开更新验证进行中，见 [发布验收](../engineering/release-v0.8.15.md)。功能体验待用户确认的项目继续保留。
+v0.8.15 代码、Windows x64 和 Mac arm64 / x64 安装包已公开；530 项逻辑、Windows 204 项桌面及真实 EXE 5 项、Mac 两架构各 791 项、23 项匿名公开检查通过，见 [发布验收](../engineering/release-v0.8.15.md)。Mac 首轮尺寸观察警告未在完整复验中重现，未修改应用或测试断言，继续观察。功能体验待用户确认的项目保留。
 
 ## PPT MCP 结果截图与逐页验收
 
@@ -17,7 +17,7 @@ description: 当前版本已实现但仍需人工验证的变更项
 
 验证：27 项协议 / 内容 / 命令 / 截图安全测试通过，日志 app/test-results/ppt-screenshot-unit.log；68 项隔离桌面 / MCP 检查通过，包含真实 PNG 解码、页 ID / revision / 加载状态 / 完整比例、连续两页不同结果、512 px 上限，以及所有 24 条 PPT 命令，零渲染错误。报告 app/test-results/presentation-mcp/report.json，实际图片 preview.png / preview-first.png 已查看。原 PPT 编辑桌面回归 47 项通过，包含自定义字体、4:3 预览、键盘翻页、原生全屏退出及导出，报告 app/test-results/presentations/desktop.json。测试未修改用户工程或重启用户窗口。
 
-质量自评：功能 / 代码 / 安全 9.5；UI / UX / 视觉 / 性能 9.4。未达 9.5 项：Mac / 高 DPI / 复杂字体与大图截图仍待对照，实际 Agent 能否按规则逐页看图需客户端验收。仅当前窗口渲染，不提供后台离屏或超出窗口像素的高清截图，不证明导出后 Office 显示完全一致；旧 MCP 连接需重连，未发布安装包。
+质量自评：功能 / 代码 / 安全 9.5；UI / UX / 视觉 / 性能 9.4。未达 9.5 项：实体 Mac / 高 DPI / 复杂字体与大图截图仍待对照，实际 Agent 能否按规则逐页看图需客户端验收。仅当前窗口渲染，不提供后台离屏或超出窗口像素的高清截图，不证明导出后 Office 显示完全一致；旧 MCP 连接需重连，已随 v0.8.15 发布安装包。
 
 ## PPT MCP 大纲确认与自选下一步
 
@@ -25,7 +25,7 @@ description: 当前版本已实现但仍需人工验证的变更项
 
 已同步标准全文、MCP 初始化与 get_state / PPT 命令发现 / 对应资源 / 提示模板、界面复制指令和大纲提示。专项协议、内容与命令测试 25 项通过；隔离桌面 65 项检查通过，覆盖真实 stdio、复制指令及所有 24 条 PPT 命令，零渲染错误，见 app/test-results/ppt-workflow-choice-unit.log 与 app/test-results/presentation-mcp/report.json。讲稿分支另验原内容、元素及其他页不变。
 
-质量自评：规则接入 / 代码 / 安全 9.5，交互流程 9.4；本轮无视觉布局或执行性能改动。未达 9.5 项：尚需在用户实际 Agent 客户端验证“等待确认、选择分支、不自动续做”的对话行为。规则已传达不等于软件强制阶段拦截；旧 MCP 连接需重连，未发布安装包，未重启用户窗口。
+质量自评：规则接入 / 代码 / 安全 9.5，交互流程 9.4；本轮无视觉布局或执行性能改动。未达 9.5 项：尚需在用户实际 Agent 客户端验证“等待确认、选择分支、不自动续做”的对话行为。规则已传达不等于软件强制阶段拦截；旧 MCP 连接需重连，已随 v0.8.15 发布安装包，未重启用户窗口。
 
 ## PPT 内容大纲、逐页草稿与讲稿
 
@@ -43,7 +43,7 @@ MCP 新增 ppt.content.update / ppt.content.apply，共 24 条 PPT 命令、204 
 
 截图与报告：app/test-results/presentation-mcp/report.json、outline-light.png、content-light.png、content-dark-narrow.png、outline-dark-narrow.png、notes-light.png；PPTX 实际 ZIP 验证讲稿只在 notes 中、画面保留原生文字和效果。原编辑回归报告为 app/test-results/presentations/desktop.json。仅使用隔离 profile 和测试界面资源，未覆盖当前用户工程或正式 dist。
 
-质量自评（10 分制）：功能 / 代码 / 安全 9.5；UI / UX / 美术 / 性能 9.4，可交付。未达 9.5 项需用户确认长文体验、Mac / 高 DPI / 低配置与复杂大文稿验证。未发布安装包；保存并关闭后重启开发预览加载代码，旧 MCP 连接需重连。图表数据和配图需求是内容材料，不会自动绘图；实际 AI 选型与制作仍由客户端 Agent 执行。
+质量自评（10 分制）：功能 / 代码 / 安全 9.5；UI / UX / 美术 / 性能 9.4，可交付。未达 9.5 项需用户确认长文体验、实体 Mac / 高 DPI / 低配置与复杂大文稿验证。已随 v0.8.15 发布安装包；保存并关闭后重启开发预览加载代码，旧 MCP 连接需重连。图表数据和配图需求是内容材料，不会自动绘图；实际 AI 选型与制作仍由客户端 Agent 执行。
 
 ## PPT 矩形圆角与四角独立
 
@@ -57,13 +57,13 @@ MCP 的 `ppt.element.create.properties` / `ppt.element.update.patch` 新增 `cor
 
 证据：`app/test-results/ppt-radius/desktop.json`、`four-corners-light.png`、`four-corners-dark-narrow.png`、`four-corners-preview.png`、`four-corners.pptx` 与 `four-corners-wps.png`；WPS 实际打开导出文件，左上 / 右上 / 左下 / 右下为 100 / 50 / 25 / 0 的形状与编辑器一致。效果报告在 `app/test-results/element-effects/report.json`。使用隔离 profile 和 `app/test-results/presentations/dist` 测试界面，不覆盖用户文稿或正式 dist。
 
-用户已确认 0–100 圆角程度语义；待确认操作体验；待补 PowerPoint / Mac / 高 DPI / 大文稿对照。未发布安装包，保存并关闭当前窗口后重新启动开发预览加载源码，旧 MCP 客户端需重连。自评（10 分制）：功能 / 代码 / UX / 安全 9.5，UI / 美术 / 性能 9.4，可交付；未达 9.5 项需跨平台与大文稿验证。
+用户已确认 0–100 圆角程度语义；待确认操作体验；待补 PowerPoint / 实体 Mac / 高 DPI / 大文稿对照。已随 v0.8.15 发布安装包，保存并关闭当前窗口后重新启动开发预览加载源码，旧 MCP 客户端需重连。自评（10 分制）：功能 / 代码 / UX / 安全 9.5，UI / 美术 / 性能 9.4，可交付；未达 9.5 项需跨平台与大文稿验证。
 
 ## PPT 设计标准接入 MCP
 
 土狗自编标准以 `app/core/ppt-design-standard.md` 为唯一全文来源，供初始化指引发现；资源 `tugou://design/ppt`、只读工具 `get_design_standard {}` 和 `ppt` 提示模板提供一致内容。兼容仅支持工具的客户端，读取不会触发任务或改变工程；不接收任意路径，不依赖仓库 docs 目录。现为 8 个 MCP 工具、3 个资源、4 个提示模板，领域命令仍为 202 条。
 
-补齐默认交互流程：先确认大纲，再由用户选择设计或讲稿；进入设计分支才询问视觉范围并等待回答，生成方案板后等待选型，再制作整稿；普通制作请求不能推断为跳过授权。`get_state`、包含 PPT 的命令发现和相应资源返回 `pptDesignWorkflow`，复用初始化规则；非 PPT 命令发现不附加。6 项协议及重连测试通过，新 stdio 进程连接当前桌面的 5 项只读检查通过，工程 revision、dirty 和对象数量不变，证据 `app/test-results/ppt-workflow-live.json`。未新增付费生成、审批界面或代码级阶段拦截；实际 Agent 是否逐项等待仍需客户端交互验收。当前工作区源码已改，旧 MCP 进程需重连，安装包未发布。
+补齐默认交互流程：先确认大纲，再由用户选择设计或讲稿；进入设计分支才询问视觉范围并等待回答，生成方案板后等待选型，再制作整稿；普通制作请求不能推断为跳过授权。`get_state`、包含 PPT 的命令发现和相应资源返回 `pptDesignWorkflow`，复用初始化规则；非 PPT 命令发现不附加。6 项协议及重连测试通过，新 stdio 进程连接当前桌面的 5 项只读检查通过，工程 revision、dirty 和对象数量不变，证据 `app/test-results/ppt-workflow-live.json`。未新增付费生成、审批界面或代码级阶段拦截；实际 Agent 是否逐项等待仍需客户端交互验收。当前工作区源码已改，旧 MCP 进程需重连，安装包已随 v0.8.15 发布。
 
 全量测试 509 通过、1 平台跳过；实际 stdio SDK 协议测试验证三入口一致、非法路径拒绝、旧资源转发及独立 core 目录读取。隔离桌面 33 项检查通过、渲染错误 0，覆盖全部 22 条 PPT 命令及读取规范不改变 revision。日志 `app/test-results/mcp-design-unit.log`、`app/test-results/mcp-design-desktop.log`，报告 `app/test-results/presentation-mcp/report.json`。未改动用户工程、未调用付费生图，未构建或发布安装包；源码服务需重连加载，旧安装包须更新后使用。实际客户端采用情况、设计选型和跨主题效果仍待验证。见 [接入说明](../engineering/ppt-design-standard.md)。
 

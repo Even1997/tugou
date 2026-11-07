@@ -18,7 +18,7 @@
 
 ## 验证与边界
 
-协议测试位于 `app/test/mcp-design-standard.test.cjs`，通过实际 stdio MCP 服务与 SDK 检查初始化、资源、工具、提示内容一致，以及旧资源和命令转发。规范部署在 `core` 下，不依赖仓库 `docs` 目录；安装包仍需随下次发布验证。
+协议测试位于 `app/test/mcp-design-standard.test.cjs`，通过实际 stdio MCP 服务与 SDK 检查初始化、资源、工具、提示内容一致，以及旧资源和命令转发。规范部署在 `core` 下，不依赖仓库 `docs` 目录；v0.8.15 的 Windows 与 Mac 双架构包内验证已完成，见 [发布验收](release-v0.8.15.md)。
 
 最初接入验证：全量测试 509 通过、1 平台跳过，日志 `app/test-results/mcp-design-unit.log`；隔离桌面 PPT MCP 33 项检查通过、渲染错误 0，报告 `app/test-results/presentation-mcp/report.json`，日志 `app/test-results/mcp-design-desktop.log`。覆盖全部 22 条 PPT 命令及实际预览、导出、保存重开；新增检查规范读取不改变工程或 revision。协议测试另验证未知资源及路径参数被拒绝、桌面离线仍可读取规范、独立复制 core 后无需 docs 即可提供全文。仅使用隔离测试工程，没有付费生图或修改用户工程。
 
