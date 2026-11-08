@@ -1,6 +1,6 @@
 # 土狗桌面应用开发说明
 
-安装使用见[项目首页](../README.md)，版本变更见[发布说明](../docs/releases/v0.8.7.md)。`app/` 是当前源码入口，Electron、React、Ant Design 与本地工具共用工程格式，无需旧 Web/Go 服务。
+安装使用见[项目首页](../README.md)，版本变更见[更新日志](../CHANGELOG.md)。`app/` 是当前源码入口，Electron、React、Ant Design 与本地工具共用工程格式，无需旧 Web/Go 服务。
 
 ## 开发
 
@@ -61,7 +61,7 @@ Mac 构建由 `.github/workflows/release-mac.yml` 手动触发。tag 留空时�
 | 目录/文件 | 职责 |
 |---|---|
 | desktop-main.cjs / preload.cjs | 生命周期、IPC 与系统能力 |
-| renderer/ | 画布、合成、字体、模型和设置 UI |
+| renderer/ | 画布、图层、PPT、字体、模型和设置 UI |
 | core/ | 存储、任务、模型、MCP、字体与更新服务 |
 | runtime/ | 图像/字体处理脚本与依赖清单 |
 | assets/fonts/ | 内置字体、原始许可及来源 |
@@ -69,6 +69,6 @@ Mac 构建由 `.github/workflows/release-mac.yml` 手动触发。tag 留空时�
 
 历史文档可能描述已移除入口；使用方式以根 README 和当前 Release 为准。许可范围见 [LICENSING.md](LICENSING.md)。
 
-开发版 MCP 界面验收：见 [截图、导航与原视图恢复](../docs/engineering/ui-mcp.md)，包含长列表、无限画布及覆盖范围说明。
+MCP 界面验收：见 [截图、导航与原视图恢复](../docs/engineering/ui-mcp.md)，包含长列表、无限画布及覆盖范围说明。
 
-开发版多页面：同一工程管理多张画布和多份合成，详见 [项目页面与 MCP](../docs/engineering/project-pages.md)。
+同一工程可包含多张画布、多份图层文档和 PPT，分别见 [画布与图层页面](../docs/engineering/project-pages.md) 与 [PPT 模块](../docs/engineering/presentations.md)。
