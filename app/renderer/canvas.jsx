@@ -54,10 +54,12 @@ import {MediaTools} from './media-tools.jsx';
 import {CanvasToolNode,CanvasToolSettings} from './canvas-tool-node.jsx';
 import {compileTool,names as toolNames} from '../core/canvas-tools.cjs';
 import { ReferenceEditor, PromptPreview, statusLabels } from "./recipes.jsx";
+import {PromptHoverPreview} from './prompt-hover-preview.jsx';
 import { CloudMaskEditor } from './cloud-mask-editor.jsx';
 import { ReplaceImageDialog } from "./replace-image.jsx";
 import { copyAssetPrompt } from "./material-details.jsx";
 import { CanvasImageDetails } from './canvas-image-details.jsx';
+import {CanvasImageCompare} from './canvas-image-compare.jsx';
 import { resizeAssetNode } from "../core/canvas-view.cjs";
 import { DisplayControls, AngleDialog } from "./canvas-view-tools.jsx";
 import { useImageImport, hasImageFiles } from './use-image-import.js';
@@ -137,6 +139,7 @@ function CanvasWorkspace({
     return () => window.removeEventListener('keydown',close);
   },[]);
   const [replacement,setReplacement]=useState(null);
+  const [comparison,setComparison]=useState(null);
   const [paintSession,setPaintSession]=useState(null);
   const [angleSource,setAngleSource]=useState(null);
   const [sceneNode,setSceneNode]=useState(null);
@@ -527,6 +530,7 @@ function CanvasWorkspace({
                 {imageImport.importing?'导入中':'图片'}
               </Button>
               {selectedImages.length > 0 && <>
+                {selectedImages.length>1&&<Button icon="assets" onClick={()=>setComparison(selectedImages.map(n=>document.assets.find(a=>a.id===(n.data.assetId||n.data.outputAssetId))))}>多图对比</Button>}
                 <Button iconOnly icon="replace" disabled={disabled||!selectedImage} onClick={()=>setReplacement({nodeId:node.id,assetId:selectedImage.id})}>替换图片</Button>
                 <Button iconOnly icon="crop" disabled={disabled} onClick={()=>editSelectedImages("crop")}>裁剪</Button>
                 <Button iconOnly icon="zoomIn" disabled={disabled} onClick={()=>editSelectedImages("resize")}>放大</Button>
@@ -641,9 +645,9 @@ function CanvasWorkspace({
             </p>
             {!items.length&&<EmptyState compact icon={query?'search':{node:'canvas',asset:'assets',module:'prompts',recipe:'prompts'}[palette]} title={query?'没有匹配内容':`暂无${{node:'画布元素',asset:'素材',module:'模块',recipe:'配方'}[palette]}`} description={query?'试试其他关键词。':{node:'使用上方工具添加图片或文本。',asset:'导入图片后，在这里添加到画布。',module:'在提示词工作台创建模块后即可使用。',recipe:'在提示词工作台创建配方后即可使用。'}[palette]}/>}
             {items.map((item) => (
+              <PromptHoverPreview key={item.id} document={document} item={item} type={palette}>
               <Button
                 className="palette-item"
-                key={item.id}
                 draggable={palette !== "node"}
                 onDragStart={(event) =>
                   event.dataTransfer.setData(
@@ -677,6 +681,7 @@ function CanvasWorkspace({
                 )}{" "}
                 <span className="palette-item-caption"><span>{item.name}</span><AssetTime asset={palette==="asset"?item:item.asset}/></span>
               </Button>
+              </PromptHoverPreview>
             ))}
           </aside>
           <div
@@ -945,6 +950,7 @@ function CanvasWorkspace({
           if(change(next)===false)throw Error('工程正在保存，请稍后应用区域');
         }}/>}
       {replacement&&<ReplaceImageDialog document={document} change={change} targetId={replacement.nodeId} assetId={replacement.assetId} close={()=>setReplacement(null)}/>}
+      {comparison&&<CanvasImageCompare assets={comparison} close={()=>setComparison(null)}/>}
       {angleSource&&<AngleDialog source={angleSource.asset} sourceUrl={assetUrl(angleSource.asset)} close={()=>setAngleSource(null)} submit={async params=>{
         await window.tugou.generateAngle(projectId,current.current.document,angleSource.nodeId,angleSource.asset.id,params);
         await refreshTasks();

@@ -1,0 +1,29 @@
+.canvas-image-compare.ant-modal { top: 16px; padding-bottom: 0; }
+.canvas-image-compare.ant-modal .ant-modal-container { height: calc(100dvh - 32px); display: flex; flex-direction: column; padding: 16px; }
+.canvas-image-compare.ant-modal .ant-modal-header { margin: 0; flex-shrink: 0; }
+.canvas-image-compare.ant-modal .ant-modal-body { padding-top: 0; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.canvas-image-compare .image-compare-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 12px; flex-shrink: 0; }
+.canvas-image-compare .image-compare-hint { color: var(--muted); font-size: 12px; }
+.canvas-image-compare .image-compare-options { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.canvas-image-compare .image-compare-modes { display: flex; padding: 3px; border-radius: 8px; background: var(--surface); }
+.canvas-image-compare .image-compare-modes .ant-btn { height: 28px; padding-inline: 10px; font-size: 12px; }
+.canvas-image-compare .image-compare-modes [aria-pressed=true] { background: var(--accent-bg); color: var(--accent); }
+.canvas-image-compare .image-compare-cell.is-active { border-color: var(--accent); }
+.canvas-image-compare .image-compare-cell.is-active > header { background: var(--accent-bg); }
+.canvas-image-compare .image-compare-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.canvas-image-compare .image-compare-controls > span { min-width: 40px; text-align: center; font-variant-numeric: tabular-nums; }
+.canvas-image-compare .image-compare-grid { display: grid; grid-template-columns: repeat(var(--compare-columns), minmax(0,1fr)); grid-template-rows: repeat(var(--compare-rows), minmax(150px,1fr)); gap: 12px; flex: 1; min-height: 0; overflow: auto; }
+.canvas-image-compare .image-compare-cell { min-height: 0; min-width: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+.canvas-image-compare .image-compare-cell > header { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 12px; }
+.canvas-image-compare .image-compare-index { color: var(--muted); font-variant-numeric: tabular-nums; }
+.canvas-image-compare .image-compare-name { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.canvas-image-compare .image-compare-cell small { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.canvas-image-compare .image-compare-stage { flex: 1; min-height: 0; overflow: hidden; background: var(--surface); position: relative; touch-action: none; }
+.canvas-image-compare .image-compare-stage:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.canvas-image-compare .image-compare-stage img { display: block; width: 100%; height: 100%; object-fit: contain; user-select: none; border-radius: 0; }
+.canvas-image-compare .image-compare-stage > p { position: absolute; inset: 0; display: grid; place-content: center; margin: 12px; color: var(--muted); font-size: 12px; }
+@media (max-width: 1000px) {
+  .canvas-image-compare .image-compare-grid { grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: repeat(var(--compare-small-rows),minmax(150px,1fr)); }
+  .canvas-image-compare .image-compare-hint { max-width: 210px; }
+}
+.canvas-image-compare .image-compare-grid.is-detail { grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: none; grid-auto-rows: max(260px,var(--compare-detail-height)); }

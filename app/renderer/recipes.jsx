@@ -1,4 +1,5 @@
 import {Select} from './select.jsx';
+import {PromptHoverPreview} from './prompt-hover-preview.jsx';
 import React, { useEffect, useState } from "react";
 import {
   bindingsFor,
@@ -153,6 +154,7 @@ export function RecipeWorkbench({
   const selectedId = activeId ?? document.recipes[0]?.id,
     selected = document.recipes.find((r) => r.id === selectedId);
   const [submitting, setSubmitting] = useState(false),[sharedModel,setSharedModel]=useState('');
+  const [recipeMenuOpen, setRecipeMenuOpen] = useState(false);
   const parameterError=selected?imageSettingsError(sharedModel,selected):'';
   const refreshModel=()=>window.tugou.connection().then(c=>setSharedModel(c.model||'')).catch(()=>setSharedModel(''));
   useEffect(()=>{refreshModel();window.addEventListener('focus',refreshModel);window.addEventListener('tugou-connection-changed',refreshModel);return()=>{window.removeEventListener('focus',refreshModel);window.removeEventListener('tugou-connection-changed',refreshModel);};},[]);
@@ -177,10 +179,14 @@ export function RecipeWorkbench({
       {selected ? (
         <>
           <div className="recipe-choice">
+            <PromptHoverPreview document={document} item={selected} type="recipe" disabled={recipeMenuOpen}>
+            <span className="recipe-preview-trigger">
             <Select
               aria-label="当前配方"
               value={selected.id}
               onChange={(e) => onSelect(e.target.value)}
+              onOpenChange={setRecipeMenuOpen}
+              optionRender={option => <PromptHoverPreview document={document} item={document.recipes.find(r => r.id === option.value)} type="recipe"><span className="recipe-preview-option" data-option-value={option.value}>{option.label}</span></PromptHoverPreview>}
             >
               {document.recipes.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -188,6 +194,8 @@ export function RecipeWorkbench({
                 </option>
               ))}
             </Select>
+            </span>
+            </PromptHoverPreview>
             <ToolPopover label="配方设置" icon="settings">
               <label>
                 名称
@@ -219,7 +227,8 @@ export function RecipeWorkbench({
               <h2>组合模块</h2>
               <div className="module-picker">
                 {document.modules.map((module) => (
-                  <label className="check module-tile" key={module.id} title={module.name+"\n"+module.text}>
+                  <PromptHoverPreview key={module.id} document={document} item={module} type="module">
+                  <label className="check module-tile">
                     <input
                       type="checkbox"
                       aria-label={module.name}
@@ -245,6 +254,7 @@ export function RecipeWorkbench({
                     <span>{module.name}</span>
                     {isGlobal(module) && <small>全局</small>}
                   </label>
+                  </PromptHoverPreview>
                 ))}
               </div>
               <details className="binding-details">

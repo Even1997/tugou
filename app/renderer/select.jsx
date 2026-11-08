@@ -23,7 +23,7 @@ export function Select({children,value,onChange,disabled,className='',showSearch
       showSearch={showSearch??(options.length>=8?{optionFilterProp:'label'}:false)}
       classNames={{popup:{root:'studio-select-popup'}}}
       notFoundContent={notFoundContent} virtual={options.length>50}
-      optionRender={option=><span data-option-value={option.value}>{option.label}</span>}
+      optionRender={props.optionRender || (option=><span data-option-value={option.value}>{option.label}</span>)}
       onChange={next=>onChange?.({target:{value:next},currentTarget:{value:next}})}/>
   </span>;
 }

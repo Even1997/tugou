@@ -148,6 +148,13 @@ jobs:
         env:
           TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
         run: node_modules/.bin/electron test/comparison-view-desktop.cjs
+      - name: Test packaged canvas image comparison and prompt previews
+        env:
+          TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+          TUGOU_MCP_BINARY: release/${{ matrix.bundle }}/Tugou.app/Contents/MacOS/Tugou
+        run: |
+          node_modules/.bin/electron test/canvas-image-compare-desktop.cjs
+          node_modules/.bin/electron test/prompt-hover-desktop.cjs
       - name: Verify full DMG download and native mount
         env:
           TUGOU_MAC_QA_BUNDLE: release/${{ matrix.bundle }}/Tugou.app
@@ -207,6 +214,10 @@ jobs:
             app/test-results/pages-native/*.png
             app/test-results/comparison-view/*.json
             app/test-results/comparison-view/*.png
+            app/test-results/canvas-image-compare/*.json
+            app/test-results/canvas-image-compare/*.png
+            app/test-results/prompt-hover/*.json
+            app/test-results/prompt-hover/*.png
             app/test-results/generation-concurrency/*.json
             app/test-results/generation-concurrency/*.png
             app/test-results/update-prompt/*.json

@@ -8,6 +8,7 @@ import {
   isGlobal,
 } from "../core/prompts.cjs";
 import { RecipeWorkbench, PromptPreview } from "./recipes.jsx";
+import {PromptHoverPreview} from './prompt-hover-preview.jsx';
 import {
   Button,
   Icon,
@@ -63,8 +64,8 @@ export function PromptWorkbench({
           {document.modules
             .filter((m) => `${m.name} ${m.text}`.includes(query))
             .map((m) => (
+              <PromptHoverPreview key={m.id} document={document} item={m} type="module">
               <Button
-                key={m.id}
                 className={`module ${m.id === selectedId ? "selected" : ""}`}
                 onClick={() => onSelect(m.id)}
                 draggable
@@ -81,6 +82,7 @@ export function PromptWorkbench({
                 <strong>{m.name}</strong>
                 {isGlobal(m) && <span className="scope">全局</span>}
               </Button>
+              </PromptHoverPreview>
             ))}
         </div>
       </aside>

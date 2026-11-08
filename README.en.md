@@ -12,7 +12,7 @@
 
 Tugou is a desktop creative workspace. Work manually or connect an MCP-compatible AI client to use its canvas, image generation, image tools, and presentation features. Projects and assets stay on your computer; cloud generation and analysis use the model providers you configure.
 
-**Current stable release: v0.8.15** · [Download](https://github.com/Even1997/tugou/releases/latest) · [Release notes](docs/releases/v0.8.15.md) · [Changelog](CHANGELOG.md) · [Developer guide](app/README.md)
+**Current stable release: v0.8.16** · [Download](https://github.com/Even1997/tugou/releases/latest) · [Release notes](docs/releases/v0.8.16.md) · [Changelog](CHANGELOG.md) · [Developer guide](app/README.md)
 
 This page is available in English; the guides linked below are in Chinese. Some application labels remain in Chinese, so the instructions include the original menu names where useful.
 
@@ -21,8 +21,8 @@ This page is available in English; the guides linked below are in Chinese. Some 
 | Module | Main features |
 | --- | --- |
 | Home | See project and task summaries, resume recent work, and find MCP connection instructions |
-| Prompts | Manage reusable modules and recipes, reference images, creative requirements, and visual analysis results |
-| Canvas | Connect text, references, generation workbenches, and image tools; results appear as separate image nodes to the right, ready for further processing or branches |
+| Prompts | Manage reusable modules and recipes, preview module text or combined recipe content on hover, and organize references, requirements, and visual analysis results |
+| Canvas | Connect text, references, generation workbenches, and image tools; results appear as separate image nodes to the right, ready for further processing or branches; select multiple images for side-by-side comparison |
 | Layers | Arrange multiple artboards; edit images, text, and shapes with groups, selections, masks, brushes, transforms, photo adjustments, shadows, borders, and basic PSD import/export |
 | PPT | Create multiple decks in one project; edit text, images, and shapes with outlines, speaker notes, element layers, shared fonts, individual corner rounding, previews, presentation mode, and editable `.pptx` export |
 | Tools | Remove backgrounds, upscale, resize, crop, rotate, extend, and adjust images; combine images into GIFs, and connect supported image tools as canvas workbenches |
@@ -32,17 +32,27 @@ This page is available in English; the guides linked below are in Chinese. Some 
 
 A typical workflow: **prompts and references → canvas generation → connected image tools → layer composition or PPT → export.** Modules reuse assets from the same project, and Layers and PPT share the font library.
 
+### Compare multiple images
+
+Box-select images on the canvas and click Multi-image comparison (多图对比) in the toolbar to view the originals. The default Two-column detail view (两列细看) gives each row a large viewing area; scroll to see more images. Overview (全部总览) shows all proposals in an automatic grid.
+
+- Linked adjustment (联动调整) zooms, pans, and resets all images. Independent adjustment (单独调整) affects only the image you click to select.
+- **Ctrl + mouse wheel** always zooms all images together; the ordinary wheel scrolls the list. Zoom ranges from 0.25× to 4×, with dragging or arrow keys for panning and Fit to window (适应窗口) to reset. The multiplier is relative to the fitted view, not original pixel size.
+- Switching layouts or adjustment modes keeps each image's view. Press Esc to close. Comparison does not modify images or start generation.
+
+Module and recipe lists also support hover previews: see full module text or the combined recipe prompt, scroll long content inside the popup, or use keyboard focus to open it.
+
 ## Download and install
 
 Download an installer to get started. You do not need to clone the repository or run the Web or Go services.
 
 | Platform | Installer |
 | --- | --- |
-| Windows x64 | [Download EXE](https://github.com/Even1997/tugou/releases/download/v0.8.15/tugou-0.8.15-win-x64.exe) |
-| macOS 13+ · Apple Silicon (M series) | [Download arm64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.15/tugou-0.8.15-mac-arm64.dmg) |
-| macOS 13+ · Intel | [Download x64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.15/tugou-0.8.15-mac-x64.dmg) |
+| Windows x64 | [Download EXE](https://github.com/Even1997/tugou/releases/download/v0.8.16/tugou-0.8.16-win-x64.exe) |
+| macOS 13+ · Apple Silicon (M series) | [Download arm64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.16/tugou-0.8.16-mac-arm64.dmg) |
+| macOS 13+ · Intel | [Download x64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.16/tugou-0.8.16-mac-x64.dmg) |
 
-Mac ZIP packages are also available among the [release assets and SHA256 checksums](https://github.com/Even1997/tugou/releases/tag/v0.8.15). There is currently no official Linux installer.
+Mac ZIP packages are also available among the [release assets and SHA256 checksums](https://github.com/Even1997/tugou/releases/tag/v0.8.16). There is currently no official Linux installer.
 
 - **Windows:** Run the EXE and follow the installer. The package has no commercial code signature, so Windows may show an unknown-publisher warning. Verify the download source and checksum.
 - **Mac:** Open the DMG for your processor and drag `Tugou.app` into Applications. The app currently uses ad-hoc signing and is not notarized by Apple. If macOS blocks the first launch, verify the source and follow the system's Privacy & Security instructions.
@@ -122,7 +132,7 @@ Development previews support UI hot reload. Changes to the main process, preload
 
 ## Documentation, license, and feedback
 
-- [Release notes](docs/releases/v0.8.15.md) · [Changelog](CHANGELOG.md) · [Release verification](docs/engineering/release-v0.8.15.md)
+- [Release notes](docs/releases/v0.8.16.md) · [Changelog](CHANGELOG.md) · [Release verification](docs/engineering/release-v0.8.16.md)
 - [PPT design and MCP workflow](docs/engineering/ppt-design-standard.md) · [Font catalog](app/assets/fonts/CATALOG.md)
 - [Developer guide](app/README.md) · [Documentation index](docs/index.md) · [Pending verification](docs/progress/pending-test.md) · [Roadmap](docs/progress/todo.md)
 
