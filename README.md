@@ -1,4 +1,12 @@
-# 土狗 · Tugou
+<p align="center">
+  <img src="app/assets/brand/logo.png" width="112" alt="土狗 Tugou Logo">
+</p>
+
+<p align="center">
+  <strong>简体中文</strong> · <a href="README.en.md">English</a>
+</p>
+
+<h1 align="center">土狗 · Tugou</h1>
 
 **把 AI 生图、图片处理、图层编辑、PPT 和字体创作放进同一个本地工程。**
 
