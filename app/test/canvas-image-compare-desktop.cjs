@@ -133,4 +133,4 @@ app.on('browser-window-created',(_,w)=>{
       await click('关闭多图对比');check('no renderer errors',report.errors.length===0);finish(0);
     }catch(error){report.failure=error.stack;console.error(error);try{await capture('failure');}catch{}finish(1);}
   });
-});require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');
+});require(path.join(source,'desktop-main.cjs'));

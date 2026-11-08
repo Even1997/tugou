@@ -81,4 +81,4 @@ app.on('browser-window-created',(_,w)=>{
     }catch(error){report.failure=error.stack;fs.writeFileSync(path.join(out,'failure.png'),(await w.webContents.capturePage()).toPNG());console.error(error);finish(1);}
   });
 });
-require(process.env.TUGOU_TEST_APP||'../desktop-main.cjs');
+require(path.join(source,'desktop-main.cjs'));
