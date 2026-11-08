@@ -5,6 +5,10 @@ title: TODO
 description: 当前项目后续值得处理的事项
 ---
 
+## v0.8.16 发布后验证
+
+代码、Windows x64 与 Mac 双架构安装包已公开，README 中英文同步更新。三平台与公开更新入口已验证，见 [发布验收](../engineering/release-v0.8.16.md)；后续由用户确认多图对比、Ctrl＋滚轮和悬浮预览体验，补高 DPI、触控板与低配置超大原图压力。Windows 商业代码签名、Apple 公证尚未提供。
+
 ## v0.8.15 发布
 
 代码与三平台安装包已公开，附件和匿名更新验证通过，见 [发布验收](../engineering/release-v0.8.15.md)。后续补真实 Agent 长流程、Office / 高 DPI / 实体 Mac、大文稿压力及正式签名公证；继续观察 Mac 首轮出现、复验未重现的尺寸通知。
