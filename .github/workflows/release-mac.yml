@@ -1,4 +1,4 @@
-name: Publish macOS packages
+name: Verify Intel macOS package
 on:
   workflow_dispatch:
     inputs:
@@ -17,9 +17,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: arm64
-            runner: macos-15
-            bundle: mac-arm64
           - arch: x64
             runner: macos-15-intel
             bundle: mac
@@ -242,27 +239,3 @@ jobs:
             app/test-results/update-prompt/*.json
             app/test-results/update-prompt/*.png
           retention-days: 14
-  publish:
-    if: inputs.tag != ''
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
-      RELEASE_TAG: ${{ inputs.tag }}
-    steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          pattern: mac-*
-          merge-multiple: true
-          path: packages
-      - name: Add verified packages to existing stable release
-        run: |
-          gh release view "$RELEASE_TAG" --json isPrerelease --jq '.isPrerelease' | grep -x false
-          cd packages
-          shasum -a 256 -c SHA256SUMS-mac-arm64.txt
-          shasum -a 256 -c SHA256SUMS-mac-x64.txt
-          gh release upload "$RELEASE_TAG" ./*.dmg ./*.zip ./SHA256SUMS-mac-*.txt
-          # DMG updates use GitHub asset metadata; no Squirrel latest-mac.yml or automatic installation.
