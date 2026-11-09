@@ -48,7 +48,11 @@ jobs:
         run: node --test test/mac-dmg-update.test.cjs test/font-downloads.test.cjs
       - name: Build native DMG and ZIP (ad-hoc signature, no notarization)
         run: |
-          node -e "console.log(require('electron'))"
+          for attempt in 1 2 3 4 5; do
+            if node -e "console.log(require('electron'))"; then break; fi
+            test "$attempt" -lt 5
+            sleep 5
+          done
           # Fetch the pinned builder tool separately so transient HTTP failures can retry.
           TOOL_DIR="$RUNNER_TEMP/tugou-dmgbuild"
           mkdir -p "$TOOL_DIR"
