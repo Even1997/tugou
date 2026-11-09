@@ -1,0 +1,24 @@
+.psd-content{display:flex;flex-direction:column;gap:18px;padding-top:8px;font-size:12px;line-height:1.7;color:var(--text)}
+.psd-content p{margin:0;overflow-wrap:anywhere}
+.psd-mode>p{color:var(--muted)}
+.psd-mode{display:flex;flex-direction:column;gap:8px}
+.psd-dialog .psd-mode>label{margin:0;font-size:12px;color:var(--muted)}
+.psd-mode>.studio-select{width:100%;height:34px;font-size:13px}
+.psd-result{padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.psd-file{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.psd-file>.studio-icon{font-size:24px;color:var(--accent);flex-shrink:0}
+.psd-file>div{flex:1;min-width:0}
+.psd-file>div>strong,.psd-file>div>span{display:block;overflow-wrap:anywhere}
+.psd-file>div>span{color:var(--muted);font-size:12px}
+.psd-file>.ant-btn{flex-shrink:0}
+.psd-warnings{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.psd-warnings ul{margin:6px 0 0;padding-left:18px;overflow-wrap:anywhere}
+.psd-compatibility{border-top:1px solid var(--line);padding-top:12px;color:var(--muted)}
+.psd-compatibility summary{cursor:pointer;color:var(--text);border-radius:4px}
+.psd-compatibility p{margin-top:10px}
+.psd-compatibility summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.psd-progress{display:flex;flex-direction:column;gap:8px}
+.psd-progress>span{display:flex;align-items:center;gap:8px}
+.psd-progress progress{width:100%;height:5px;accent-color:var(--accent)}
+.psd-error{color:var(--danger);padding:10px 12px;border:1px solid var(--danger);border-radius:6px}
+@media(max-width:480px){.psd-file{flex-wrap:wrap}.psd-file>.ant-btn{margin-left:auto}}

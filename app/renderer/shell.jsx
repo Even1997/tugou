@@ -21,10 +21,10 @@ export function StudioHeader({
   setWorkspace,
   busy,
   dirty,
+  saveState,
   save,
   create,
   importProject,
-  hotReload,
   openProject,
   connection,
   tasks,
@@ -70,23 +70,12 @@ export function StudioHeader({
               </option>
             ))}
           </Select>
-          <Button iconOnly icon="open" aria-label="管理项目" title="管理项目" disabled={busy} onClick={()=>setManaging(true)}/>
-          <Button
-            iconOnly
-            aria-label={t('create')}
-            title={t('create')}
-            icon="add"
-            disabled={busy}
-            onClick={create}
-          />
-          <Button
-            iconOnly
-            aria-label={t('importProject')}
-            title={t('importProject')}
-            icon="import"
-            disabled={busy}
-            onClick={importProject}
-          />
+          <ToolPopover label="工程操作" icon="open" className="project-actions-menu">
+            <Button icon="add" disabled={busy} onClick={create}>{t('create')}</Button>
+            <Button icon="import" disabled={busy} onClick={importProject}>{t('importProject')}</Button>
+            <Button icon="edit" disabled={!record || busy} onClick={()=>{setName(record.document.name);setRenaming(true);}}>{t('rename')}</Button>
+            <Button icon="open" aria-label="管理项目" disabled={busy} onClick={()=>setManaging(true)}>管理项目</Button>
+          </ToolPopover>
         </div>
         <span className="workspace-title">{t(workspace==='layers'?'layerEditor':workspace)}</span>
         <div className="header-space" />
@@ -103,36 +92,19 @@ export function StudioHeader({
             disabled={!canRedo || busy}
             onClick={redo}
           />
-          <span className="header-save-state">{workspace==='fonts'?t('fontAuto'):busy ? t('saving') : dirty ? t('unsavedLabel') : t('saved')}</span>
+          <span className="header-save-state" role="status" data-save-state={saveState}>{workspace==='fonts'?t('fontAuto'):t(saveState==='saving'?'saving':saveState==='saveFailed'?'saveFailed':dirty?'unsavedLabel':'saved')}</span>
           <Button icon="tasks" onClick={tasks}>{t('tasks')}</Button>
           <Button
             primary
             title={t('save')}
             aria-label={t('save')}
             disabled={!dirty || busy}
-            icon={busy ? "loading" : "save"}
-            aria-busy={busy}
+            icon={saveState==='saving' ? "loading" : "save"}
+            aria-busy={saveState==='saving'}
             onClick={save}
           >{t('save')}</Button>
           <Button aria-label={t('models')} icon="model" onClick={connection}>{t('models')}</Button>
           {workspace==='layers'&&<span id="composition-export"/>}
-          <ToolPopover label={t('more')} className="import-menu">
-            <Button
-              disabled={!record || busy}
-              onClick={() => {
-                setName(record.document.name);
-                setRenaming(true);
-              }}
-            >
-              {t('rename')}
-            </Button>
-            <Button onClick={tasks} icon="tasks">
-              {t('tasks')}
-            </Button>
-            <Button disabled={busy} onClick={hotReload}>
-              {t('reload')}
-            </Button>
-          </ToolPopover>
         </div>
         {window.tugou.platform!=='darwin'&&<div className="window-controls">
           <IconButton

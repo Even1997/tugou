@@ -4,10 +4,9 @@ const uid=()=>globalThis.crypto.randomUUID();
 const sizes={'16:9':[1280,720],'4:3':[960,720]};
 const colors=['#1765d1','#202631','#b95714'];
 const presentationFont=e=>({fontFamily:e.fontFamily,fontWeight:e.fontWeight??(e.bold?700:400),fontResource:e.fontResource});
-const rectangleRadius=e=>e.kind==='rect'?Math.min(e.cornerRadius??0,e.w/2,e.h/2):0;
+const rectangleRadius=e=>rectangleRadii(e)[0];
 const cornerKeys=['topLeft','topRight','bottomRight','bottomLeft'];
-const rectangleRounding=e=>typeof e.cornerRounding==='object'&&e.cornerRounding!==null?e.cornerRounding:Object.fromEntries(cornerKeys.map(k=>[k,e.cornerRounding??rectangleRadius(e)*200/Math.min(e.w,e.h)]));
-const rectangleRadii=e=>{if(e.kind!=='rect')return [0,0,0,0];const values=rectangleRounding(e),scale=Math.min(e.w,e.h)/200;return cornerKeys.map(k=>values[k]*scale);};
+const rectangleRadii=e=>{if(e.kind!=='rect')return [0,0,0,0];const value=e.cornerRounding??e.cornerRadius??0,limit=Math.min(e.w,e.h)/2,scale=e.cornerRounding===undefined?1:limit/100;return cornerKeys.map(k=>Math.min((typeof value==='object'?value[k]:value)*scale,limit));};
 function rectangleOutline(e){
   const [tl,tr,br,bl]=rectangleRadii(e),{w,h}=e;
   return [{x:tl,y:0,moveTo:true},{x:w-tr,y:0},{x:w,y:tr,r:tr,angle:270},{x:w,y:h-br},{x:w-br,y:h,r:br,angle:0},{x:bl,y:h},{x:0,y:h-bl,r:bl,angle:90},{x:0,y:tl},{x:tl,y:0,r:tl,angle:180},{close:true}];
@@ -38,8 +37,7 @@ function validate(decks,assets=[]){
           for(const f of e.effects){validateEffect(f);if(!text(f.id,100)||!f.id||!['shadow','innerShadow','stroke'].includes(f.type)||f.blend!=='source-over'||f.type==='stroke'&&f.position!=='center'||f.type!=='stroke'&&(f.spread!==0||f.radius>100||f.distance>200))fail();}
         }
         if(['visible','locked'].some(k=>e[k]!==undefined&&typeof e[k]!=='boolean'))fail();
-        if(e.cornerRadius!==undefined&&(e.kind!=='rect'||!Number.isFinite(e.cornerRadius)||e.cornerRadius<0||e.cornerRadius>2500))fail();
-        if(e.cornerRounding!==undefined){const v=e.cornerRounding,valid=n=>Number.isFinite(n)&&n>=0&&n<=100;if(e.kind!=='rect'||(typeof v==='number'?!valid(v):!v||Array.isArray(v)||Object.keys(v).length!==4||!cornerKeys.every(k=>Object.hasOwn(v,k)&&valid(v[k]))))fail();}
+        for(const [key,max] of [['cornerRadius',2500],['cornerRounding',100]])if(e[key]!==undefined){const v=e[key],valid=n=>Number.isFinite(n)&&n>=0&&n<=max;if(e.kind!=='rect'||(typeof v==='number'?!valid(v):!v||Array.isArray(v)||Object.keys(v).length!==4||!cornerKeys.every(k=>Object.hasOwn(v,k)&&valid(v[k]))))fail();}
         if(e.fontWeight!==undefined&&(e.kind!=='text'||!Number.isInteger(e.fontWeight)||e.fontWeight<1||e.fontWeight>1000))fail();
         if(e.fontResource!=null&&(e.kind!=='text'||!/^[a-f0-9]{64}\.ttf$/.test(e.fontResource.resource)||!text(e.fontResource.projectId,100)||!e.fontResource.projectId||!text(e.fontResource.jobId,100)||!e.fontResource.jobId))fail();
         if(e.kind==='text'&&(!text(e.text,10000)||!hex(e.color)||!text(e.fontFamily,100)||!Number.isFinite(e.fontSize)||e.fontSize<8||e.fontSize>240||typeof e.bold!=='boolean'||typeof e.italic!=='boolean'||!['left','center','right'].includes(e.align)))fail();
@@ -49,4 +47,4 @@ function validate(decks,assets=[]){
     }
   }
 }
-module.exports={sizes,colors,element,slide,create,duplicate,validate,presentationFont,rectangleRadius,cornerKeys,rectangleRounding,rectangleRadii,rectangleOutline,rectanglePath};
+module.exports={sizes,colors,element,slide,create,duplicate,validate,presentationFont,rectangleRadius,cornerKeys,rectangleRadii,rectangleOutline,rectanglePath};

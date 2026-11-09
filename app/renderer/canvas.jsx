@@ -526,7 +526,7 @@ function CanvasWorkspace({
                 文字
               </Button>
               <CanvasNodeMenu close={()=>{setCreateMenu(null);pendingLink.current=null;}} choose={chooseNode} disabled={disabled}/>
-              <Button iconOnly icon="import" aria-label={imageImport.importing?"导入中":"图片"} disabled={imageImport.importing||disabled} onClick={imageImport.open}>
+              <Button iconOnly icon="import" loading={imageImport.importing} aria-label={imageImport.importing?"导入中":"导入图片"} disabled={imageImport.importing||disabled} onClick={imageImport.open}>
                 {imageImport.importing?'导入中':'图片'}
               </Button>
               {selectedImages.length > 0 && <>

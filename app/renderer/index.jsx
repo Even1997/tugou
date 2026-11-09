@@ -39,6 +39,7 @@ import {useDevPreview} from './dev-preview.jsx';
 import * as pages from '../core/pages.cjs';
 import {PageTabs} from './page-tabs.jsx';
 import {views} from './ui-view.js';
+import {useAutosave} from './use-autosave.js';
 const api = window.tugou;
 let previewBootstrap={enabled:false,snapshot:null};
 function prepareRecord(record){
@@ -116,9 +117,11 @@ function App() {
     });
   }, []);
   const markDirty = (value) => {
+    const previous=dirtyRef.current;
     dirtyRef.current = value;
     setDirty(value);
-    api.dirty(value).catch((failure) => setError(failure.message));
+    if(value)autosave.queue.changed();else autosave.queue.reset();
+    if(previous!==value)api.dirty(value).catch((failure) => setError(failure.message));
   };
   const change = (document, options = {}) => {
     if (busyRef.current) return false;
@@ -225,11 +228,14 @@ function App() {
       if(p.active)doc={...doc,compositionView:view};else{const g=pages.group(doc,'layers');doc={...doc,pages:{...doc.pages,layers:{...g,items:g.items.map(item=>item.id===p.id?{...item,content:{...item.content,compositionView:view}}:item)}}};}}
     return doc;
   };
+  const autosave=useAutosave({present,dirtyRef,busyRef,pageDocument,markDirty,setRecord,setProjects});
   const activatePage=(kind,id,show=true)=>{
     if(busyRef.current)throw Error('请等待当前操作完成');
     for(const v of views.values()){const reason=v.blocked();if(reason)throw Error(reason);}
+    const switched=pages.group(present.current.document,kind).activeId!==id;
     const doc=pages.activate(pageDocument(),kind,id);
     present.current={...present.current,document:doc};setRecord(present.current);setLayerSelection([]);
+    if(switched)markDirty(true);
     if(show)setWorkspace(kind);
   };
   const editPage=(action,kind,id,name)=>{
@@ -328,46 +334,40 @@ function App() {
     if(next!==doc&&change(next)===false)throw Error('工程正在保存，请稍后替换');
     setWorkspace('layers');
   };
-  const save = async () => {
-    if (!record || busy || !dirty) return;
-    busyRef.current = true;
-    setBusy(true);
-    await run(async () => {
-      const saved=await api.save(record.id, pageDocument(), record.revision);present.current=saved;setRecord(saved);
-      markDirty(false);
-      setNotice("已保存");
-      await refresh();
-    });
-    setBusy(false);
+  const save = () => autosave.queue.flush().catch(()=>{});
+  const prepareToLeave=async()=>{
+    if(busyRef.current)throw Error('请等待当前操作完成');
+    window.document.activeElement?.blur();
+    await new Promise(resolve=>setTimeout(resolve,0));
+    if(busyRef.current)throw Error('请等待当前操作完成');
+    for(const view of views.values()){const reason=view.blocked();if(reason)throw Error(reason);}
+    const local=window.document.querySelector('[data-dev-update-blocked]:not(.layer-editor)');
+    if(local)throw Error(local.dataset.devUpdateBlocked||'请先完成当前编辑');
+    busyRef.current=true;setBusy(true);
   };
+  const release=()=>{busyRef.current=false;setBusy(false);};
+  const closeLock=useRef(false);
+  const closeHandlers=useRef(null);
+  closeHandlers.current={prepare:async()=>{
+    await prepareToLeave();
+    closeLock.current=true;
+    window.document.body.inert=true;
+    await autosave.queue.flush();
+    await api.dirty(false);
+  },resume:()=>{if(closeLock.current){closeLock.current=false;window.document.body.inert=false;release();}}};
+  useEffect(()=>api.onBeforeClose?.(()=>closeHandlers.current.prepare(),()=>closeHandlers.current.resume()),[]);
   const hotReload = async () => {
     if(previewBootstrap.enabled){setNotice('开发预览会在安全时机自动更新，无需手动刷新');return;}
     if (busyRef.current) return;
-    window.document.activeElement?.blur();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    busyRef.current = true;
-    setBusy(true);
     await run(async () => {
-      const current = present.current;
-      if (current) {
-        const saved = await api.save(
-          current.id,
-          pageDocument(),
-          current.revision,
-        );
-        present.current = saved;
-        setRecord(saved);
-      }
-      await api.dirty(false);
-      setDirty(false);
-      sessionStorage.setItem(
-        "tugou-reload-view",
-        JSON.stringify({ id: current?.id, workspace }),
-      );
-      await api.window("reload");
+      await prepareToLeave();
+      try{
+        await autosave.queue.flush();
+        await api.dirty(false);
+        sessionStorage.setItem('tugou-reload-view',JSON.stringify({id:present.current?.id,workspace}));
+        await api.window('reload');
+      }finally{release();}
     });
-    busyRef.current = false;
-    setBusy(false);
   };
   useEffect(() => api.onReload?.(hotReload));
   useEffect(() => api.onCommand?.((command) => {
@@ -407,34 +407,38 @@ function App() {
     return () => window.removeEventListener("keydown", handler);
   });
   const switchProject = (operation) => {
-    if (busy || (dirty && !confirm("放弃当前未保存的修改？"))) return;
-    setBusy(true);
+    if (busyRef.current) return;
     run(async () => {
-      const next = prepareRecord(await operation());
-      if (next) {
-        history.current = { past: [], future: [] };
-        present.current = next;
-        seenResults.current = new Set();
-        setRecord(next);
-        setModuleId(null);
-        if(workspace==='home')setWorkspace('canvas');
-        setLayerSelection([]);
-        setRecipeId(null);
-        setToolSession(null);
-        setDetailsSession(null);
-        setAnalysisOpen(false);
-        setAnalysisSource(null);
-        markDirty(next.recovered === true||next.promptsExtracted === true);
-        setNotice("");
-        await refresh();
-      }
-    }).finally(() => setBusy(false));
+      await prepareToLeave();
+      try{
+        await autosave.queue.flush();
+        const next = prepareRecord(await operation());
+        if (next) {
+          history.current = { past: [], future: [] };
+          present.current = next;
+          seenResults.current = new Set();
+          setRecord(next);
+          setModuleId(null);
+          if(workspace==='home')setWorkspace('canvas');
+          setLayerSelection([]);
+          setRecipeId(null);
+          setToolSession(null);
+          setDetailsSession(null);
+          setAnalysisOpen(false);
+          setAnalysisSource(null);
+          markDirty(next.recovered === true||next.promptsExtracted === true);
+          setNotice("");
+          await refresh();
+        }
+      }finally{release();}
+    });
   };
   const deleteProject=async project=>{
     if(busyRef.current)throw Error('请等待当前操作完成');
     busyRef.current=true;setBusy(true);
     try{
-      await api.deleteProject(project.id,project.revision);
+      await autosave.queue.flush();
+      await api.deleteProject(project.id,present.current?.id===project.id?present.current.revision:project.revision);
       if(present.current?.id===project.id){
         present.current=null;setRecord(null);history.current={past:[],future:[]};seenResults.current=new Set();
         setModuleId(null);setRecipeId(null);setLayerSelection([]);setToolSession(null);setDetailsSession(null);setAnalysisOpen(false);setAnalysisSource(null);markDirty(false);
@@ -443,12 +447,13 @@ function App() {
     }finally{busyRef.current=false;setBusy(false);}
   };
   useAutomation({present,history,seenResults,busyRef,dirtyRef,workspace,layerSelection,change,travel,markDirty,refresh,
+    flushSave:()=>autosave.queue.flush(),
     setRecord,setBusy,setWorkspace,setLayerSelection,moduleId,recipeId,setModuleId,setRecipeId,activatePage,pageDocument,
     resetPanels:()=>{setModuleId(null);setRecipeId(null);setToolSession(null);setDetailsSession(null);setAnalysisOpen(false);setAnalysisSource(null);}});
   const preview=useDevPreview({enabled:previewBootstrap.enabled,initial:previewBootstrap.snapshot,
     freeze:value=>{busyRef.current=value;setBusy(value);},
     getSnapshot:()=>({record:present.current,projects,workspace,recipeId,moduleId,layerSelection,dirty:dirtyRef.current,history:history.current,pageViews:pageViews.current,seenResults:[...seenResults.current]}),
-    blockReason:()=>busyRef.current?'等待当前操作完成':['fonts','tools'].includes(workspace)?'请先完成当前编辑，再切换工作区应用更新':tasks.some(t=>['running','queued'].includes(t.status))?'等待任务完成':''});
+    blockReason:()=>busyRef.current||autosave.queue.saving?'等待当前操作完成':['fonts','tools'].includes(workspace)?'请先完成当前编辑，再切换工作区应用更新':tasks.some(t=>['running','queued'].includes(t.status))?'等待任务完成':''});
   return (
     <div className={"app-shell workspace-" + workspace}>
       <StudioHeader
@@ -461,10 +466,10 @@ function App() {
         setWorkspace={setWorkspace}
         busy={busy}
         dirty={dirty}
+        saveState={autosave.state}
         save={save}
         create={() => switchProject(() => api.create("未命名创作"))}
         importProject={() => switchProject(() => api.import())}
-        hotReload={hotReload}
         openProject={(id) => switchProject(() => api.open(id))}
         connection={() => setConnectionOpen(true)}
         tasks={() => setTasksOpen(true)}
@@ -474,10 +479,10 @@ function App() {
         canRedo={Boolean(history.current.future.length)}
       />
       {preview}
-      {error && (
+      {(error||autosave.error) && (
         <div className="message error" role="alert">
-          {error}
-          <Button iconOnly icon="close" onClick={() => setError("")} aria-label="关闭错误">
+          {error||autosave.error}
+          <Button iconOnly icon="close" onClick={() => {setError('');autosave.clearError();}} aria-label="关闭错误">
             ×
           </Button>
         </div>
@@ -593,7 +598,11 @@ function App() {
                 <LayerEditor
                   key={record.id+':'+pages.group(record.document,'layers').activeId}
                   initialPageView={pageViews.current[record.id+':'+pages.group(record.document,'layers').activeId]||record.document.compositionView}
-                  onPageView={view=>{pageViews.current[record.id+':'+pages.group(record.document,'layers').activeId]=view;}}
+                  onPageView={view=>{
+                    const key=record.id+':'+pages.group(record.document,'layers').activeId,previous=pageViews.current[key]||record.document.compositionView;
+                    pageViews.current[key]=view;
+                    if(!busyRef.current&&previous&&['x','y','zoom'].some(k=>previous[k]!==view[k]))markDirty(true);
+                  }}
                   projectId={record.id}
                   editHistory={{...history.current,undo:()=>travel('undo'),redo:()=>travel('redo')}}
                   selected={layerSelection}

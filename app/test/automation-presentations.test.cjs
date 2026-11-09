@@ -4,6 +4,13 @@ const base=()=>({id:'p',name:'PPT MCP',width:128,height:128,modules:[],recipes:[
 const step=(name,command,args={})=>({name,command,args}),ref=(name,key='id')=>({$ref:name+'.'+key});
 const apply=(d,command,args)=>batch(d,[step('r',command,args)]);
 const setup=()=>batch(base(),[step('p','ppt.create',{name:'中文汇报'}),step('s','ppt.slide.create',{presentationId:ref('p'),layout:'blank'}),step('e','ppt.element.create',{presentationId:ref('p'),slideId:ref('s'),kind:'text',properties:{text:'正文',fontWeight:500}})]);
+test('PPT MCP accepts independent pixel corners and rejects malformed values',()=>{
+ const r=setup(),page={presentationId:r.results.p.id,slideId:r.results.s.id},corners={topLeft:20,topRight:40,bottomRight:0,bottomLeft:10.5};
+ const created=apply(r.document,'ppt.element.create',{...page,kind:'rect',properties:{cornerRadius:corners}}),a={...page,id:created.results.r.id};
+ assert.deepEqual(created.document.presentations[0].slides[1].elements.at(-1).cornerRadius,corners);
+ const updated=apply(created.document,'ppt.element.update',{...a,patch:{cornerRadius:{...corners,topLeft:25}}});assert.equal(updated.document.presentations[0].slides[1].elements.at(-1).cornerRadius.topLeft,25);
+ for(const cornerRadius of [{},{topLeft:20},[],{...corners,topLeft:-1},{...corners,topLeft:2501},{...corners,topLeft:'20'},{...corners,extra:0}])assert.throws(()=>apply(created.document,'ppt.element.update',{...a,patch:{cornerRadius}}));
+});
 test('PPT MCP exposes rectangle radius for creation/update and rejects incompatible types and locked edits',()=>{
  const r=setup(),page={presentationId:r.results.p.id,slideId:r.results.s.id},created=apply(r.document,'ppt.element.create',{...page,kind:'rect',properties:{cornerRadius:24}}),a={...page,id:created.results.r.id};
  let d=apply(created.document,'ppt.element.update',{...a,patch:{cornerRadius:40}}).document;assert.equal(d.presentations[0].slides[1].elements.at(-1).cornerRadius,40);

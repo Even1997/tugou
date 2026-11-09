@@ -82,7 +82,7 @@ PPT 设计先通过 `get_design_standard {}` 或 `tugou://design/ppt` 读取 [�
 
 `query_objects` / `get_object` 新增 `presentation`、`slide`、`slideElement`；页面必须指定 `presentationId`，元素还必须指定 `slideId`。`ppt.get` 默认返回文稿元数据与页面摘要，加 `slideId` 返回完整单页。元素顺序从 0 起，0 为底层；锁定后只允许修改 visible / locked。文字沿用 `font.library` / `font.publish` 的字体和资源；图片先 `asset.import`，使用返回的 `ids`。`ppt.element.effects` 替换完整效果列表，三类各最多一个，空数组清除。图层编辑器仍用 `layer.effects`，形状基础边框仍用 `layer.update`。
 
-矩形圆角（待用户确认）：`ppt.element.create` 的 `properties` 或 `ppt.element.update` 的 `patch` 可传 `cornerRounding:100` 联动四角，或 `cornerRounding:{topLeft:100,topRight:50,bottomRight:0,bottomLeft:25}` 独立设置。仅 `kind:"rect"` 支持；每个值为 0–100 程度，实际半径 `value*min(w,h)/200`，缩放保持比例。对象必须包含全部四角；若只改一角，先读取当前对象并保留另外三个值。UI 在填充颜色下方提供联动 / 独立切换、数值框与滑块，重新联动以左上角为准，可撤销。旧 `cornerRadius` 仍表示 0–2500 px，保留已有文稿外观；MCP 设置任一参数会清除另一参数，不允许同时提交。统一圆角导出原生 `roundRect`，独立圆角导出含圆弧的原生自定义矢量，均保留边框、阴影和旋转，不转为位图。
+矩形圆角（像素版待桌面确认）：`ppt.element.create` 的 `properties` 或 `ppt.element.update` 的 `patch` 使用 `cornerRadius:20` 联动四角，或 `cornerRadius:{topLeft:20,topRight:40,bottomRight:0,bottomLeft:10}` 独立设置。仅 `kind:"rect"` 支持，数据允许 0–2500 px，实际显示半径不超过短边一半；改变尺寸不按比例改变已存半径。对象必须包含全部四角；若只改一角，先读取当前对象并保留另外三个值。UI 在填充颜色下方提供 px 数值框、滑块和联动 / 独立切换，重新联动以左上角的当前显示半径为准，可撤销。现有 `cornerRounding` 仍为 0–100 程度，实际半径 `value*min(w,h)/200`；面板读取时换算为 px，编辑圆角才写入 `cornerRadius`。MCP 设置任一参数会清除另一参数，不允许同时提交。统一圆角导出原生 `roundRect`，独立圆角导出含圆弧的原生自定义矢量，均保留边框、阴影和旋转，不转为位图。
 
 `ppt.open` 可指定 `elementId` 同步选中页面与图层。`ppt.preview` 打开窗口预览并返回真实 PNG，窗口需可见，使用 `ppt.present {action:"stop"}` 退出。`ppt.present` 支持 start / next / previous / goto / stop；start 可传 fullscreen，实际状态读取 `get_state.presentation.fullscreen`。预览和导航不写文档；输入、拖动和其他弹窗未结束时拒绝导航，PPT 播放器自身可接收演示控制。
 

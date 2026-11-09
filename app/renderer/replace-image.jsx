@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { Button, FormDialog } from "./components.jsx";
 import { assetUrl } from "./canvas.jsx";
 import { replaceCanvasAsset } from "../core/canvas-media.cjs";
+import './replace-image.css';
 
 export function ReplaceImageDialog({
   document,
@@ -33,6 +34,7 @@ export function ReplaceImageDialog({
   return (
     <FormDialog
       title="替换图片"
+      className="replace-image-dialog"
       close={() => {
         if (!busy) close();
       }}
@@ -43,6 +45,7 @@ export function ReplaceImageDialog({
         素材库
         <Select
           aria-label="替换素材"
+          disabled={busy}
           value={chosen}
           onChange={(e) => setChosen(e.target.value)}
         >
@@ -75,6 +78,7 @@ export function ReplaceImageDialog({
       <div className="dialog-footer">
         <Button
           icon="import"
+          loading={busy}
           disabled={busy}
           onClick={async () => {
             setBusy(true);
@@ -92,7 +96,7 @@ export function ReplaceImageDialog({
             }
           }}
         >
-          导入替换图片
+          {busy?'导入中…':'导入替换图片'}
         </Button>
         <span />
         <Button disabled={busy} onClick={close}>

@@ -217,3 +217,15 @@
 
 .composite-empty { background:var(--bg); }
 .composite-empty > .composition-tools { min-height:44px; }
+.composite-empty .empty.layer-start{overflow:auto;min-height:0;padding:clamp(40px,10vh,100px) 24px 32px;gap:12px;justify-content:flex-start}
+.layer-start>h2{font-size:18px}
+.layer-start-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%;max-width:680px;margin:12px 0}
+.layer-start-actions .layer-start-action{width:100%;height:auto;min-height:112px;padding:20px 12px;display:flex;flex-direction:column;gap:14px;white-space:normal;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:13px}
+.layer-start-action .studio-icon{font-size:24px;color:var(--muted)}
+.layer-start-actions .layer-start-primary{border-color:var(--accent);background:var(--accent-bg)}
+.layer-start-primary .studio-icon{color:var(--accent)}
+.layer-start-actions .layer-start-action:not(:disabled):hover{border-color:var(--accent);background:var(--accent-bg)}
+.layer-start-actions .layer-start-action:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.layer-start-actions .layer-start-action:disabled{opacity:.5}
+.layer-start .layer-start-hint{font-size:11px}
+@media(max-width:760px){.layer-start-actions{grid-template-columns:1fr;max-width:360px}.layer-start-actions .layer-start-action{min-height:68px;flex-direction:row;justify-content:flex-start;text-align:left;padding:14px 18px}.composite-empty .empty.layer-start{padding-top:24px}}

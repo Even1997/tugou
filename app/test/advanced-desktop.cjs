@@ -253,9 +253,7 @@ app.on("browser-window-created", (_event, window) => {
       await save();
       await field("input[aria-label=工程名称]", "热更新保留未保存修改");
       const oldPid = window.webContents.getOSProcessId();
-      await js("document.querySelector('button[aria-label=更多操作]').click()");
-      await delay(100);
-      await click(".import-menu button", "保存并热更新");
+      window.webContents.send("tugou:reload-request");
       await wait(
         'document.querySelector(".layer-editor")&&document.querySelector("input[aria-label=工程名称]").value==="热更新保留未保存修改"',
       );

@@ -24,7 +24,7 @@ app.on('browser-window-created',(_,w)=>{
       await run('project.save');const other=await js(`window.tugou.create('另一个工程')`);await js('location.reload()');await wait(`!!document.querySelector('.workspace-rail')`);
       // Reloaded app still restores current, then introduce a real dirty change again.
       await run('project.create',{name:'删除当前工程'});await run('artboard.create',{name:'未保存画板',width:400,height:400});const active=await state();
-      await click('[aria-label="管理项目"]');await wait(`!!document.querySelector('[aria-label="删除项目 另一个工程"]')`);await shot('projects-dark');
+      await click('[aria-label="工程操作"]');await click('[aria-label="管理项目"]');await wait(`!!document.querySelector('[aria-label="删除项目 另一个工程"]')`);await shot('projects-dark');
       await click('[aria-label="删除项目 另一个工程"]');await textClick('取消');check('cancel project deletion keeps project',(await js('window.tugou.list()')).some(p=>p.id===other.id));
       await click('[aria-label="删除项目 另一个工程"]');await textClick('删除');await wait(`!document.querySelector('[aria-label="删除项目 另一个工程"]')`);
       const kept=await state();check('deleting another project preserves dirty document and undo',kept.projectId===active.projectId&&kept.dirty&&kept.history.undo===active.history.undo);

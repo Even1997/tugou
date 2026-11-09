@@ -248,7 +248,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       y: (viewport.height - height * zoom) / 2-top*zoom,
     });
   };
-  useUiView('layers',{get:()=>({view,tool}),restore:v=>{setView(v.view);setTool(v.tool);},blocked:()=>draft||pathDraft||selectionBusy?'图层编辑尚未完成，请先完成当前操作':null});
+  useUiView('layers',{get:()=>({view,tool}),restore:v=>{setView(v.view);setTool(v.tool);},blocked:()=>draft||pathDraft||selectionBusy||painting.busy||merging||imageImport.importing||exportState||boardDraft||shapeDraft||polygon.length?'图层编辑尚未完成，请先完成当前操作':null});
   useEffect(() => {
     let previous;
     const observer = new ResizeObserver(([entry]) => {
@@ -1341,7 +1341,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     if(['clone','heal'].includes(tool)&&paintSource?.layerId===single.id)sourceMarker=geometry.world(paintSource.u,paintSource.v);
   }
   return (
-    <div className="layer-editor composition-editor" data-dev-update-blocked={painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||boardDraft||shapeDraft||polygon.length||tool!=='select'?'请先完成图层编辑，并切换到移动工具后更新':undefined}>
+    <div className="layer-editor composition-editor" onContextMenu={e=>{const row=e.target.closest('[data-tree-id]');if(row&&workspace)workspace.contextMenu(e,row.dataset.treeId,gifTime);}} data-dev-update-blocked={painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||boardDraft||shapeDraft||polygon.length||tool!=='select'?'请先完成图层编辑，并切换到移动工具后更新':undefined}>
       {(animation.frames.length>1||animation.error)&&<div className="gif-timeline">{animation.error?<span role="alert">{animation.error}</span>:<><Button onClick={()=>setGifPlaying(v=>!v)}>{gifPlaying?'暂停动画':'播放动画'}</Button><input aria-label="图层动画帧" type="range" min={1} max={animation.frames.length} value={gifIndex+1} onChange={e=>{setGifPlaying(false);setGifFrame(+e.target.value-1)}}/><span>第 {gifIndex+1} / {animation.frames.length} 帧 · {gifTime} ms</span></>}</div>}
       <div className="composition-tools">
         <div className="composition-primary-tools">
@@ -1351,7 +1351,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           <Button icon="crop" disabled={!document.selection||selectionBusy} onClick={cropSelection}>裁切</Button>
           <Button icon="brush" aria-pressed={tool==='brush'} onClick={()=>setTool('brush')}>画笔</Button>
           <ShapePicker active={tool==='shape'} options={shapeOptions} disabled={disabled} choose={options=>{setShapeOptions(options);setTool('shape');setBoardTool(false)}}/>
-          <Button icon="assets" onClick={()=>imageImport.open()} disabled={imageImport.importing}>图片</Button>
+          <Button icon="assets" loading={imageImport.importing} onClick={()=>imageImport.open()} disabled={imageImport.importing}>{imageImport.importing?'导入中…':'图片'}</Button>
           <Button icon="text" onClick={()=>add('text',{name:'文字',text:'输入文字',fontSize:48,color:'#333333',width:600,height:160})}>文字</Button>
           <Button icon="select" aria-pressed={tool==='hand'} onClick={()=>setTool('hand')}>抓手</Button>
           <Button icon="zoomIn" onClick={()=>setView({...view,zoom:Math.min(8,view.zoom*1.25)})}>缩放</Button>
@@ -1846,8 +1846,8 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
         {materialsOpen&&<aside className="composition-materials">          <details open className="layer-materials"><summary>素材库 · {document.assets.length}</summary>
           <div className="panel-heading">
             <h2>素材库</h2>
-            <Button iconOnly icon="import"
-              aria-label="导入图层素材"
+            <Button iconOnly icon="import" loading={imageImport.importing}
+              aria-label={imageImport.importing?'导入中':'导入图层素材'}
               disabled={imageImport.importing||disabled}
               onClick={() =>
                 imageImport.open()
@@ -1881,7 +1881,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           onDragOver={e=>{if(hasImageFiles(e)){imageImport.over(e);return;}if(!disabled&&e.dataTransfer.types.includes(materialMime)){e.preventDefault();e.dataTransfer.dropEffect='copy';}}}
           onDrop={e=>{if(hasImageFiles(e)){imageImport.drop(e,at(e));return;}if(disabled||!e.dataTransfer.types.includes(materialMime))return;e.preventDefault();run(()=>addAssets([readMaterialDrop(e,projectId,latest.current.document)],at(e)));}}
           onPointerDown={down}
-          onContextMenu={e=>{if(!workspace)return;const p=at(e),id=e.target.closest('[data-board-id]')?.dataset.boardId||[...workspace.boards].reverse().find(b=>p.x>=b.x&&p.y>=b.y&&p.x<=b.x+b.width&&p.y<=b.y+b.height)?.id;if(id)workspace.contextMenu(e,id);}}
+          onContextMenu={e=>{if(!workspace)return;const p=at(e),id=e.target.closest('[data-board-id]')?.dataset.boardId||hit(p)?.id||[...workspace.boards].reverse().find(b=>p.x>=b.x&&p.y>=b.y&&p.x<=b.x+b.width&&p.y<=b.y+b.height)?.id;if(id)workspace.contextMenu(e,id,gifTime);}}
           onPointerMove={move}
           onPointerLeave={()=>setPaintCursor(null)}
           onPointerUp={up}

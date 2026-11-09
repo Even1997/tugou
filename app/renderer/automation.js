@@ -58,9 +58,10 @@ export function useAutomation(context) {
       }
       else if(action==='page.activate'){guard();const c=current();navigationGuard(c);leaveGuard(c,args.kind);c.activatePage(args.kind,args.id);value=state();}
       else if(action==='project.create'||action==='project.open'){
-        guard();const c=current();if(c.dirtyRef.current)failure('UNSAVED_CHANGES','请先保存当前工程');
+        guard();const c=current();navigationGuard(c);
         c.busyRef.current=true;c.setBusy(true);
         try {
+          await c.flushSave();
           const record=await (action==='project.create'?window.tugou.create(args.name):window.tugou.open(args.id));
           c.present.current=record;c.setRecord(record);c.history.current={past:[],future:[]};c.seenResults.current=new Set();
           c.setLayerSelection([]);c.resetPanels();c.markDirty(record.recovered===true);await c.refresh();
@@ -69,7 +70,7 @@ export function useAutomation(context) {
       }else if(action==='project.save'){
         guard();const c=current(),r=c.present.current;if(!r)failure('NO_PROJECT','请先打开工程');
         c.busyRef.current=true;c.setBusy(true);
-        try{const saved=await window.tugou.save(r.id,c.pageDocument(),r.revision);c.present.current=saved;c.setRecord(saved);c.markDirty(false);await c.refresh();}
+        try{await c.flushSave();}
         finally{c.busyRef.current=false;c.setBusy(false);}
         value=state();
       }else if(action==='history.undo'||action==='history.redo'){

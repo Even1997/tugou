@@ -14,7 +14,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
 
  await wait(`!!document.querySelector('.studio-header')`);await run('project.create',{name:'空白合成验收'});await run('workspace.show',{workspace:'layers'});await wait(`!!document.querySelector('.composite-empty')`);
  check('layer navigation and editor title use distinct descriptive names',await js(`document.querySelector('.workspace-rail [aria-current=page]').textContent==='图层'&&document.querySelector('.workspace-title').textContent==='图层编辑器'`));
- check('new layer page and empty state use editor terminology',await js(`document.querySelector('.page-tabs').textContent.includes('图层页 1')&&!!document.querySelector('[aria-label="新建图层页"]')&&document.querySelector('.composite-empty').textContent.includes('开始编辑')`));
+ check('new layer page and empty state use editor terminology',await js(`document.querySelector('.page-tabs').textContent.includes('图层页 1')&&!!document.querySelector('[aria-label="新建图层页"]')&&document.querySelector('.composite-empty').textContent.includes('开始创作')`));
  const state=()=>call('get_state'),count=async()=>(await state()).counts.artboards;
  check('new project has zero artboards',await count()===0);
  check('empty workspace renders no canvas or board inspector',await js(`!document.querySelector('.layer-stage')&&!document.querySelector('.board-properties')`));

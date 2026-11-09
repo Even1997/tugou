@@ -93,8 +93,8 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
         </Button>
         <Button iconOnly aria-label={`处理所选${selected.length ? ` (${selected.length})` : ""}`} disabled={!selected.length||selected.some(id=>document.assets.some(a=>a.id===id&&a.kind&&a.kind!=='image'))} icon="tools" onClick={()=>editImages(selected)}>处理所选{selected.length ? ` (${selected.length})` : ""}</Button>
         {replacementTarget&&<Button iconOnly icon="replace" disabled={chosen.length!==1||replacementTarget.locked||document.assets.some(a=>a.id===chosen[0]&&a.kind&&a.kind!=="image")} title={`替换「${replacementTarget.name}」`} onClick={()=>run(()=>replaceLayer(chosen[0]))}>替换图层</Button>}
-        <Button aria-label={imageImport.importing?"导入中":"导入图片"} primary icon="import" disabled={imageImport.importing||disabled} onClick={imageImport.open}>
-          {imageImport.importing?'导入中':'导入图片'}
+        <Button aria-label={imageImport.importing?"导入中":"导入图片"} primary icon="import" loading={imageImport.importing} disabled={imageImport.importing||disabled} onClick={imageImport.open}>
+          {imageImport.importing?'导入中…':'导入图片'}
         </Button>
       </div>
       {error && (
@@ -165,11 +165,11 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
         <EmptyState
           title={query||source!=='all'||shape!=='all' ? "没有匹配的素材" : "暂无素材"}
           description={
-            query||source!=='all'||shape!=='all' ? "调整关键词或顶部筛选条件。" : "拖入本机图片，或在工作台生成素材。"
+            query||source!=='all'||shape!=='all' ? "调整关键词或顶部筛选条件。" : "支持拖入图片"
           }
         >
-          <Button primary icon="import" disabled={imageImport.importing||disabled} onClick={imageImport.open}>
-            导入图片
+          <Button primary icon="import" loading={imageImport.importing} disabled={imageImport.importing||disabled} onClick={imageImport.open}>
+            {imageImport.importing?'导入中…':'导入图片'}
           </Button>
         </EmptyState>
       )}

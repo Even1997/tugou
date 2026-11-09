@@ -168,7 +168,11 @@ async function boot() {
   const fonts=await require('./core/font-desktop.cjs').registerFonts({root,tasks,handle,dialog,window});
   handle('create', (name) => projects.create(name));
   handle('open', async(id) => {const record=await projects.read(id);await settings?.remember(record);return record;});
-  handle('save', async(id, document, revision) => {const record=await projects.save(id, document, revision);await settings?.remember(record);return record;});
+  handle('save', async(id, document, revision) => {
+    // A failed recent-project update must not hide a successfully committed revision.
+    await projects.projectPath(id);await settings?.remember({id});
+    return projects.save(id,document,revision);
+  });
   handle('import', async () => {
     const choice = await dialog.showOpenDialog(window, { title: '只读导入旧版工程', properties: ['openFile'], filters: [{ name: '土狗工程', extensions: ['json'] }] });
     return choice.canceled ? null : projects.importLegacy(choice.filePaths[0]);
@@ -344,6 +348,16 @@ async function boot() {
   handle('copyText', (text) => { if (typeof text !== 'string') throw new Error('复制内容无效'); clipboard.writeText(text); });
   handle('cancelTask', (id) => tasks.cancel(id));
   handle('dirty', (value) => { dirty = value === true; });
+  let closeSave=null;
+  handle('closeReady',(id,error)=>{
+    if(!closeSave||id!==closeSave.id)return;
+    if(error)closeSave.reject(new Error(error));else closeSave.resolve();
+  });
+  const saveBeforeClose=()=>new Promise((resolve,reject)=>{
+    const id=randomUUID(),timer=setTimeout(()=>reject(new Error('保存仍未完成，已取消关闭。请稍后重试。')),30000);
+    closeSave={id,resolve,reject,timer};
+    window.webContents.send('tugou:before-close',id);
+  }).finally(()=>{clearTimeout(closeSave.timer);closeSave=null;});
   handle('window', (action) => {
     if (action === 'reload') { if(dirty) throw new Error('请先保存工程再刷新'); setImmediate(()=>window.webContents.reload()); }
     if (action === 'minimize') window.minimize();
@@ -354,15 +368,19 @@ async function boot() {
   window.on('close', async (event) => {
     if (closing) return;
     event.preventDefault();
-    if (process.platform === 'darwin' && !quitting) { window.hide(); return; }
     if (confirmingClose) return;
     confirmingClose = true;
-    if (dirty && preferences.value.confirmClose) {
-      const choice = await dialog.showMessageBox(window, { type: 'question', message: '工程有未保存的修改', detail: '返回后可使用顶部保存按钮。', buttons: ['返回保存', '放弃修改并关闭'], defaultId: 0, cancelId: 0 });
-      if (choice.response !== 1) { confirmingClose = false; quitting=false; return; }
+    try{
+      // Updates already require a saved, idle session; their IPC is intentionally disabled.
+      if(settings?.updates.state.status!=='installing')await saveBeforeClose();
+      if(dirty)throw new Error('仍有未保存修改，请返回编辑器重试保存');
+      if(process.platform==='darwin'&&!quitting){window.hide();window.webContents.send('tugou:close-cancelled');confirmingClose=false;return;}
+      await tasks.shutdown();
+    }catch(error){
+      confirmingClose=false;quitting=false;
+      if(!window.isDestroyed())window.webContents.send('tugou:close-cancelled');
+      dialog.showErrorBox('未能保存并关闭',error.message);return;
     }
-    try { await tasks.shutdown(); }
-    catch (error) { confirmingClose = false; quitting=false; dialog.showErrorBox('任务记录保存失败', error.message); return; }
     closing = true;
     window.close();
   });

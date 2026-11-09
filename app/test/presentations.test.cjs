@@ -1,5 +1,24 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path');
 const ppt=require('../core/presentations.cjs'),{ProjectStore,hash}=require('../core/storage.cjs'),{exportPresentation}=require('../core/presentation-export.cjs'),JSZip=require('jszip');
+test('pixel corners keep their radius across sizes, persist and export exact independent arcs',async t=>{
+  const corners={topLeft:20,topRight:30,bottomRight:0,bottomLeft:10.5},e=ppt.element('rect',{w:400,h:200,cornerRadius:corners}),d=ppt.create();d.slides[0].elements=[e];
+  assert.deepEqual(ppt.rectangleRadii(e),[20,30,0,10.5]);e.h=100;assert.deepEqual(ppt.rectangleRadii(e),[20,30,0,10.5]);e.h=40;assert.deepEqual(ppt.rectangleRadii(e),[20,20,0,10.5]);e.h=200;
+  const root=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'tugou-pixel-corners-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));const store=new ProjectStore(root);await store.init();const r=await store.create('像素圆角');await store.save(r.id,{...r.document,presentations:[d]},r.revision);assert.deepEqual((await store.read(r.id)).document.presentations,[d]);assert.deepEqual(ppt.duplicate(e).cornerRadius,corners);
+  const zip=await JSZip.loadAsync(await exportPresentation(d,[],root)),{DOMParser}=require('@xmldom/xmldom'),xml=new DOMParser().parseFromString(await zip.file('ppt/slides/slide1.xml').async('string'),'application/xml');
+  assert.equal(xml.getElementsByTagName('a:custGeom').length,1);assert.equal(xml.getElementsByTagName('p:pic').length,0);assert.deepEqual(Array.from(xml.getElementsByTagName('a:arcTo')).map(a=>a.getAttribute('wR')),['285750','100013','190500']);
+  for(const value of [[],{}, {topLeft:10},{...corners,extra:0},{...corners,bottomLeft:-1},{...corners,topRight:2501},{...corners,topLeft:NaN}]){e.cornerRadius=value;assert.throws(()=>ppt.validate([d]));}
+});
+
+test('editor radius callbacks store pixels and preserve existing percentage appearance until edited',()=>{
+  const source=require('node:fs').readFileSync(path.join(__dirname,'../renderer/presentations.jsx'),'utf8'),vm=require('node:vm');
+  const callbacks=source.slice(source.indexOf('const radiusValues='),source.indexOf('const tabKeys='));
+  const {radiusValues,radiusPatch}=vm.runInNewContext(callbacks+';({radiusValues,radiusPatch})',{cornerKeys:ppt.cornerKeys,rectangleRadii:ppt.rectangleRadii});
+  const e=ppt.element('rect',{w:400,h:240,cornerRounding:{topLeft:40,topRight:20,bottomRight:0,bottomLeft:60}});
+  assert.deepEqual({...radiusValues(e)},{topLeft:48,topRight:24,bottomRight:0,bottomLeft:72});
+  const changed={...e,...radiusPatch(e,'topRight',12)};assert.equal(changed.cornerRounding,undefined);assert.deepEqual(ppt.rectangleRadii(changed),[48,12,0,72]);changed.h=160;assert.deepEqual(ppt.rectangleRadii(changed),[48,12,0,72]);
+  const linked={...changed,...radiusPatch(changed,null,20)};assert.deepEqual(ppt.rectangleRadii(linked),[20,20,20,20]);linked.w=800;linked.h=400;assert.deepEqual(ppt.rectangleRadii(linked),[20,20,20,20]);
+});
+
 test('rectangle radius persists and duplicates; old rectangles stay square and resized radii clamp',async t=>{
   const root=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'tugou-round-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));const store=new ProjectStore(root);await store.init();const r=await store.create('圆角'),deck=ppt.create(),rect=ppt.element('rect',{w:240,h:120,cornerRadius:32.5});deck.slides[0].elements=[rect];
   await store.save(r.id,{...r.document,presentations:[deck]},r.revision);assert.equal((await store.read(r.id)).document.presentations[0].slides[0].elements[0].cornerRadius,32.5);

@@ -30,7 +30,7 @@ app.on('browser-window-created',(_e,window)=>{
    const exportPath=path.join(out,'tools-export.png');dialog.showSaveDialog=async()=>({canceled:false,filePath:exportPath});await click('导出结果');await wait('document.querySelector(".message[role=status]")?.textContent==="已导出 PNG"');assert.deepEqual(nativeImage.createFromPath(exportPath).getSize(),{width:6,height:5});check('tool result exports valid original-size PNG',true);
    await select('处理方式','rotate');await click('开始处理');await wait('document.querySelectorAll(".processing-item").length===4');check('quarter turn swaps original width and height',await js('document.querySelector(".image-comparison").textContent.includes("1 × 2")'));
    await click('加入画面','.image-tools-footer button');await wait('document.querySelector(".layer-editor")');check('processed result joins editable layer scene',await js('document.querySelectorAll(".layer-name").length===1'));
-   await click('更多操作');await click('重命名工程');await fill('新工程名称','界面交互验收');await click('保存名称');
+   await click('工程操作');await click('重命名工程');await fill('新工程名称','界面交互验收');await click('保存名称');
    await click('保存','.toolbar-end button');await wait('document.querySelector(".statusbar").textContent.includes("已保存")');
    const saved=await js(`window.tugou.open(${JSON.stringify(id)})`);check('rename and tool history persist without replacing originals',saved.document.name==='界面交互验收'&&saved.document.assets.length===5&&saved.document.assets[0].width===2&&saved.document.assets.filter(a=>a.toolResult).length===4);
    await click('无限画布','nav button');await click('文字','#canvas-actions button');await wait('document.querySelectorAll(".react-flow__node").length===1');
