@@ -6,8 +6,13 @@ on:
         description: Existing release tag; leave empty to build and verify without publishing
         required: false
         default: ''
+      reuse_run:
+        description: Verified native build artifact run ID; empty creates a new build
+        required: false
+        default: ''
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: mac-release-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
@@ -47,6 +52,7 @@ jobs:
       - name: Test DMG update controller
         run: node --test test/mac-dmg-update.test.cjs test/font-downloads.test.cjs
       - name: Build native DMG and ZIP (ad-hoc signature, no notarization)
+        if: inputs.reuse_run == ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -63,6 +69,18 @@ jobs:
           tar -xzf "$TOOL_DIR/tool.tar.gz" --strip-components=1 -C "$TOOL_DIR"
           export CUSTOM_DMGBUILD_PATH="$TOOL_DIR/dmgbuild"
           npm run dist:mac -- dmg zip --${{ matrix.arch }} --publish never -c.mac.identity=- -c.electronDist=node_modules/electron/dist
+      - name: Restore the same native packages for QA
+        if: inputs.reuse_run != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REUSE_RUN: ${{ inputs.reuse_run }}
+        run: |
+          [[ "$REUSE_RUN" =~ ^[0-9]+$ ]]
+          gh run download "$REUSE_RUN" --repo "$GITHUB_REPOSITORY" --name mac-built-x64 --dir release
+          (cd release && shasum -a 256 --check SHA256SUMS-built.txt)
+          tar -xzf release/runtime.tgz
+          mkdir -p release/mac
+          unzip -q release/tugou-*-mac-x64.zip -d release/mac
       - name: Verify native binaries and bundle signature
         run: |
           BUNDLE="release/${{ matrix.bundle }}/Tugou.app"
@@ -74,6 +92,22 @@ jobs:
           codesign --verify --deep --strict "$BUNDLE"
           hdiutil verify release/*.dmg
           unzip -tq release/*.zip
+      - name: Retain verified native build for subsequent QA
+        if: inputs.reuse_run == ''
+        run: |
+          tar -czf release/runtime.tgz node_modules/electron/dist node_modules/electron/path.txt
+          (cd release && shasum -a 256 *.dmg *.zip runtime.tgz > SHA256SUMS-built.txt)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: inputs.reuse_run == ''
+        with:
+          name: mac-built-x64
+          path: |
+            app/release/*.dmg
+            app/release/*.zip
+            app/release/runtime.tgz
+            app/release/SHA256SUMS-built.txt
+          compression-level: 0
+          retention-days: 3
       - name: Test packaged PPT MCP, element effects, PSD and photo editing
         env:
           TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
