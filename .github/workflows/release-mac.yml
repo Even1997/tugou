@@ -10,6 +10,10 @@ on:
         description: Verified native build artifact run ID; empty creates a new build
         required: false
         default: ''
+      publish_run:
+        description: Upload an already tested Intel artifact run without rebuilding
+        required: false
+        default: ''
 permissions:
   contents: read
   actions: read
@@ -18,6 +22,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
+    if: inputs.publish_run == ''
     strategy:
       fail-fast: false
       matrix:
@@ -290,3 +295,54 @@ jobs:
             app/test-results/update-prompt/*.json
             app/test-results/update-prompt/*.png
           retention-days: 14
+  publish_verified:
+    if: inputs.publish_run != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      QA_RUN: ${{ inputs.publish_run }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Retrieve and validate the tested native packages and all reports
+        run: |
+          test "$RELEASE_TAG" = v0.8.17
+          [[ "$QA_RUN" =~ ^[0-9]+$ ]]
+          gh run view "$QA_RUN" --repo "$GITHUB_REPOSITORY" --json jobs,headSha > run.json
+          gh run download "$QA_RUN" --repo "$GITHUB_REPOSITORY" --name mac-x64 --dir packages
+          gh run download "$QA_RUN" --repo "$GITHUB_REPOSITORY" --name mac-evidence-x64 --dir evidence
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,isDraft,isPrerelease > release.json
+          python3 <<'PY'
+          import hashlib,json,pathlib
+          run=json.load(open('run.json'))
+          failed=[s for j in run['jobs'] for s in j['steps'] if s['conclusion']=='failure']
+          assert len(failed)==1 and failed[0]['number']==30 and 'upload-artifact@' in failed[0]['name'],failed
+          reports=[json.loads(p.read_text()) for p in pathlib.Path('evidence').rglob('*.json')]
+          assert len(reports)==28 and sum(len(r['checks']) for r in reports)==923
+          assert all(not r.get('error') and not r.get('failure') and not r.get('errors') for r in reports)
+          native=json.load(open('evidence/mac-release/dmg-native.json'))
+          assert native['passed'] and native['arch']=='x64' and native['version']=='0.8.17'
+          release=json.load(open('release.json'))
+          assert release['tagName']=='v0.8.17' and not release['isDraft'] and not release['isPrerelease']
+          expected={'tugou-0.8.17-mac-x64.dmg','tugou-0.8.17-mac-x64.zip'}
+          hashes=[]
+          for line in pathlib.Path('packages/SHA256SUMS-mac-x64.txt').read_text().splitlines():
+              wanted,name=line.split()
+              assert name in expected
+              file=pathlib.Path('packages')/name
+              h=hashlib.sha256()
+              with file.open('rb') as stream:
+                  for chunk in iter(lambda:stream.read(1048576),b''):h.update(chunk)
+              assert h.hexdigest()==wanted
+              hashes.append({'name':name,'sha256':wanted,'bytes':file.stat().st_size})
+          assert {h['name'] for h in hashes}==expected
+          assert native['sha256']==next(h['sha256'] for h in hashes if h['name'].endswith('.dmg'))
+          print(json.dumps({'qaRun':run,'reportCount':28,'checks':923,'packages':hashes}))
+          PY
+      - name: Publish the verified Intel package files
+        run: |
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" packages/tugou-0.8.17-mac-x64.dmg packages/tugou-0.8.17-mac-x64.zip packages/SHA256SUMS-mac-x64.txt
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '[.assets[]|{name,size,digest,state}]'
