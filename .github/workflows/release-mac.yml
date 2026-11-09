@@ -71,6 +71,12 @@ jobs:
           node_modules/.bin/electron test/element-effects-desktop.cjs
           node_modules/.bin/electron test/psd-desktop.cjs
           node_modules/.bin/electron test/photo-desktop.cjs
+      - name: Test packaged PPT zoom, canvas panning and pixel corners
+        env:
+          TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+        run: |
+          node_modules/.bin/electron test/ppt-zoom-desktop.cjs
+          node_modules/.bin/electron test/ppt-radius-desktop.cjs
       - name: Test packaged full MCP creative commands
         env:
           TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
@@ -179,6 +185,10 @@ jobs:
           path: |
             app/test-results/presentation-mcp/*.json
             app/test-results/presentation-mcp/*.png
+            app/test-results/ppt-zoom/*.json
+            app/test-results/ppt-zoom/*.png
+            app/test-results/ppt-radius/*.json
+            app/test-results/ppt-radius/*.png
             app/test-results/element-effects/*.json
             app/test-results/element-effects/*.png
             app/test-results/psd/*.json

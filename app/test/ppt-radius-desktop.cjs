@@ -1,5 +1,5 @@
 const {app,dialog}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const out=path.resolve('test-results/ppt-radius');fs.mkdirSync(out,{recursive:true});process.env.TUGOU_DATA_DIR=fs.mkdtempSync(path.join(fs.realpathSync(out),'profile-'));process.env.TUGOU_BUILD_DIR||=path.resolve('.dev-preview/ui');
+const out=path.resolve(process.env.TUGOU_PPT_RADIUS_QA_OUT||'test-results/ppt-radius');fs.mkdirSync(out,{recursive:true});process.env.TUGOU_DATA_DIR=fs.mkdtempSync(path.join(fs.realpathSync(out),'profile-'));const main=path.resolve(process.env.TUGOU_TEST_APP||'desktop-main.cjs');app.setAppPath(path.dirname(main));if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;else process.env.TUGOU_BUILD_DIR||=path.resolve('.dev-preview/ui');
 const report={checks:[],errors:[],profile:process.env.TUGOU_DATA_DIR};let done=false;
 const finish=code=>{if(done)return;done=true;fs.writeFileSync(path.join(out,'desktop.json'),JSON.stringify(report,null,2));app.exit(code);};setTimeout(()=>{report.failure='timeout';finish(1)},90000);
 app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webContents.setBackgroundThrottling(false);w.webContents.on('console-message',d=>{if(d.level==='error')report.errors.push(d.message)});
@@ -47,4 +47,4 @@ w.webContents.once('did-finish-load',async()=>{
   await click('圆形',`document.querySelector('.ppt-insert')`);check('radius controls are absent for ellipse',await js(`!document.querySelector('[aria-label="矩形圆角"]')`));await save();
   await js(`sessionStorage.setItem('tugou-reload-view',JSON.stringify({id:${JSON.stringify(report.id)},workspace:'ppt'}))`);const loaded=new Promise(r=>w.webContents.once('did-finish-load',r));await js(`tugou.window('reload')`);await loaded;await wait(`!!document.querySelector('.ppt-deck-card')`);await click('打开 矩形圆角验收');check('independent corners survive renderer restart',await js(`getComputedStyle(document.querySelector('.ppt-edit-page ${sel} .ppt-shape')).borderRadius==='120px 50px 0px 25px'`));check('no renderer errors',report.errors.length===0);finish(0);
  }catch(e){report.failure=e.stack;console.error(e);await capture('failure').catch(()=>{});finish(1)}
-});});require('../desktop-main.cjs');
+});});require(main);

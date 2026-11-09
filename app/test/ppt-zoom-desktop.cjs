@@ -1,8 +1,9 @@
-// Reuses existing preview output; never builds or opens the user's profile.
+// Runs against existing preview output or a packaged app in an isolated profile.
 const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'test-results/ppt-zoom');fs.mkdirSync(out,{recursive:true});
+const root=path.resolve(__dirname,'..'),out=path.resolve(process.env.TUGOU_PPT_ZOOM_QA_OUT||path.join(root,'test-results/ppt-zoom'));fs.mkdirSync(out,{recursive:true});
 const profile=fs.mkdtempSync(path.join(fs.realpathSync(out),'profile-'));
-process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR||=path.join(root,'.dev-preview/ui');delete process.env.TUGOU_DEV_PREVIEW;process.argv.push('--mcp-enable');
+const main=path.resolve(process.env.TUGOU_TEST_APP||path.join(root,'desktop-main.cjs'));app.setAppPath(path.dirname(main));
+process.env.TUGOU_DATA_DIR=profile;if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;else process.env.TUGOU_BUILD_DIR||=path.join(root,'.dev-preview/ui');delete process.env.TUGOU_DEV_PREVIEW;process.argv.push('--mcp-enable');
 fs.writeFileSync(path.join(profile,'preferences.json'),JSON.stringify({...require('../core/preference-values.cjs').defaults,theme:'light',autoCheck:false,notifyTasks:false}));
 const {bridge}=require('../core/mcp.cjs'),report={checks:[],errors:[]};let done=false;
 const finish=code=>{if(done)return;done=true;fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));app.exit(code);};
@@ -21,7 +22,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
     const scale=()=>js(`parseFloat(document.querySelector('.ppt-edit-page').style.width)/parseFloat(document.querySelector('.ppt-edit-page .ppt-page').style.width)`);
     const fit=async()=>{await click('.ppt-zoom-control');await delay(150);};
     const point=async()=>{const r=await bounds('.ppt-edit-surface');return {x:Math.round(r.x+r.width*.55),y:Math.round(r.y+r.height*.55)};};
-    const wheel=async(deltaY,ctrl=true,p)=>{w.webContents.sendInputEvent({type:'mouseWheel',...p||await point(),deltaX:0,deltaY,modifiers:ctrl?['control']:[]});await delay(450);};
+    const wheel=async(deltaY,ctrl=true,p)=>{w.webContents.sendInputEvent({type:'mouseWheel',...p||await point(),deltaX:0,deltaY,modifiers:ctrl?['control']:[]});await delay(100);if(ctrl){for(let i=0;i<60;i++){const before=await scale();await delay(80);if(await scale()===before)return;}throw Error('zoom animation did not settle');}};
     const drag=async(p,dx,dy)=>{p={x:Math.round(p.x),y:Math.round(p.y)};w.webContents.sendInputEvent({type:'mouseMove',...p});w.webContents.sendInputEvent({type:'mouseDown',...p,button:'left',clickCount:1});await delay(50);for(let i=1;i<=5;i++){w.webContents.sendInputEvent({type:'mouseMove',x:p.x+Math.round(dx*i/5),y:p.y+Math.round(dy*i/5),modifiers:['leftButtonDown']});await delay(30);}w.webContents.sendInputEvent({type:'mouseUp',x:p.x+dx,y:p.y+dy,button:'left',clickCount:1});await delay(150);};
     await wait(`!!document.querySelector('.studio-header')`);w.setSize(1380,900);w.showInactive();w.webContents.debugger.attach('1.3');await w.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});
     await run('project.create',{name:'PPT 缩放验收'});const created=await run('ppt.create',{name:'缩放验证',layout:'blank'});report.created=created;
@@ -62,4 +63,4 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
     await js(`document.querySelector('.ppt-zoom-control').focus()`);w.webContents.sendInputEvent({type:'keyDown',keyCode:'Return'});w.webContents.sendInputEvent({type:'keyUp',keyCode:'Return'});await delay(120);check('fit button supports keyboard activation',await js(`document.activeElement.classList.contains('ppt-zoom-control')&&(()=>{const n=document.querySelector('.ppt-edit-surface');return Math.abs(n.scrollTop-(n.scrollHeight-n.clientHeight)/2)<1})()`));
     check('no renderer errors',report.errors.length===0);finish(0);
   }catch(error){report.failure=error.stack;finish(1);}});
-});require('../desktop-main.cjs');
+});require(main);
