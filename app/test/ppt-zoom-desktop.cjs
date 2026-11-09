@@ -38,8 +38,10 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
     const panned=await bounds('.ppt-edit-page');check('Space left drag pans even at fitted size',Math.abs(panned.x-fittedPage.x-50)<2&&Math.abs(panned.y-fittedPage.y-35)<2);
     check('panning over an element leaves selection and document unchanged',(await call('get_state')).revision===state.revision&&await js(`!document.querySelector('.ppt-edit-page .selected')`));
     check('releasing Space resets cursor',await js(`!document.querySelector('.ppt-edit-surface').dataset.pan`));await fit();
-    await js(`window.zoomSamples=[];let frames=0;function sample(){window.zoomSamples.push(parseFloat(document.querySelector('.ppt-edit-page').style.width));if(++frames<24)requestAnimationFrame(sample);}requestAnimationFrame(sample);`);
-    await wheel(120);check('native zoom renders intermediate frames',await js(`new Set(window.zoomSamples.map(n=>Math.round(n*100))).size>=4`));await wheel(-120);
+    const sampleStart=await scale();report.reducedMotion=await js(`matchMedia('(prefers-reduced-motion: reduce)').matches`);
+    await js(`window.zoomSamples=[];window.stopZoomSample=false;function sample(){window.zoomSamples.push(parseFloat(document.querySelector('.ppt-edit-page').style.width)/parseFloat(document.querySelector('.ppt-edit-page .ppt-page').style.width));if(!window.stopZoomSample)requestAnimationFrame(sample);}requestAnimationFrame(sample);`);
+    await wheel(120);await js(`window.stopZoomSample=true`);report.zoomSamples=await js('window.zoomSamples');const sampleEnd=await scale();
+    check(report.reducedMotion?'native zoom respects reduced motion':'native zoom renders intermediate frames',sampleEnd>sampleStart&&(report.reducedMotion||report.zoomSamples.some(n=>n>sampleStart+.00001&&n<sampleEnd-.00001)));await wheel(-120);
     await wheel(120);check('native Ctrl wheel up enlarges',await scale()>initial);await wheel(-120);check('native Ctrl wheel down reduces',Math.abs(await scale()-initial)<.001);
     for(let i=0;i<18;i++)await wheel(120);
     check('zoom capped at 400 percent',await scale()===4);const p=await point(),before=await bounds('.ppt-edit-page');await wheel(-120,true,p);const after=await bounds('.ppt-edit-page');

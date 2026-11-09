@@ -71,12 +71,18 @@ jobs:
           node_modules/.bin/electron test/element-effects-desktop.cjs
           node_modules/.bin/electron test/psd-desktop.cjs
           node_modules/.bin/electron test/photo-desktop.cjs
-      - name: Test packaged PPT zoom, canvas panning and pixel corners
+      - name: Test packaged PPT zoom and canvas panning
+        id: ppt_zoom
+        continue-on-error: true
         env:
           TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
-        run: |
-          node_modules/.bin/electron test/ppt-zoom-desktop.cjs
-          node_modules/.bin/electron test/ppt-radius-desktop.cjs
+        run: node_modules/.bin/electron test/ppt-zoom-desktop.cjs
+      - name: Test packaged pixel corners
+        id: ppt_radius
+        continue-on-error: true
+        env:
+          TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
+        run: node_modules/.bin/electron test/ppt-radius-desktop.cjs
       - name: Test packaged full MCP creative commands
         env:
           TUGOU_TEST_APP: release/${{ matrix.bundle }}/Tugou.app/Contents/Resources/app.asar/desktop-main.cjs
@@ -165,6 +171,9 @@ jobs:
         env:
           TUGOU_MAC_QA_BUNDLE: release/${{ matrix.bundle }}/Tugou.app
         run: node_modules/.bin/electron test/mac-dmg-native.cjs
+      - name: Require both PPT interaction checks to pass before publishing
+        if: steps.ppt_zoom.outcome != 'success' || steps.ppt_radius.outcome != 'success'
+        run: exit 1
       - name: Prepare checksums
         run: |
           cd release
