@@ -81,6 +81,8 @@ jobs:
           tar -xzf release/runtime.tgz
           mkdir -p release/mac
           unzip -q release/tugou-*-mac-x64.zip -d release/mac
+          mkdir -p dist
+          node -e "require('fs').writeFileSync('dist/THIRD_PARTY_NOTICES.txt',require('@electron/asar').extractFile('release/mac/Tugou.app/Contents/Resources/app.asar','dist/THIRD_PARTY_NOTICES.txt'))"
       - name: Verify native binaries and bundle signature
         run: |
           BUNDLE="release/${{ matrix.bundle }}/Tugou.app"
