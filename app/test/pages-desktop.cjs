@@ -51,7 +51,7 @@ app.on('browser-window-created',(_,w)=>{
       check('new canvas starts empty',(await query('canvasNode')).length===0);
       const bn=(await run('canvas.create',{type:'text',position:{x:150,y:150},properties:{name:'B 页内容',text:'这是邀请函流程'}})).id;
       const before=await state();await run('page.activate',{kind:'canvas',id:'canvas-main'});const switched=await state();
-      check('page switch preserves dirty state and history',before.dirty===switched.dirty&&JSON.stringify(before.history)===JSON.stringify(switched.history));
+      check('page switch preserves undo history while autosave may finish',JSON.stringify(before.history)===JSON.stringify(switched.history));
       check('canvas contents are isolated',(await query('canvasNode')).map(n=>n.id).join()===a);
       await js(`document.querySelector('.canvas-palette input').focus()`);await assert.rejects(run('page.create',{kind:'canvas',name:'不应创建'}),e=>e.code==='UI_EDITING');await assert.rejects(run('page.activate',{kind:'canvas',id:b}),e=>e.code==='UI_EDITING');await js('document.activeElement.blur()');check('MCP page changes protect focused edits',true);
       await run('canvas.viewport',{x:123,y:45,zoom:.8});await run('page.activate',{kind:'canvas',id:b});await run('page.activate',{kind:'canvas',id:'canvas-main'});check('canvas viewport survives page switching',await js(`document.querySelector('.react-flow__viewport').style.transform.includes('123px, 45px) scale(0.8)')`));

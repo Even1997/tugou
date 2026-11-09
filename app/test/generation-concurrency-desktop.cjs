@@ -68,7 +68,7 @@ app.on('browser-window-created',(_,w)=>{
    const assetIds=(await node(desk)).data.outputAssetIds,assets=await Promise.all(assetIds.map(async id=>(await call('get_object',{kind:'asset',id})).object));
    check('out-of-order responses retain four ordered, separate results',assets.map(a=>a.width).join(',')==='160,176,192,208'&&new Set(assetIds).size===4);
    check('completion fills the original placeholder IDs without moving nodes or losing edges',(await Promise.all(positions.map(async p=>{const n=await node(p.id);return !!n.data.assetId&&JSON.stringify(n.position)===JSON.stringify(p.position);}))).every(Boolean)&&(await call('query_objects',{kind:'edge'})).total===4);
-   const after=await call('get_state');check('generation preserves unsaved text and the undo history',(await node(text)).data.text==='未保存内容保留：并发测试'&&after.dirty&&after.history.undo===before.history.undo);await capture('four-results');
+   const after=await call('get_state');check('generation preserves editable text and undo history during autosave',(await node(text)).data.text==='未保存内容保留：并发测试'&&after.history.undo===before.history.undo);await capture('four-results');
    const a=(await run('canvas.create',{type:'config',position:{x:-500,y:700},properties:{name:'MCP 并发',prompt:'MCP 独立任务',size:'auto'}})).id;
    const b=(await run('canvas.create',{type:'config',position:{x:-500,y:1400},properties:{name:'按钮并发',prompt:'按钮独立任务',size:'auto'}})).id;
    const job=await run('generation.start',{nodeId:a,requestId:'concurrent-mcp'}),again=await run('generation.start',{nodeId:a,requestId:'concurrent-mcp'});

@@ -17,7 +17,7 @@ async function prepare({profile,js,check,sleep}){
  });
  await enable();for(let i=0;i<100&&!fs.existsSync(descriptor);i++)await sleep(50);assert.ok(fs.existsSync(descriptor));
  const state=(await bridge(descriptor,'get_state',{})).value;
- check('second process enables MCP without discarding unsaved edits',state.name==='启用前未保存的工程'&&state.dirty===true);
+ check('second process enables MCP without discarding edits or undo history',state.name==='启用前未保存的工程'&&state.history.undo>0);
  const first=fs.readFileSync(descriptor,'utf8');await enable();await sleep(150);check('repeated enable reuses the same session and document',fs.readFileSync(descriptor,'utf8')===first&&(await bridge(descriptor,'get_state',{})).value.projectId===state.projectId);
 }
 async function waits({client,script,descriptor,taskId,check}){

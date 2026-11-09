@@ -41,7 +41,7 @@ try{
  check('existing blocks and supporting material are all visible',initialText.includes('内容草稿')&&initialText.includes('说明系统功能')&&initialText.includes('数据待核对')&&initialText.includes('使用现场截图'));
  const beforeTyping=await state();
  for(const value of ['连续','连续输入']){await js(`(()=>{const e=document.querySelector('[aria-label="页面内容"]');e.focus();Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}))})()`);await delay(70);}
- check('typing is immediately in project state and grouped into one undo',(await run('ppt.get',a)).slide.content.text==='连续输入'&&(await state()).history.undo===beforeTyping.history.undo+1&&(await state()).dirty);
+ check('typing is immediately in project state and grouped into one undo',(await run('ppt.get',a)).slide.content.text==='连续输入'&&(await state()).history.undo===beforeTyping.history.undo+1);
  await js('document.activeElement.blur()');await click('撤销 PPT 修改');check('one undo restores complete original content',await js(`document.querySelector('[aria-label="页面内容"]').value===${JSON.stringify(initialText)}`));
  const pageText='左海项目功能汇报\n\n介绍功能范围、操作入口与实施边界。\n空间总览 · 专业系统 · 事件工单\n\n图表：按子系统列出功能与接入条件；未确认数据保留待核对标记。\n配图：复用项目截图，架构图按已核对的模块关系绘制。';
  await fill('第 2 页内容',pageText);

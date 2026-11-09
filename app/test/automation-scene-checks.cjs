@@ -41,4 +41,6 @@ module.exports=async({call,value,state,run,object,batch,step,ref,check,report,ou
  // Open the actual existing SceneView; screenshot validates UI reads the same scene.
  await js(`(()=>{const node=document.querySelector('[data-id="${nodeId}"]');if(node)node.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));})()`);await sleep(500);
  check('MCP scene opens in existing director UI',await js('!!document.querySelector("[data-scene-view]")'));await shot('director');
+ await assert.rejects(()=>run('project.create',{name:'弹窗期间禁止切换'}),/UI_BLOCKED/);check('open director blocks project switching',true);
+ await js(`document.querySelector('[data-scene-view]').closest('.ant-modal').querySelector('.ant-modal-close').click()`);await sleep(150);check('director closes before subsequent project checks',!await js('!!document.querySelector("[data-scene-view]")'));
 };
