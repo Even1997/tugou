@@ -12,7 +12,7 @@
 
 土狗是一款桌面创作工作台。你可以手动编辑，也可以把它连接到支持 MCP 的 AI 客户端，让 AI 使用画布、生图、图片工具和 PPT 等能力。工程与素材保存在本机；云端生成和分析使用你自己配置的模型服务。
 
-**当前稳定版：v0.8.16** · [下载安装](https://github.com/Even1997/tugou/releases/latest) · [本版更新](docs/releases/v0.8.16.md) · [更新日志](CHANGELOG.md) · [开发说明](app/README.md)
+**当前稳定版：v0.8.17** · [下载安装](https://github.com/Even1997/tugou/releases/latest) · [本版更新](docs/releases/v0.8.17.md) · [更新日志](CHANGELOG.md) · [开发说明](app/README.md)
 
 ## 可以做什么
 
@@ -46,11 +46,11 @@
 
 | 平台 | 安装包 |
 | --- | --- |
-| Windows x64 | [下载 EXE](https://github.com/Even1997/tugou/releases/download/v0.8.16/tugou-0.8.16-win-x64.exe) |
-| macOS 13+ · Apple Silicon（M 系列） | [下载 arm64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.16/tugou-0.8.16-mac-arm64.dmg) |
-| macOS 13+ · Intel | [下载 x64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.16/tugou-0.8.16-mac-x64.dmg) |
+| Windows x64 | [下载 EXE](https://github.com/Even1997/tugou/releases/download/v0.8.17/tugou-0.8.17-win-x64.exe) |
+| macOS 13+ · Apple Silicon（M 系列） | [下载 arm64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.17/tugou-0.8.17-mac-arm64.dmg) |
+| macOS 13+ · Intel | [下载 x64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.17/tugou-0.8.17-mac-x64.dmg) |
 
-[完整附件与 SHA256 校验文件](https://github.com/Even1997/tugou/releases/tag/v0.8.16)中另有 Mac ZIP。当前没有正式 Linux 安装包。
+[完整附件与 SHA256 校验文件](https://github.com/Even1997/tugou/releases/tag/v0.8.17)中另有 Mac ZIP。当前没有正式 Linux 安装包。
 
 - **Windows：**运行 EXE，按安装向导操作。当前安装包没有商业代码签名，系统可能提示未知发布者，请核对下载来源和校验值。
 - **Mac：**打开对应芯片的 DMG，将 `Tugou.app` 拖入 Applications 后运行。当前为 ad-hoc 签名，尚未完成 Apple 公证；首次打开若被拦截，请在确认来源后按系统「隐私与安全性」提示处理。
@@ -130,7 +130,7 @@ npm run dev
 
 ## 文档、许可与反馈
 
-- [版本说明](docs/releases/v0.8.16.md) · [更新日志](CHANGELOG.md) · [发布验收](docs/engineering/release-v0.8.16.md)
+- [版本说明](docs/releases/v0.8.17.md) · [更新日志](CHANGELOG.md) · [发布验收](docs/engineering/release-v0.8.17.md)
 - [PPT 设计与 MCP 流程](docs/engineering/ppt-design-standard.md) · [字体目录](app/assets/fonts/CATALOG.md)
 - [开发文档](app/README.md) · [文档索引](docs/index.md) · [待测试事项](docs/progress/pending-test.md) · [后续计划](docs/progress/todo.md)
 
