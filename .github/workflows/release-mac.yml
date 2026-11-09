@@ -47,6 +47,8 @@ jobs:
       - name: Test DMG update controller
         run: node --test test/mac-dmg-update.test.cjs test/font-downloads.test.cjs
       - name: Build native DMG and ZIP (ad-hoc signature, no notarization)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           for attempt in 1 2 3 4 5; do
             if node -e "console.log(require('electron'))"; then break; fi
@@ -56,7 +58,7 @@ jobs:
           # Fetch the pinned builder tool separately so transient HTTP failures can retry.
           TOOL_DIR="$RUNNER_TEMP/tugou-dmgbuild"
           mkdir -p "$TOOL_DIR"
-          curl --fail --location --retry 5 --retry-all-errors --retry-delay 3 --output "$TOOL_DIR/tool.tar.gz" 'https://github.com/electron-userland/electron-builder-binaries/releases/download/dmg-builder%401.2.5/dmgbuild-bundle-x86_64-75c8a6c.tar.gz'
+          gh api repos/electron-userland/electron-builder-binaries/releases/assets/436378863 -H 'Accept: application/octet-stream' > "$TOOL_DIR/tool.tar.gz"
           echo "1664972f9cc2d6e8fce3b63e42cd30078aff602669c5856939c4519921200433  $TOOL_DIR/tool.tar.gz" | shasum -a 256 --check
           tar -xzf "$TOOL_DIR/tool.tar.gz" --strip-components=1 -C "$TOOL_DIR"
           export CUSTOM_DMGBUILD_PATH="$TOOL_DIR/dmgbuild"
