@@ -2,6 +2,8 @@ const {app,dialog}=require('electron'),fs=require('node:fs'),path=require('node:
 const out=path.resolve('test-results/element-effects');fs.mkdirSync(out,{recursive:true});const profile=fs.mkdtempSync(path.join(fs.realpathSync(out),'profile-'));
 process.env.TUGOU_DATA_DIR=profile;process.env.TUGOU_BUILD_DIR=path.resolve('test-results/presentations/dist');if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;delete process.env.TUGOU_DEV_PREVIEW;app.setAppPath(path.resolve('.'));
 fs.writeFileSync(path.join(profile,'preferences.json'),JSON.stringify({...require('../core/preference-values.cjs').defaults,theme:'light',autoCheck:false}));
+// Raster effects use an offline font fixture; download behavior is tested separately.
+require('./font-cache-fixture.cjs')(profile,[{...require('../core/builtin-fonts.cjs').builtinFonts.find(f=>f.family==='Source Han Sans SC'),variants:[]}]);
 require('esbuild').buildSync({entryPoints:['test/effect-engine-entry.js'],bundle:true,outfile:path.join(out,'engine.js'),platform:'browser',format:'iife'});
 const report={profile,checks:[],errors:[]};let done=false;const finish=code=>{if(done)return;done=true;fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));app.exit(code)};
 const check=(name,value)=>{assert(value,name);report.checks.push(name);console.log('PASS '+name)};setTimeout(()=>{report.failure='timeout';finish(1)},150000);
