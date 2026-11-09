@@ -49,6 +49,13 @@ jobs:
       - name: Build native DMG and ZIP (ad-hoc signature, no notarization)
         run: |
           node -e "console.log(require('electron'))"
+          # Fetch the pinned builder tool separately so transient HTTP failures can retry.
+          TOOL_DIR="$RUNNER_TEMP/tugou-dmgbuild"
+          mkdir -p "$TOOL_DIR"
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 3 --output "$TOOL_DIR/tool.tar.gz" 'https://github.com/electron-userland/electron-builder-binaries/releases/download/dmg-builder%401.2.5/dmgbuild-bundle-x86_64-75c8a6c.tar.gz'
+          echo "1664972f9cc2d6e8fce3b63e42cd30078aff602669c5856939c4519921200433  $TOOL_DIR/tool.tar.gz" | shasum -a 256 --check
+          tar -xzf "$TOOL_DIR/tool.tar.gz" --strip-components=1 -C "$TOOL_DIR"
+          export CUSTOM_DMGBUILD_PATH="$TOOL_DIR/dmgbuild"
           npm run dist:mac -- dmg zip --${{ matrix.arch }} --publish never -c.mac.identity=- -c.electronDist=node_modules/electron/dist
       - name: Verify native binaries and bundle signature
         run: |
