@@ -47,7 +47,9 @@ jobs:
       - name: Test DMG update controller
         run: node --test test/mac-dmg-update.test.cjs test/font-downloads.test.cjs
       - name: Build native DMG and ZIP (ad-hoc signature, no notarization)
-        run: npm run dist:mac -- dmg zip --${{ matrix.arch }} --publish never -c.mac.identity=- -c.electronDist=node_modules/electron/dist
+        run: |
+          node -e "console.log(require('electron'))"
+          npm run dist:mac -- dmg zip --${{ matrix.arch }} --publish never -c.mac.identity=- -c.electronDist=node_modules/electron/dist
       - name: Verify native binaries and bundle signature
         run: |
           BUNDLE="release/${{ matrix.bundle }}/Tugou.app"
