@@ -21,6 +21,10 @@ require(path.join(source,'core/desktop-platform.cjs')).installedForUpdates=()=>t
 if(process.platform==='darwin')require(path.join(source,'core/mac-dmg-updater.cjs')).MacDmgUpdater=class{constructor(){return updater;}};
 const settings=require(path.join(source,'core/settings-desktop.cjs')),register=settings.registerSettings;
 settings.registerSettings=async options=>{const result=await register({...options,updater});controller=result.updates;return result;};
+// Hold the fixture's disk writes so autosave cannot erase the unsaved-install scenario.
+const {ProjectStore}=require(path.join(source,'core/storage.cjs')),save=ProjectStore.prototype.save;
+let releaseSaves;const saveGate=new Promise(resolve=>{releaseSaves=resolve;});
+ProjectStore.prototype.save=function(...args){return saveGate.then(()=>save.apply(this,args));};
 const check=(name,ok)=>{assert.ok(ok,name);report.checks.push(name);console.log('PASS '+name);};
 const finish=code=>{if(finished)return;finished=true;fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));transport?.close();app.exit(code);};
 setTimeout(()=>{report.failure='timeout';finish(1);},120000);
@@ -95,7 +99,7 @@ app.on('browser-window-created',(_,w)=>{
    await click('[data-settings-tab="appearance"]');await click('button','浅色');await wait(`document.documentElement.dataset.theme==='light'`);version='0.9.1';controller.set({status:'available',version,notes});await popup();await capture('available-light');await dismiss();
    controller.set({status:'latest',version:null});await delay(1800);check('latest version never opens a popup or shortcut',await js(`!document.querySelector('.update-prompt')&&!document.querySelector('.update-entry')`));
    controller.set({status:'available',version:'0.9.2',supported:false});await delay(1800);check('unsupported portable build does not offer installation',await js(`!document.querySelector('.update-prompt')`));
-   await run('project.save');controller.set({status:'available',version:'0.9.1',supported:true});w.webContents.reload();await delay(400);await wait(`!!document.querySelector('.workspace-rail')`);await delay(1800);check('reminder survives renderer reload',await js(`!document.querySelector('.update-prompt')`));
+   releaseSaves();await run('project.save');controller.set({status:'available',version:'0.9.1',supported:true});w.webContents.reload();await delay(400);await wait(`!!document.querySelector('.workspace-rail')`);await delay(1800);check('reminder survives renderer reload',await js(`!document.querySelector('.update-prompt')`));
    await js(`sessionStorage.clear()`);w.webContents.reload();await wait(`!!document.querySelector('.workspace-rail')`);await popup();check('fresh launch reminder state shows same version again',true);
    const persist=controller.persist;controller.persist=async()=>{throw Error('fixture disk failure');};await click('.update-prompt button','跳过此版本');await wait(`!!document.querySelector('.update-prompt [role="alert"]')`);
    check('failed skip remains visible and does not suppress reminders',controller.state.skippedVersion===null&&await js(`!!document.querySelector('.update-entry')`));controller.persist=persist;

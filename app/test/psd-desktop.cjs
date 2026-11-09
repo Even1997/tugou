@@ -30,7 +30,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
       const id=await js(`(async()=>(await tugou.list())[0].id)()`);
       await openImport();await capture('import-light');cancelPicker=true;await click('选择 PSD 文件');await wait(`!document.querySelector('.ant-modal [role=status]')`);check('cancel picker leaves project unchanged',!await js(`document.querySelector('[aria-label="保存"]').disabled===false`));cancelPicker=false;
       await click('选择 PSD 文件');await wait(`document.querySelector('.ant-modal [role=status]')?.textContent.includes('分层样稿')`);
-      check('import preview shows layer count and requires explicit addition',await js(`document.querySelector('.ant-modal').textContent.includes('4 层')&&document.querySelector('.ant-modal').textContent.includes('不覆盖现有内容')`));
+      check('import preview shows layer count and requires explicit addition',await js(`document.querySelector('.psd-result').textContent.includes('4 层')&&[...document.querySelectorAll('.ant-modal button')].some(b=>b.textContent==='添加为新画板')`)&&(await js(`tugou.open(${JSON.stringify(id)})`)).document.layers.length===0);
       await click('添加为新画板');await noDialog();await wait(`!!document.querySelector('.layer-row')`);await click('保存');
       let saved=await js(`tugou.open(${JSON.stringify(id)})`);let board=saved.document.layers.find(l=>l.name==='分层样稿');assert.ok(board);
       const A=require('../core/artboards.cjs'),local=A.extract(saved.document,board.id);check('import adds editable nested image layers',local.layers.length===4&&local.layers.filter(l=>l.kind==='image').length===3&&local.layers.find(l=>l.name==='绿色').parentId===local.layers.find(l=>l.kind==='group').id);
