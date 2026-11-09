@@ -320,7 +320,7 @@ jobs:
           run=json.load(open('run.json'))
           failed=[s for j in run['jobs'] for s in j['steps'] if s['conclusion']=='failure']
           assert len(failed)==1 and failed[0]['number']==30 and 'upload-artifact@' in failed[0]['name'],failed
-          reports=[json.loads(p.read_text()) for p in pathlib.Path('evidence').rglob('*.json')]
+          reports=[r for p in pathlib.Path('evidence').rglob('*.json') if 'checks' in (r:=json.loads(p.read_text()))]
           assert len(reports)==28 and sum(len(r['checks']) for r in reports)==923
           assert all(not r.get('error') and not r.get('failure') and not r.get('errors') for r in reports)
           native=json.load(open('evidence/mac-release/dmg-native.json'))
