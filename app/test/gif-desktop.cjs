@@ -18,7 +18,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
  const screenshot=async name=>{w.showInactive();await sleep(150);fs.writeFileSync(path.join(out,name+'.png'),(await w.webContents.capturePage()).toPNG())};
  let id;
  const load=async workspace=>{await js(`sessionStorage.setItem('tugou-reload-view',JSON.stringify({id:${JSON.stringify(id)},workspace:${JSON.stringify(workspace)}}))`);const loaded=new Promise(r=>w.webContents.once('did-finish-load',r));w.webContents.reload();await loaded;await wait(`!!document.querySelector('.studio-header')`);await sleep(200)};
- const saved=async()=>{await click('保存');await wait(`document.querySelector('.statusbar [role=status]').textContent==='已保存'`);return (await js(`tugou.open(${JSON.stringify(id)})`)).document};
+ const saved=async()=>{await js(`(()=>{const e=document.querySelector('.studio-header [aria-label="保存"]');if(!e.disabled)e.click()})()`);await wait(`document.querySelector('.statusbar [role=status]').textContent==='已保存'`);return (await js(`tugou.open(${JSON.stringify(id)})`)).document};
  try{
   await wait(`!!document.querySelector('.studio-header')`);w.setSize(1380,950);
   const red=await sharp({create:{width:80,height:60,channels:4,background:'red'}}).png().toBuffer(),blue=await sharp({create:{width:80,height:60,channels:4,background:'blue'}}).png().toBuffer();
@@ -76,7 +76,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   const root=await w.webContents.debugger.sendCommand('DOM.getDocument'),node=await w.webContents.debugger.sendCommand('DOM.querySelector',{nodeId:root.root.nodeId,selector:'#qa-file'});
   await w.webContents.debugger.sendCommand('DOM.setFileInputFiles',{nodeId:node.nodeId,files:inputs});
   await js(`{const dt=new DataTransfer();dt.items.add(document.querySelector('#qa-file').files[0]);document.querySelector('.composite-empty').dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:dt}));document.querySelector('#qa-file').remove()}`);w.webContents.debugger.detach();
-  await wait(`!!document.querySelector('.gif-timeline')`);check('dropping GIF on empty composition creates artboard and animated layer',true);
+  await wait(`!!document.querySelector('.layer-inspector-toggle')`);if(await js(`!document.querySelector('.layer-property-sidebar')`))await js(`document.querySelector('.layer-inspector-toggle').click()`);await wait(`!!document.querySelector('.gif-timeline')`);check('dropping GIF on empty composition creates artboard and animated layer',true);
   await click('暂停动画');let composite=await saved();const board=require('../core/artboards.cjs').boards(composite)[0],local=require('../core/artboards.cjs').extract(composite,board.id);
   check('imported GIF retains dimensions',board.width===80&&board.height===60&&local.layers.some(l=>l.kind==='image'));
   await js(fs.readFileSync(path.join(out,'engine.js'),'utf8'));
@@ -84,7 +84,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   check('compositor selects red then blue and loops deterministically',colors[0][0]>240&&colors[0][2]<10&&colors[1][2]>240&&colors[2][0]>240);
   // Add a static opaque overlay; it must appear in every exported frame.
   const overlay=require('../core/layers.cjs').createLayer('shape',{parentId:board.id,shape:'rect',color:'#00ff00',width:10,height:10,x:0,y:0});
-  await js(`(async()=>{const p=await tugou.open(${JSON.stringify(id)});await tugou.save(p.id,{...p.document,layers:[...p.document.layers,${JSON.stringify(overlay)}]},p.revision)})()`);await load('layers');await click('暂停动画');
+  await js(`(async()=>{const p=await tugou.open(${JSON.stringify(id)});await tugou.save(p.id,{...p.document,layers:[...p.document.layers,${JSON.stringify(overlay)}]},p.revision)})()`);await load('layers');await wait(`!!document.querySelector('.layer-inspector-toggle')`);await js(`document.querySelector('.layer-inspector-toggle').click()`);await wait(`!!document.querySelector('.gif-timeline')`);await click('暂停动画');
   await click('导出图片');await wait(`!!document.querySelector('.gif-export-preview')`);check('frame selection uses a slider',await js(`document.querySelector('[aria-label="预览 / PNG 导出帧"]').type==='range'`));await number('预览 / PNG 导出帧',1);await js(`document.querySelector('[aria-label="预览 / PNG 导出帧"]').focus()`);w.webContents.sendInputEvent({type:'keyDown',keyCode:'Right'});w.webContents.sendInputEvent({type:'keyUp',keyCode:'Right'});await wait(`(()=>{const c=document.querySelector('.gif-export-preview');return c.getContext('2d').getImageData(40,30,1,1).data[2]>240})()`);check('slider updates composited preview pixels',true);output=path.join(out,'frame-2.png');await click('保存 PNG');await wait(`!document.querySelector('.gif-export-preview')`);
   const pixel=await sharp(output).ensureAlpha().raw().toBuffer();check('selected PNG frame is blue with static overlay',pixel[(30*80+40)*4+2]>240&&pixel[1]>240);
   await click('导出图片');await select('导出格式','GIF 动图 · 帧范围');output=path.join(out,'composition.gif');await screenshot('export-light');await click('保存 GIF');await wait(`!document.querySelector('.gif-export-preview')`);
