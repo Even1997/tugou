@@ -12,7 +12,7 @@
 
 Tugou is a creative workspace for everyone. Use each module independently, in any order. Work manually or connect an MCP-compatible AI client to use its canvas, image generation, image tools, and presentation features. Projects and assets stay on your computer; cloud generation and analysis use the model providers you configure.
 
-**v0.8.18 release in preparation** · [Download](https://github.com/Even1997/tugou/releases/latest) · [Release notes](docs/releases/v0.8.18.md) · [Changelog](CHANGELOG.md) · [Developer guide](app/README.md)
+**Current stable release: v0.8.18** · [Download](https://github.com/Even1997/tugou/releases/latest) · [Release notes](docs/releases/v0.8.18.md) · [Changelog](CHANGELOG.md) · [Developer guide](app/README.md)
 
 This page is available in English; the guides linked below are in Chinese. Some application labels remain in Chinese, so the instructions include the original menu names where useful.
 

@@ -12,7 +12,7 @@
 
 土狗是一款面向所有人的自由创作工作台，各模块可独立使用，没有必须遵循的创作顺序。你可以手动编辑，也可以把它连接到支持 MCP 的 AI 客户端，让 AI 使用画布、生图、图片工具和 PPT 等能力。工程与素材保存在本机；云端生成和分析使用你自己配置的模型服务。
 
-**v0.8.18 发布准备中** · [下载安装](https://github.com/Even1997/tugou/releases/latest) · [本版更新](docs/releases/v0.8.18.md) · [更新日志](CHANGELOG.md) · [开发说明](app/README.md)
+**当前稳定版：v0.8.18** · [下载安装](https://github.com/Even1997/tugou/releases/latest) · [本版更新](docs/releases/v0.8.18.md) · [更新日志](CHANGELOG.md) · [开发说明](app/README.md)
 
 ## 可以做什么
 
