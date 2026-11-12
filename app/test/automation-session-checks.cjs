@@ -4,11 +4,13 @@ const {bridge}=require('../core/mcp.cjs');
 async function prepare({profile,js,check,sleep}){
  const descriptor=path.join(profile,'mcp-session.json');await sleep(300);check('ordinary launch leaves MCP disabled',!fs.existsSync(descriptor));
  assert.ok(await js(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='新建工程');b?.click();return !!b;})()`));
- for(let i=0;i<100&&!await js(`(()=>{const e=document.querySelector('input[aria-label="工程名称"]');return e&&!e.disabled})()`);i++)await sleep(50);
- assert.ok(await js(`!document.querySelector('input[aria-label="工程名称"]').disabled`),'project ready for editing');
- await js(`(()=>{const input=document.querySelector('input[aria-label="工程名称"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'启用前未保存的工程');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
- for(let i=0;i<100&&!await js(`document.querySelector('.statusbar [role=status]').textContent.includes('未保存')`);i++)await sleep(50);
- assert.ok(await js(`document.querySelector('.statusbar [role=status]').textContent.includes('未保存')&&document.querySelector('input[aria-label="工程名称"]').value==='启用前未保存的工程'`),'unsaved fixture committed before second process');
+ await js(`document.querySelector('[aria-label="工程操作"]').click()`);await sleep(100);
+ await js(`[...document.querySelectorAll('.project-menu button')].find(b=>b.textContent.trim()==='重命名工程').click()`);
+ for(let i=0;i<100&&!await js(`!!document.querySelector('input[aria-label="新工程名称"]')`);i++)await sleep(50);
+ await js(`(()=>{const input=document.querySelector('input[aria-label="新工程名称"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'启用前编辑的工程');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);await sleep(100);
+ await js(`document.querySelector('[role="dialog"] form').requestSubmit()`);
+ for(let i=0;i<100&&!await js(`document.querySelector('.project-menu').textContent.includes('启用前编辑的工程')`);i++)await sleep(50);
+ assert.ok(await js(`document.querySelector('.project-menu').textContent.includes('启用前编辑的工程')`),'edit committed before enabling second process');
  const enable=()=>new Promise((resolve,reject)=>{
   const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
   const child=spawn(process.env.TUGOU_MCP_BINARY||process.execPath,process.env.TUGOU_TEST_APP?['--mcp-enable']:[path.resolve('main.cjs'),'--mcp-enable'],{env,stdio:'ignore',windowsHide:true});
@@ -17,7 +19,7 @@ async function prepare({profile,js,check,sleep}){
  });
  await enable();for(let i=0;i<100&&!fs.existsSync(descriptor);i++)await sleep(50);assert.ok(fs.existsSync(descriptor));
  const state=(await bridge(descriptor,'get_state',{})).value;
- check('second process enables MCP without discarding edits or undo history',state.name==='启用前未保存的工程'&&state.history.undo>0);
+ check('second process enables MCP without discarding edits or undo history',state.name==='启用前编辑的工程'&&state.history.undo>0);
  const first=fs.readFileSync(descriptor,'utf8');await enable();await sleep(150);check('repeated enable reuses the same session and document',fs.readFileSync(descriptor,'utf8')===first&&(await bridge(descriptor,'get_state',{})).value.projectId===state.projectId);
 }
 async function waits({client,script,descriptor,taskId,check}){
