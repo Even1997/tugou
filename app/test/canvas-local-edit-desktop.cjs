@@ -28,14 +28,15 @@ const check=(label,ok)=>{assert.ok(ok,label);report.checks.push(label);console.l
 const finish=code=>{if(finished)return;finished=true;fs.writeFileSync(path.join(out,'desktop-report.json'),JSON.stringify(report,null,2));transport?.close();server.closeAllConnections();server.close();app.exit(code);};
 setTimeout(()=>{report.failure='timeout';finish(1);},150000);
 app.on('browser-window-created',(_,w)=>{
- w.show=()=>{};w.focus=()=>{};w.webContents.setBackgroundThrottling(false);
+ const focus=w.focus.bind(w);w.show=()=>{};w.focus=()=>{};w.webContents.setBackgroundThrottling(false);
  w.webContents.on('console-message',e=>{if(e.level==='error')report.errors.push(e.message);});
  w.webContents.once('did-finish-load',async()=>{
   const js=s=>w.webContents.executeJavaScript(s,true),delay=ms=>new Promise(r=>setTimeout(r,ms));
   const wait=async s=>{for(let i=0;i<600;i++){if(await js(s))return;await delay(50);}throw Error('Timeout '+s);};
   const click=async label=>{await js(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(label)}||b.getAttribute('aria-label')===${JSON.stringify(label)});if(!b||b.disabled)throw Error('button unavailable: '+${JSON.stringify(label)});b.click()})()`);await delay(100);};
   const input=async(label,value)=>{await js(`(()=>{const e=document.querySelector('[aria-label="${label}"]');if(!e)throw Error('input missing');e.focus();Object.getOwnPropertyDescriptor(e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(String(value))});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);await delay(80);await js(`document.querySelector('[aria-label="${label}"]').dispatchEvent(new FocusEvent('focusout',{bubbles:true}))`);await delay(80);};
-  const capture=async name=>{w.showInactive();await delay(250);fs.writeFileSync(path.join(out,name+'.png'),(await w.webContents.capturePage()).toPNG());w.hide();};
+  const rendered=()=>js(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+  const capture=async name=>{await rendered();fs.writeFileSync(path.join(out,name+'.png'),(await w.webContents.capturePage()).toPNG());};
   const draw=async(points,beforeRelease)=>{
    const r=await js(`(()=>{const r=document.querySelector('[aria-label="涂画修改区域画布"]').getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height}})()`);
    const p=([x,y])=>({x:Math.round(r.x+x*r.width),y:Math.round(r.y+y*r.height)});
@@ -45,9 +46,9 @@ app.on('browser-window-created',(_,w)=>{
    w.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,...p(points.at(-1))});await delay(100);
   };
   const hoverBrush=async()=>{
-   w.showInactive();await delay(150);
+   await rendered();
    const p=await js(`(()=>{const r=document.querySelector('[aria-label="涂画修改区域画布"]').getBoundingClientRect();return{x:Math.round(r.x+r.width*.35),y:Math.round(r.y+r.height*.35)}})()`);
-   w.webContents.sendInputEvent({type:'mouseMove',...p});await delay(100);
+   w.webContents.sendInputEvent({type:'mouseMove',x:0,y:0});w.webContents.sendInputEvent({type:'mouseMove',...p});await rendered();
   };
   const cursorMatches=async(size,width)=>{const info=await js(`(()=>{const c=document.querySelector('[aria-label="涂画修改区域画布"]').getBoundingClientRect(),ring=document.querySelector('.mask-brush-cursor'),r=ring.getBoundingClientRect();return {visible:getComputedStyle(ring).visibility,width:r.width,expected:${size}*c.width/${width},style:ring.getAttribute('style')}})()`);report.cursor=info;return info.visible==='visible'&&Math.abs(info.width-info.expected)<1;};
   const checkOverlay=async(id,label)=>{
@@ -56,14 +57,14 @@ app.on('browser-window-created',(_,w)=>{
    const withOverlay=await sharp((await w.webContents.capturePage()).toPNG()).ensureAlpha().raw().toBuffer({resolveWithObject:true});
    await js(`document.querySelector('[data-id="${id}"] .node-region-overlay').style.visibility='hidden'`);await delay(60);
    const plain=await sharp((await w.webContents.capturePage()).toPNG()).ensureAlpha().raw().toBuffer();
-   await js(`document.querySelector('[data-id="${id}"] .node-region-overlay').style.visibility=''`);w.hide();
+   await js(`document.querySelector('[data-id="${id}"] .node-region-overlay').style.visibility=''`);
    const differences=points.map(({x,y})=>{const i=(y*withOverlay.info.width+x)*4;return [...withOverlay.data.subarray(i,i+3)].reduce((sum,v,c)=>sum+Math.abs(v-plain[i+c]),0);});
    report.overlay={label,points,differences,info:await js(`(()=>{const e=document.querySelector('[data-id="${id}"] .node-region-overlay'),c=getComputedStyle(e),r=e.getBoundingClientRect();return {mask:c.maskImage,opacity:c.opacity,rect:{x:r.x,y:r.y,width:r.width,height:r.height}}})()`)};
    // GPU compositing can round each RGB channel by one level at fractional zoom.
    check(label,differences[0]>20&&differences[1]<=3&&differences[2]<=3);
   };
   try{
-   await wait(`!!document.querySelector('.workspace-rail')`);if(process.env.TUGOU_TEST_APP)check('renderer loaded from packaged ASAR',w.webContents.getURL().includes('app.asar'));for(let i=0;i<100&&!fs.existsSync(path.join(profile,'mcp-session.json'));i++)await delay(50);
+   await wait(`!!document.querySelector('.workspace-rail')`);w.showInactive();if(process.platform==='darwin')focus();w.webContents.debugger.attach('1.3');await w.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});await rendered();if(process.env.TUGOU_TEST_APP)check('renderer loaded from packaged ASAR',w.webContents.getURL().includes('app.asar'));for(let i=0;i<100&&!fs.existsSync(path.join(profile,'mcp-session.json'));i++)await delay(50);
    transport=new StdioClientTransport({command:process.env.TUGOU_MCP_BINARY||process.execPath,args:[path.join(appRoot,'core/mcp.cjs'),'--session',path.join(profile,'mcp-session.json')],env:{...process.env,ELECTRON_RUN_AS_NODE:'1'},stderr:'pipe'});
    const client=new Client({name:'canvas-local-edit-qa',version:'1'});await client.connect(transport);
    const call=async(name,args={})=>{const r=await client.callTool({name,arguments:args});if(r.isError)throw Error(r.content[0].text);return r.structuredContent;};
