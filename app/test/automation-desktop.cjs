@@ -104,13 +104,13 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   const pending=await run('canvas.update',{id:setup.results.text.id,properties:{text:'切换前自动保存的内容'}});check('reopen fixture contains a pending edit',pending.dirty);
   const reopened=await client.callTool({name:'run_command',arguments:{command:'project.open',args:{id:created.projectId},expectedRevision:(await state()).revision}});check('project open flushes pending edits instead of discarding them',!reopened.isError&&!(await state()).dirty&&(await object('canvasNode',setup.results.text.id)).data.text==='切换前自动保存的内容');
   await run('project.save');check('save clears dirty and uses actual disk revision',!(await state()).dirty);await run('project.open',{id:created.projectId});check('saved mask survives reopen',!!(await object('layer',shape)).mask.bitmap);
-  report.fixture=(await sharp({create:{width:64,height:64,channels:4,background:'#00cc88'}}).png().toBuffer()).toString('base64');await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  report.fixture=(await sharp({create:{width:64,height:64,channels:4,background:'#00cc88'}}).png().toBuffer()).toString('base64');await new Promise(r=>server.listen(0,'127.0.0.1',r));report.fixturePort=server.address().port;
   await js(`tugou.saveConnection({baseUrl:'http://127.0.0.1:${server.address().port}/v1',apiKey:'fixture-secret-do-not-return',model:'fixture',analysisModel:'fixture-analysis'})`);
   const models=await run('models.status');check('model status never returns Key',!JSON.stringify(models).includes('fixture-secret-do-not-return'));
   let releaseGeneration;generationGate=new Promise(resolve=>{releaseGeneration=resolve;});
   const task=await run('generation.start',{nodeId:desk,requestId:'stable-request'});const duplicate=await run('generation.start',{nodeId:desk,requestId:'stable-request'});
   check('duplicate request returns same task',task.taskId===duplicate.taskId&&duplicate.replayed);
-  const progress=[],waited=await client.callTool({name:'run_command',arguments:{command:'task.wait',args:{id:task.taskId,timeoutMs:10000}}},undefined,{onprogress:p=>{progress.push(p);if(p.message.includes('等待模型返回'))releaseGeneration();}});generationGate=undefined;report.generationProgress=progress;
+  const progress=[],waited=await client.callTool({name:'run_command',arguments:{command:'task.wait',args:{id:task.taskId,timeoutMs:10000}}},undefined,{onprogress:p=>{progress.push(p);if(p.message.includes('等待模型返回'))releaseGeneration();}});generationGate=undefined;report.generationProgress=progress;report.generationWait=waited;
   // SDK may remove the progress handler when a final reply shares its input chunk with the last notification.
   // The final tool result is authoritative for completion; intermediate notifications must still arrive.
   check('standard MCP reports running progress and returns terminal state',progress.some(p=>p.message.includes('等待模型返回'))&&!waited.isError&&waited.structuredContent.task.status==='completed'&&!waited.structuredContent.timedOut&&progress.every((p,i)=>p.total===undefined&&(!i||p.progress>progress[i-1].progress)));
