@@ -11,7 +11,7 @@ export function LayerTree({
   relocate,
   disabled,
   assets=[],onMask,onMaskView,paintTarget,
-  query='',kind='all',
+  query='',kind='all',propertiesOpen=false,
 }) {
   const [closed, setClosed] = useState(new Set()),
     [drop, setDrop] = useState(null);
@@ -111,15 +111,16 @@ export function LayerTree({
               {closed.has(l.id) ? "▸" : "▾"}
             </Button>
           )}
-          <Button className="layer-preview" aria-label={`选择 ${l.name}`} title="编辑图层内容（保留选区）" aria-pressed={selected.includes(l.id)&&paintTarget!=='mask'} onClick={e=>choose(l.id,e.shiftKey)}>
-            {l.kind==='image'?<img className="layer-thumbnail" src={assetUrl(l.bitmap || assets.find(a=>a.id===l.assetId) || {})} alt="" loading="lazy"/>:l.kind==='shape'?<svg className="layer-thumbnail shape-thumbnail" viewBox="-3 -3 26 26" aria-hidden="true"><ShapePath shape={l.shape} width={20} height={20} radius={l.radius?4:0} fill={l.fill===false?'none':l.color||'#b0bff2'} stroke={l.strokeWidth?l.stroke:'none'} strokeWidth={l.strokeWidth?1.5:0}/></svg>:<span className="layer-thumbnail"><Icon name={l.artboard?'layout':l.kind==='text'?'text':l.kind==='group'?'open':l.kind==='adjustment'?'adjust':'other'}/></span>}
+          <Button className="layer-preview" aria-label={`选择 ${l.name}`} title="点击开关图层属性（Shift 多选）" aria-expanded={propertiesOpen&&selected.length===1&&selected[0]===l.id&&paintTarget!=='mask'} aria-pressed={selected.includes(l.id)&&paintTarget!=='mask'} onClick={e=>choose(l.id,e.shiftKey,!e.shiftKey)}>
+            {l.kind==='image'?<img className="layer-thumbnail" src={assetUrl(l.bitmap || assets.find(a=>a.id===l.assetId) || {})} alt="" loading="lazy"/>:l.kind==='shape'?<svg className="layer-thumbnail shape-thumbnail" viewBox="-3 -3 26 26" aria-hidden="true"><ShapePath shape={l.shape} linePoints={l.linePoints} width={20} height={20} radius={l.radius?4:0} fill={l.fill===false?'none':l.color||'#b0bff2'} stroke={l.strokeWidth?l.stroke:'none'} strokeWidth={l.strokeWidth?1.5:0}/></svg>:<span className="layer-thumbnail"><Icon name={l.artboard?'layout':l.kind==='text'?'text':l.kind==='group'?'open':l.kind==='adjustment'?'adjust':'other'}/></span>}
           </Button>
           {onMask&&!l.artboard&&(l.mask||selected.includes(l.id))&&<Button className={`layer-mask-thumbnail ${l.mask?.disabled?"is-disabled":""}`} disabled={disabled||inherited(layers,l,'locked')} aria-label={`编辑 ${l.name} 的蒙版`} title={l.mask?.disabled?'蒙版已停用':l.mask?'编辑蒙版 · Alt+点击单独查看':'添加白色蒙版（保留选区）'} aria-pressed={selected.includes(l.id)&&paintTarget==='mask'} onClick={e=>{onMask(l.id);if(e.altKey&&l.mask)onMaskView?.(l.id)}}>{l.mask?.bitmap?<img src={assetUrl(l.mask.bitmap)} style={{filter:l.mask.inverted?'grayscale(1) invert(1)':'grayscale(1)'}} alt=""/>:<span className="mask-vector-preview"><Icon name={l.mask?'mask':'add'}/></span>}</Button>}
           <Button
             className="layer-name"
             style={{ paddingLeft: 8 + depth * 14 }}
             data-layer-id={l.id}
-            onClick={(e) => choose(l.id, e.shiftKey)}
+            onClick={(e) => choose(l.id,e.shiftKey,!e.shiftKey)}
+            aria-expanded={propertiesOpen&&selected.length===1&&selected[0]===l.id&&paintTarget!=='mask'}
             title={l.name}
             draggable={!disabled && !inherited(layers, l, "locked")}
             onDragStart={(e) => {

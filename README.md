@@ -10,9 +10,9 @@
 
 **把 AI 生图、图片处理、图层编辑、PPT 和字体创作放进同一个本地工程。**
 
-土狗是一款桌面创作工作台。你可以手动编辑，也可以把它连接到支持 MCP 的 AI 客户端，让 AI 使用画布、生图、图片工具和 PPT 等能力。工程与素材保存在本机；云端生成和分析使用你自己配置的模型服务。
+土狗是一款面向所有人的自由创作工作台，各模块可独立使用，没有必须遵循的创作顺序。你可以手动编辑，也可以把它连接到支持 MCP 的 AI 客户端，让 AI 使用画布、生图、图片工具和 PPT 等能力。工程与素材保存在本机；云端生成和分析使用你自己配置的模型服务。
 
-**当前稳定版：v0.8.17** · [下载安装](https://github.com/Even1997/tugou/releases/latest) · [本版更新](docs/releases/v0.8.17.md) · [更新日志](CHANGELOG.md) · [开发说明](app/README.md)
+**v0.8.18 发布准备中** · [下载安装](https://github.com/Even1997/tugou/releases/latest) · [本版更新](docs/releases/v0.8.18.md) · [更新日志](CHANGELOG.md) · [开发说明](app/README.md)
 
 ## 可以做什么
 
@@ -21,24 +21,14 @@
 | 首页 | 查看工程与任务概览、继续最近创作、查看 MCP 连接引导 |
 | 提示词 | 管理可复用的模块与配方，悬浮查看模块全文或配方组合内容，整理参考图、创作要求和视觉分析结果 |
 | 画布 | 连接文字、参考图、生成台和图片工具台；结果在右侧生成独立图片节点，可继续串联或分支处理；选中多张图片可并排对比 |
-| 图层 | 多画板排版，编辑图片、文字和形状；支持分组、选区、蒙版、画笔、变换、照片调色、阴影与边框，以及基础 PSD 导入导出 |
-| PPT | 在同一工程创建多份文稿，编辑文字、图片和形状；支持大纲、讲稿、元素图层、共用字体、四角圆角、预览、演示和可编辑 `.pptx` 导出 |
+| 图层 | 多画板排版，左侧工具栏与常驻图层列表；文字原位编辑与选区格式、直线绘制、分组、蒙版、调色、特效及基础 PSD 导入导出 |
+| PPT | 顶部常用工具带，画布文字原位编辑与选区格式；支持多份文稿、大纲、讲稿、直线与形状、演示和可编辑 `.pptx` 导出 |
 | 工具 | 抠图、超分、缩放、裁剪、旋转、扩边、调色等图片处理，以及多图合成 GIF；支持的图片工具也可作为画布工具台连接使用 |
 | 素材 | 导入、搜索、预览与复用图片和 GIF，查看来源、生成信息，管理未引用素材 |
 | 字体 | 创建字体项目，导入字形图集、识别与复核字符映射、调整轮廓、导出 TTF / WOFF2，并在土狗中使用 |
 | 设置 | 分别配置外观、画布交互、通知、文件存储、模型连接、MCP、快捷键和更新 |
 
-常见流程：**提示词与参考图 → 画布生图 → 连接图片工具处理 → 图层排版或加入 PPT → 导出。** 各模块可复用同一工程的素材，图层与 PPT 共用字体库。
-
-### 对比多张图片
-
-在画布中框选多张图片，点击顶部「多图对比」即可查看原图。默认「两列细看」，每行提供大幅查看区域，向下滚动看其余图片；「全部总览」用于快速浏览所有方案。
-
-- 「联动调整」同时缩放、平移和复位全部图片；「单独调整」点击选中某张图后，只调整这张图。
-- **Ctrl＋滚轮**始终统一缩放全部图片，普通滚轮用于上下浏览；支持 0.25–4 倍缩放、拖动或方向键平移和「适应窗口」。倍率相对于适应窗口计算，不代表原始像素比例。
-- 切换布局或调整模式保留各图视角，Esc 关闭；对比仅供查看，不修改图片或触发生图。
-
-模块与配方列表支持悬浮预览：模块展示完整文字，配方展示组合提示词；长内容可在浮层内滚动，键盘聚焦也可查看。
+按需要打开任意模块：手动排版、处理图片、制作 PPT 或连接 AI。模块可复用同一工程的素材，图层与 PPT 共用字体库。画布支持多图对比，提示词模块与配方支持完整内容预览；工具用法可在应用内「帮助」搜索。
 
 ## 下载安装
 
@@ -46,11 +36,11 @@
 
 | 平台 | 安装包 |
 | --- | --- |
-| Windows x64 | [下载 EXE](https://github.com/Even1997/tugou/releases/download/v0.8.17/tugou-0.8.17-win-x64.exe) |
-| macOS 13+ · Apple Silicon（M 系列） | [下载 arm64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.17/tugou-0.8.17-mac-arm64.dmg) |
-| macOS 13+ · Intel | [下载 x64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.17/tugou-0.8.17-mac-x64.dmg) |
+| Windows x64 | [下载 EXE](https://github.com/Even1997/tugou/releases/download/v0.8.18/tugou-0.8.18-win-x64.exe) |
+| macOS 13+ · Apple Silicon（M 系列） | [下载 arm64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.18/tugou-0.8.18-mac-arm64.dmg) |
+| macOS 13+ · Intel | [下载 x64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.18/tugou-0.8.18-mac-x64.dmg) |
 
-[完整附件与 SHA256 校验文件](https://github.com/Even1997/tugou/releases/tag/v0.8.17)中另有 Mac ZIP。当前没有正式 Linux 安装包。
+[完整附件与 SHA256 校验文件](https://github.com/Even1997/tugou/releases/tag/v0.8.18)中另有 Mac ZIP。当前没有正式 Linux 安装包。
 
 - **Windows：**运行 EXE，按安装向导操作。当前安装包没有商业代码签名，系统可能提示未知发布者，请核对下载来源和校验值。
 - **Mac：**打开对应芯片的 DMG，将 `Tugou.app` 拖入 Applications 后运行。当前为 ad-hoc 签名，尚未完成 Apple 公证；首次打开若被拦截，请在确认来源后按系统「隐私与安全性」提示处理。
@@ -130,7 +120,7 @@ npm run dev
 
 ## 文档、许可与反馈
 
-- [版本说明](docs/releases/v0.8.17.md) · [更新日志](CHANGELOG.md) · [发布验收](docs/engineering/release-v0.8.17.md)
+- [版本说明](docs/releases/v0.8.18.md) · [更新日志](CHANGELOG.md) · [发布验收](docs/engineering/release-v0.8.18.md)
 - [PPT 设计与 MCP 流程](docs/engineering/ppt-design-standard.md) · [字体目录](app/assets/fonts/CATALOG.md)
 - [开发文档](app/README.md) · [文档索引](docs/index.md) · [待测试事项](docs/progress/pending-test.md) · [后续计划](docs/progress/todo.md)
 

@@ -62,6 +62,7 @@ function validateDocument(document) {
   for (const key of ['modules', 'recipes', 'assets', 'layers', 'jobs']) {
     if (!Array.isArray(document[key])) throw new Error(`工程缺少 ${key}`);
   }
+  document.layers.forEach(layer=>require('./rich-text.cjs').validateTextRuns(layer));
   for (const module of document.modules) {
     if (!module || ['id', 'name', 'kind', 'text'].some((key) => typeof module[key] !== 'string')) throw new Error('提示词模块格式无效');
   }

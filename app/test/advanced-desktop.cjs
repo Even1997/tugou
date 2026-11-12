@@ -104,7 +104,7 @@ app.on("browser-window-created", (_event, window) => {
         (await fs.readFile(path.join(output, "layer-engine-qa.js"), "utf8")) +
           ";void 0;",
       );
-      await menu("选区", "魔棒选区");
+      await menu("选区操作", "魔棒选区");
       await field("input[aria-label=容差]", "0");
       await point(30, 30);
       let r = await save(),
@@ -115,7 +115,7 @@ app.on("browser-window-created", (_event, window) => {
           a[30 * 256 + 170] === 0 &&
           a[80 * 256 + 80] === 0,
       );
-      await menu("选区", "颜色范围");
+      await menu("选区操作", "颜色范围");
       await point(30, 30);
       r = await save();
       a = await pixels(r);
@@ -124,7 +124,7 @@ app.on("browser-window-created", (_event, window) => {
         a[30 * 256 + 30] === 255 && a[30 * 256 + 170] === 255,
       );
       await field("select[aria-label=选区运算]", "subtract", true);
-      await menu("选区", "魔棒选区");
+      await menu("选区操作", "魔棒选区");
       await point(30, 30);
       r = await save();
       a = await pixels(r);
@@ -132,7 +132,7 @@ app.on("browser-window-created", (_event, window) => {
         "subtract combines pixel selections correctly",
         a[30 * 256 + 30] === 0 && a[30 * 256 + 170] === 255,
       );
-      await menu("选区", "扩展选区");
+      await menu("选区操作", "扩展选区");
       await settle();
       r = await save();
       a = await pixels(r);
@@ -140,7 +140,7 @@ app.on("browser-window-created", (_event, window) => {
         "pixel growth respects disk distance",
         a[30 * 256 + 155] === 255 && a[14 * 256 + 154] === 0,
       );
-      await menu("选区", "收缩选区");
+      await menu("选区操作", "收缩选区");
       await settle();
       r = await save();
       a = await pixels(r);
@@ -155,7 +155,7 @@ app.on("browser-window-created", (_event, window) => {
         "feather produces partial edge alpha",
         a[30 * 256 + 160] > 0 && a[30 * 256 + 160] < 255,
       );
-      await menu("选区", "选区填色（新图层）");
+      await menu("选区操作", "选区填色（新图层）");
       await settle();
       r = await save();
       check(
@@ -167,7 +167,7 @@ app.on("browser-window-created", (_event, window) => {
       await js("document.querySelector('button[aria-label=撤销]').click()");
       await save();
       await js("document.querySelector('[data-layer-id=photo]').click()");
-      await menu("选区", "清除图片选区");
+      await menu("选区操作", "清除图片选区");
       await settle();
       r = await save();
       const imageAlpha = await js(
@@ -236,9 +236,9 @@ app.on("browser-window-created", (_event, window) => {
         !r.document.layers.find((l) => l.id === "photo").parentId &&
           r.document.custom.retained,
       );
-      await menu("选区", "取消选区");
+      await menu("选区操作", "取消选区");
       await field("select[aria-label=选区运算]", "add", true);
-      await menu("选区", "多边形选区");
+      await menu("选区操作", "多边形选区");
       await point(20, 20);
       await point(90, 20);
       await point(20, 90);
@@ -248,7 +248,7 @@ app.on("browser-window-created", (_event, window) => {
         "polygon stores editable vertices",
         r.document.selection.paths[0].points.length === 6,
       );
-      await menu("选区", "颜色范围");
+      await menu("选区操作", "颜色范围");
       await point(30, 30);
       await save();
       await field("input[aria-label=工程名称]", "热更新保留未保存修改");

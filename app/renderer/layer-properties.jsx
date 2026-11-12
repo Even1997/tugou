@@ -7,6 +7,8 @@ import React, {useState} from "react";
 import { Button, Input, TextArea } from "./components.jsx";
 import { NumberField } from "./number-field.jsx";
 import { nativeBlends, corners } from "../core/layers.cjs";
+import {shapeStyle} from './shape-tools.jsx';
+import {shapes} from '../core/shapes.cjs';
 import {selectionMetrics} from '../core/workspace-geometry.cjs';
 const blendLabels = [
   "正常",
@@ -266,9 +268,10 @@ export function LayerProperties({ layer, patch, document, change, maskEditing, m
         )}
         {layer.kind === "shape" && (
           <>
-            <label className="check"><input type="checkbox" aria-label="形状填充开关" checked={layer.fill!==false} onChange={e=>patch({fill:e.target.checked})}/>填充</label>
+            <label>形状类型<Select aria-label="形状类型" value={layer.shape||'rect'} onChange={e=>patch(shapeStyle({fill:layer.fill,strokeWidth:layer.strokeWidth},e.target.value))}>{shapes.map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></label>
+            {layer.shape!=='line'&&<label className="check"><input type="checkbox" aria-label="形状填充开关" checked={layer.fill!==false} onChange={e=>patch({fill:e.target.checked})}/>填充</label>}
             <div className="property-grid">
-              <label>
+              {layer.shape!=='line'&&<label>
                 填充
                 <ColorControl
                   aria-label="形状填充"
@@ -276,7 +279,7 @@ export function LayerProperties({ layer, patch, document, change, maskEditing, m
                   value={layer.color || "#b0bff2"}
                   onChange={(e) => patch({ color: e.target.value })}
                 />
-              </label>
+              </label>}
               <label>
                 描边
                 <ColorControl
@@ -288,7 +291,7 @@ export function LayerProperties({ layer, patch, document, change, maskEditing, m
               <NumberField
                 label="描边宽度"
                 value={layer.strokeWidth || 0}
-                min={0}
+                min={layer.shape==='line'?1:0}
                 max={500}
                 onChange={(strokeWidth) => patch({ strokeWidth })}
               />

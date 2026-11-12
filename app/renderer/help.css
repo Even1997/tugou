@@ -1,0 +1,12 @@
+.help-drawer .ant-drawer-body { padding:20px; color:var(--text); }
+.help-intro,.help-count { color:var(--muted); font-size:13px; line-height:1.7; }
+.help-intro { margin:0 0 16px; }
+.help-count { margin:24px 0 8px; }
+.help-topics { display:flex; flex-direction:column; }
+.help-topics button { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--text); text-align:left; font:inherit; font-size:14px; cursor:pointer; }
+.help-topics button:hover { color:var(--accent); background:var(--hover); }
+.help-article h2 { margin:24px 0 16px; font-size:18px; line-height:1.5; }
+.help-article p { margin:0 0 16px; font-size:14px; line-height:1.9; overflow-wrap:anywhere; }
+.help-drawer :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+.help-topics>button { border-color:var(--panel-line); }

@@ -24,5 +24,5 @@ export function useAutosave(context){
     if(latest.current.dirtyRef.current)queue.current.changed();
     return()=>queue.current.dispose();
   },[]);
-  return {queue:queue.current,state,error,clearError:()=>setError('')};
+  return {queue:queue.current,state,error};
 }

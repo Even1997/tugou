@@ -1,7 +1,8 @@
 import {GifFrames} from './gif-frames.js';
-import {shapePoints} from '../core/shapes.cjs';
+import {shapePoints,lineEndpoints} from '../core/shapes.cjs';
 import {loadTextFont,textFontFamily} from './font-face.js';
 import {textFontWeight} from '../core/font-weights.cjs';
+import {styledRuns} from '../core/rich-text.cjs';
 import {ImageCache} from '../core/image-cache.cjs';
 import {
   matrix,
@@ -175,6 +176,7 @@ function textLines(ctx, text, width) {
   return lines;
 }
 function paintText(ctx, l) {
+  if(l.textRuns)return paintRichText(ctx,l);
   ctx.font = `${l.fontStyle?.includes('italic')?'italic':'normal'} ${textFontWeight(l)} ${l.fontSize || 32}px "${textFontFamily(l).replace(/["\\]/g, "")}"`;
   ctx.fillStyle = l.color || "#222222";
   ctx.textBaseline = "alphabetic";
@@ -200,6 +202,33 @@ function paintText(ctx, l) {
       }
     } else ctx.fillText(line, x, y);
   });
+}
+function paintRichText(ctx,l){
+  const padding=2,width=Math.max(1,l.width-padding*2),lines=[{parts:[],width:0,size:l.fontSize||32}],segmenter=new Intl.Segmenter(undefined,{granularity:'grapheme'});
+  const font=r=>`${r.italic?'italic':'normal'} ${r.fontWeight} ${r.fontSize}px "${textFontFamily(r).replace(/["\\]/g,'')}"`;
+  ctx.letterSpacing=`${l.letterSpacing||0}px`;ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  for(const r of styledRuns(l)){
+    ctx.font=font(r);
+    for(const {segment:ch} of segmenter.segment(r.text)){
+      let line=lines.at(-1),last=line.parts.at(-1);
+      if(ch==='\n'){lines.push({parts:[],width:0,size:r.fontSize});continue;}
+      const combined=last?.run===r,measure=ctx.measureText((combined?last.text:'')+ch),added=measure.width-(combined?last.width:0);
+      if(line.parts.length&&line.width+added>width){line={parts:[],width:0,size:r.fontSize};lines.push(line);last=null;}
+      if(last?.run===r){line.width-=last.width;last.text+=ch;last.width=ctx.measureText(last.text).width;line.width+=last.width;}
+      else {const part={run:r,text:ch,width:ctx.measureText(ch).width};line.parts.push(part);line.width+=part.width;}
+      line.size=Math.max(line.size,r.fontSize);
+    }
+  }
+  let top=padding;
+  for(const line of lines){
+    if(top>=l.height)break;const height=line.size*(l.lineHeight||1.4);
+    let ascent=0,descent=0;
+    for(const p of line.parts){ctx.font=font(p.run);const m=ctx.measureText(p.text);ascent=Math.max(ascent,m.fontBoundingBoxAscent);descent=Math.max(descent,m.fontBoundingBoxDescent);}
+    const y=top+(height-ascent-descent)/2+ascent;let x=l.align==='center'?(l.width-line.width)/2:l.align==='right'?l.width-padding-line.width:padding;
+    const count=line.parts.reduce((n,p)=>n+[...segmenter.segment(p.text)].length,0),justify=l.align==='justify'&&line!==lines.at(-1)&&count>1,gap=justify?(width-line.width)/(count-1):0;
+    for(const p of line.parts){ctx.font=font(p.run);ctx.fillStyle=p.run.color;if(justify){for(const {segment:ch} of segmenter.segment(p.text)){ctx.fillText(ch,x,y);x+=ctx.measureText(ch).width+gap;}}else{ctx.fillText(p.text,x,y);x+=p.width;}}
+    top+=height;
+  }
 }
 function paintShape(ctx, l) {
   let fill = l.color || "#b0bff2";
@@ -233,8 +262,9 @@ function paintShape(ctx, l) {
       Math.PI * 2,
     );
   else if (l.shape === "line") {
-    ctx.moveTo(0, 0);
-    ctx.lineTo(l.width, l.height);
+    const [a,b]=lineEndpoints(l.width,l.height,l.linePoints);
+    ctx.moveTo(a.x,a.y);
+    ctx.lineTo(b.x,b.y);
   } else
     ctx.roundRect(
       0,
@@ -247,6 +277,7 @@ function paintShape(ctx, l) {
   if (ctx.lineWidth > 0 && l.strokeWidth > 0) ctx.stroke();
 }
 
+const linePadding=(layers,l)=>{if(l.kind!=='shape'||l.shape!=='line')return 0;const m=worldMatrix(layers,l);return (l.strokeWidth||0)/2*Math.hypot(...m.slice(0,4));};
 export function renderPadding(layers) {
   const nodePad = (l, visited) => {
     if (visited.has(l.id)) throw new Error("图层或蒙版形成循环");
@@ -256,6 +287,7 @@ export function renderPadding(layers) {
       l.kind === "group" ? walk(l.id, next) : 0,
       l.mask && !l.mask.disabled ? (l.mask.feather || 0) * 4 : 0,
       source && source.visible !== false ? nodePad(source, next) : 0,
+      linePadding(layers,l),
     ) + Math.max(0,...(l.effects||[]).map(effectPadding));
   };
   const walk = (parent, visited = new Set()) => {
@@ -300,7 +332,8 @@ export class Compositor {
     this.warp?.dispose();
   }
   async content(l, doc, scale, time=0) {
-    const face=l.kind==='text'?await loadTextFont(l):null;
+    if(l.kind==='shape'&&l.shape==='line'&&!l.warp)return surface(1,1);
+    const faces=l.kind==='text'?await Promise.all((l.textRuns?styledRuns(l):[l]).map(loadTextFont)):[];
     if (l.kind === "image")
       return this.image(l.bitmap || doc.assets.find((a) => a.id === l.assetId),time);
     const resolution = Math.min(4, Math.max(0.01, scale)),
@@ -309,9 +342,9 @@ export class Compositor {
     ctx.scale(c.width / l.width, c.height / l.height);
     if (l.kind === "text") {
       // Another concurrent preview may evict this face while the load is awaited.
-      const cached=!face||document.fonts.has(face);
-      if(face&&!cached)document.fonts.add(face);
-      try{paintText(ctx,l);}finally{if(face&&!cached)document.fonts.delete(face);}
+      const evicted=faces.filter(face=>face&&!document.fonts.has(face));
+      evicted.forEach(face=>document.fonts.add(face));
+      try{paintText(ctx,l);}finally{evicted.forEach(face=>document.fonts.delete(face));}
     }
     if (l.kind === "shape") paintShape(ctx, l);
     return c;
@@ -320,6 +353,7 @@ export class Compositor {
     if (!l.warp) {
       ctx.save();
       ctx.setTransform(...m);
+      if(l.kind==='shape'&&l.shape==='line'){paintShape(ctx,l);ctx.restore();return;}
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(image, 0, 0, l.width, l.height);
       ctx.restore();
@@ -445,7 +479,7 @@ export class Compositor {
   intersects(l, doc, frame) {
     const intersects = (layer, margin = 2) => {
       if (layer.visible === false || layer.kind === "adjustment") return false;
-      const padding = margin + Math.max(0, ...(layer.effects || []).map(effectPadding)) * frame.scale;
+      const padding = margin + (Math.max(0, ...(layer.effects || []).map(effectPadding))+linePadding(doc.layers,layer)) * frame.scale;
       if (layer.kind === "group" && !layer.artboard)
         return doc.layers.some(child => child.parentId === layer.id && intersects(child, padding));
       if (layer.artboard && layer.clipContent===false && doc.layers.some(child=>child.parentId===layer.id&&intersects(child,padding)))return true;

@@ -270,7 +270,7 @@ app.on("browser-window-created", (_event, window) => {
         record.document.layers.find((l) => l.id === copy.id).warp?.length === 8,
       );
       await menu("变换", "退出透视");
-      await menu("选区", "矩形选区");
+      await menu("选区操作", "矩形选区");
       const stage = await js(
         `(()=>{const e=document.querySelector('.layer-overlay > g > rect[fill="none"]').getBoundingClientRect();return{x:Math.round(e.x+30),y:Math.round(e.y+30)}})()`,
       );
@@ -285,7 +285,7 @@ app.on("browser-window-created", (_event, window) => {
             .length === 1,
       );
       const beforeCrop = record.document;
-      await menu("选区", "按选区裁切画布");
+      await menu("选区操作", "按选区裁切画布");
       await save();
       record = await js(`window.tugou.open(${JSON.stringify(id)})`);
       check(
@@ -317,7 +317,7 @@ app.on("browser-window-created", (_event, window) => {
         "top-toolbar PNG export retains original dimensions",
         exported.getSize().width === 1024 && exported.getSize().height === 1536,
       );
-      await menu("选区", "取消选区");
+      await menu("选区操作", "取消选区");
       await click("#canvas-actions button", "选择");
       await js(
         `document.querySelector('[data-layer-id="${rectLayer.id}"]').click();document.querySelector('[data-layer-id="${copy.id}"]').dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}))`,

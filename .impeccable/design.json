@@ -1,0 +1,493 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T02:25:30.385Z",
+  "title": "Design System: 土狗",
+  "extensions": {
+    "colorMeta": {
+      "clear-blue": {
+        "role": "primary",
+        "displayName": "清晰蓝 · clear-blue",
+        "canonical": "#1765d1",
+        "tonalRamp": [
+          "oklch(15% 0.0546 258.48)",
+          "oklch(26% 0.0947 258.48)",
+          "oklch(38% 0.1384 258.48)",
+          "oklch(50% 0.1821 258.48)",
+          "oklch(62% 0.1821 258.48)",
+          "oklch(74% 0.1578 258.48)",
+          "oklch(86% 0.0850 258.48)",
+          "oklch(95% 0.0303 258.48)"
+        ]
+      },
+      "clear-blue-dark": {
+        "role": "primary",
+        "displayName": "清晰蓝 · clear-blue-dark",
+        "canonical": "#8bb9ff",
+        "tonalRamp": [
+          "oklch(15% 0.0336 258.58)",
+          "oklch(26% 0.0583 258.58)",
+          "oklch(38% 0.0852 258.58)",
+          "oklch(50% 0.1121 258.58)",
+          "oklch(62% 0.1121 258.58)",
+          "oklch(74% 0.0972 258.58)",
+          "oklch(86% 0.0523 258.58)",
+          "oklch(95% 0.0187 258.58)"
+        ]
+      },
+      "mist-bg": {
+        "role": "neutral",
+        "displayName": "雾白 · mist-bg",
+        "canonical": "#fafbfc",
+        "tonalRamp": [
+          "oklch(15% 0.0005 247.84)",
+          "oklch(26% 0.0009 247.84)",
+          "oklch(38% 0.0013 247.84)",
+          "oklch(50% 0.0017 247.84)",
+          "oklch(62% 0.0017 247.84)",
+          "oklch(74% 0.0015 247.84)",
+          "oklch(86% 0.0008 247.84)",
+          "oklch(95% 0.0003 247.84)"
+        ]
+      },
+      "mist-panel": {
+        "role": "neutral",
+        "displayName": "雾白 · mist-panel",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(50% 0.0000 89.88)",
+          "oklch(62% 0.0000 89.88)",
+          "oklch(74% 0.0000 89.88)",
+          "oklch(86% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "mist-shell": {
+        "role": "neutral",
+        "displayName": "雾白 · mist-shell",
+        "canonical": "#f5f5f7",
+        "tonalRamp": [
+          "oklch(15% 0.0008 286.35)",
+          "oklch(26% 0.0014 286.35)",
+          "oklch(38% 0.0020 286.35)",
+          "oklch(50% 0.0027 286.35)",
+          "oklch(62% 0.0027 286.35)",
+          "oklch(74% 0.0023 286.35)",
+          "oklch(86% 0.0012 286.35)",
+          "oklch(95% 0.0004 286.35)"
+        ]
+      },
+      "mist-surface": {
+        "role": "neutral",
+        "displayName": "雾白 · mist-surface",
+        "canonical": "#f5f6f8",
+        "tonalRamp": [
+          "oklch(15% 0.0009 264.54)",
+          "oklch(26% 0.0015 264.54)",
+          "oklch(38% 0.0022 264.54)",
+          "oklch(50% 0.0029 264.54)",
+          "oklch(62% 0.0029 264.54)",
+          "oklch(74% 0.0025 264.54)",
+          "oklch(86% 0.0013 264.54)",
+          "oklch(95% 0.0005 264.54)"
+        ]
+      },
+      "mist-line": {
+        "role": "neutral",
+        "displayName": "雾白 · mist-line",
+        "canonical": "#e0e3e9",
+        "tonalRamp": [
+          "oklch(15% 0.0026 264.52)",
+          "oklch(26% 0.0046 264.52)",
+          "oklch(38% 0.0067 264.52)",
+          "oklch(50% 0.0088 264.52)",
+          "oklch(62% 0.0088 264.52)",
+          "oklch(74% 0.0076 264.52)",
+          "oklch(86% 0.0041 264.52)",
+          "oklch(95% 0.0015 264.52)"
+        ]
+      },
+      "mist-input-line": {
+        "role": "neutral",
+        "displayName": "雾白 · mist-input-line",
+        "canonical": "#d2d7e0",
+        "tonalRamp": [
+          "oklch(15% 0.0041 262.38)",
+          "oklch(26% 0.0070 262.38)",
+          "oklch(38% 0.0103 262.38)",
+          "oklch(50% 0.0135 262.38)",
+          "oklch(62% 0.0135 262.38)",
+          "oklch(74% 0.0117 262.38)",
+          "oklch(86% 0.0063 262.38)",
+          "oklch(95% 0.0023 262.38)"
+        ]
+      },
+      "mist-text": {
+        "role": "neutral",
+        "displayName": "雾白 · mist-text",
+        "canonical": "#202631",
+        "tonalRamp": [
+          "oklch(15% 0.0067 262.46)",
+          "oklch(26% 0.0116 262.46)",
+          "oklch(38% 0.0170 262.46)",
+          "oklch(50% 0.0224 262.46)",
+          "oklch(62% 0.0224 262.46)",
+          "oklch(74% 0.0194 262.46)",
+          "oklch(86% 0.0104 262.46)",
+          "oklch(95% 0.0037 262.46)"
+        ]
+      },
+      "mist-muted": {
+        "role": "neutral",
+        "displayName": "雾白 · mist-muted",
+        "canonical": "#626c7c",
+        "tonalRamp": [
+          "oklch(15% 0.0084 259.80)",
+          "oklch(26% 0.0146 259.80)",
+          "oklch(38% 0.0213 259.80)",
+          "oklch(50% 0.0280 259.80)",
+          "oklch(62% 0.0280 259.80)",
+          "oklch(74% 0.0243 259.80)",
+          "oklch(86% 0.0131 259.80)",
+          "oklch(95% 0.0047 259.80)"
+        ]
+      },
+      "mist-selection": {
+        "role": "neutral",
+        "displayName": "雾白 · mist-selection",
+        "canonical": "#eaf2ff",
+        "tonalRamp": [
+          "oklch(15% 0.0058 260.17)",
+          "oklch(26% 0.0101 260.17)",
+          "oklch(38% 0.0148 260.17)",
+          "oklch(50% 0.0195 260.17)",
+          "oklch(62% 0.0195 260.17)",
+          "oklch(74% 0.0169 260.17)",
+          "oklch(86% 0.0091 260.17)",
+          "oklch(95% 0.0032 260.17)"
+        ]
+      },
+      "graphite-bg": {
+        "role": "neutral",
+        "displayName": "石墨灰 · graphite-bg",
+        "canonical": "#15171c",
+        "tonalRamp": [
+          "oklch(15% 0.0031 268.17)",
+          "oklch(26% 0.0054 268.17)",
+          "oklch(38% 0.0079 268.17)",
+          "oklch(50% 0.0104 268.17)",
+          "oklch(62% 0.0104 268.17)",
+          "oklch(74% 0.0090 268.17)",
+          "oklch(86% 0.0049 268.17)",
+          "oklch(95% 0.0017 268.17)"
+        ]
+      },
+      "graphite-panel": {
+        "role": "neutral",
+        "displayName": "石墨灰 · graphite-panel",
+        "canonical": "#20232b",
+        "tonalRamp": [
+          "oklch(15% 0.0047 269.06)",
+          "oklch(26% 0.0082 269.06)",
+          "oklch(38% 0.0119 269.06)",
+          "oklch(50% 0.0157 269.06)",
+          "oklch(62% 0.0157 269.06)",
+          "oklch(74% 0.0136 269.06)",
+          "oklch(86% 0.0073 269.06)",
+          "oklch(95% 0.0026 269.06)"
+        ]
+      },
+      "graphite-shell": {
+        "role": "neutral",
+        "displayName": "石墨灰 · graphite-shell",
+        "canonical": "#1b1d23",
+        "tonalRamp": [
+          "oklch(15% 0.0036 270.86)",
+          "oklch(26% 0.0062 270.86)",
+          "oklch(38% 0.0091 270.86)",
+          "oklch(50% 0.0120 270.86)",
+          "oklch(62% 0.0120 270.86)",
+          "oklch(74% 0.0104 270.86)",
+          "oklch(86% 0.0056 270.86)",
+          "oklch(95% 0.0020 270.86)"
+        ]
+      },
+      "graphite-surface": {
+        "role": "neutral",
+        "displayName": "石墨灰 · graphite-surface",
+        "canonical": "#252932",
+        "tonalRamp": [
+          "oklch(15% 0.0053 266.33)",
+          "oklch(26% 0.0091 266.33)",
+          "oklch(38% 0.0134 266.33)",
+          "oklch(50% 0.0176 266.33)",
+          "oklch(62% 0.0176 266.33)",
+          "oklch(74% 0.0152 266.33)",
+          "oklch(86% 0.0082 266.33)",
+          "oklch(95% 0.0029 266.33)"
+        ]
+      },
+      "graphite-line": {
+        "role": "neutral",
+        "displayName": "石墨灰 · graphite-line",
+        "canonical": "#363b46",
+        "tonalRamp": [
+          "oklch(15% 0.0061 265.99)",
+          "oklch(26% 0.0106 265.99)",
+          "oklch(38% 0.0155 265.99)",
+          "oklch(50% 0.0203 265.99)",
+          "oklch(62% 0.0203 265.99)",
+          "oklch(74% 0.0176 265.99)",
+          "oklch(86% 0.0095 265.99)",
+          "oklch(95% 0.0034 265.99)"
+        ]
+      },
+      "graphite-text": {
+        "role": "neutral",
+        "displayName": "石墨灰 · graphite-text",
+        "canonical": "#edf0f6",
+        "tonalRamp": [
+          "oklch(15% 0.0026 264.52)",
+          "oklch(26% 0.0045 264.52)",
+          "oklch(38% 0.0066 264.52)",
+          "oklch(50% 0.0087 264.52)",
+          "oklch(62% 0.0087 264.52)",
+          "oklch(74% 0.0075 264.52)",
+          "oklch(86% 0.0040 264.52)",
+          "oklch(95% 0.0014 264.52)"
+        ]
+      },
+      "graphite-muted": {
+        "role": "neutral",
+        "displayName": "石墨灰 · graphite-muted",
+        "canonical": "#a5afbf",
+        "tonalRamp": [
+          "oklch(15% 0.0077 259.82)",
+          "oklch(26% 0.0133 259.82)",
+          "oklch(38% 0.0195 259.82)",
+          "oklch(50% 0.0256 259.82)",
+          "oklch(62% 0.0256 259.82)",
+          "oklch(74% 0.0222 259.82)",
+          "oklch(86% 0.0119 259.82)",
+          "oklch(95% 0.0043 259.82)"
+        ]
+      },
+      "graphite-selection": {
+        "role": "neutral",
+        "displayName": "石墨灰 · graphite-selection",
+        "canonical": "#243752",
+        "tonalRamp": [
+          "oklch(15% 0.0162 257.22)",
+          "oklch(26% 0.0281 257.22)",
+          "oklch(38% 0.0411 257.22)",
+          "oklch(50% 0.0540 257.22)",
+          "oklch(62% 0.0540 257.22)",
+          "oklch(74% 0.0468 257.22)",
+          "oklch(86% 0.0252 257.22)",
+          "oklch(95% 0.0090 257.22)"
+        ]
+      },
+      "graphite-primary-text": {
+        "role": "neutral",
+        "displayName": "石墨灰 · graphite-primary-text",
+        "canonical": "#101e32",
+        "tonalRamp": [
+          "oklch(15% 0.0131 257.37)",
+          "oklch(26% 0.0226 257.37)",
+          "oklch(38% 0.0331 257.37)",
+          "oklch(50% 0.0435 257.37)",
+          "oklch(62% 0.0435 257.37)",
+          "oklch(74% 0.0377 257.37)",
+          "oklch(86% 0.0203 257.37)",
+          "oklch(95% 0.0073 257.37)"
+        ]
+      },
+      "success-light": {
+        "role": "secondary",
+        "displayName": "success-light",
+        "canonical": "#247354",
+        "tonalRamp": [
+          "oklch(15% 0.0274 163.28)",
+          "oklch(26% 0.0475 163.28)",
+          "oklch(38% 0.0695 163.28)",
+          "oklch(50% 0.0914 163.28)",
+          "oklch(62% 0.0914 163.28)",
+          "oklch(74% 0.0792 163.28)",
+          "oklch(86% 0.0427 163.28)",
+          "oklch(95% 0.0152 163.28)"
+        ]
+      },
+      "success-dark": {
+        "role": "secondary",
+        "displayName": "success-dark",
+        "canonical": "#6ed4ae",
+        "tonalRamp": [
+          "oklch(15% 0.0334 167.06)",
+          "oklch(26% 0.0579 167.06)",
+          "oklch(38% 0.0846 167.06)",
+          "oklch(50% 0.1113 167.06)",
+          "oklch(62% 0.1113 167.06)",
+          "oklch(74% 0.0964 167.06)",
+          "oklch(86% 0.0519 167.06)",
+          "oklch(95% 0.0185 167.06)"
+        ]
+      },
+      "danger-light": {
+        "role": "secondary",
+        "displayName": "danger-light",
+        "canonical": "#b93845",
+        "tonalRamp": [
+          "oklch(15% 0.0494 19.16)",
+          "oklch(26% 0.0856 19.16)",
+          "oklch(38% 0.1251 19.16)",
+          "oklch(50% 0.1646 19.16)",
+          "oklch(62% 0.1646 19.16)",
+          "oklch(74% 0.1427 19.16)",
+          "oklch(86% 0.0768 19.16)",
+          "oklch(95% 0.0274 19.16)"
+        ]
+      },
+      "danger-dark": {
+        "role": "secondary",
+        "displayName": "danger-dark",
+        "canonical": "#ff9b9b",
+        "tonalRamp": [
+          "oklch(15% 0.0360 20.09)",
+          "oklch(26% 0.0624 20.09)",
+          "oklch(38% 0.0912 20.09)",
+          "oklch(50% 0.1200 20.09)",
+          "oklch(62% 0.1200 20.09)",
+          "oklch(74% 0.1040 20.09)",
+          "oklch(86% 0.0560 20.09)",
+          "oklch(95% 0.0200 20.09)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "正文",
+        "purpose": "系统字体，常规界面文字。"
+      },
+      "section-title": {
+        "displayName": "分组标题",
+        "purpose": "通过字重与位置建立分组。"
+      },
+      "label": {
+        "displayName": "标签",
+        "purpose": "表单与控件说明。"
+      }
+    },
+    "shadows": [
+      {
+        "name": "menu",
+        "value": "0 10px 24px #0003",
+        "purpose": "composition-more 弹出菜单。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "antd-motion",
+        "value": "false",
+        "purpose": "ThemeProvider 关闭 Ant Design 动画；不代表自定义动画全部关闭。"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "editor-compact",
+        "value": "1150px"
+      },
+      {
+        "name": "sidebar-compact",
+        "value": "1000px"
+      },
+      {
+        "name": "layer-start-stack",
+        "value": "760px"
+      }
+    ],
+    "tonalRampNote": "8 阶 OKLCH 色带由实际颜色合成，仅作设计面板展示；不是当前应用已有 token，禁止直接当作实现规范。"
+  },
+  "components": [
+    {
+      "name": "主按钮",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "当前主要操作；沿用主题主色。",
+      "html": "<button class=\"ds-primary\">保存</button>",
+      "css": ".ds-primary{font-family:var(--font-family,-apple-system,\"Segoe UI Variable\",\"PingFang SC\",\"Microsoft YaHei UI\",sans-serif);font-size:13px;height:34px;padding:0 12px;border:1px solid var(--line,#e0e3e9);border-radius:8px;cursor:pointer;box-shadow:none;background:var(--accent,#1765d1);color:var(--primary-text,#fff);border-color:transparent}.ds-primary:hover{background:color-mix(in srgb,var(--accent,#1765d1) 85%,var(--text,#202631))}.ds-primary:active{opacity:.85}.ds-primary:focus-visible{outline:2px solid var(--accent,#1765d1);outline-offset:2px}"
+    },
+    {
+      "name": "普通按钮",
+      "kind": "button",
+      "description": "次级操作，低视觉重量。",
+      "html": "<button class=\"ds-secondary\">取消</button>",
+      "css": ".ds-secondary{font-family:var(--font-family,-apple-system,\"Segoe UI Variable\",\"PingFang SC\",\"Microsoft YaHei UI\",sans-serif);font-size:13px;height:34px;padding:0 12px;border:1px solid var(--line,#e0e3e9);border-radius:8px;cursor:pointer;box-shadow:none;background:var(--panel,#fff);color:var(--text,#202631)}.ds-secondary:hover{color:var(--accent,#1765d1);border-color:var(--accent,#1765d1)}.ds-secondary:active{background:var(--surface,#f5f6f8)}.ds-secondary:focus-visible{outline:2px solid var(--accent,#1765d1);outline-offset:2px}"
+    },
+    {
+      "name": "文字输入",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "常规 34px 输入，名称独立可读。",
+      "html": "<label class=\"ds-field\">工程名称<input class=\"ds-input\" value=\"我的工程\" /></label>",
+      "css": ".ds-field{display:grid;gap:8px;font-family:var(--font-family,-apple-system,\"Segoe UI Variable\",\"PingFang SC\",\"Microsoft YaHei UI\",sans-serif);font-size:13px;color:var(--text,#202631)}.ds-input{font-family:var(--font-family,-apple-system,\"Segoe UI Variable\",\"PingFang SC\",\"Microsoft YaHei UI\",sans-serif);font-size:13px;height:34px;padding:0 10px;border:1px solid var(--line,#d2d7e0);border-radius:8px;color:var(--text,#202631);background:var(--panel,#fff)}.ds-input:hover{border-color:var(--accent,#1765d1)}.ds-input:focus-visible{outline:2px solid var(--accent,#1765d1);outline-offset:2px}"
+    },
+    {
+      "name": "模块导航",
+      "kind": "nav",
+      "refersTo": "workspace-navigation",
+      "description": "图标与文字共同命名；当前模块有选中反馈。",
+      "html": "<nav aria-label=\"工作区\"><button class=\"ds-nav\" aria-current=\"page\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M9 3v18\"/></svg><span>画布</span></button></nav>",
+      "css": ".ds-nav{font-family:var(--font-family,-apple-system,\"Segoe UI Variable\",\"PingFang SC\",\"Microsoft YaHei UI\",sans-serif);font-size:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:56px;height:52px;padding:6px 0;border:0;border-radius:8px;font-size:11px;color:var(--accent,#1765d1);background:var(--accent-bg,#eaf2ff);cursor:pointer}.ds-nav:hover{background:var(--surface,#f5f6f8)}.ds-nav:active{opacity:.85}.ds-nav:focus-visible{outline:2px solid var(--accent,#1765d1);outline-offset:2px}"
+    },
+    {
+      "name": "工具按钮",
+      "kind": "button",
+      "refersTo": "editor-tool",
+      "description": "编辑器 36px 图标按钮示意；实际动作由原组件承载。",
+      "html": "<button class=\"ds-tool\" aria-label=\"移动工具\" title=\"移动工具\" aria-pressed=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"m5 9-3 3 3 3m4-10 3-3 3 3m4 4 3 3-3 3m-4 4-3 3-3-3M2 12h20M12 2v20\"/></svg></button>",
+      "css": ".ds-tool{width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:var(--accent-bg,#eaf2ff);color:var(--accent,#1765d1);cursor:pointer}.ds-tool:hover{background:var(--surface,#f5f6f8)}.ds-tool:active{opacity:.85}.ds-tool:focus-visible{outline:2px solid var(--accent,#1765d1);outline-offset:2px}"
+    },
+    {
+      "name": "MCP 状态标签",
+      "kind": "chip",
+      "description": "摘自首页状态标记；示例文本不是当前连接状态。",
+      "html": "<span class=\"ds-status\">示例：已开启</span>",
+      "css": ".ds-status{font-family:var(--font-family,-apple-system,\"Segoe UI Variable\",\"PingFang SC\",\"Microsoft YaHei UI\",sans-serif);font-size:13px;display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--success,#247354)}.ds-status:before{content:\"\";width:5px;height:5px;border-radius:50%;background:currentColor}"
+    },
+    {
+      "name": "首页分组卡片",
+      "kind": "card",
+      "description": "普通 home-section，背景与边框分层，无装饰阴影。",
+      "html": "<section class=\"ds-card\"><h2>最近工程</h2><p>从工程列表打开内容。</p></section>",
+      "css": ".ds-card{font-family:var(--font-family,-apple-system,\"Segoe UI Variable\",\"PingFang SC\",\"Microsoft YaHei UI\",sans-serif);font-size:13px;background:var(--panel,#fff);color:var(--text,#202631);border:1px solid var(--line,#e0e3e9);border-radius:12px;padding:18px 20px}.ds-card h2{font-size:13px;font-weight:600;margin:0}.ds-card p{font-size:13px;line-height:1.8;color:var(--muted,#626c7c);margin:8px 0 0}"
+    }
+  ],
+  "narrative": {
+    "northStar": "自由创作工作台",
+    "overview": "清晰、克制、自由。界面围绕用户当前选择的工具提供操作与反馈，允许各模块独立使用，不用固定流程组织全部功能。画布与作品是视觉主体，操作界面提供稳定、紧凑的桌面工作空间。\n\n本规范提取当前 Electron 源码的现有体系，并记录用户确认的描述与约束；不是重设计稿，也不是全部界面已达标的声明。颜色与控件来源为 `app/renderer/ui.css`、`components.jsx`；编辑器布局来源为 `composite-workspace.css`、`presentations.css`。",
+    "keyCharacteristics": [
+      "清晰：名称、状态、选中对象与操作结果可辨认。",
+      "克制：蓝色用于操作和状态，层次主要依靠底色与边框。",
+      "自由：各模块独立进入，保留手动操作与 MCP 能力。"
+    ],
+    "rules": [
+      {
+        "name": "Context",
+        "body": "工作区颜色通过所在主题与组件上下文解析，不把作品的填充、描边或页面背景当作界面主题色。",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "**Do** 使用当前主题变量与已有组件入口。",
+      "**Do** 让工具、属性和内容各有清楚的位置与选中反馈。",
+      "**Do** 同时检查深浅主题、键盘焦点和窄窗口。"
+    ],
+    "donts": [
+      "**Don't** 把任一模块的任务顺序推广成所有用户的核心流程。",
+      "**Don't** 给常驻工具栏和面板新增装饰阴影。",
+      "**Don't** 将本次规范初始化描述成界面改版、打包完成或全部问题已修复。"
+    ]
+  }
+}

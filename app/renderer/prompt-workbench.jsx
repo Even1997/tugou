@@ -31,6 +31,7 @@ export function PromptWorkbench({
   onRecipeSelect,
   generateRecipe,
   openConnection,
+  analyzeImage,
   busy,
 }) {
   const [query, setQuery] = useState("");
@@ -56,6 +57,7 @@ export function PromptWorkbench({
     <div className="workbench prompt-workbench">
       <aside className="module-list">
         <PanelHeader title="模块" count={document.modules.length}>
+          <IconButton label="参考图分析" icon="analyze" disabled={busy} onClick={()=>analyzeImage()} />
           <IconButton label="新建模块" icon="add" onClick={add} />
         </PanelHeader>
         <SearchField label="搜索模块" value={query} onChange={setQuery} />

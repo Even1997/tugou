@@ -479,3 +479,9 @@
 
 .palette-item-caption { display:flex; flex-direction:column; gap:3px; min-width:0; }
 .palette-item.ant-btn > .anticon { flex-shrink:0; }
+
+.workflow-toolbar,.recipe-sidebar,.recipe-footer,.canvas-inspector { border-color:var(--panel-line); }
+.recipe-sidebar .panel-heading { margin-bottom:12px; }
+.recipe-fields section h2 { font-size:13px;font-weight:600; }
+.toolbar-hint,.module-picker small { font-size:12px; }
+.canvas-tools-bottom { border-radius:6px;border-color:var(--panel-line); }

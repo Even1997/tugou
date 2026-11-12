@@ -1,19 +1,19 @@
 .image-tools {
   display:grid;
-  grid-template-columns:var(--sidebar-width) minmax(0,1fr) 304px;
+  grid-template-columns:232px minmax(0,1fr) 272px;
   grid-template-rows:auto auto auto minmax(0,1fr) auto;
   height: 100%;
   min-height: 0;
 }
 .local-tool-status { width:100%; margin:0; color:var(--muted); font-size:12px; line-height:1.6; white-space:normal; }
 .tool-task-progress { display:block; width:100%; height:6px; margin-top:8px; accent-color:var(--accent); }
-.tools-navigation { grid-column:1 / -1; grid-row:1; min-width:0; padding:8px 16px 12px; background:var(--shell); border-bottom:1px solid var(--line); }
+.tools-navigation { grid-column:1 / -1; grid-row:1; min-width:0; padding:4px 16px 8px; background:var(--shell); border-bottom:1px solid var(--line); }
 .tools-navigation-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
 .tools-navigation-heading > .ant-input-affix-wrapper { width:180px; }
 .tools-categories { display:flex; gap:4px; }
 .tools-categories > .ant-btn { height:36px; border-radius:0; border-bottom:2px solid transparent; padding-inline:12px; background:transparent; }
 .tools-categories > .ant-btn[aria-pressed=true] { border-bottom-color:var(--accent); color:var(--accent); }
-.tools-options { display:flex; align-items:center; flex-wrap:wrap; gap:6px; max-height:88px; overflow:auto; margin-top:8px; }
+.tools-options { display:flex; align-items:center; flex-wrap:wrap; gap:6px; max-height:88px; overflow:auto; margin-top:4px; }
 .tools-options > .ant-btn { min-height:34px; padding-inline:12px; font-size:12px; }
 .tools-options > [aria-pressed=true] { background:var(--accent-bg); color:var(--accent); }
 .tools-materials { grid-column:1; grid-row:2 / -1; display:flex; flex-direction:column; min-width:0; min-height:0; background:var(--shell); border-right:1px solid var(--line); }
@@ -70,17 +70,17 @@
 .image-tools > .image-tools-body { grid-column:2; grid-row:4; min-width:0; overflow:hidden; }
 .image-tools > .image-tools-footer { grid-column:2; grid-row:5; flex-wrap:wrap; gap:8px; }
 .image-tools > .image-tools-footer > span { flex-basis:100%; }
-.image-tools .image-comparison { padding:12px 24px 24px; }
+.image-tools .image-comparison { padding:8px 16px 16px; }
 .image-tools .image-comparison figure { border:1px solid var(--line); border-radius:12px; }
 .image-tools .image-comparison > figure > img,.image-tools .cloud-mask-preview canvas,.image-tools .tool-region { min-height:80px; }
-@media (max-width:1150px) { .image-tools { grid-template-columns:var(--sidebar-width) minmax(0,1fr) 280px; } }
+@media (max-width:1150px) { .image-tools { grid-template-columns:216px minmax(0,1fr) 260px; } }
 @media (max-width:1000px) {
-  .image-tools { grid-template-columns:var(--sidebar-width) minmax(0,1fr) 260px; }
+  .image-tools { grid-template-columns:216px minmax(0,1fr) 260px; }
   .tools-material-item.ant-btn { padding:6px; gap:6px; }
   .tools-material-item img { width:32px; height:44px; }
   .image-tools > .image-tools-toolbar { padding:12px 16px; gap:6px; }
 }
-.image-processing-dialog .image-tools { grid-template-columns:var(--sidebar-width) minmax(0,1fr) 280px; }
+.image-processing-dialog .image-tools { grid-template-columns:216px minmax(0,1fr) 260px; }
 .cloud-mask-preview { min-height: 0; flex: 1; display: flex; flex-direction: column; }
 .cloud-mask-editor .mask-paint-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:12px 0; }
 .cloud-mask-editor .mask-paint-toolbar label { display:flex; align-items:center; gap:8px; }
@@ -356,3 +356,8 @@
 .cleanup-controls .cleanup-fields dt {font-weight:600;margin-top:8px;}
 .cleanup-controls .cleanup-fields dd {margin:4px 0;color:var(--muted);}
 .cleanup-report {padding:12px;border:1px solid var(--line);border-radius:8px;overflow-wrap:anywhere;}
+
+.tools-navigation,.tools-materials,.tools-settings,.tools-settings-heading,.tools-submit { border-color:var(--panel-line); }
+.tools-settings-heading h2 { font-size:16px;font-weight:600; }
+.tools-material-item small { font-size:12px; }
+.image-tools .image-comparison figure { border-color:var(--panel-line);border-radius:10px; }

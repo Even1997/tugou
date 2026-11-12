@@ -35,6 +35,7 @@ export function StudioHeader({
   rename,
   deleteProject,
   openGithub,
+  help,
 }) {
   const {t,update}=usePreferences();
   const dragTimer=useRef(null);
@@ -151,6 +152,7 @@ export function StudioHeader({
               onDrop={()=>{clearTimeout(dragTimer.current);dragTimer.current=null;}}
             ><span>{t(id)}</span></Button>
           ))}
+          <Button className="rail-help" icon="info" aria-label="帮助" onClick={help}><span>帮助</span></Button>
           <div className="rail-bottom"><IconButton label="GitHub" icon={<GithubOutlined />} onClick={openGithub}/><IconButton label={t('settings')} className={['available','ready'].includes(update?.status)&&update.skippedVersion!==update.version?'has-update':''} icon="settings" aria-current={workspace==='settings'?'page':undefined} onClick={()=>setWorkspace('settings')}/><IconButton
             label={theme.mode === "dark" ? "切换浅色主题" : "切换深色主题"}
             icon={theme.mode === "dark" ? "sun" : "moon"}

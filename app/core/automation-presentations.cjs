@@ -6,17 +6,17 @@ function register({define,string,object,enumeration,find,fail}){
   const ids={presentationId:string,slideId:string},itemIds={...ids,id:string};
   const deck=(d,a)=>find(d.presentations||[],a.presentationId||a.id),page=(d,a)=>find(deck(d,a).slides,a.slideId),item=(d,a)=>find(page(d,a).elements,a.id);
   const editable=e=>{if(e.locked)fail('LOCKED','PPT 元素已锁定，请先解锁');};
-  const props={x:range(-5000,5000),y:range(-5000,5000),w:range(8,5000),h:range(8,5000),rotation:range(-360,360),visible:bool,locked:bool,
+  const props={x:range(-5000,5000),y:range(-5000,5000),w:range(1,5000),h:range(1,5000),rotation:range(-360,360),visible:bool,locked:bool,stroke:hex,strokeWidth:range(1,500),linePoints:{type:'array',items:range(0,1),minItems:4,maxItems:4,description:'直线起终点在元素框中的归一化坐标 [x1,y1,x2,y2]；水平线用 [0,0.5,1,0.5]'},
     text:{type:'string',maxLength:10000},fontSize:range(8,240),fontFamily:{type:'string',minLength:1,maxLength:100},fontWeight:{type:'integer',minimum:1,maximum:1000},bold:bool,italic:bool,color:hex,align:enumeration('left','center','right'),
     fontResource:{anyOf:[{type:'null'},object({resource:{type:'string',pattern:'^[a-f0-9]{64}\\.ttf$'},projectId:string,jobId:string},['resource','projectId','jobId'])]},fill:hex,assetId:string,cornerRadius:{description:'仅矩形：圆角半径 px，数值为四角联动，或完整对象 topLeft/topRight/bottomRight/bottomLeft 独立设置；实际半径不超过短边一半，设置时清除 cornerRounding。',anyOf:[range(0,2500),object(Object.fromEntries(ppt.cornerKeys.map(k=>[k,range(0,2500)])),ppt.cornerKeys)]},cornerRounding:{description:'仅矩形：0–100 圆角程度，100 为短边一半；数值为四角联动，或完整对象 topLeft/topRight/bottomRight/bottomLeft 分别调整四角。设置时清除 cornerRadius。',anyOf:[range(0,100),object(Object.fromEntries(ppt.cornerKeys.map(k=>[k,range(0,100)])),ppt.cornerKeys)]}};
   const applyProps=(e,p)=>{
-    const common=['x','y','w','h','rotation','visible','locked'],specific=e.kind==='text'?['text','fontSize','fontFamily','fontWeight','fontResource','bold','italic','color','align']:e.kind==='image'?['assetId']:e.kind==='rect'?['fill','cornerRadius','cornerRounding']:['fill'];
+    const common=['x','y','w','h','rotation','visible','locked'],specific=e.kind==='text'?['text','fontSize','fontFamily','fontWeight','fontResource','bold','italic','color','align']:e.kind==='image'?['assetId']:e.kind==='line'?['stroke','strokeWidth','linePoints']:e.kind==='rect'?['fill','cornerRadius','cornerRounding']:['fill'];
     if(Object.keys(p).some(k=>!common.includes(k)&&!specific.includes(k)))fail('INVALID_ARGUMENT','属性不适用于此 PPT 元素类型');
     if(p.cornerRadius!==undefined&&p.cornerRounding!==undefined)fail('INVALID_ARGUMENT','请选择像素半径或圆角程度，不可同时设置');
     if(p.cornerRounding!==undefined)delete e.cornerRadius;if(p.cornerRadius!==undefined)delete e.cornerRounding;
     if(p.fontFamily&&!Object.hasOwn(p,'fontResource'))delete e.fontResource;
     if(Object.hasOwn(p,'bold')&&!Object.hasOwn(p,'fontWeight'))e.fontWeight=p.bold?700:400;
-    Object.assign(e,p);if(p.fontWeight!==undefined)e.bold=p.fontWeight>=600;
+    Object.assign(e,require('./rich-text.cjs').patchText(e,p));if(p.fontWeight!==undefined)e.bold=p.fontWeight>=600;
   };
   const move=(list,id,to)=>{if(to>=list.length)fail('INVALID_ARGUMENT','目标位置超出范围');const from=list.findIndex(e=>e.id===id);if(from<0)fail('NOT_FOUND','对象不存在');list.splice(to,0,list.splice(from,1)[0]);};
   define('ppt.list','列出当前工程的全部 PPT 名称、比例与页数',{},[],'read');
@@ -33,7 +33,7 @@ function register({define,string,object,enumeration,find,fail}){
   define('ppt.slide.duplicate','复制页面到原页后方，元素使用新 ID',ids,['presentationId','slideId'],'document',(d,a)=>{const p=deck(d,a),s=page(d,a),copy=ppt.duplicate(s);p.slides.splice(p.slides.indexOf(s)+1,0,copy);return {id:copy.id,slideId:copy.id};});
   define('ppt.slide.delete','删除指定页面，每份 PPT 至少保留一页',ids,['presentationId','slideId'],'document',(d,a)=>{const p=deck(d,a);page(d,a);if(p.slides.length===1)fail('INVALID_TARGET','至少保留一页');p.slides=p.slides.filter(s=>s.id!==a.slideId);});
   define('ppt.slide.move','调整页面顺序，index 从 0 开始',{...ids,index},['presentationId','slideId','index'],'document',(d,a)=>move(deck(d,a).slides,a.slideId,a.index));
-  define('ppt.element.create','创建文字、图片、矩形或椭圆；矩形使用 cornerRadius 像素半径，支持四角独立；图片先 asset.import；字体可通过 font.library 查询、font.publish 发布',{...ids,kind:enumeration('text','image','rect','ellipse'),properties:object(props)},['presentationId','slideId','kind'],'document',(d,a)=>{const e=ppt.element(a.kind);applyProps(e,a.properties||{});page(d,a).elements.push(e);return {id:e.id};});
+  define('ppt.element.create','创建文字、图片、矩形、椭圆或直线；直线使用 stroke、strokeWidth 和 linePoints；矩形使用 cornerRadius 像素半径，支持四角独立；图片先 asset.import；字体可通过 font.library 查询、font.publish 发布',{...ids,kind:enumeration('text','image','rect','ellipse','line'),properties:object(props)},['presentationId','slideId','kind'],'document',(d,a)=>{const e=ppt.element(a.kind);applyProps(e,a.properties||{});page(d,a).elements.push(e);return {id:e.id};});
   define('ppt.element.update','修改内容、字体、位置、尺寸、旋转、矩形圆角（含四角独立）、可见性与锁定；锁定元素只允许改变 visible/locked',{...itemIds,patch:object(props)},['presentationId','slideId','id','patch'],'document',(d,a)=>{const e=item(d,a);if(Object.keys(a.patch).some(k=>!['visible','locked'].includes(k)))editable(e);applyProps(e,a.patch);const s=page(d,a);Object.assign(s,syncContent(s));});
   define('ppt.element.duplicate','复制元素到顶层并偏移 20 px，原元素不变',itemIds,['presentationId','slideId','id'],'document',(d,a)=>{const e=item(d,a);editable(e);const copy=ppt.duplicate(e);copy.x=Math.min(5000,e.x+20);copy.y=Math.min(5000,e.y+20);page(d,a).elements.push(copy);return {id:copy.id};});
   define('ppt.element.delete','删除一个元素及对应内容关联，可撤销',itemIds,['presentationId','slideId','id'],'document',(d,a)=>{editable(item(d,a));const s=page(d,a);s.elements=s.elements.filter(e=>e.id!==a.id);Object.assign(s,syncContent(s));});

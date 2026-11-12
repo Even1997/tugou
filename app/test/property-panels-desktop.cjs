@@ -1,0 +1,208 @@
+// Isolated source UI checks; no build, network requests, or user documents.
+const {app,BrowserWindow}=require('electron'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
+process.env.ESBUILD_WORKER_THREADS='0';
+const out=path.resolve(__dirname,'../test-results/property-panels');fs.mkdirSync(out,{recursive:true});app.setPath('userData',fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'tugou-panels-')));
+const report={checks:[],errors:[]};let w;
+const js=s=>w.webContents.executeJavaScript(s,true),delay=ms=>new Promise(r=>setTimeout(r,ms));
+const check=(name,ok)=>{assert.ok(ok,name);report.checks.push(name);};
+const wait=async s=>{for(let i=0;i<150;i++){if(await js(s))return;await delay(40);}throw Error('timeout: '+s);};
+const click=async(label,scope='document')=>{await js(`(()=>{const b=[...${scope}.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')===${JSON.stringify(label)}||b.textContent.trim()===${JSON.stringify(label)});if(!b||b.disabled)throw Error('button '+${JSON.stringify(label)});b.click();})()`);await delay(90);};
+const input=async(label,value)=>{await js(`(()=>{const e=document.querySelector('[aria-label="${label}"]');e.focus();Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);await delay(90);await js(`(()=>{const e=document.querySelector('[aria-label="${label}"]');e.blur();e.dispatchEvent(new FocusEvent('focusout',{bubbles:true}));})()`);await delay(90);};
+const layout=async(kind)=>{
+  if(kind==='ppt'){
+    check('PPT uses one dock beside canvas '+w.getSize().join('x'),await js(`(()=>{const c=document.querySelector('.ppt-center').getBoundingClientRect(),p=document.querySelector('[aria-label="PPT 页面面板"]').getBoundingClientRect();return c.width>220&&Math.abs(c.right-p.left)<2&&p.width>=260&&p.right<=innerWidth&&p.bottom<=innerHeight&&document.querySelectorAll('.ppt-editor > .ppt-inspector').length===1})()`));return;
+  }
+  const selectors=kind==='ppt'?['.ppt-center','.ppt-property-sidebar','[aria-label="PPT 页面面板"]']:['.layer-stage','.layer-property-sidebar','[aria-label="图层与历史记录"]'];
+  const boxes=await js(`(${JSON.stringify(selectors)}).map(s=>{const r=document.querySelector(s).getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,width:r.width,height:r.height,bottom:r.bottom}})`);
+  check(kind+' canvas / properties / original panel order and no overlap '+w.getSize().join('x'),boxes[0].width>220&&Math.abs(boxes[0].right-boxes[1].x)<2&&Math.abs(boxes[1].right-boxes[2].x)<2&&boxes[2].right<=w.getContentSize()[0]+1&&boxes.every(r=>r.height>200&&r.bottom<=w.getContentSize()[1]+1));
+};
+const rail=async(kind)=>{
+  if(kind==='ppt'){
+    check('PPT ribbon spans editor with all labelled tools reachable',await js(`(()=>{const bar=document.querySelector('.ppt-insert'),canvas=document.querySelector('.ppt-edit-surface'),r=bar.getBoundingClientRect(),c=canvas.getBoundingClientRect(),items=[...bar.querySelectorAll('.ppt-tool-group button')];return getComputedStyle(bar).flexDirection==='row'&&Math.abs(r.bottom-c.top)<2&&r.left<c.left&&items.length===11&&items.every(e=>{const b=e.getBoundingClientRect();return e.textContent.trim()&&b.width>=28&&b.height>=28&&b.left>=r.left&&b.right<=r.right&&b.top>=r.top&&b.bottom<=r.bottom})})()`));return;
+  }
+  check(kind+' tool rail is left of canvas, narrow and fully reachable',await js(`(()=>{const rail=document.querySelector('${kind==='ppt'?'.ppt-insert':'.composition-primary-tools'}'),canvas=document.querySelector('${kind==='ppt'?'.ppt-edit-surface':'.layer-stage'}'),r=rail.getBoundingClientRect(),c=canvas.getBoundingClientRect(),items=[...rail.querySelectorAll(':scope > button,:scope > details > summary')];return (rail.closest('.composition-tool-rail')||rail).getBoundingClientRect().width===48&&Math.abs(r.right-c.left)<2&&items.length>=8&&items.every(e=>{const b=e.getBoundingClientRect();return b.width>=32&&b.height>=32&&b.left>=r.left&&b.right<=r.right&&!!e.getAttribute('aria-label')})})()`));
+};
+const collapse=async kind=>{
+  const before=await js(`({width:document.querySelector('.ppt-center').clientWidth,history:qa.history.length})`);
+  await click('收起页面面板');
+  check('PPT collapse releases one dock without document edits',await js(`document.querySelector('.ppt-center').clientWidth>=${before.width}+260&&qa.history.length===${before.history}&&document.activeElement.dataset.panel==='properties'`));
+  check('PPT hidden dock leaves keyboard order',await js(`(()=>{const p=document.querySelector('[aria-label="PPT 页面面板"]');return p.hidden&&[...p.querySelectorAll('button,input')].every(e=>!e.getClientRects().length)})()`));
+  await shot(kind+'-collapsed');w.focus();
+  w.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});w.webContents.sendInputEvent({type:'char',keyCode:'\r'});w.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});
+  await wait(`!document.querySelector('[aria-label="PPT 页面面板"]').hidden`);
+  check('keyboard reopens current dock without edits',await js(`document.querySelector('.ppt-center').clientWidth===${before.width}&&qa.history.length===${before.history}`));
+};
+const shot=async name=>{await wait('!document.querySelector("canvas[aria-label=图层画布]")||document.querySelector("canvas[aria-label=图层画布]").dataset.rendering==="false"');await js('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');await delay(100);fs.writeFileSync(path.join(out,name+'.png'),(await w.capturePage()).toPNG());};
+app.whenReady().then(async()=>{
+  w=new BrowserWindow({width:1440,height:960,show:false,webPreferences:{nodeIntegration:true,contextIsolation:false,sandbox:false,backgroundThrottling:false}});
+  w.webContents.on('console-message',e=>{if(e.level==='error')report.errors.push(e.message);});
+  w.webContents.session.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(_,cb)=>cb({cancel:true}));
+  try{
+    await w.loadURL('file:///'+path.join(__dirname,'../renderer/index.html').replaceAll('\\','/'));await js(`require(${JSON.stringify(path.join(__dirname,'line-tools-renderer.cjs'))})`);w.showInactive();
+    await wait('!!document.querySelector(".ppt-deck-card")');await click('打开 直线验收');
+    const dockTab=async label=>click(label,`document.querySelector('[aria-label="页面面板"]')`);
+    check('PPT starts with unobstructed canvas and collapsed dock',await js(`document.querySelector('[aria-label="PPT 页面面板"]').hidden`));
+    await click('矩形');await rail('ppt');await click('属性');await layout('ppt');
+    const pptHistory=await js('qa.history.length');await dockTab('图层');
+    await js(`document.querySelector('.ppt-layer-select').click();document.querySelector('.ppt-layer-select').click()`);await delay(90);
+    check('repeated PPT layer clicks keep layer tab open without edits',await js(`!document.querySelector('[aria-label="PPT 页面面板"]').hidden&&document.querySelector('.ppt-layer-row.selected')&&!document.querySelector('.ppt-properties')&&qa.history.length===${pptHistory}`));
+    await dockTab('属性');await click('取消选择');
+    check('PPT cancellation shows page settings in same dock',await js(`document.querySelector('.ppt-property-sidebar [aria-label="页面背景"]').getClientRects().length>0`));
+    await dockTab('图层');await js(`document.querySelector('.ppt-layer-select').click()`);await delay(90);await dockTab('属性');
+    check('PPT properties occupy the shared dock',await js(`!!document.querySelector('[aria-label="PPT 页面面板"] [aria-label="宽度"]')&&!document.querySelector('.ppt-layer-list')`));
+    const width=await js('qa.doc.presentations[0].slides[0].elements[0].w');await input('宽度','410');check('PPT property editing',await js('qa.doc.presentations[0].slides[0].elements[0].w===410'));await click('撤销 PPT 修改');check('PPT property undo',await js(`qa.doc.presentations[0].slides[0].elements[0].w===${width}`));await click('重做 PPT 修改');
+    await js(`(()=>{const d=structuredClone(qa.doc);d.presentations[0].slides[0].elements[0].x=123.456789;qa.load(d)})()`);await delay(100);
+    check('PPT fractional coordinate displays two decimals',await js(`document.querySelector('[aria-label="X"]').value==='123.46'`));
+    await js(`(()=>{const e=document.querySelector('[aria-label="X"]');e.focus();e.blur()})()`);await delay(80);
+    check('focus and blur preserve stored precision and history',await js('qa.doc.presentations[0].slides[0].elements[0].x===123.456789&&qa.history.length===0'));
+    await input('X','6000');check('invalid coordinate restores rounded display without mutation',await js(`document.querySelector('[aria-label="X"]').value==='123.46'&&qa.history.length===0`));
+    await input('X','180.25');check('coordinate commit stores edit once',await js('qa.doc.presentations[0].slides[0].elements[0].x===180.25&&qa.history.length===1'));
+    await click('撤销 PPT 修改');check('coordinate undo restores full stored precision',await js('qa.doc.presentations[0].slides[0].elements[0].x===123.456789'));
+    await dockTab('图层');await click('锁定图层');await dockTab('属性');check('PPT locked fields are disabled',await js(`document.querySelector('.ppt-property-sidebar [aria-label="宽度"]').matches(':disabled')`));await dockTab('图层');await click('解锁图层');await dockTab('属性');
+    await shot('ppt-light');await click('文字');check('PPT content stays in properties and font moves to ribbon',await js(`!!document.querySelector('.ppt-property-sidebar [aria-label="文字内容"]')&&!!document.querySelector('.ppt-text-tools [aria-label="字体"]')`));
+    await js('qa.theme("dark")');w.setSize(960,720);await delay(200);await layout('ppt');await rail('ppt');await shot('ppt-dark-960');await collapse('ppt');
+    check('PPT labelled line tool is keyboard focusable with drawing hint',await js(`(()=>{const e=[...document.querySelectorAll('.ppt-insert button')].find(b=>b.textContent.trim()==='直线');e.focus();return document.activeElement===e&&e.title.includes('拖拽绘制')})()`));await js('document.activeElement.blur()');
+    check('PPT long properties scroll inside dock',await js(`(()=>{const p=document.querySelector('.ppt-properties'),stage=document.querySelector('.ppt-edit-surface'),top=stage.getBoundingClientRect().top;p.scrollTop=p.scrollHeight;return p.scrollTop>0&&stage.getBoundingClientRect().top===top})()`));
+    const history=await js('qa.history.length');await dockTab('内容');check('content mode preserves original three columns',await js(`!document.querySelector('.ppt-property-sidebar')&&!!document.querySelector('[aria-label="PPT 页面面板"] .ppt-content-panel')`));await dockTab('讲稿');check('notes stay in original panel',await js(`!!document.querySelector('[aria-label="PPT 页面面板"] [aria-label="演讲备注"]')`));await dockTab('属性');check('panel switching does not edit document',await js(`qa.history.length===${history}`));
+    await click('收起页面面板');
+    await js(`document.querySelector('.ppt-edit-page .ppt-element[data-element-id="'+qa.doc.presentations[0].slides[0].elements.at(-1).id+'"]').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))`);await delay(100);
+    check('double click text edits on canvas without opening dock',await js(`document.querySelector('[aria-label="PPT 页面面板"]').hidden&&!!document.activeElement.closest('.ppt-text-editor')`));
+    await js(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);await delay(100);
+    await js(`(()=>{const v=require(${JSON.stringify(path.resolve(__dirname,'../renderer/ui-view.js'))}).views.get('ppt');window.savedPptView=v.get();v.navigate({command:'ppt.open',args:{presentationId:savedPptView.presentationId,slideId:savedPptView.slideId,elementId:qa.doc.presentations[0].slides[0].elements[0].id}})})()`);await delay(100);
+    check('external navigation selects object and opens its properties',await js(`!document.querySelector('[aria-label="PPT 页面面板"]').hidden&&document.querySelector('.ppt-edit-page .ppt-element.selected')?.dataset.elementId===qa.doc.presentations[0].slides[0].elements[0].id&&!!document.querySelector('.ppt-property-sidebar [aria-label="宽度"]')`));
+    await js(`require(${JSON.stringify(path.resolve(__dirname,'../renderer/ui-view.js'))}).views.get('ppt').restore(savedPptView)`);await delay(100);
+    check('view restoration retains collapsed dock',await js(`document.querySelector('[aria-label="PPT 页面面板"]').hidden&&qa.history.length===${history}`));
+    w.setSize(1440,960);await js(`(()=>{const L=require(${JSON.stringify(path.resolve(__dirname,'../core/layers.cjs'))}),A=require(${JSON.stringify(path.resolve(__dirname,'../core/adjustments.cjs'))});const layers=[L.createLayer('shape',{name:'面板矩形',x:120,y:100,width:260,height:180}),L.createLayer('text',{name:'面板文字',text:'独立属性面板',x:150,y:330,fontFamily:'Arial'}),L.createLayer('adjustment',{name:'调色',adjustment:A.defaults('brightnessContrast')})];qa.load({...qa.doc,layers});qa.mode('layers');})()`);
+    await wait('!!document.querySelector(".layer-stage")');
+    check('layer properties closed by default, layers remain visible',await js(`!document.querySelector('.layer-property-sidebar')&&document.querySelector('[aria-label="图层与历史记录"]').clientWidth>200&&getComputedStyle(document.querySelector('.composition-editor')).gridTemplateColumns.split(' ').length===3`));
+    const roomy=await js('document.querySelector(".layer-stage").clientWidth');
+    await js('document.querySelector("[data-layer-id]").click()');await delay(100);
+    check('selecting layer name opens properties',await js(`!!document.querySelector('.layer-property-sidebar')`));await js('document.querySelector("[data-layer-id]").click()');await delay(100);check('clicking the same layer name closes properties',await js(`!document.querySelector('.layer-property-sidebar')`));
+    await click('导航',`document.querySelector('[aria-label="图层辅助面板"]')`);
+    check('navigation stays above layer list without taking a column',await js(`!document.querySelector('.layer-property-sidebar')&&document.querySelector('.layer-dock-inspector').getBoundingClientRect().bottom<=document.querySelector('.composition-layer-heading').getBoundingClientRect().top+1&&document.querySelector('.layer-stage').clientWidth===${roomy}`));
+    await click('调整',`document.querySelector('[aria-label="图层辅助面板"]')`);
+    check('adjustments stay above layer list',await js(`!!document.querySelector('[aria-label="图层与历史记录"] .adjustment-grid')&&!document.querySelector('.layer-property-sidebar')&&document.querySelector('.layer-list').clientHeight>200`));
+    await js('qa.select([qa.doc.layers[0].id])');await click('打开所选属性');await layout('layers');await rail('layers');
+    check('explicit property opening takes one 260px column',await js(`document.querySelector('.layer-stage').clientWidth===${roomy}-260`));
+    check('all layer fields and appearance moved out of layer list',await js(`!!document.querySelector('.layer-property-sidebar [aria-label="形状填充"]')&&!!document.querySelector('.layer-property-sidebar [aria-label="不透明度 %"]')&&!document.querySelector('[aria-label="图层与历史记录"] .layer-properties')&&!document.querySelector('[aria-label="图层与历史记录"] .layer-appearance')`));
+    check('selected shape properties have one source',await js(`document.querySelectorAll('[aria-label="形状类型"]').length===1&&!document.querySelector('[aria-label="绘制描边宽度"]')&&!document.querySelector('.layer-tool-settings').open`));
+    await js(`document.querySelector('[aria-label="形状类型"]').closest('.ant-select').querySelector('.ant-select-content').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
+    await wait(`!!document.querySelector('[data-option-value="ellipse"]')`);await js(`document.querySelector('[data-option-value="ellipse"]').click()`);await delay(90);
+    check('shape type changes from consolidated properties',await js(`qa.doc.layers[0].shape==='ellipse'`));await js('qa.undo()');await delay(90);
+    await input('不透明度 %','65');check('layer appearance edit',await js('qa.doc.layers[0].opacity===.65'));await js('qa.undo()');await delay(80);check('layer appearance undo',await js('qa.doc.layers[0].opacity===1'));
+    await click('锁定所选图层');check('locked layer properties disabled',await js(`document.querySelector('.layer-property-sidebar [aria-label="宽度"]').matches(':disabled')`));await click('解锁所选图层');
+    await js('qa.theme("light")');await shot('layers-light');await click('历史记录');check('history remains in original panel',await js(`!!document.querySelector('[aria-label="图层与历史记录"] .composition-history')`));await click('图层',`document.querySelector('[aria-label="图层与历史记录"]')`);
+    await js('qa.select([qa.doc.layers[1].id])');await delay(100);check('layer text controls moved',await js(`!!document.querySelector('.layer-property-sidebar [aria-label="图层文字"]')`));
+    await js('qa.select([qa.doc.layers[2].id])');await wait('!!document.querySelector(".adjustment-panel")');check('adjustment uses the same column',await js(`!!document.querySelector('.layer-property-sidebar .adjustment-panel')&&getComputedStyle(document.querySelector('.composition-editor')).gridTemplateColumns.split(' ').length===4`));await input('亮度','20');check('adjustment edit',await js('qa.doc.layers[2].adjustment.brightness===20'));await js('qa.undo()');await delay(90);check('adjustment undo',await js('qa.doc.layers[2].adjustment.brightness===0'));
+    await shot('adjustment-light');await click('关闭调整面板');check('closing adjustment releases the property column',await js(`!document.querySelector('.adjustment-panel')&&!document.querySelector('.layer-property-sidebar')`));
+    await js('qa.select([qa.doc.layers[0].id])');await delay(90);await click('编辑所选蒙版');await wait('!!document.querySelector(".mask-properties")');check('mask controls in independent column',await js(`!!document.querySelector('.layer-property-sidebar [aria-label="蒙版浓度"]')`));
+    await js('qa.theme("dark")');w.setSize(960,720);await delay(200);await layout('layers');await rail('layers');await shot('mask-dark-960');const beforeClose=await js(`({width:document.querySelector('.layer-stage').clientWidth,history:qa.history.length,view:(()=>{const m=document.querySelector('.layer-overlay>g').transform.baseVal.consolidate().matrix;return {zoom:m.a,center:(document.querySelector('.layer-stage').clientWidth/2-m.e)/m.a}})()})`);
+    await click('关闭属性面板');check('closing properties preserves layers, history and view scale',await js(`!document.querySelector('.layer-property-sidebar')&&document.querySelector('.layer-stage').clientWidth===${beforeClose.width}+260&&qa.history.length===${beforeClose.history}&&(()=>{const m=document.querySelector('.layer-overlay>g').transform.baseVal.consolidate().matrix;return m.a===${beforeClose.view.zoom}&&Math.abs((document.querySelector('.layer-stage').clientWidth/2-m.e)/m.a-${beforeClose.view.center})<.001})()&&document.activeElement.getAttribute('aria-label')==='打开所选属性'`));
+    w.focus();w.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});w.webContents.sendInputEvent({type:'char',keyCode:'\r'});w.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});await wait('!!document.querySelector(".layer-property-sidebar")');
+    check('keyboard reopens current mask properties',await js(`!!document.querySelector('.mask-properties')&&document.querySelector('.layer-stage').clientWidth===${beforeClose.width}`));
+    await click('笔刷设置');await wait('!!document.querySelector(".paint-settings")');check('brush settings popover fits viewport',await js(`(()=>{const r=document.querySelector('.paint-settings').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()`));await click('笔刷设置');
+    const before=await js('qa.history.length');await js('qa.select([])');await click('打开所选属性');check('canvas properties in independent column',await js(`!!document.querySelector('.layer-property-sidebar [aria-label="画布宽度"]')`));check('selection and layout do not add history',await js(`qa.history.length===${before}`));
+    check('independent property scrolling',await js(`getComputedStyle(document.querySelector('.composition-inspector')).overflowY==='auto'&&document.querySelector('.composition-inspector').clientHeight>400`));
+    await click('移动');
+    const h=await js('qa.history.length');
+    await click('选区');check('selection parameters relocate without adding top rows',await js(`document.querySelector('.layer-stage').getBoundingClientRect().top===36&&!!document.querySelector('.layer-property-sidebar .selection-actions')`));
+    await click('画笔');check('brush parameters relocate without canvas height change',await js(`document.querySelector('.layer-stage').getBoundingClientRect().top===36&&!!document.querySelector('.layer-property-sidebar [aria-label="笔刷大小"]')`));
+    await input('笔刷大小','48');check('brush tool option edits without document history',await js(`document.querySelector('[aria-label="笔刷大小"]').value==='48'&&qa.history.length===${h}`));
+    await click('移动');w.focus();await delay(100);await js('document.querySelector(".shape-picker>summary").focus()');w.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});w.webContents.sendInputEvent({type:'char',keyCode:'\r'});w.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});await wait('document.querySelector(".shape-picker").open');
+    check('shape flyout opens beside rail and stays on screen',await js(`(()=>{const r=document.querySelector('.shape-picker-menu').getBoundingClientRect();return r.left>=48&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()`));await shot('shape-menu-dark-960');await click('直线');
+    check('shape selection reveals drawing options in property column',await js(`!!document.querySelector('.layer-property-sidebar [aria-label="绘制描边宽度"]')&&!document.querySelector('.shape-picker').open`));await click('移动');
+    check('header no longer contains More and grouped tools live in rail',await js(`!document.querySelector('.composition-more')&&document.querySelectorAll('.composition-primary-tools>.layer-menu').length===10`));
+    const types=Object.keys(require('../core/adjustments.cjs').fields);
+    for(const type of types){
+      await js(`(()=>{const L=require(${JSON.stringify(path.resolve(__dirname,'../core/layers.cjs'))}),A=require(${JSON.stringify(path.resolve(__dirname,'../core/adjustments.cjs'))});qa.load({...qa.doc,layers:[L.createLayer('adjustment',{adjustment:A.defaults(${JSON.stringify(type)})})]});})()`);await delay(70);await js('document.querySelector(".layer-preview").click()');await wait('!!document.querySelector(".adjustment-panel")');
+      check(type+' controls fit property column at 960px',await js(`(()=>{const p=document.querySelector('.composition-inspector'),body=document.querySelector('.adjustment-panel-body');return body.scrollWidth<=body.clientWidth+1&&p.scrollWidth<=p.clientWidth+1&&p.getBoundingClientRect().bottom<=innerHeight})()`));
+      if(type==='photo'){
+        check('long adjustment properties scroll without moving layer list',await js(`(()=>{const p=document.querySelector('.composition-inspector'),list=document.querySelector('.layer-list'),top=list.getBoundingClientRect().top;p.scrollTop=p.scrollHeight;return p.scrollTop>0&&list.scrollTop===0&&list.getBoundingClientRect().top===top})()`));
+        await shot('photo-dark-960-scrolled');
+      }
+    }
+    await js(`(()=>{const L=require(${JSON.stringify(path.resolve(__dirname,'../core/layers.cjs'))});qa.load({...qa.doc,layers:[L.createLayer('group',{id:'board-a',name:'画板A',artboard:true,width:500,height:500,background:'#ffffff'}),L.createLayer('group',{id:'board-b',name:'画板B',artboard:true,x:650,width:500,height:500,background:'#ffffff'}),L.createLayer('shape',{id:'shape-a',name:'图形A',parentId:'board-a',x:80,y:80,width:100,height:100,mask:{x:0,y:0,width:1,height:1}}),L.createLayer('shape',{id:'shape-a2',name:'图形A2',parentId:'board-a',x:210,y:100,width:60,height:60}),L.createLayer('shape',{id:'shape-b',name:'图形B',parentId:'board-b',x:720,y:80,width:100,height:100})]});qa.mode('boards')})()`);
+    await wait('!!document.querySelector(".composite-workspace")');await click('图形B');
+    check('cross-board name opens the matching properties',await js(`document.querySelector('[aria-label=图层名称]').value==='图形B'`));await click('图形B');check('same cross-board layer name closes properties',await js(`!document.querySelector('.layer-property-sidebar')`));
+    await click('选择 图形A');await wait(`document.querySelector('[aria-label="图层名称"]')?.value==='图形A'`);
+    check('cross-board thumbnail opens matching properties',await js(`!!document.querySelector('.layer-property-sidebar')`));await click('关闭属性面板');
+    await click('选择 图形B');await wait(`document.querySelector('[aria-label="图层名称"]')?.value==='图形B'`);check('second board thumbnail also opens matching properties',true);await click('关闭属性面板');
+    await click('编辑 图形A 的蒙版');await wait('!!document.querySelector(".mask-properties")');check('cross-board mask click opens matching mask properties',true);await click('关闭属性面板');
+    w.setSize(1280,800);await js('qa.theme("light")');await delay(150);await shot('dock-light-1280');
+    check('compact dock retains list and no horizontal overflow',await js(`(()=>{const p=document.querySelector('[aria-label="图层与历史记录"]');return p.scrollWidth===p.clientWidth&&document.querySelector('.layer-list').clientHeight>200&&document.querySelector('.layer-stage').clientWidth>800})()`));
+    await click('选择 画板B');await wait('!!document.querySelector(".board-properties")');check('board thumbnail opens board properties',await js(`document.querySelector('[aria-label="画板名称"]').value==='画板B'`));await shot('dock-open-light-1280');
+    w.setSize(1060,780);await js('qa.theme("dark")');await delay(150);
+    check('compact adjustment chooser fits without horizontal scrolling',await js(`(()=>{const p=document.querySelector('.layer-dock-inspector');return p.scrollWidth===p.clientWidth&&getComputedStyle(p.querySelector('.adjustment-grid')).gridTemplateColumns.split(' ').length===1})()`));await shot('dock-open-dark-1060');
+    check('artboard selection has no corner resize handle',await js(`!document.querySelector('.board-resize-handle,[data-board-resize]')&&!document.querySelector('.layer-overlay [data-handle="resize"]')`));
+    const boardHistory=await js('qa.history.length');
+    await click('画板B');check('same artboard name closes its properties',await js(`!document.querySelector('.layer-property-sidebar')`));
+    await click('画板B');check('artboard name opens properties with expanded state',await js(`!!document.querySelector('.board-properties')&&document.querySelector('[data-layer-id="board-b"]').getAttribute('aria-expanded')==='true'`));
+    await click('选择 画板B');check('artboard thumbnail also toggles properties closed',await js(`!document.querySelector('.layer-property-sidebar')`));
+    await click('选择 画板B');await input('画板属性宽度','640');
+    check('artboard size changes through properties without scaling contents',await js(`qa.doc.layers.find(l=>l.id==='board-b').width===640&&qa.doc.layers.find(l=>l.id==='shape-b').width===100&&qa.doc.layers.find(l=>l.id==='shape-b').x===720&&qa.history.length===${boardHistory}+1`));
+    await js('qa.undo()');await delay(100);check('property size edit remains undoable',await js(`qa.doc.layers.find(l=>l.id==='board-b').width===500`));
+    await click('图形B');check('switching from artboard to object shows object properties and resize controls',await js(`document.querySelector('[aria-label=图层名称]').value==='图形B'&&!!document.querySelector('.layer-overlay [data-handle="resize"]')`));
+    await click('选择 图形B');check('object thumbnail closes properties without clearing selection',await js(`!document.querySelector('.layer-property-sidebar')&&document.querySelector('[data-tree-id="shape-b"]').getAttribute('aria-selected')==='true'`));
+    w.focus();await js(`document.querySelector('[data-layer-id="shape-b"]').focus()`);
+    for(const open of [true,false]){w.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});w.webContents.sendInputEvent({type:'char',keyCode:'\r'});w.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});await wait(`!!document.querySelector('.layer-property-sidebar')===${open}`);check('Enter toggles layer properties '+open,true);}
+    check('keyboard can open and close same layer while keeping row focus',await js(`!document.querySelector('.layer-property-sidebar')&&document.activeElement.dataset.layerId==='shape-b'`));
+    await click('编辑 图形A 的蒙版');await wait('!!document.querySelector(".mask-properties")');await click('图形A');
+    check('clicking layer while editing its mask switches to object properties',await js(`!!document.querySelector('.layer-property-sidebar')&&!document.querySelector('.mask-properties')&&document.querySelector('[aria-label=图层名称]').value==='图形A'&&document.querySelector('[aria-label=移动]').getAttribute('aria-pressed')==='true'`));
+    await click('图形A');await click('图形A');
+    await js(`document.querySelector('[data-layer-id="shape-a2"]').dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}))`);await delay(100);check('Shift adds another layer without toggling properties',await js(`document.querySelectorAll('.layer-list [aria-selected="true"]').length===2&&!!document.querySelector('.layer-property-sidebar')`));
+    await js(`document.querySelector('[data-layer-id="shape-a2"]').dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}))`);await delay(100);
+    await js(`document.querySelector('[data-layer-id="shape-a"]').dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}))`);await delay(100);
+    check('Shift click changes selection without toggling property column',await js(`!!document.querySelector('.layer-property-sidebar')&&document.querySelector('[data-tree-id="shape-a"]').getAttribute('aria-selected')==='false'`));
+    await click('画板A');await click('画板A');await click('聚焦画板');await shot('board-no-resize-dark');await js('qa.theme("light")');await shot('board-no-resize-light');check('property toggles and selection do not add edit history',await js(`qa.history.length===${boardHistory}`));
+    w.setSize(960,720);await delay(150);
+    const canvasWidth=await js('document.querySelector(".layer-stage").clientWidth');
+    for(const name of ['PSD','修图','添加','调整','特效','图层','排版','变换','选区操作','蒙版','导出选项']){
+      await js(`(()=>{const summary=document.querySelector('.layer-menu>summary[aria-label="${name}"]');summary.scrollIntoView({block:'nearest'});summary.focus();summary.click()})()`);await wait(`document.querySelector('.layer-menu>summary[aria-label="${name}"]').parentElement.open`);await delay(100);
+      check(name+' popup stays beside rail and inside compact viewport without clipping',await js(`(()=>{const menu=document.querySelector('.layer-menu[open]'),body=menu.querySelector('.layer-menu-body'),r=body.getBoundingClientRect(),rail=document.querySelector('.composition-primary-tools').getBoundingClientRect(),hit=document.elementFromPoint(r.left+20,r.top+20);return r.left>=rail.right&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&body.contains(hit)&&document.querySelector('.layer-stage').clientWidth===${canvasWidth}})()`));
+      if(name==='排版')await shot('left-tools-layout-light-960');
+      if(name==='蒙版')await shot('left-tools-mask-light-960');
+      w.focus();w.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});w.webContents.sendInputEvent({type:'keyUp',keyCode:'Escape'});await wait('!document.querySelector(".layer-menu[open]")');
+      check(name+' Escape restores tool trigger focus',await js(`document.activeElement.getAttribute('aria-label')==='${name}'`));
+    }
+    await js(`(()=>{const summary=document.querySelector('.layer-menu>summary[aria-label="添加"]');summary.scrollIntoView({block:'nearest'});summary.click()})()`);await delay(100);await click('文字',`document.querySelector('.layer-menu[open]')`);
+    check('moved Add command creates text and closes flyout',await js(`qa.doc.layers.some(l=>l.kind==='text')&&!document.querySelector('.layer-menu[open]')`));await js('qa.undo()');await delay(100);
+    await js(`(()=>{const summary=document.querySelector('.layer-menu>summary[aria-label="排版"]');summary.scrollIntoView({block:'nearest'});summary.click()})()`);await delay(100);await input('网格间距','32');
+    check('moved layout parameter still updates document',await js(`qa.doc.layers.find(l=>l.id==='board-a').layout.gridSize===32`));await js('qa.undo()');await delay(100);
+    await js(`document.querySelector('.composition-breadcrumb').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))`);await delay(100);check('outside click dismisses tool menu',await js(`!document.querySelector('.layer-menu[open]')`));
+    await js('qa.theme("dark")');w.setSize(960,600);await delay(150);await js(`(()=>{const summary=document.querySelector('.layer-menu>summary[aria-label="选区操作"]');summary.scrollIntoView({block:'nearest'});summary.click()})()`);await delay(150);await shot('left-tools-selection-dark-600');
+    check('long selection menu scrolls within short window',await js(`(()=>{const b=document.querySelector('.layer-menu[open] .layer-menu-body'),r=b.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&b.scrollHeight>b.clientHeight})()`));
+    await click('选区填充颜色');check('color picker can open without dismissing selection menu',await js(`!!document.querySelector('.color-control-panel')&&!!document.querySelector('.layer-menu[open]')`));await click('取消',`document.querySelector('.color-control-panel')`);
+    await js(`(()=>{const input=document.querySelector('.layer-menu[open] [aria-label="选区运算"]');input.closest('.ant-select').querySelector('.ant-select-content').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))})()`);await wait(`!!document.querySelector('[data-option-value="subtract"]')`);await js(`document.querySelector('[data-option-value="subtract"]').click()`);await delay(100);
+    check('selection dropdown remains usable inside moved menu',await js(`!!document.querySelector('.layer-menu[open]')&&document.querySelector('.layer-menu[open] [aria-label="选区运算"]').closest('.ant-select').textContent.includes('减去')`));
+    await js(`document.querySelector('.layer-menu[open]').open=false;document.querySelector('.composition-primary-tools').scrollTop=0`);await delay(150);await js(`document.querySelector('.layer-menu>summary[aria-label="蒙版"]').parentElement.open=true`);await wait('!!document.querySelector(".layer-menu[open]")');await delay(150);
+    check('opening an offscreen tool brings its trigger into view',await js(`(()=>{const m=document.querySelector('.layer-menu[open]'),r=m.querySelector('summary').getBoundingClientRect(),rail=m.closest('nav').getBoundingClientRect();return r.top>=rail.top&&r.bottom<=rail.bottom})()`));
+    await js(`document.querySelector('.shape-picker').open=true`);await delay(150);check('shape and grouped menus share one open flyout',await js(`document.querySelectorAll('.shape-picker[open],.layer-menu[open]').length===1&&document.querySelector('.shape-picker').open`));
+    await js(`document.querySelectorAll('.shape-picker[open],.layer-menu[open]').forEach(m=>m.open=false);document.activeElement.blur();document.querySelector('.composition-primary-tools').scrollTop=0`);await delay(600);
+    await js(`document.querySelector('.composition-primary-tools').dispatchEvent(new MouseEvent('mouseover',{bubbles:true,relatedTarget:null}))`);
+    check('entering tool rail briefly reveals scrollbar',await js(`document.querySelector('.composition-primary-tools').dataset.scrollActive==='true'`));await delay(650);
+    check('idle pointer does not keep scrollbar visible',await js(`!document.querySelector('.composition-primary-tools').hasAttribute('data-scroll-active')&&getComputedStyle(document.querySelector('.composition-primary-tools'),'::-webkit-scrollbar-thumb').backgroundColor==='rgba(0, 0, 0, 0)'`));
+    await js(`document.querySelector('.composition-primary-tools').scrollTop=80`);await wait(`document.querySelector('.composition-primary-tools').dataset.scrollActive==='true'`);await delay(300);
+    await js(`document.querySelector('.composition-primary-tools').scrollTop=160`);await delay(300);check('continued scrolling renews visibility timeout',await js(`document.querySelector('.composition-primary-tools').dataset.scrollActive==='true'`));await delay(300);
+    check('scrollbar hides after scrolling stops',await js(`!document.querySelector('.composition-primary-tools').hasAttribute('data-scroll-active')`));
+    await js(`document.querySelector('.composition-primary-tools [aria-label="移动"]').focus()`);await wait(`document.querySelector('.composition-primary-tools').dataset.scrollActive==='true'`);await delay(650);check('keyboard focus only briefly reveals scrollbar',await js(`!document.querySelector('.composition-primary-tools').hasAttribute('data-scroll-active')&&document.activeElement.getAttribute('aria-label')==='移动'`));
+    w.setSize(1060,780);await js('qa.theme("light")');await delay(150);await js(`document.querySelector('.composition-primary-tools').scrollTop=0`);await delay(100);
+    const arrowBefore=await js(`({history:qa.history.length,width:document.querySelector('.layer-stage').clientWidth,properties:!!document.querySelector('.layer-property-sidebar')})`);
+    const hintsFit=()=>js(`(()=>{const rail=document.querySelector('.composition-tool-rail').getBoundingClientRect();return [...document.querySelectorAll('.tool-rail-scroll')].every(e=>{const r=e.getBoundingClientRect();return r.height===24&&r.top>=rail.top&&r.bottom<=rail.bottom&&r.bottom<=innerHeight})&&document.documentElement.scrollHeight<=innerHeight&&document.documentElement.scrollWidth<=innerWidth})()`);
+    check('scroll arrows fit reserved rows without page overflow',await hintsFit());
+    check('top edge shows only downward hint',await js(`getComputedStyle(document.querySelector('[aria-label="向上滚动工具"]')).visibility==='hidden'&&getComputedStyle(document.querySelector('[aria-label="向下滚动工具"]')).visibility==='visible'`));await shot('rail-arrows-top-light');
+    await click('向下滚动工具');await wait(`document.querySelector('.composition-primary-tools').scrollTop>0`);await delay(500);
+    check('down arrow advances tool list and reveals upward hint',await js(`getComputedStyle(document.querySelector('[aria-label="向上滚动工具"]')).visibility==='visible'`));
+    await js(`document.querySelector('.composition-primary-tools').scrollTop=9999`);await wait(`document.querySelector('[aria-label="向下滚动工具"]').disabled`);
+    check('bottom edge hides down arrow and keeps last tool unobstructed',await js(`(()=>{const r=document.querySelector('.composition-primary-tools').getBoundingClientRect(),t=document.querySelector('.layer-menu>summary[aria-label="导出选项"]').getBoundingClientRect();return getComputedStyle(document.querySelector('[aria-label="向下滚动工具"]')).visibility==='hidden'&&t.bottom<=r.bottom&&t.top>=r.top})()`));await shot('rail-arrows-bottom-light');
+    await js('qa.motion(true)');await delay(100);w.focus();await js(`document.querySelector('[aria-label="向上滚动工具"]').focus()`);
+    for(let i=0;i<5&&await js(`!document.querySelector('[aria-label="向上滚动工具"]').disabled`);i++){w.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});w.webContents.sendInputEvent({type:'char',keyCode:'\r'});w.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});await delay(100);}
+    check('keyboard scrolling respects reduced motion and retains focus in toolbar at top',await js(`document.querySelector('.composition-primary-tools').scrollTop===0&&document.activeElement.getAttribute('aria-label')==='图层工具'`));
+    await wait('document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight');
+    check('scroll hints do not change canvas width, properties or history',await js(`document.querySelector('.layer-stage').clientWidth===${arrowBefore.width}&&!!document.querySelector('.layer-property-sidebar')===${arrowBefore.properties}&&qa.history.length===${arrowBefore.history}`));
+    w.setSize(1060,1200);await delay(150);check('both arrows disappear when all tools fit',await js(`document.querySelector('[aria-label="向上滚动工具"]').disabled&&document.querySelector('[aria-label="向下滚动工具"]').disabled`));
+    w.setSize(960,600);await js('qa.theme("dark")');await delay(150);check('resize restores scrolling hint in short window',await js(`!document.querySelector('[aria-label="向下滚动工具"]').disabled`));check('short window keeps arrows inside viewport without page overflow',await hintsFit());await shot('rail-arrows-short-dark');await js('qa.motion(false)');
+    check('no renderer errors',report.errors.length===0);
+  }catch(e){report.failure=e.stack;console.error(e);if(w&&!w.isDestroyed())await shot('failure').catch(()=>{});}
+  fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));app.exit(report.failure?1:0);
+});
+setTimeout(()=>app.exit(1),120000);

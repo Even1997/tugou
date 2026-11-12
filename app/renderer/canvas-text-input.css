@@ -1,0 +1,17 @@
+.layer-text-editor .tiptap,.ppt-text-editor .tiptap{min-height:100%;outline:none;white-space:pre-wrap;overflow-wrap:break-word;cursor:text;user-select:text}
+.layer-text-editor .tiptap p,.ppt-text-editor .tiptap p{margin:0;min-height:1lh}
+.tiptap .canvas-text-selection{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.tiptap:focus .canvas-text-selection{background:transparent}
+.tiptap ::selection{background:color-mix(in srgb,var(--accent) 28%,transparent)}
+.layer-text-format{position:absolute;z-index:6;top:8px;left:36px;right:12px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;max-width:590px;font-size:12px}
+.layer-text-format .font-picker{display:flex;gap:8px;min-width:0;flex:1 1 220px}
+.layer-text-format .font-picker>label{display:block;min-width:0;flex:1;font-size:0}
+.layer-text-format .font-picker .studio-select{height:28px;font-size:12px}
+.layer-text-format .font-picker>small{position:absolute;top:100%;left:0;padding:6px;background:var(--panel);border:1px solid var(--line);font-size:12px}
+.layer-text-format .font-picker>label:nth-child(2){flex:0 0 92px}
+.layer-text-format .compact-number{display:flex;align-items:center;gap:4px;width:72px;flex-shrink:0}
+.layer-text-format .compact-number>span{white-space:nowrap}
+.layer-text-format .compact-number input{min-width:0}
+.layer-text-format .text-format-color{display:flex;align-items:center;gap:4px}
+.layer-text-format input[type=color]{width:28px;height:26px;padding:2px;border:1px solid var(--line);background:transparent}
+.layer-text-format .text-format-bold{min-width:32px}

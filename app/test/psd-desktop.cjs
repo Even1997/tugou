@@ -23,7 +23,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
     const wait=async s=>{for(let i=0;i<400;i++){if(await js(s))return;await delay(30);}throw Error('Timeout '+s);};
     const click=async label=>{await js(`(()=>{const b=[...document.querySelectorAll('button,summary')].find(b=>b.textContent.trim()===${JSON.stringify(label)}||b.getAttribute('aria-label')===${JSON.stringify(label)});if(!b||b.disabled)throw Error('Unavailable '+${JSON.stringify(label)});b.click()})()`);await delay(100);};
     const capture=async name=>{w.showInactive();await delay(180);fs.writeFileSync(path.join(out,name+'.png'),(await w.webContents.capturePage()).toPNG());w.hide();};
-    const openImport=async()=>{await js(`document.querySelector('.composition-more')?.setAttribute('open','');[...document.querySelectorAll('details')].filter(d=>d.querySelector('summary')?.textContent==='PSD').forEach(d=>d.open=true)`);await click('导入 PSD');};
+    const openImport=async()=>{await js(`[...document.querySelectorAll('details')].filter(d=>d.querySelector('summary')?.textContent==='PSD').forEach(d=>d.open=true)`);await click('导入 PSD');};
     const noDialog=()=>wait(`!document.querySelector('.ant-modal')`);
     try{
       w.setSize(1180,800);await wait(`!!document.querySelector('.workspace-rail')`);await click('新建工程');await click('图层');
@@ -38,7 +38,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
       await js(fs.readFileSync(path.join(out,'qa.js'),'utf8'));
       const pixels=doc=>js(`(async()=>{const engine=new psdQA.Compositor(),c=document.createElement('canvas');await engine.render(${JSON.stringify(doc)},c);const result=[...c.getContext('2d').getImageData(0,0,c.width,c.height).data];engine.dispose();return result})()`);
       const before=await pixels(local);check('imported positioning and z-order render correctly',before[(10*96+10)*4]===255&&before[(22*96+27)*4+1]===255&&before[3]===0);
-      await js(`document.querySelector('.composition-more').open=true`);await click('导出 PSD');await capture('export-light');await click('保存 PSD');await noDialog();
+      await js(`document.querySelector('.layer-menu>summary[aria-label="PSD"]').parentElement.open=true`);await click('导出 PSD');await capture('export-light');await click('保存 PSD');await noDialog();
       const parsed=readPsd(fs.readFileSync(savePath),{useImageData:true,skipThumbnail:true});check('PSD export keeps top-level layers and hidden state',parsed.children.length===3&&parsed.children[2].hidden&&parsed.children[1].name==='分组');
       check('PSD composite equals rendered artwork',Buffer.from(parsed.imageData.data).equals(Buffer.from(before)));
       selectedFile=savePath;await openImport();await click('选择 PSD 文件');await wait(`document.querySelector('.ant-modal [role=status]')?.textContent.includes('3 层')`);await click('添加为新画板');await noDialog();await click('保存');saved=await js(`tugou.open(${JSON.stringify(id)})`);

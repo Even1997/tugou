@@ -57,7 +57,7 @@ app.on('browser-window-created',(_,w)=>{
       check('icon menu still creates nodes',(await save()).tugouCanvas.nodes.length===3);await click('撤销');check('undo works through the shared icon control',(await save()).tugouCanvas.nodes.length===2);await click('重做');check('redo restores the node',(await save()).tugouCanvas.nodes.length===3);
       await click('图层','nav button');
       for(const label of ['画笔','橡皮','平移','选择']){await click(label,'#canvas-actions button');check(label+' still selects its tool',await js(`document.querySelector('#canvas-actions [aria-label="${label}"]').getAttribute('aria-pressed')==='true'`));}
-      for(const label of ['修图','添加','调整','特效','图层','排版','变换','选区','蒙版']){await click(label,'.layer-menu summary');check(label+' opens its original commands',await js(`document.querySelector('.layer-menu summary[aria-label="${label}"]').parentElement.open`));await click(label,'.layer-menu summary');}
+      for(const label of ['修图','添加','调整','特效','图层','排版','变换','选区操作','蒙版']){await click(label,'.layer-menu summary');check(label+' opens its original commands',await js(`document.querySelector('.layer-menu summary[aria-label="${label}"]').parentElement.open`));await click(label,'.layer-menu summary');}
       await click('添加','.layer-menu summary');await click('文字','.layer-menu[open] button');check('layer add menu still adds editable text',(await save()).layers.some(l=>l.kind==='text'));
       await click('素材库','nav button');await js('document.querySelector(".asset-image input[type=checkbox]").click()');await delay(150);
       check('material selection enables the icon actions and updates their names',await js(`!document.querySelector('[aria-label="移除 (1)"]').disabled&&!document.querySelector('[aria-label="处理所选 (1)"]').disabled`));

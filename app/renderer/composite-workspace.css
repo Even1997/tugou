@@ -3,12 +3,10 @@
 .painting-status { position:absolute;top:32px;right:12px;z-index:8;pointer-events:none;background:var(--panel);color:var(--muted);padding:6px 10px;border-radius:4px;font-size:11px; }
 .composite-workspace { height:100%; min-width:0; position:relative; }
 .composite-workspace > .message { position:absolute; z-index:50; bottom:52px; left:24px; max-width:70%; }
-.composition-editor { --inspector-width:296px; display:grid;grid-template-columns:minmax(0,1fr) var(--inspector-width);grid-template-rows:44px 44px 34px minmax(0,1fr);background:var(--bg);font-size:12px; }
-.composition-editor:has(.adjustment-panel) { grid-template-columns:minmax(0,1fr) 280px var(--inspector-width); }
-.composition-editor:has(.adjustment-panel) .composition-breadcrumb { overflow-x:auto;scrollbar-width:thin; }
-.composition-editor:has(.adjustment-panel) .composition-breadcrumb > * { flex-shrink:0; }
-[data-theme=dark] .composition-editor { --bg:#151619;--panel:#24262b;--shell:#1d1f23;--surface:#30333a;--line:#3a3d45;--text:#f1f2f5;--muted:#afb4c0;--accent:#bcc9ff;--accent-bg:#343d56;--input:#191b1f; }
-[data-theme=light] .composition-editor { --input:var(--bg); }
+.composition-editor { --inspector-width:296px; display:grid;grid-template-columns:minmax(0,1fr) 280px var(--inspector-width);grid-template-rows:44px 44px 34px minmax(0,1fr);background:var(--bg);font-size:12px; }
+.composition-editor .composition-breadcrumb { overflow-x:auto;scrollbar-width:thin; }
+.composition-editor .composition-breadcrumb > * { flex-shrink:0; }
+.composition-editor { --input:var(--bg); }
 .composition-tools { grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 16px;border-bottom:1px solid var(--line);background:var(--panel);z-index:12; }
 .composition-primary-tools,.composition-command-tools { display:flex;align-items:center;gap:6px;min-width:0; }
 .composition-primary-tools > button { font-size:12px;height:32px;padding:0 10px;gap:7px;color:var(--muted);border-radius:4px; }
@@ -31,21 +29,12 @@
 .composition-editor .shape-tool-options .compact-number { width:83px; }
 .shape-hint { color:var(--muted);font-size:11px;white-space:nowrap; }
 .composition-editor .tool-shape { cursor:crosshair; }
-.composition-more { position:relative; }
-.composition-more > summary { list-style:none;cursor:pointer;display:flex;align-items:center;gap:7px;padding:7px 10px;color:var(--muted);border-radius:4px; }
-.composition-more > summary:hover { background:var(--surface); }
-.composition-more-body { position:absolute;right:0;top:36px;width:238px;max-height:70vh;overflow:auto;display:none;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:0 10px 24px #0003; }
-.composition-more[open] > .composition-more-body { display:grid;gap:3px; }
-.composition-more .layer-menu > summary { width:100%;justify-content:flex-start;padding:0 10px;gap:10px;font-size:13px; }
-.composition-more .layer-menu > summary::after { content:'›';margin-left:auto;color:var(--muted); }
-.composition-more .layer-menu-body { position:static;max-height:none;box-shadow:none;border:0;background:var(--shell);margin:4px 0;min-width:0; }
-.composition-more-body > .check { padding:10px;border-top:1px solid var(--line); }
 .composition-editor .layer-parameter-row { grid-column:1;grid-row:2;min-width:0;height:44px;padding:6px 16px;gap:14px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;background:var(--panel);border-bottom:1px solid var(--line);font-size:11px; }
 .composition-editor .layer-parameter-row > * { flex-shrink:0; }
 .composition-editor .layer-parameter-row > span { margin-left:0; }
 .context-tool { display:flex;align-items:center;gap:10px;min-width:120px;height:26px;border-right:1px solid var(--line);font-weight:600; }
 .context-tool .anticon { font-size:var(--control-icon-size); }
-.move-tool-options,.board-tool-options { display:flex;align-items:center;gap:12px;margin:0;padding:0;border:0;min-width:0; }
+.move-tool-options { display:flex;align-items:center;gap:12px;margin:0;padding:0;border:0;min-width:0; }
 .composition-editor .layer-parameter-row .check { gap:8px;color:var(--muted);font-size:11px;white-space:nowrap; }
 .composition-editor .layer-parameter-row input[type=checkbox] { width:14px;height:14px; }
 .composition-editor .layer-parameter-row input[type=number] { width:66px; }
@@ -53,8 +42,6 @@
 .composition-editor .layer-parameter-row .studio-select { min-width:70px; }
 .context-align { display:flex;align-items:center;gap:2px;border-left:1px solid var(--line);padding-left:10px; }
 .composition-editor .context-align button { background:transparent;width:30px;min-width:30px; }
-.board-preset-button { min-width:122px;justify-content:space-between; }
-.composition-editor .board-tool-options .compact-number { width:108px; }
 .composition-breadcrumb { grid-column:1;grid-row:3;display:flex;align-items:center;gap:8px;padding:0 16px;min-width:0;background:var(--shell);border-bottom:1px solid var(--line);font-size:11px;color:var(--muted); }
 .composition-breadcrumb button { padding:4px 7px;font-size:11px;height:27px; }
 .composition-breadcrumb .studio-select { max-width:180px;border:0;background:transparent;font-size:11px;color:var(--text);padding:4px; }
@@ -96,6 +83,10 @@
 .board-actions { display:flex;gap:8px;align-items:center; }
 .board-actions button { flex:1;font-size:11px; }
 .board-actions .icon-button { flex:0 0 30px; }
+.board-properties { grid-template-columns:minmax(0,1fr); }
+.board-properties .board-actions,.board-properties .board-background { flex-wrap:wrap; }
+.board-properties .board-management { display:grid;grid-template-columns:repeat(2,minmax(0,1fr)); }
+.board-management button { width:100%; }
 .board-size-trigger { font-size:11px; }
 .layer-board-transfer { display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 16px 12px;font-size:11px;color:var(--muted); }
 .layer-board-transfer .studio-select { max-width:158px;padding:4px;font-size:11px;background:var(--input);border:0; }
@@ -139,7 +130,7 @@
 .layer-preview[aria-pressed=true] { outline:2px solid var(--accent);outline-offset:1px; }
 .selection-actions { display:flex;align-items:center;gap:5px;flex-shrink:0;flex-wrap:wrap;max-width:100%; }
 .selection-actions .studio-select { min-width:100px; }
-.composition-editor:has(.selection-actions) { grid-template-rows:44px auto 34px minmax(0,1fr); }
+.composition-editor:has(.selection-actions) { grid-template-rows:36px minmax(0,1fr); }
 .composition-editor .layer-parameter-row:has(.selection-actions) { flex-wrap:wrap;height:auto;min-height:44px;row-gap:6px;padding-top:6px;padding-bottom:6px; }
 .composition-editor:has(.layer-parameter-row [aria-label="笔刷大小"]) { grid-template-rows:44px auto 34px minmax(0,1fr); }
 .composition-editor .layer-parameter-row:has([aria-label="笔刷大小"]) { flex-wrap:wrap;height:auto;min-height:44px;row-gap:6px; }
@@ -153,7 +144,6 @@
 .history-entry { color:var(--muted); }
 .history-entry small { display:block;font-size:10px; }
 .board-label-hit { pointer-events:all!important;cursor:move; }
-.board-resize-handle { pointer-events:all!important;cursor:nwse-resize; }
 .layer-stage.space-pan { cursor:grab!important; }
 .layer-stage.space-pan:active { cursor:grabbing!important; }
 .composition-context { position:absolute;bottom:42px;left:50%;transform:translateX(-50%);display:flex;gap:5px;padding:5px;border:1px solid var(--line);border-radius:7px;background:var(--panel);z-index:3;white-space:nowrap; }
@@ -163,7 +153,7 @@
 .composition-materials .layer-asset img { height:100px; }
 #composition-export { display:flex; }
 #composition-export button { min-width:78px; }
-@media(max-width:1200px){.composition-primary-tools{gap:3px}.composition-primary-tools>button{padding:0 7px}.composition-tools{padding:4px 10px}.composition-editor{--inspector-width:280px}.context-tool{min-width:80px}.composition-editor .layer-parameter-row{padding:6px 12px;gap:10px}.move-tool-options,.board-tool-options{gap:8px}}
+@media(max-width:1200px){.composition-primary-tools{gap:3px}.composition-primary-tools>button{padding:0 7px}.composition-tools{padding:4px 10px}.composition-editor{--inspector-width:280px}.context-tool{min-width:80px}.composition-editor .layer-parameter-row{padding:6px 12px;gap:10px}.move-tool-options{gap:8px}}
 @media(max-width:1000px){.composition-editor{--inspector-width:260px}.composition-primary-tools>button{padding:0 6px;font-size:11px}.composition-primary-tools>button .anticon{font-size:16px}.composition-inspector{height:240px;max-height:44%}.composition-editor .inspector-tabs{gap:17px}.composition-editor .layer-parameter-row{scrollbar-width:thin}.composition-breadcrumb{padding:0 8px;gap:4px}.composition-breadcrumb .studio-select{max-width:110px}.composition-layer-heading{gap:18px}.composition-context{gap:3px}.composition-context button{padding:0 8px}}
 
 .mask-range > div { display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:11px; }
@@ -229,3 +219,106 @@
 .layer-start-actions .layer-start-action:disabled{opacity:.5}
 .layer-start .layer-start-hint{font-size:11px}
 @media(max-width:760px){.layer-start-actions{grid-template-columns:1fr;max-width:360px}.layer-start-actions .layer-start-action{min-height:68px;flex-direction:row;justify-content:flex-start;text-align:left;padding:14px 18px}.composite-empty .empty.layer-start{padding-top:24px}}
+
+.composition-editor .layer-property-sidebar { grid-column:2;min-width:0; }
+.composition-editor .layer-property-sidebar .composition-inspector { height:auto;min-height:0;max-height:none;flex:1; }
+.layer-property-sidebar .adjustment-panel { border:0;border-bottom:1px solid var(--line); }
+.layer-property-sidebar .adjustment-panel-body { overflow:visible; }
+.composition-editor .layer-sidebar[aria-label="图层与历史记录"] > .composition-layer-heading { border-top:0; }
+@media(max-width:1150px) { .composition-editor { --inspector-width:220px;grid-template-columns:minmax(0,1fr) 260px var(--inspector-width); } }
+
+/* Fixed tools reserve a narrow rail; tool options share the property column. */
+.composition-editor { grid-template-columns:48px minmax(0,1fr) 280px var(--inspector-width);grid-template-rows:36px minmax(0,1fr); }
+.composition-editor:has(.layer-parameter-row [aria-label="笔刷大小"]) { grid-template-rows:36px minmax(0,1fr); }
+.composition-editor > .composition-tools { grid-row:1;grid-column:1/-1;padding:0 12px 0 48px;gap:12px; }
+.composition-editor .composition-breadcrumb { flex:1;height:35px;padding:0 8px;border:0;background:transparent; }
+.composition-tool-rail { grid-column:1;grid-row:2;display:grid;grid-template-rows:24px minmax(0,1fr) 24px;min-height:0;background:var(--panel);border-right:1px solid var(--line);z-index:13; }
+.composition-tool-rail > .composition-primary-tools { display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:auto;scrollbar-color:auto; }
+.composition-editor .composition-tool-rail > .tool-rail-scroll { --disclosure-size:16px;justify-self:center;width:36px;height:24px;padding:0;color:var(--muted);border-radius:4px; }
+.tool-rail-scroll-up .anticon { transform:rotate(180deg); }
+.composition-tool-rail > .tool-rail-scroll:hover { background:var(--hover);color:var(--accent); }
+.composition-primary-tools::-webkit-scrollbar { width:4px;background:transparent; }
+.composition-primary-tools::-webkit-scrollbar-track { background:transparent; }
+.composition-primary-tools::-webkit-scrollbar-button { display:none;width:0;height:0; }
+.composition-primary-tools::-webkit-scrollbar-thumb { min-height:28px;border-radius:4px;background:transparent; }
+.composition-primary-tools[data-scroll-active]::-webkit-scrollbar-thumb { background:var(--muted); }
+.composition-primary-tools[data-scroll-active]::-webkit-scrollbar-thumb:hover,.composition-primary-tools::-webkit-scrollbar-thumb:active { background:var(--accent); }
+.composition-editor .composition-primary-tools > .ant-btn,.composition-editor .shape-picker > summary,.composition-editor .layer-menu > summary { width:36px;min-width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center; }
+.composition-editor .shape-picker > summary > span:not(.shape-trigger-icon),.composition-editor .shape-picker > summary > .anticon { display:none; }
+.composition-editor .shape-picker-menu,.composition-editor .layer-menu-body { position:fixed;left:54px;top:8px;max-height:calc(100dvh - 16px);overflow:auto;z-index:30; }
+.composition-editor .layer-menu-body { width:248px;max-width:calc(100vw - 64px); }
+.composition-primary-tools > * { flex-shrink:0; }
+.composition-primary-tools .layer-menu > summary > span:not(.anticon) { display:none; }
+.composition-primary-tools .layer-menu > summary { color:var(--muted);font-size:16px; }
+.composition-primary-tools .layer-menu[open] > summary { color:var(--accent); }
+.tool-rail-divider { width:26px;border:0;border-top:1px solid var(--line);margin:5px 0; }
+.composition-editor .layer-stage { grid-column:2;grid-row:2; }
+.composition-editor .layer-sidebar { grid-row:2; }
+.composition-editor .layer-property-sidebar { grid-column:3; }
+.layer-tool-settings { border-bottom:1px solid var(--line); }
+.layer-tool-settings > summary { padding:12px 16px;cursor:pointer;font-size:12px;color:var(--muted); }
+.composition-editor .layer-tool-settings .layer-parameter-row { display:flex;flex-wrap:wrap;align-items:center;gap:10px;height:auto;min-height:0;padding:0 16px 14px;overflow:visible;border:0; }
+.composition-editor .layer-tool-settings .layer-parameter-row > * { max-width:100%; }
+.layer-tool-settings .context-tool { width:100%;border:0;height:24px; }
+.layer-tool-settings .shape-tool-options,.layer-tool-settings .move-tool-options { flex-wrap:wrap;gap:10px;min-width:0; }
+.layer-tool-settings .context-align { border:0;padding:0; }
+.layer-tool-settings .shape-hint { white-space:normal; }
+.layer-tool-settings .mask-ink { flex-wrap:wrap; }
+@media(max-width:1150px) { .composition-editor { grid-template-columns:48px minmax(0,1fr) 260px var(--inspector-width); } }
+
+.composition-editor .shape-picker > summary::after,.composition-editor .layer-menu > summary::after { content:'';position:absolute;right:4px;bottom:4px;border:3px solid transparent;border-right-color:var(--muted);border-bottom-color:var(--muted); }
+.layer-tool-settings summary:focus-visible,.composition-primary-tools summary:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+
+/* Keep the layer tree docked; properties consume a column only when opened. */
+.composition-editor { grid-template-columns:48px minmax(0,1fr) var(--inspector-width); }
+.composition-editor[data-properties-open] { grid-template-columns:48px minmax(0,1fr) 280px var(--inspector-width); }
+.composition-editor .layer-property-heading { display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:0 14px;border-bottom:1px solid var(--line); }
+.layer-property-heading strong { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px; }
+.composition-editor .layer-inspector-toggle { margin-left:auto;gap:5px; }
+.layer-dock-inspector { flex:0 1 220px;min-height:0;max-height:35%;overflow:auto;scrollbar-width:thin; }
+@media(max-width:1150px) { .composition-editor[data-properties-open] { grid-template-columns:48px minmax(0,1fr) 260px var(--inspector-width); } .layer-dock-inspector .adjustment-grid { grid-template-columns:minmax(0,1fr); } }
+
+/* Layer editor sample: quieter surfaces, readable controls, more room for the work. */
+.composition-editor { --inspector-width:272px;--input:var(--surface);--editor-line:color-mix(in srgb,var(--line) 65%,transparent); }
+.composition-editor[data-properties-open] { grid-template-columns:48px minmax(0,1fr) 260px var(--inspector-width); }
+.composition-editor .layer-stage { background:color-mix(in srgb,var(--bg) 94%,var(--muted)); }
+.composition-editor .layer-sidebar,.composition-editor .composition-tools,.composition-editor .composition-tool-rail { border-color:var(--editor-line); }
+.composition-editor .composition-breadcrumb,.composition-editor .composition-breadcrumb .studio-select { font-size:12px; }
+.composition-editor .composition-breadcrumb button { font-size:12px;border-radius:6px; }
+.composition-editor .composition-command-tools { gap:8px; }
+.composition-editor .composition-command-tools > button { font-size:12px; }
+.composition-editor .composition-primary-tools > button,.composition-editor .composition-primary-tools summary { border-radius:6px; }
+.composition-editor .composition-primary-tools:focus-visible { outline:2px solid var(--accent);outline-offset:-2px; }
+.composition-editor .layer-property-heading,.composition-editor .layer-sidebar > .inspector-tabs,.composition-editor .composition-layer-heading { padding-inline:14px;border-color:var(--editor-line); }
+.composition-editor .layer-property-heading strong { font-size:14px;font-weight:600; }
+.composition-editor .inspector-tabs > button,.composition-editor .composition-layer-heading > button:not(.icon-button) { font-size:13px; }
+.composition-editor .inspector-tabs > button[aria-pressed=true],.composition-editor .composition-layer-heading > button[aria-pressed=true] { color:var(--accent); }
+.composition-editor .layer-dock-inspector { flex-basis:200px; }
+.composition-editor .inspector-adjustments,.composition-editor .inspector-navigation { padding:14px; }
+.composition-editor .inspector-caption { font-size:12px;line-height:1.6;margin-bottom:4px; }
+.composition-editor .adjustment-grid { margin-top:8px;gap:2px 4px; }
+.composition-editor .adjustment-grid > button { height:32px;padding:0 8px;font-size:12px;border-radius:6px;background:transparent; }
+.composition-editor .adjustment-grid > button:not(:disabled):hover { background:var(--surface);color:var(--accent); }
+.composition-editor .adjustment-grid > button .ant-btn-icon { display:none; }
+.composition-editor .layer-filter-row { padding:4px 12px 6px;font-size:12px;border-bottom:0; }
+.composition-editor .layer-filter-row .studio-select { font-size:12px; }
+.composition-editor .layer-list { padding:4px 8px 8px; }
+.composition-editor .layer-row { min-height:42px;border-radius:6px; }
+.composition-editor .layer-row button { font-size:12px; }
+.composition-editor .layer-row[data-artboard=true] { min-height:38px;margin-top:4px; }
+.composition-editor .layer-preview[aria-pressed=true]:not(:focus-visible) { outline:none; }
+.composition-editor .layer-preview:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+.composition-editor .composition-layer-footer { border-color:var(--editor-line); }
+.composition-editor .composition-inspector .layer-properties { padding:16px 14px;gap:12px; }
+.composition-editor .composition-inspector .layer-properties fieldset { gap:12px; }
+.composition-editor .compact-number { height:32px;font-size:12px;border-radius:6px;font-variant-numeric:tabular-nums; }
+.composition-editor .compact-number .ant-input { height:30px;font-size:13px; }
+.composition-editor .composition-inspector .layer-properties button,.composition-editor .composition-inspector .layer-properties .check,.composition-editor .composition-inspector .layer-properties details,.composition-editor .board-background,.composition-editor .board-actions button,.composition-editor .layer-board-transfer { font-size:12px; }
+.composition-editor .composition-inspector .layer-properties button { border-radius:6px; }
+.composition-editor .studio-select > .ant-select { border-radius:6px; }
+.composition-editor .layer-appearance { gap:8px;padding:12px 14px 4px; }
+.composition-editor .layer-appearance .studio-select { font-size:12px;height:32px; }
+.composition-editor .layer-tool-settings { border-color:var(--editor-line); }
+.composition-editor .layer-tool-settings > summary { padding:12px 14px; }
+.composition-editor .layer-stage-hint { font-size:11px;color:var(--muted); }
+@media(max-width:1150px) { .composition-editor { --inspector-width:220px; } }

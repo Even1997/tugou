@@ -1,5 +1,7 @@
 import {timeline} from '../core/gif-timeline.cjs';
 import './gif.css';
+import {LayerTextEditor} from './layer-text-editor.jsx';
+import {patchText,sameText} from '../core/rich-text.cjs';
 import {ColorControl} from './color-control.jsx';
 import {CanvasRulers,SelectionSizeBadge,CanvasSelection} from './canvas-chrome.jsx';
 import {Select} from './select.jsx';
@@ -27,6 +29,7 @@ import {
   descendants,
   inherited,
   moveLayers,
+  moveLineEndpoint,
   deleteLayers,
   duplicateLayers,
   groupLayers,
@@ -40,7 +43,7 @@ import {
   cropToSelection,
   relocateLayers,
 } from "../core/layers.cjs";
-import {shapeBounds,shapes} from '../core/shapes.cjs';
+import {shapeBounds,lineBounds,lineEndpoints,shapes} from '../core/shapes.cjs';
 import {ShapePicker,ShapeOptions,ShapePath,shapeDefaults} from './shape-tools.jsx';
 import {NumberField} from './number-field.jsx';
 import {LayerProperties, LayerAppearance} from './layer-properties.jsx';
@@ -79,7 +82,7 @@ function Menu({ name, icon, children }) {
       <div
         className="layer-menu-body"
         onClick={(e) => {
-          if (e.target.closest("button"))
+          if (e.currentTarget.contains(e.target)&&e.target.closest("button")&&!e.target.closest(".color-control-trigger,.ant-select"))
             e.currentTarget.parentElement.open = false;
         }}
       >
@@ -91,7 +94,10 @@ function Menu({ name, icon, children }) {
 export function LayerEditor({ projectId, document, change, disabled, selected, setSelected, workspace, editHistory }) {
   const preferences=usePreferences();
   const [replacement,setReplacement]=useState(null);
-  const [inspectorTab,setInspectorTab]=useState('properties'),[layerTab,setLayerTab]=useState('layers');
+  const [editingText,setEditingText]=useState(null);
+  const [localPropertiesOpen,setLocalPropertiesOpen]=useState(false);
+  const propertiesOpen=workspace?.propertiesOpen??localPropertiesOpen,setPropertiesOpen=workspace?.setPropertiesOpen||setLocalPropertiesOpen;
+  const [inspectorTab,setInspectorTab]=useState('adjustments'),[layerTab,setLayerTab]=useState('layers');
   const [layerQuery,setLayerQuery]=useState(''),[layerFilter,setLayerFilter]=useState('all'),[searchOpen,setSearchOpen]=useState(false);
   const [autoSelect,setAutoSelect]=useState(true),[selectScope,setSelectScope]=useState('layer'),[showControls,setShowControls]=useState(true);
   const [shapeOptions,setShapeOptions]=useState(shapeDefaults),[shapeDraft,setShapeDraft]=useState(null);
@@ -100,12 +106,37 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   useEffect(()=>setExportHost(window.document.getElementById('composition-export')),[]);
   useEffect(()=>{if(selected.length)setBoardTool(false)},[selected]);
   const [toolbarHost, setToolbarHost] = useState(null);
+  const toolRail=useRef(null),[railEdges,setRailEdges]=useState({up:false,down:false});
+  useEffect(()=>{
+    const rail=toolRail.current;
+    const update=()=>{
+      const up=rail.scrollTop>1,down=rail.scrollTop+rail.clientHeight<rail.scrollHeight-1;
+      setRailEdges(previous=>previous.up===up&&previous.down===down?previous:{up,down});
+      const focused=window.document.activeElement;
+      if(focused?.parentElement===rail.parentElement){
+        const direction=focused.dataset.railDirection;
+        if((direction==='up'&&!up)||(direction==='down'&&!down)){
+          rail.focus({preventScroll:true});
+        }
+      }
+    };
+    const observer=new ResizeObserver(update);observer.observe(rail);
+    rail.addEventListener('scroll',update,{passive:true});update();
+    return()=>{observer.disconnect();rail.removeEventListener('scroll',update);};
+  },[!!workspace]);
+  const scrollTools=direction=>toolRail.current.scrollBy({top:direction*Math.max(120,toolRail.current.clientHeight*.6),behavior:preferences.value.reduceMotion?'auto':'smooth'});
+  const scrollbarTimer=useRef(null);
+  const revealScrollbar=event=>{
+    const rail=event.currentTarget;
+    rail.dataset.scrollActive='true';clearTimeout(scrollbarTimer.current);
+    scrollbarTimer.current=setTimeout(()=>delete rail.dataset.scrollActive,500);
+  };
+  useEffect(()=>()=>clearTimeout(scrollbarTimer.current),[]);
   const [materialsOpen,setMaterialsOpen]=useState(false);
   const [boardDraft,setBoardDraft]=useState(null);
   const spaceHeld=useRef(false);
   const [merging, setMerging] = useState(false);
   const [effectId,setEffectId]=useState(null);
-  const [closedAdjustment,setClosedAdjustment]=useState(null);
   const [comparison,setComparison]=useState(null),[adjustmentPreview,setAdjustmentPreview]=useState(null);
   const adjustmentPreviewRef=useRef(null);
   const [paintOptions, setPaintOptions] = useState({...paintDefaults,target:workspace?.maskId&&workspace.maskId===selected[0]?'mask':'image'});
@@ -133,7 +164,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     [grow, setGrow] = useState(5),
     [fillColor, setFillColor] = useState("#b0bff2"),
     [polygon, setPolygon] = useState([]);
-  useEffect(()=>setSourceArmed(false),[tool]);
+  useEffect(()=>{setSourceArmed(false)},[tool]);
   useEffect(()=>{setComparison(null)},[document,selected.join(','),tool]);
   useEffect(()=>{const clear=()=>setComparison(null);window.addEventListener('blur',clear);return()=>window.removeEventListener('blur',clear)},[]);
   const holder = useRef(null),
@@ -149,14 +180,25 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   useEffect(() => () => selectionAbort.current?.abort(), [document]);
   const shown = draft || document;
   useEffect(() => {
-    const close = (e) =>
-      window.document.querySelectorAll(".layer-menu[open],.composition-more[open],.shape-picker[open]").forEach((menu) => {
-        if (!menu.contains(e.target)) menu.open = false;
-      });
-    window.document.addEventListener("pointerdown", close);
-    const escape=e=>{if(e.key==='Escape')window.document.querySelectorAll('.layer-menu[open],.composition-more[open],.shape-picker[open]').forEach(menu=>{menu.open=false})};
+    const selector='.composition-primary-tools .layer-menu[open],.composition-primary-tools .shape-picker[open]';
+    const position=()=>window.document.querySelectorAll(selector).forEach(menu=>{
+      const trigger=menu.querySelector('summary'),body=menu.querySelector('.layer-menu-body,.shape-picker-menu'),rect=trigger.getBoundingClientRect(),rail=menu.closest('nav').getBoundingClientRect();
+      if(rect.bottom<=rail.top||rect.top>=rail.bottom){menu.open=false;return;}
+      body.style.left=`${Math.min(rail.right+6,innerWidth-body.offsetWidth-8)}px`;
+      body.style.top=`${Math.max(8,Math.min(rect.top,innerHeight-body.offsetHeight-8))}px`;
+    });
+    const close=e=>{
+      if(e.target.closest('.ant-select-dropdown,.ant-popover'))return;
+      window.document.querySelectorAll(selector).forEach(menu=>{if(!menu.contains(e.target))menu.open=false;});
+    };
+    const escape=e=>{if(e.key==='Escape')window.document.querySelectorAll(selector).forEach(menu=>{menu.open=false;menu.querySelector('summary').focus();});};
+    const toggle=e=>{if(e.target.matches('.layer-menu,.shape-picker')){if(e.target.open)e.target.querySelector('summary').scrollIntoView({block:'nearest'});position();}};
+    window.document.addEventListener('pointerdown',close);
     window.document.addEventListener('keydown',escape);
-    return () => {window.document.removeEventListener("pointerdown", close);window.document.removeEventListener('keydown',escape)};
+    window.document.addEventListener('toggle',toggle,true);
+    window.document.addEventListener('scroll',position,true);
+    window.addEventListener('resize',position);
+    return()=>{window.document.removeEventListener('pointerdown',close);window.document.removeEventListener('keydown',escape);window.document.removeEventListener('toggle',toggle,true);window.document.removeEventListener('scroll',position,true);window.removeEventListener('resize',position);};
   }, []);
   latest.current = {
     document,
@@ -201,7 +243,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       run(() =>
         commit(
           document.layers.map((l) =>
-            l.id === single.id ? { ...l, ...values } : l,
+            l.id === single.id ? patchText(l,values) : l,
           ),
         ),
       );
@@ -218,6 +260,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     const next=adjustment?{id:single.id,adjustment,source:document}:null;
     adjustmentPreviewRef.current=next;setAdjustmentPreview(next);
   };
+  const closeProperties=(restoreFocus=true)=>{setPropertiesOpen(false);setComparison(null);previewAdjustment(null);if(restoreFocus)window.document.querySelector('.layer-inspector-toggle')?.focus();};
   const commitAdjustment=adjustment=>{
     const preview=adjustmentPreviewRef.current;previewAdjustment(null);
     if(preview&&preview.source!==latest.current.document){setMessage('工程已变化，本次调色预览已取消');return;}
@@ -248,7 +291,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       y: (viewport.height - height * zoom) / 2-top*zoom,
     });
   };
-  useUiView('layers',{get:()=>({view,tool}),restore:v=>{setView(v.view);setTool(v.tool);},blocked:()=>draft||pathDraft||selectionBusy||painting.busy||merging||imageImport.importing||exportState||boardDraft||shapeDraft||polygon.length?'图层编辑尚未完成，请先完成当前操作':null});
+  useUiView('layers',{get:()=>({view,tool}),restore:v=>{setView(v.view);setTool(v.tool);},blocked:()=>editingText||draft||pathDraft||selectionBusy||painting.busy||merging||imageImport.importing||exportState||boardDraft||shapeDraft||polygon.length?'图层编辑尚未完成，请先完成当前操作':null});
   useEffect(() => {
     let previous;
     const observer = new ResizeObserver(([entry]) => {
@@ -305,6 +348,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       const adjustment=adjustmentPreview?.source===document&&adjustmentPreview.id===selected[0]?adjustmentPreview:null;
       if(adjustment||comparison===selected[0])previewDoc={...previewDoc,layers:previewDoc.layers.map(l=>l.id===selected[0]?{...l,...(adjustment?{adjustment:adjustment.adjustment}:{}),...(comparison===l.id?{visible:false}:{})}:l)};
     }
+    if(editingText)previewDoc={...previewDoc,layers:previewDoc.layers.map(l=>l.id===editingText.id?{...l,visible:false}:l)};
     const render=maskViewId&&maskPreviewMode==="alone"?async()=>{
       const mask=await maskView(previewDoc,previewDoc.layers.find(l=>l.id===maskViewId),engine.current,{width:Math.ceil(size.width*ratio),height:Math.ceil(size.height*ratio),scale:view.zoom*ratio,transform:[view.zoom*ratio,0,0,view.zoom*ratio,view.x*ratio,view.y*ratio],maskOverrides:painting.preview?.maskOverrides});
       output.width=mask.width;output.height=mask.height;output.getContext('2d').drawImage(mask,0,0);mask.width=mask.height=1;
@@ -339,7 +383,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       });
     });
     return () => {clearTimeout(animationTimer);cancelAnimationFrame(frame);controller.abort()};
-  }, [shown, view, size, painting.preview,boardDraft,maskViewId,maskPreviewMode,gifTime,gifPlaying,animation,tool,disabled,comparison,adjustmentPreview,selected.join(',')]);
+  }, [editingText, shown, view, size, painting.preview,boardDraft,maskViewId,maskPreviewMode,gifTime,gifPlaying,animation,tool,disabled,comparison,adjustmentPreview,selected.join(',')]);
   useEffect(() => {
     let disposed = false;
     if (!selectionPreview.current || !size.width) return;
@@ -388,6 +432,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   useEffect(() => {
     const element = holder.current;
     const wheel = (e) => {
+      if(e.target.closest('.layer-text-editor')&&!e.ctrlKey&&!e.metaKey)return;
       e.preventDefault();
       const v = latest.current.view;
       if (e.ctrlKey || e.metaKey) {
@@ -541,6 +586,11 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       )
         continue;
       const local = localPoint(shown.layers, l, p.x, p.y);
+      if(l.kind==='shape'&&l.shape==='line'&&!l.warp){
+        const m=worldMatrix(shown.layers,l),[a,b]=lineEndpoints(l.width,l.height,l.linePoints).map(q=>point(m,q.x,q.y)),dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));
+        if(Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy)<=Math.max(6/view.zoom,(l.strokeWidth||0)*Math.max(Math.hypot(m[0],m[1]),Math.hypot(m[2],m[3]))/2))return l;
+        continue;
+      }
       if (
         local.x >= 0 &&
         local.y >= 0 &&
@@ -552,6 +602,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     return null;
   };
   const down = (e) => {
+    if(editingText){holder.current.querySelector('.layer-text-editor .tiptap')?.blur();return;}
     if (disabled || e.button === 2) return;
     const p = at(e),
       handle = e.target.dataset.handle;
@@ -571,7 +622,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     const boardId=e.target.dataset.boardId;
     if(boardId&&workspace){
       if(workspace.boards.find(b=>b.id===boardId)?.locked){setMessage('请先解锁画板');return;}
-      holder.current.setPointerCapture(e.pointerId);setSelected([]);drag.current={start:p,view,mode:e.target.dataset.boardResize?'board-resize':'board',boardId};return;
+      holder.current.setPointerCapture(e.pointerId);setSelected([]);drag.current={start:p,view,mode:'board',boardId};return;
     }
     if(workspace){const other=[...workspace.boards].reverse().find(b=>b.id!==workspace.board.id&&p.x>=b.x&&p.y>=b.y&&p.x<=b.x+b.width&&p.y<=b.y+b.height);if(other){workspace.activate(other.id);return;}}
     if (e.button === 0 && isBrushTool(tool)) {
@@ -648,14 +699,14 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     const p = at(e),
       dx = p.x - d.start.x,
       dy = p.y - d.start.y;
-    if(d.mode==='shape'){setShapeDraft({...d.options,...shapeBounds(d.start,p,e.shiftKey)});return;}
+    if(d.mode==='shape'){setShapeDraft({...d.options,...(d.options.shape==='line'?lineBounds:shapeBounds)(d.start,p,e.shiftKey)});return;}
+    if(d.mode==='line-0'||d.mode==='line-1'){
+      const next=moveLineEndpoint(d.doc.layers,d.layer,Number(d.mode.at(-1)),p,e.shiftKey);
+      setDraft({...d.doc,layers:d.doc.layers.map(l=>l.id===next.id?next:l)});return;
+    }
     if(d.mode==='board'){
       setBoardDraft({id:d.boardId,dx,dy});
       return;
-    }
-    if(d.mode==='board-resize'){
-      const b=workspace.boards.find(b=>b.id===d.boardId),width=Math.min(30000,Math.max(1,Math.round(p.x-b.x))),height=Math.min(30000,Math.max(1,Math.round(e.shiftKey?width*b.height/b.width:p.y-b.y)));
-      if(width*height<=100000000)setBoardDraft({id:b.id,width,height});return;
     }
     if (d.mode === "pan") {
       setView({
@@ -769,22 +820,23 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     if (!d) return;
     drag.current = null;
     holder.current.releasePointerCapture(e.pointerId);
+    if(d.mode==='line-0'||d.mode==='line-1'){
+      setDraft(null);const p=at(e);if(Math.hypot(p.sx-d.start.sx,p.sy-d.start.sy)<1)return;
+      const next=moveLineEndpoint(d.doc.layers,d.layer,Number(d.mode.at(-1)),p,e.shiftKey),layers=d.doc.layers.map(l=>l.id===next.id?next:l);
+      validateLayers(layers);change({...latest.current.document,layers});return;
+    }
     if(d.mode==='shape'){
       setShapeDraft(null);
       const p=at(e);if(Math.hypot(p.sx-d.start.sx,p.sy-d.start.sy)<3)return;
-      const box=shapeBounds(d.start,p,e.shiftKey),layer=createLayer('shape',{...d.options,...box,name:shapes.find(([id])=>id===d.options.shape)?.[1]||'形状'});
+      const box=(d.options.shape==='line'?lineBounds:shapeBounds)(d.start,p,e.shiftKey),layer=createLayer('shape',{...d.options,...box,name:shapes.find(([id])=>id===d.options.shape)?.[1]||'形状'});
       const saved=workspace?workspace.addShape({...layer,x:layer.x-d.board.x,y:layer.y-d.board.y},d.board.id):change({...latest.current.document,layers:[...latest.current.document.layers,layer]});
-      if(saved!==false){setSelected([layer.id]);setTool('select');setBoardTool(false);setInspectorTab('properties');}return;
+      if(saved!==false){setSelected([layer.id]);setTool('select');setBoardTool(false);}return;
     }
     if(d.mode==='board'){
       const p=at(e),dx=p.x-d.start.x,dy=p.y-d.start.y;
       setBoardDraft(null);
       if(Math.hypot(dx,dy)>2)workspace.move(d.boardId,dx,dy);else workspace.activate(d.boardId);
       return;
-    }
-    if(d.mode==='board-resize'){
-      const p=at(e),b=workspace.boards.find(b=>b.id===d.boardId),width=Math.min(30000,Math.max(1,Math.round(p.x-b.x))),height=Math.min(30000,Math.max(1,Math.round(e.shiftKey?width*b.height/b.width:p.y-b.y)));
-      if(width*height<=100000000)workspace.resizeBoard(b.id,width,height);setBoardDraft(null);return;
     }
     if (d.mode === "marquee" && pathDraft) {
       const xs = pathDraft.filter((_, i) => i % 2 === 0),
@@ -857,7 +909,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
                 : l,
             ),
           });
-          setPaintOptions(options=>({...options,target:'mask'}));setInspectorTab('properties');
+          setPaintOptions(options=>({...options,target:'mask'}));setPropertiesOpen(true);
         });
         return;
       }
@@ -880,7 +932,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           feather: document.selection.feather || 0,
         },
       });
-      setPaintOptions(options=>({...options,target:'mask'}));setInspectorTab('properties');
+      setPaintOptions(options=>({...options,target:'mask'}));setPropertiesOpen(true);
     });
   const assertCurrent = (source) => {
     if (latest.current.document !== source || !mounted.current)
@@ -978,7 +1030,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     signal.throwIfAborted();assertCurrent(source);
     const index=selectedLayer&&selectedLayer.kind!=='group'?source.layers.indexOf(selectedLayer)+1:source.layers.length;
     if(change({...source,layers:[...source.layers.slice(0,index),layer,...source.layers.slice(index)]})===false)throw new Error('工程正在保存，请稍后重试');
-    setSelected([layer.id]);setTool('select');setPaintOptions(options=>({...options,target:'image'}));setClosedAdjustment(null);
+    setSelected([layer.id]);setTool('select');setPaintOptions(options=>({...options,target:'image'}));setPropertiesOpen(true);
   }));
   const applyPath = (points, extend = false) => {
     if (document.selection?.bitmap || document.selection?.inverted) {
@@ -1341,28 +1393,23 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     if(['clone','heal'].includes(tool)&&paintSource?.layerId===single.id)sourceMarker=geometry.world(paintSource.u,paintSource.v);
   }
   return (
-    <div className="layer-editor composition-editor" onContextMenu={e=>{const row=e.target.closest('[data-tree-id]');if(row&&workspace)workspace.contextMenu(e,row.dataset.treeId,gifTime);}} data-dev-update-blocked={painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||boardDraft||shapeDraft||polygon.length||tool!=='select'?'请先完成图层编辑，并切换到移动工具后更新':undefined}>
-      {(animation.frames.length>1||animation.error)&&<div className="gif-timeline">{animation.error?<span role="alert">{animation.error}</span>:<><Button onClick={()=>setGifPlaying(v=>!v)}>{gifPlaying?'暂停动画':'播放动画'}</Button><input aria-label="图层动画帧" type="range" min={1} max={animation.frames.length} value={gifIndex+1} onChange={e=>{setGifPlaying(false);setGifFrame(+e.target.value-1)}}/><span>第 {gifIndex+1} / {animation.frames.length} 帧 · {gifTime} ms</span></>}</div>}
-      <div className="composition-tools">
-        <div className="composition-primary-tools">
-          <Button icon="action" aria-pressed={tool==='select'&&!boardTool} onClick={()=>{setTool('select');setBoardTool(false)}}>移动</Button>
-          {workspace&&<Button icon="layout" aria-pressed={boardTool&&tool==='select'} onClick={()=>{setSelected([]);setTool('select');setBoardTool(true);setInspectorTab('properties')}}>画板</Button>}
-          <Button icon="selection" aria-pressed={selectionTools.some(([id])=>id===tool)} onClick={()=>setTool('rect')}>选区</Button>
-          <Button icon="crop" disabled={!document.selection||selectionBusy} onClick={cropSelection}>裁切</Button>
-          <Button icon="brush" aria-pressed={tool==='brush'} onClick={()=>setTool('brush')}>画笔</Button>
+    <div className="layer-editor composition-editor" data-properties-open={propertiesOpen||undefined} onContextMenu={e=>{const row=e.target.closest('[data-tree-id]');if(row&&workspace)workspace.contextMenu(e,row.dataset.treeId,gifTime);}} data-dev-update-blocked={editingText||painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||boardDraft||shapeDraft||polygon.length||tool!=='select'?'请先完成图层编辑，并切换到移动工具后更新':undefined}>
+
+      <div className="composition-tool-rail">
+        <Button aria-label="向上滚动工具" title="向上滚动工具" icon="collapse" className="tool-rail-scroll tool-rail-scroll-up" data-rail-direction="up" aria-hidden={!railEdges.up} disabled={!railEdges.up} tabIndex={railEdges.up?0:-1} style={{visibility:railEdges.up?'visible':'hidden'}} onClick={()=>scrollTools(-1)} />
+        <nav ref={toolRail} tabIndex={-1} className="composition-primary-tools" aria-label="图层工具" onMouseEnter={revealScrollbar} onScroll={revealScrollbar} onFocus={revealScrollbar} onClickCapture={e=>{const button=e.target.closest('button');if(button&&!['抓手','缩放'].includes(button.getAttribute('aria-label')))setPropertiesOpen(true)}}>
+          <Button iconOnly icon="action" aria-pressed={tool==='select'&&!boardTool} onClick={()=>{setTool('select');setBoardTool(false)}}>移动</Button>
+          {workspace&&<Button iconOnly icon="layout" aria-pressed={boardTool&&tool==='select'} onClick={()=>{setSelected([]);setTool('select');setBoardTool(true);setPropertiesOpen(true)}}>画板</Button>}
+          <Button iconOnly icon="selection" aria-pressed={selectionTools.some(([id])=>id===tool)} onClick={()=>setTool('rect')}>选区</Button>
+          <Button iconOnly icon="crop" disabled={!document.selection||selectionBusy} onClick={cropSelection}>裁切</Button>
+          <Button iconOnly icon="brush" aria-pressed={tool==='brush'} onClick={()=>setTool('brush')}>画笔</Button>
           <ShapePicker active={tool==='shape'} options={shapeOptions} disabled={disabled} choose={options=>{setShapeOptions(options);setTool('shape');setBoardTool(false)}}/>
-          <Button icon="assets" loading={imageImport.importing} onClick={()=>imageImport.open()} disabled={imageImport.importing}>{imageImport.importing?'导入中…':'图片'}</Button>
-          <Button icon="text" onClick={()=>add('text',{name:'文字',text:'输入文字',fontSize:48,color:'#333333',width:600,height:160})}>文字</Button>
-          <Button icon="select" aria-pressed={tool==='hand'} onClick={()=>setTool('hand')}>抓手</Button>
-          <Button icon="zoomIn" onClick={()=>setView({...view,zoom:Math.min(8,view.zoom*1.25)})}>缩放</Button>
-        </div>
-        <div className="composition-command-tools" ref={setToolbarHost}/>
-      </div>
-      {toolbarHost &&
-        createPortal(
-          <>
-            <details className="composition-more"><summary aria-label="更多编辑工具"><Icon name="more"/><span>更多</span></summary><div className="composition-more-body">
-            {workspace?.importPsd&&<Menu name="PSD" icon="layers"><Button disabled={disabled||imageImport.importing||painting.busy} onClick={e=>{e.currentTarget.closest('.composition-more').open=false;workspace.importPsd();}}>导入 PSD</Button><Button disabled={disabled||painting.busy||!!renderError} onClick={e=>{e.currentTarget.closest('.composition-more').open=false;workspace.exportPsd();}}>导出 PSD</Button></Menu>}
+          <Button iconOnly icon="assets" loading={imageImport.importing} onClick={()=>imageImport.open()} disabled={imageImport.importing}>{imageImport.importing?'导入中…':'图片'}</Button>
+          <Button iconOnly icon="text" onClick={()=>add('text',{name:'文字',text:'输入文字',fontSize:48,color:'#333333',width:600,height:160})}>文字</Button>
+          <Button iconOnly icon="select" aria-pressed={tool==='hand'} onClick={()=>setTool('hand')}>抓手</Button>
+          <Button iconOnly icon="zoomIn" onClick={()=>setView({...view,zoom:Math.min(8,view.zoom*1.25)})}>缩放</Button>
+          <hr className="tool-rail-divider"/>
+            {workspace?.importPsd&&<Menu name="PSD" icon="layers"><Button disabled={disabled||imageImport.importing||painting.busy} onClick={()=>workspace.importPsd()}>导入 PSD</Button><Button disabled={disabled||painting.busy||!!renderError} onClick={()=>workspace.exportPsd()}>导出 PSD</Button></Menu>}
             <Menu name="修图" icon="tools">{retouchTools.map(([id,name])=><Button key={id} aria-pressed={tool===id} onClick={()=>setTool(id)}>{name}</Button>)}<Button disabled={disabled || selectionBusy || !document.selection || single?.kind !== 'image' || maskEditing} onClick={contentFill}>内容感知填充</Button></Menu>
             <Menu name="添加" icon="add">
               <Button
@@ -1604,7 +1651,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
                 重置透视
               </Button>
             </Menu>
-            <Menu name="选区" icon="selection">
+            <Menu name="选区操作" icon="selection">
               <NumberField
                 label="羽化像素"
                 value={document.selection?.feather || 0}
@@ -1739,8 +1786,44 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
                 删除蒙版
               </Button>
             </Menu>
-            <label className="check"><input type="checkbox" checked={transparent} onChange={e=>setTransparent(e.target.checked)}/>透明导出</label>
-            </div></details>
+            <Menu name="导出选项" icon="export"><label className="check"><input type="checkbox" checked={transparent} onChange={e=>setTransparent(e.target.checked)}/>透明导出</label></Menu>
+        </nav>
+        <Button aria-label="向下滚动工具" title="向下滚动工具" icon="collapse" className="tool-rail-scroll" data-rail-direction="down" aria-hidden={!railEdges.down} disabled={!railEdges.down} tabIndex={railEdges.down?0:-1} style={{visibility:railEdges.down?'visible':'hidden'}} onClick={()=>scrollTools(1)} />
+      </div>
+      <div className="composition-tools">
+      <div className="composition-breadcrumb">
+        <Button icon="layout" onClick={()=>fit(true)}>所有画板</Button><span>/</span>
+        {workspace?<Select aria-label="当前画板" value={workspace.board.id} onChange={e=>workspace.activate(e.target.value)}>{workspace.boards.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>:<span>{document.name}</span>}
+
+        <span className="composition-breadcrumb-space"/>
+        <Button icon="adjust" aria-label={propertiesOpen?'收起属性面板':'展开属性面板'} aria-expanded={propertiesOpen} onClick={()=>propertiesOpen?closeProperties():setPropertiesOpen(true)}>属性</Button>
+        <Button icon="assets" aria-pressed={materialsOpen} onClick={()=>setMaterialsOpen(!materialsOpen)}>素材</Button>
+        <Button icon="fit" onClick={()=>fit()}>聚焦画板</Button>
+            <Select
+              aria-label="编辑缩放"
+              value={view.zoom}
+              onChange={(e) =>
+                setView({ ...view, zoom: Number(e.target.value) })
+              }
+            >
+              <option value={view.zoom}>{Math.round(view.zoom * 100)}%</option>
+              {[0.25, 0.5, 1, 2, 4, 8]
+                .filter((z) => z !== view.zoom)
+                .map((z) => (
+                  <option value={z} key={z}>
+                    {z * 100}%
+                  </option>
+                ))}
+            </Select>
+
+      </div>
+
+        <div className="composition-command-tools" ref={setToolbarHost}/>
+      </div>
+      {toolbarHost &&
+        createPortal(
+          <>
+
             {tool === "polygon" && (
               <Button iconOnly icon="check" disabled={polygon.length < 6} onClick={finishPolygon}>
                 完成多边形
@@ -1778,70 +1861,6 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           {renderError || message || issues.join("；")}
         </div>
       )}
-      <div className="layer-parameter-row">
-        <span className="context-tool"><Icon name={boardTool&&tool==='select'?'layout':isBrushTool(tool)?'brush':tool==='select'?'action':tool==='hand'?'select':'selection'}/>{boardTool&&tool==='select'?'画板':maskEditing?(maskPainting?'蒙版画笔':'蒙版选区'):tool==='select'?(single?.kind==='shape'?'形状':single?.kind==='adjustment'?'调色':'移动'):tool==='hand'?'抓手':tool==='shape'?'形状':isBrushTool(tool)?'画笔':'选区'}</span>
-        {tool==='select'&&!maskEditing&&single?.kind==='shape'?<ShapeOptions options={{...shapeDefaults,...single}} change={({shape,color,fill,stroke,strokeWidth,radius})=>patch({shape,color,fill,stroke,strokeWidth,radius})} disabled={disabled||workspace?.board.locked||inherited(document.layers,single,'locked')}/>:tool==='shape'?<ShapeOptions options={shapeOptions} change={setShapeOptions} disabled={disabled}/>:tool==='select'&&boardTool&&workspace?workspace.parameters:tool==='select'&&single?.kind==='adjustment'?null:tool==='select'?<div className="move-tool-options">
-          <label className="check"><input type="checkbox" checked={autoSelect} onChange={e=>setAutoSelect(e.target.checked)}/>自动选择</label>
-          <Select aria-label="自动选择范围" value={selectScope} onChange={e=>setSelectScope(e.target.value)}><option value="layer">图层</option><option value="group">分组</option></Select>
-          <label className="check"><input type="checkbox" checked={showControls} onChange={e=>setShowControls(e.target.checked)}/>显示变换控件</label>
-          <div className="context-align">{[['x','start','左对齐','align'],['x','center','水平居中','layout'],['y','center','垂直居中','action']].map(([axis,mode,label,icon])=><Button iconOnly icon={icon} key={label} disabled={!selected.length||disabled} onClick={()=>action(()=>alignLayers(document,selected,axis,mode))}>{label}</Button>)}</div>
-          <Button icon="mask" disabled={!single||disabled||inherited(document.layers,single,'locked')} onClick={()=>{setPaintOptions({...paintOptions,target:'mask'});setTool('brush');setInspectorTab('properties')}}>编辑蒙版</Button>
-          <Button icon="adjust" onClick={()=>setInspectorTab('adjustments')}>调整</Button>
-        </div>:<label className="tool-choice"><Select aria-label="当前编辑工具" value={tool} onChange={e=>setTool(e.target.value)}>{[['hand','平移'],['brush','画笔'],['eraser','橡皮'],...(maskEditing?[]:retouchTools),...selectionTools].map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></label>}
-            {["wand", "range"].includes(tool) && (
-              <>
-                <NumberField
-                  label="容差"
-                  value={tolerance}
-                  min={0}
-                  max={255}
-                  onChange={setTolerance}
-                />
-                <Select
-                  aria-label="取样范围"
-                  value={sampleMode}
-                  onChange={(e) => setSampleMode(e.target.value)}
-                >
-                  <option value="all">可见图层</option>
-                  <option value="layer">当前图层</option>
-                </Select>
-              </>
-            )}
-{isBrushTool(tool) && <PaintTools compact options={paintOptions} onChange={setPaintOptions} onNew={newPaintLayer} onCopy={copyForRetouch} canCopy={!disabled&&single?.kind==='image'&&!inherited(document.layers,single,'locked')&&!inherited(document.layers,single,'hidden')} busy={painting.busy} maskDisabled={Boolean(maskEditing&&single?.mask?.disabled)} tool={tool} source={paintSource?.layerId===single?.id?paintSource:null} onSample={()=>{setSourceArmed(true);setMessage('')}} onClear={()=>setPaintSource(null)}/>}
-{selectionTools.some(([id])=>id===tool)&&<SelectionActions operation={operation} onOperation={setOperation} hasSelection={Boolean(document.selection)} busy={disabled||selectionBusy||painting.busy} canSubject={single?.kind==='image'} subject={selectSubject} subjectStatus={subjectStatus} subjectStage={subjectStage} invert={()=>change({...document,selection:{...document.selection,inverted:!document.selection.inverted}})} clear={()=>change({...document,selection:undefined})}/>}
-{document.selection&&single?.kind==='image'&&!maskEditing&&<div className="selection-actions"><ColorControl aria-label="选区填充颜色" value={fillColor} onChange={e=>setFillColor(e.target.value)}/><Button disabled={disabled||selectionBusy||painting.busy||inherited(document.layers,single,'locked')} onClick={()=>fillSelection(false)}>填充图片选区</Button></div>}
-{maskEditing&&<div className="mask-selection-actions">
-  {!maskPainting&&<MaskInk value={paintOptions.maskMode} onChange={maskMode=>setPaintOptions({...paintOptions,maskMode})} disabled={disabled||selectionBusy||painting.busy||single?.mask?.disabled}/>}
-  <Button aria-label="填充蒙版选区" disabled={disabled||selectionBusy||painting.busy||!document.selection||single.mask?.disabled||inherited(document.layers,single,'locked')||inherited(document.layers,single,'hidden')} onClick={()=>fillSelection(false)}>填充选区</Button>
-</div>}
-
-{tool==='select'&&single?.kind!=='adjustment'&&single?.effects?.length>0&&<EffectTools key={`${single.id}-${effectId}`} layer={{...single,locked:inherited(document.layers,single,'locked')||disabled}} effectId={effectId} onSelect={setEffectId} patch={patch} onDone={()=>setSelected([])}/>}
-{fillProgress !== null ? <><span role="status">内容感知填充 {Math.round(fillProgress * 100)}%</span><Button onClick={() => selectionAbort.current?.abort()}>取消填充</Button></> : null}</div>
-      <div className="composition-breadcrumb">
-        <Button icon="layout" onClick={()=>fit(true)}>所有画板</Button><span>/</span>
-        {workspace?<Select aria-label="当前画板" value={workspace.board.id} onChange={e=>workspace.activate(e.target.value)}>{workspace.boards.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select>:<span>{document.name}</span>}
-        
-        <span className="composition-breadcrumb-space"/>
-        <Button icon="assets" aria-pressed={materialsOpen} onClick={()=>setMaterialsOpen(!materialsOpen)}>素材</Button>
-        <Button icon="fit" onClick={()=>fit()}>聚焦画板</Button>
-            <Select
-              aria-label="编辑缩放"
-              value={view.zoom}
-              onChange={(e) =>
-                setView({ ...view, zoom: Number(e.target.value) })
-              }
-            >
-              <option value={view.zoom}>{Math.round(view.zoom * 100)}%</option>
-              {[0.25, 0.5, 1, 2, 4, 8]
-                .filter((z) => z !== view.zoom)
-                .map((z) => (
-                  <option value={z} key={z}>
-                    {z * 100}%
-                  </option>
-                ))}
-            </Select>
-
-      </div>
       <div className="layer-workspace">
         {materialsOpen&&<aside className="composition-materials">          <details open className="layer-materials"><summary>素材库 · {document.assets.length}</summary>
           <div className="panel-heading">
@@ -1893,8 +1912,11 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             setBoardDraft(null);
             setShapeDraft(null);
           }}
-          onDoubleClick={() => {
-            if (tool === "polygon") finishPolygon();
+          onDoubleClick={e => {
+            if (tool === "polygon") {finishPolygon();return;}
+            if(disabled||tool!=='select'||workspace?.board.locked||e.target.closest('button,input,textarea'))return;
+            const layer=hit(at(e));
+            if(layer?.kind==='text'){drag.current=null;setDraft(null);setSelected([layer.id]);setEditingText(layer);}
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && tool === "polygon") {
@@ -1904,7 +1926,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           }}
         >
           {(single?.kind==='image'||maskEditing)&&<div className="composition-context" onPointerDown={e=>e.stopPropagation()}>
-            {maskEditing?<><span className="mask-context-label">{maskViewId?({alone:'单独查看蒙版 · 黑藏白显',original:'原图预览 · 暂时忽略蒙版',overlay:'蒙版叠加 · 红色隐藏'})[maskPreviewMode]:single.mask?.disabled?'蒙版已停用':'正在编辑蒙版 · 黑藏白显'}{maskViewId&&single.mask?.disabled?' · 已停用':''}{document.selection?' · 仅选区内':''}</span>{single.mask?.disabled&&<Button disabled={disabled||inherited(document.layers,single,"locked")} onClick={()=>patch({mask:{...single.mask,disabled:false}})}>启用当前蒙版</Button>}<Button disabled={disabled||selectionBusy||painting.busy||!document.selection} onClick={deselect}>取消选区</Button><Button className="primary" icon="check" onClick={()=>{setPaintOptions({...paintOptions,target:'image'});setTool('select')}}>完成蒙版</Button></>:<><Button icon="replace" onClick={()=>setReplacement({targetId:single.id,assetId:single.assetId})}>替换图片</Button><Button icon="mask" onClick={()=>{setPaintOptions({...paintOptions,target:'mask'});setTool('brush');setInspectorTab('properties')}}>编辑蒙版</Button><Button icon="adjust" onClick={()=>setInspectorTab('adjustments')}>调整</Button></>}
+            {maskEditing?<><span className="mask-context-label">{maskViewId?({alone:'单独查看蒙版 · 黑藏白显',original:'原图预览 · 暂时忽略蒙版',overlay:'蒙版叠加 · 红色隐藏'})[maskPreviewMode]:single.mask?.disabled?'蒙版已停用':'正在编辑蒙版 · 黑藏白显'}{maskViewId&&single.mask?.disabled?' · 已停用':''}{document.selection?' · 仅选区内':''}</span>{single.mask?.disabled&&<Button disabled={disabled||inherited(document.layers,single,"locked")} onClick={()=>patch({mask:{...single.mask,disabled:false}})}>启用当前蒙版</Button>}<Button disabled={disabled||selectionBusy||painting.busy||!document.selection} onClick={deselect}>取消选区</Button><Button className="primary" icon="check" onClick={()=>{setPaintOptions({...paintOptions,target:'image'});setTool('select')}}>完成蒙版</Button></>:<><Button icon="replace" onClick={()=>setReplacement({targetId:single.id,assetId:single.assetId})}>替换图片</Button><Button icon="mask" onClick={()=>{setPaintOptions({...paintOptions,target:'mask'});setTool('brush');setPropertiesOpen(true)}}>编辑蒙版</Button><Button icon="adjust" onClick={()=>setInspectorTab('adjustments')}>调整</Button></>}
           </div>}
           {painting.busy&&<div className="painting-status" role="status">{painting.pending?`正在保存笔触 · 后续 ${painting.pending} 笔等待`:'正在保存笔触…'}</div>}
           <canvas ref={canvas} aria-label="图层画布" data-mask-view={maskViewId||undefined} data-mask-mode={maskViewId?maskPreviewMode:"composite"} />
@@ -1963,20 +1985,20 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
                   opacity=".7"
                 />
               ))}
-              {(workspace?.boards || [{id:'main',x:0,y:0,width:document.width,height:document.height,name:document.name}]).map(original=>{const b=boardDraft?.id===original.id&&boardDraft.width?{...original,width:boardDraft.width,height:boardDraft.height}:original;return <g key={b.id} data-board-label={b.id} transform={boardDraft?.id===b.id&&!boardDraft.width?`translate(${boardDraft.dx} ${boardDraft.dy})`:undefined}>
+              {(workspace?.boards || [{id:'main',x:0,y:0,width:document.width,height:document.height,name:document.name}]).map(b=><g key={b.id} data-board-label={b.id} transform={boardDraft?.id===b.id?`translate(${boardDraft.dx} ${boardDraft.dy})`:undefined}>
                 <rect x={b.x} y={b.y} width={b.width} height={b.height} fill="none" stroke={workspace?.board.id===b.id?'var(--accent)':'var(--line)'} strokeWidth={1/view.zoom}/>
                 <rect className="board-label-hit" data-board-id={b.id} x={b.x} y={b.y-30/view.zoom} width={Math.max(160,b.name.length*14)/view.zoom} height={27/view.zoom} fill="transparent"/>
                 <text data-board-id={b.id} x={b.x} y={b.y-10/view.zoom} fontSize={12/view.zoom} fill={workspace?.board.id===b.id?'var(--accent)':'var(--muted)'} style={{cursor:'move'}}>{b.name} · {b.width} × {b.height}</text>
-                {workspace?.board.id===b.id&&!selected.length&&!b.locked&&<rect className="board-resize-handle" data-board-id={b.id} data-board-resize="true" x={b.x+b.width-5/view.zoom} y={b.y+b.height-5/view.zoom} width={10/view.zoom} height={10/view.zoom} fill="var(--accent)"/>}
-              </g>})}
+              </g>)}
               {shapeDraft&&<g className="shape-draft" pointerEvents="none" transform={`translate(${shapeDraft.x} ${shapeDraft.y})`}>
-                <ShapePath shape={shapeDraft.shape} width={shapeDraft.width} height={shapeDraft.height} radius={shapeDraft.radius} fill={shapeDraft.fill?shapeDraft.color:'none'} stroke={shapeDraft.stroke} strokeWidth={shapeDraft.strokeWidth}/>
+                <ShapePath shape={shapeDraft.shape} linePoints={shapeDraft.linePoints} width={shapeDraft.width} height={shapeDraft.height} radius={shapeDraft.radius} fill={shapeDraft.fill?shapeDraft.color:'none'} stroke={shapeDraft.stroke} strokeWidth={shapeDraft.strokeWidth}/>
                 <rect width={shapeDraft.width} height={shapeDraft.height} fill="none" stroke="var(--accent)" strokeWidth={1/view.zoom} strokeDasharray={`${4/view.zoom} ${3/view.zoom}`}/>
                 <text x={shapeDraft.width/2} y={shapeDraft.height+20/view.zoom} textAnchor="middle" fontSize={11/view.zoom} fill="var(--accent)">{Math.round(shapeDraft.width)} × {Math.round(shapeDraft.height)} px</text>
               </g>}
               {showControls && tool==='select' && selected.map((id) => {
                 const l = shown.layers.find((l) => l.id === id);
                 if (!l) return null;
+                if(l.kind==='shape'&&l.shape==='line'&&!l.warp&&!warp&&single?.id===id&&!inherited(shown.layers,l,'locked')){const m=worldMatrix(shown.layers,l),ends=lineEndpoints(l.width,l.height,l.linePoints).map(p=>point(m,p.x,p.y));return <g key={id}>{single?.id===id&&!inherited(shown.layers,l,'locked')&&ends.map((p,i)=><circle key={i} data-handle={`line-${i}`} aria-label={i?'直线终点':'直线起点'} cx={p.x} cy={p.y} r={6/view.zoom} fill="var(--panel)" stroke="var(--accent)" strokeWidth={1.5/view.zoom} style={{cursor:'crosshair'}}/>)}</g>;}
                 const pts = corners(shown.layers, l);
                 return <CanvasSelection key={id} points={pts} zoom={view.zoom} editable={single?.id===id&&!inherited(shown.layers,l,'locked')} warp={warp&&l.kind!=='group'}/>;
               })}
@@ -2013,11 +2035,23 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           </svg>
           {workspace&&<CanvasRulers view={view} size={size}/>}
           {showControls&&single&&tool==='select'&&<SelectionSizeBadge points={corners(shown.layers,shown.layers.find(l=>l.id===single.id)||single)} view={view} size={size}/>}
+          {editingText&&<LayerTextEditor key={editingText.id} layer={editingText} layers={document.layers} view={view}
+            onCancel={()=>{setEditingText(null);holder.current?.focus({preventScroll:true});}}
+            onCommit={value=>{
+              const now=latest.current.document,layer=now.layers.find(l=>l.id===editingText.id);
+              if(!layer||latest.current.disabled||inherited(now.layers,layer,'locked')||latest.current.workspace?.board.locked){setEditingText(null);return;}
+              if(!sameText(layer,editingText)){setMessage('文字已被其他操作修改，请复制当前输入后按 Esc 取消，再重新编辑。');return false;}
+              if(!sameText(value,editingText)){
+                try{const layers=now.layers.map(l=>l.id===layer.id?{...l,...value}:l);validateLayers(layers);if(change({...now,layers})===false)return false;}
+                catch(error){setMessage(error.message);return false;}
+              }
+              setEditingText(null);
+            }}/> }
           <div className="layer-stage-hint">
-            {tool === "select"
-              ? `Shift 多选 · 拖动移动 · ${window.tugou.platform === "darwin" ? "⌘" : "Ctrl"}+滚轮缩放`
+            {editingText ? '正在编辑文字 · Enter 换行 · Ctrl/⌘＋Enter 完成 · Esc 取消' : tool === "select"
+              ? `双击文字编辑 · Shift 多选 · 拖动移动 · ${window.tugou.platform === "darwin" ? "⌘" : "Ctrl"}+滚轮缩放`
               : tool === "shape"
-                ? "拖拽绘制形状 · Shift 等比 · Esc 取消"
+                ? (shapeOptions.shape==='line'?"拖拽绘制直线 · Shift 约束角度 · Esc 取消":"拖拽绘制形状 · Shift 等比 · Esc 取消")
               : tool === "hand"
                 ? "拖动平移"
                 : retouchTools.some(([id])=>id===tool)
@@ -2031,31 +2065,75 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
                     : `${tool === "lasso" ? "套索" : tool === "ellipse" ? "椭圆" : "矩形"}选区 · 拖动绘制 · Esc 返回`}
           </div>
         </div>
-        {tool==='select'&&!maskEditing&&single?.kind==='adjustment'&&closedAdjustment!==single.id&&adjustmentTypes[single.adjustment?.type]&&<AdjustmentTools key={single.id} layer={{...single,locked:inherited(document.layers,single,'locked')||workspace?.board.locked||disabled}} patch={patch} onCompare={held=>setComparison(held?single.id:null)} comparing={comparison===single.id} onPreview={previewAdjustment} onAdjustmentCommit={commitAdjustment} onDone={()=>{setClosedAdjustment(single.id);setComparison(null);previewAdjustment(null);window.document.querySelector('.layer-preview[aria-pressed="true"]')?.focus()}}/>}
-        <aside className="layer-sidebar">
-          <div className="panel-heading inspector-tabs" aria-label="属性面板">
-            {[['properties','属性'],['adjustments','调整'],['navigation','导航']].map(([id,label])=><Button key={id} aria-pressed={inspectorTab===id} onClick={()=>setInspectorTab(id)}>{label}</Button>)}
-            <Button iconOnly icon="layout" onClick={()=>{setSelected([]);setBoardTool(true);setInspectorTab('properties')}}>画板</Button>
-          </div>
+        {propertiesOpen&&<aside className="layer-sidebar layer-property-sidebar" aria-label="图层属性">
+          <div className="panel-heading layer-property-heading"><strong>{maskEditing?'蒙版属性':tool!=='select'?'工具与属性':'属性'}</strong><Button iconOnly icon="close" onClick={closeProperties}>关闭属性面板</Button></div>
           <div className="composition-inspector">
-          {inspectorTab==='properties'?<>
+      {(animation.frames.length>1||animation.error)&&<div className="gif-timeline">{animation.error?<span role="alert">{animation.error}</span>:<><Button onClick={()=>setGifPlaying(v=>!v)}>{gifPlaying?'暂停动画':'播放动画'}</Button><input aria-label="图层动画帧" type="range" min={1} max={animation.frames.length} value={gifIndex+1} onChange={e=>{setGifPlaying(false);setGifFrame(+e.target.value-1)}}/><span>第 {gifIndex+1} / {animation.frames.length} 帧 · {gifTime} ms</span></>}</div>}
+            <details className="layer-tool-settings" key={tool+'-'+boardTool+'-'+maskEditing+'-'+single?.kind} open={tool!=='select'}><summary>{tool==='shape'?'绘制选项':'工具选项'}</summary>
+<div className="layer-parameter-row">
+        <span className="context-tool"><Icon name={boardTool&&tool==='select'?'layout':isBrushTool(tool)?'brush':tool==='select'?'action':tool==='hand'?'select':'selection'}/>{boardTool&&tool==='select'?'画板':maskEditing?(maskPainting?'蒙版画笔':'蒙版选区'):tool==='select'?(single?.kind==='shape'?'形状':single?.kind==='adjustment'?'调色':'移动'):tool==='hand'?'抓手':tool==='shape'?'形状':isBrushTool(tool)?'画笔':'选区'}</span>
+        {tool==='shape'?<ShapeOptions options={shapeOptions} change={setShapeOptions} disabled={disabled}/>:tool==='select'&&single?.kind==='adjustment'?null:tool==='select'?<div className="move-tool-options">
+          <label className="check"><input type="checkbox" checked={autoSelect} onChange={e=>setAutoSelect(e.target.checked)}/>自动选择</label>
+          <Select aria-label="自动选择范围" value={selectScope} onChange={e=>setSelectScope(e.target.value)}><option value="layer">图层</option><option value="group">分组</option></Select>
+          <label className="check"><input type="checkbox" checked={showControls} onChange={e=>setShowControls(e.target.checked)}/>显示变换控件</label>
+          <div className="context-align">{[['x','start','左对齐','align'],['x','center','水平居中','layout'],['y','center','垂直居中','action']].map(([axis,mode,label,icon])=><Button iconOnly icon={icon} key={label} disabled={!selected.length||disabled} onClick={()=>action(()=>alignLayers(document,selected,axis,mode))}>{label}</Button>)}</div>
+          <Button icon="mask" disabled={!single||disabled||inherited(document.layers,single,'locked')} onClick={()=>{setPaintOptions({...paintOptions,target:'mask'});setTool('brush');setPropertiesOpen(true)}}>编辑蒙版</Button>
+          <Button icon="adjust" onClick={()=>setInspectorTab('adjustments')}>调整</Button>
+        </div>:<label className="tool-choice"><Select aria-label="当前编辑工具" value={tool} onChange={e=>setTool(e.target.value)}>{[['hand','平移'],['brush','画笔'],['eraser','橡皮'],...(maskEditing?[]:retouchTools),...selectionTools].map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></label>}
+            {["wand", "range"].includes(tool) && (
+              <>
+                <NumberField
+                  label="容差"
+                  value={tolerance}
+                  min={0}
+                  max={255}
+                  onChange={setTolerance}
+                />
+                <Select
+                  aria-label="取样范围"
+                  value={sampleMode}
+                  onChange={(e) => setSampleMode(e.target.value)}
+                >
+                  <option value="all">可见图层</option>
+                  <option value="layer">当前图层</option>
+                </Select>
+              </>
+            )}
+{isBrushTool(tool) && <PaintTools compact options={paintOptions} onChange={setPaintOptions} onNew={newPaintLayer} onCopy={copyForRetouch} canCopy={!disabled&&single?.kind==='image'&&!inherited(document.layers,single,'locked')&&!inherited(document.layers,single,'hidden')} busy={painting.busy} maskDisabled={Boolean(maskEditing&&single?.mask?.disabled)} tool={tool} source={paintSource?.layerId===single?.id?paintSource:null} onSample={()=>{setSourceArmed(true);setMessage('')}} onClear={()=>setPaintSource(null)}/>}
+{selectionTools.some(([id])=>id===tool)&&<SelectionActions operation={operation} onOperation={setOperation} hasSelection={Boolean(document.selection)} busy={disabled||selectionBusy||painting.busy} canSubject={single?.kind==='image'} subject={selectSubject} subjectStatus={subjectStatus} subjectStage={subjectStage} invert={()=>change({...document,selection:{...document.selection,inverted:!document.selection.inverted}})} clear={()=>change({...document,selection:undefined})}/>}
+{document.selection&&single?.kind==='image'&&!maskEditing&&<div className="selection-actions"><ColorControl aria-label="选区填充颜色" value={fillColor} onChange={e=>setFillColor(e.target.value)}/><Button disabled={disabled||selectionBusy||painting.busy||inherited(document.layers,single,'locked')} onClick={()=>fillSelection(false)}>填充图片选区</Button></div>}
+{maskEditing&&<div className="mask-selection-actions">
+  {!maskPainting&&<MaskInk value={paintOptions.maskMode} onChange={maskMode=>setPaintOptions({...paintOptions,maskMode})} disabled={disabled||selectionBusy||painting.busy||single?.mask?.disabled}/>}
+  <Button aria-label="填充蒙版选区" disabled={disabled||selectionBusy||painting.busy||!document.selection||single.mask?.disabled||inherited(document.layers,single,'locked')||inherited(document.layers,single,'hidden')} onClick={()=>fillSelection(false)}>填充选区</Button>
+</div>}
+
+{tool==='select'&&single?.kind!=='adjustment'&&single?.effects?.length>0&&<EffectTools key={`${single.id}-${effectId}`} layer={{...single,locked:inherited(document.layers,single,'locked')||disabled}} effectId={effectId} onSelect={setEffectId} patch={patch} onDone={()=>setSelected([])}/>}
+{fillProgress !== null ? <><span role="status">内容感知填充 {Math.round(fillProgress * 100)}%</span><Button onClick={() => selectionAbort.current?.abort()}>取消填充</Button></> : null}</div>
+            </details>
+            <LayerAppearance layer={single} patch={patch} disabled={disabled||workspace?.board.locked||Boolean(single&&inherited(document.layers,single,'locked'))}/>
+            {tool==='select'&&!maskEditing&&single?.kind==='adjustment'&&adjustmentTypes[single.adjustment?.type]&&<AdjustmentTools key={'adjustment-'+single.id} layer={{...single,locked:inherited(document.layers,single,'locked')||workspace?.board.locked||disabled}} patch={patch} onCompare={held=>setComparison(held?single.id:null)} comparing={comparison===single.id} onPreview={previewAdjustment} onAdjustmentCommit={commitAdjustment} onDone={closeProperties}/>}
             {!single&&workspace?workspace.inspector:<LayerProperties key={single?.id||'empty'} compact boardName={workspace?.board.name} maskEditing={maskEditing} maskPreview={maskViewId===single?.id?maskPreviewMode:"composite"} maskBusy={selectionBusy||painting.busy} onMaskView={mode=>changeMaskView(single?.id,mode)} onLoadMask={loadMaskSelection} layer={single?{...single,locked:disabled||workspace?.board.locked||inherited(document.layers,single,'locked')}:null} patch={patch} document={document} change={change}/>}
             {single&&workspace&&<label className="layer-board-transfer">所属画板<Select aria-label="移动图层到画板" value={workspace.board.id} onChange={e=>workspace.relocate(selected,e.target.value,'inside')} disabled={disabled||inherited(document.layers,single,'locked')}>{workspace.boards.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select></label>}
-          </>:inspectorTab==='adjustments'?<div className="inspector-adjustments"><h3>调整图层</h3><p className="inspector-caption">添加可随时修改的调整图层</p><div className="adjustment-grid">{Object.entries(adjustmentTypes).map(([type,spec])=><Button key={type} icon="adjust" disabled={disabled||selectionBusy} onClick={()=>addAdjustment(type)}>{spec.label}</Button>)}</div></div>:<div className="inspector-navigation"><div className="board-actions"><Button icon="fit" onClick={()=>fit(true)}>所有画板</Button><Button icon="fit" onClick={()=>fit()}>聚焦画板</Button></div>{workspace?.boards.map(b=><Button key={b.id} aria-pressed={workspace.board.id===b.id} onClick={()=>{workspace.activate(b.id);setBoardTool(true)}}><Icon name="layout"/><span>{b.name}<small>{b.width} × {b.height}</small></span></Button>)}</div>}
           </div>
+        </aside>}
+        <aside className="layer-sidebar" aria-label="图层与历史记录">
+          <div className="panel-heading inspector-tabs" aria-label="图层辅助面板">
+            {[['adjustments','调整'],['navigation','导航']].map(([id,label])=><Button key={id} aria-pressed={inspectorTab===id} onClick={()=>setInspectorTab(id)}>{label}</Button>)}
+            <Button className="layer-inspector-toggle" aria-label="打开所选属性" icon="adjust" aria-expanded={propertiesOpen} onClick={()=>setPropertiesOpen(true)}>属性</Button>
+          </div>
+          <div className="layer-dock-inspector">{inspectorTab==='adjustments'?<div className="inspector-adjustments"><h3>调整图层</h3><p className="inspector-caption">添加可随时修改的调整图层</p><div className="adjustment-grid">{Object.entries(adjustmentTypes).map(([type,spec])=><Button key={type} icon="adjust" disabled={disabled||selectionBusy} onClick={()=>addAdjustment(type)}>{spec.label}</Button>)}</div></div>:<div className="inspector-navigation"><div className="board-actions"><Button icon="fit" onClick={()=>fit(true)}>所有画板</Button><Button icon="fit" onClick={()=>fit()}>聚焦画板</Button></div>{workspace?.boards.map(b=><Button key={b.id} aria-pressed={workspace.board.id===b.id} onClick={()=>{workspace.activate(b.id);setBoardTool(true)}}><Icon name="layout"/><span>{b.name}<small>{b.width} × {b.height}</small></span></Button>)}</div>}</div>
           <div className="composition-layer-heading"><Button aria-pressed={layerTab==='layers'} onClick={()=>setLayerTab('layers')}>图层</Button><Button aria-pressed={layerTab==='history'} onClick={()=>setLayerTab('history')}>历史记录</Button><span/><Button iconOnly icon="search" aria-pressed={searchOpen} onClick={()=>{setSearchOpen(!searchOpen);setLayerTab('layers');if(searchOpen)setLayerQuery('')}}>搜索图层</Button></div>
           {layerTab==='layers'?<>
           {searchOpen&&<div className="layer-search"><Input autoFocus aria-label="搜索图层名称" placeholder="搜索图层…" value={layerQuery} onChange={e=>setLayerQuery(e.target.value)} allowClear/></div>}
-          <LayerAppearance layer={single} patch={patch} disabled={disabled||workspace?.board.locked||Boolean(single&&inherited(document.layers,single,'locked'))}/>
           <div className="layer-filter-row"><span>锁定</span><Button iconOnly icon="locked" disabled={!single||disabled} onClick={()=>workspace?workspace.patchLayer(single.id,{locked:!single.locked}):commit(document.layers.map(l=>l.id===single.id?{...l,locked:!l.locked}:l))}>{single?.locked?'解锁所选图层':'锁定所选图层'}</Button><span className="filter-spacer"/><label>筛选<Select aria-label="筛选图层类型" value={layerFilter} onChange={e=>setLayerFilter(e.target.value)}>{[['all','全部'],['image','图片'],['text','文字'],['group','画板与分组'],['shape','形状'],['adjustment','调整']].map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></label></div>
                     <LayerTree
-            query={layerQuery} kind={layerFilter}
+            query={layerQuery} kind={layerFilter} propertiesOpen={propertiesOpen}
             layers={workspace?.layers || shown.layers}
             selected={selected.length?selected:workspace?[workspace.board.id]:[]}
-            choose={(id,extend)=>{if((workspace?.layers||document.layers).find(l=>l.id===id)?.kind==='adjustment'){setClosedAdjustment(null);setTool('select');setMaskViewId(null)}(workspace?.choose||choose)(id,extend);setPaintOptions({...paintOptions,target:'image'});setInspectorTab('properties');setBoardTool(Boolean(workspace?.layers.find(l=>l.id===id)?.artboard))}}
+            choose={(id,extend,inspect)=>{if(inspect||(workspace?.layers||document.layers).find(l=>l.id===id)?.kind==='adjustment'){setTool('select');setMaskViewId(null)}(workspace?.choose||choose)(id,extend);setPaintOptions({...paintOptions,target:'image'});if(inspect){const same=selected.length===1?selected[0]===id:!selected.length&&workspace?.board.id===id;if(same&&propertiesOpen&&paintOptions.target!=='mask')closeProperties(false);else setPropertiesOpen(true);}setBoardTool(Boolean(workspace?.layers.find(l=>l.id===id)?.artboard))}}
             disabled={disabled}
             relocate={workspace?.relocate || relocate}
-            assets={document.assets} paintTarget={paintOptions.target} onMaskView={id=>changeMaskView(id,maskViewId===id&&maskPreviewMode==="alone"?"composite":"alone")} onMask={id=>{const layer=(workspace?.layers||document.layers).find(l=>l.id===id);if(!layer.mask)(workspace?.patchLayer||((id,values)=>change({...document,layers:document.layers.map(l=>l.id===id?{...l,...values}:l)})))(id,{mask:{x:0,y:0,width:1,height:1}});workspace?.selectMask(id);setSelected([id]);setPaintOptions({...paintOptions,target:"mask"});setInspectorTab("properties")}}
+            assets={document.assets} paintTarget={paintOptions.target} onMaskView={id=>changeMaskView(id,maskViewId===id&&maskPreviewMode==="alone"?"composite":"alone")} onMask={id=>{const layer=(workspace?.layers||document.layers).find(l=>l.id===id);if(!layer.mask)(workspace?.patchLayer||((id,values)=>change({...document,layers:document.layers.map(l=>l.id===id?{...l,...values}:l)})))(id,{mask:{x:0,y:0,width:1,height:1}});workspace?.selectMask(id);setSelected([id]);setPaintOptions({...paintOptions,target:"mask"});setPropertiesOpen(true)}}
             patch={workspace?.patchLayer || ((id, values) =>
               run(() =>
                 commit(
@@ -2068,7 +2146,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           />
           </>:<div className="composition-history"><div className="board-actions"><Button icon="undo" disabled={!editHistory?.past.length||disabled} onClick={editHistory?.undo}>撤销</Button><Button icon="redo" disabled={!editHistory?.future.length||disabled} onClick={editHistory?.redo}>重做</Button></div><p className="inspector-caption">本次打开工程的记录 · {editHistory?.past.length||0} 步可撤销</p><div className="history-current"><Icon name="edit"/> 当前状态</div>{[...(editHistory?.past||[])].reverse().map((snapshot,i)=><div className="history-entry" key={i}><Icon name="clock"/><span>编辑前 {i+1}<small>{snapshot.layers.length} 个图层 · {snapshot.name}</small></span></div>)}</div>}
           <div className="composition-layer-footer">
-            <Button iconOnly icon="mask" disabled={!single||disabled||inherited(document.layers,single,'locked')} onClick={()=>{setPaintOptions({...paintOptions,target:'mask'});setTool('brush');setInspectorTab('properties')}}>编辑所选蒙版</Button>
+            <Button iconOnly icon="mask" disabled={!single||disabled||inherited(document.layers,single,'locked')} onClick={()=>{setPaintOptions({...paintOptions,target:'mask'});setTool('brush');setPropertiesOpen(true)}}>编辑所选蒙版</Button>
             <Button iconOnly icon="adjust" onClick={()=>setInspectorTab('adjustments')}>添加调整图层</Button>
             <Button iconOnly icon="open" disabled={!selected.length||disabled} onClick={()=>action(()=>groupLayers(document.layers,selected))}>编组所选图层</Button>
             <Button iconOnly icon="copy" disabled={!selected.length||disabled} onClick={()=>action(()=>duplicateLayers(document.layers,selected))}>复制所选图层</Button>

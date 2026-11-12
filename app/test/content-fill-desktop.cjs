@@ -156,7 +156,7 @@ app.on("browser-window-created", (_e, window) => {
         );
         await js(`fillQA.fixture(${JSON.stringify(report.id)})`);
         await reopen();
-        await openMenu("选区");
+        await openMenu("选区操作");
         check(
           "selection menu exposes content-aware fill",
           await js(

@@ -6,7 +6,7 @@ import {findBuiltinFont} from '../core/builtin-fonts.cjs';
 import {fontFaces,builtinFace,requestedWeight,textFontWeight,nearestWeight,weightLabel} from '../core/font-weights.cjs';
 import './controls.css';
 
-export function FontPicker({layer,onChange}) {
+export function FontPicker({layer,onChange,compact=false}) {
   const [library,setLibrary]=useState({custom:[],system:[]}),[loading,setLoading]=useState(false),[pending,setPending]=useState(null),[error,setError]=useState(''),[downloads,setDownloads]=useState({});
   const alive=useRef(true),request=useRef(0),select=useRef(null),currentLayer=useRef(layer.id);currentLayer.current=layer.id;
   const applying=!!pending,shown=pending?.layerId===layer.id?pending.font:layer;
@@ -64,7 +64,7 @@ export function FontPicker({layer,onChange}) {
       onOpenChange={open=>{if(open)refresh().then(()=>requestAnimationFrame(()=>select.current?.scrollTo({index:0})));}} onSelect={next=>choose(next)}/></span>
     </label>
     <label>粗细
-      <span className="studio-select"><Select aria-label="字体粗细" value={weight} options={weightOptions} suffixIcon={<Icon name="collapse"/>} disabled={layer.locked||applying||weights.length===1}
+      <span className="studio-select"><Select aria-label="字体粗细" labelRender={compact?option=>weightLabel(option.value).split(' · ')[0]:undefined} value={weight} options={weightOptions} suffixIcon={<Icon name="collapse"/>} disabled={layer.locked||applying||weights.length===1}
         classNames={{popup:{root:'studio-select-popup'}}} onSelect={chooseWeight}/></span>
     </label>
     {error&&<small role="alert">{error}</small>}

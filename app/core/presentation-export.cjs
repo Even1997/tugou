@@ -1,6 +1,6 @@
 const fs=require('node:fs/promises');
 const PptxGenJS=require('pptxgenjs');
-const {sizes,validate,presentationFont,rectangleRadii,rectangleOutline}=require('./presentations.cjs');
+const {sizes,validate,presentationFont,rectangleRadii,rectangleOutline,presentationLineEndpoints}=require('./presentations.cjs');
 const {textFontWeight}=require('./font-weights.cjs');
 const {safePath,resourcePattern,hash}=require('./storage.cjs');
 const {applyPresentationEffects}=require('./presentation-effects.cjs');
@@ -11,7 +11,11 @@ async function exportPresentation(deck,assets,root){
   const images=new Map();let total=0,totalPixels=0;
   for(const source of deck.slides){const s=pptx.addSlide();s.background={color:source.background.slice(1)};
     for(const e of source.elements){if(e.visible===false)continue;const box={x:e.x/96,y:e.y/96,w:e.w/96,h:e.h/96,rotate:e.rotation};
-      if(e.kind==='text')s.addText(e.text,{...box,fontFace:e.fontFamily,fontSize:e.fontSize*.75,bold:textFontWeight(presentationFont(e))>=600,italic:e.italic,color:e.color.slice(1),align:e.align,valign:'top',margin:0,breakLine:false,paraSpaceAfter:0});
+      if(e.kind==='text')s.addText(require('./rich-text.cjs').styledRuns(e).map(r=>({text:r.text,options:{fontFace:r.fontFamily,fontSize:r.fontSize*.75,bold:r.fontWeight>=600,italic:r.italic,color:r.color.slice(1)}})),{...box,fontFace:e.fontFamily,fontSize:e.fontSize*.75,bold:textFontWeight(presentationFont(e))>=600,italic:e.italic,color:e.color.slice(1),align:e.align,valign:'top',margin:0,breakLine:false,paraSpaceAfter:0});
+      else if(e.kind==='line'){
+        const [a,b]=presentationLineEndpoints(e);
+        s.addShape(pptx.ShapeType.line,{x:Math.min(a.x,b.x)/96,y:Math.min(a.y,b.y)/96,w:Math.abs(b.x-a.x)/96,h:Math.abs(b.y-a.y)/96,flipH:b.x<a.x,flipV:b.y<a.y,line:{color:e.stroke.slice(1),width:e.strokeWidth*.75}});
+      }
       else if(e.kind==='image'){
         let data=images.get(e.assetId);
         if(!data){const asset=assets.find(a=>a.id===e.assetId);if(!resourcePattern.test(asset.resource||'')||!(/\.(png|jpe?g|webp|gif)$/i.test(asset.resource)))throw Error('请使用已保存到素材库的图片');

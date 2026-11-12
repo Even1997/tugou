@@ -9,6 +9,7 @@
 .task-filters button[aria-pressed=true] { background:var(--accent-bg); color:var(--accent); }
 .task-filters button>span { font-size:12px; font-variant-numeric:tabular-nums; }
 .task-order { color:var(--muted); font-size:12px; white-space:nowrap; }
+.task-toolbar-actions { display:flex; align-items:center; gap:12px; flex-shrink:0; }
 .task-list { overflow:auto; min-height:160px; max-height:62vh; scrollbar-gutter:stable; }
 .task-row { display:grid; grid-template-columns:28px minmax(0,1fr) 120px; column-gap:12px; padding:14px 22px; border-bottom:1px solid var(--line); }
 .task-row:last-child { border-bottom:0; }
@@ -41,3 +42,6 @@
 .task-dialog :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 @media(max-width:700px){.task-toolbar{align-items:flex-start;flex-direction:column;gap:8px;padding:0 16px 12px}.task-row{grid-template-columns:28px minmax(0,1fr);padding:16px;gap:8px 12px}.task-actions{grid-column:2;flex-direction:row;flex-wrap:wrap;align-items:center}.task-row-heading{gap:8px}.task-order{display:none}}
 @media(max-height:650px){.task-dialog.ant-modal{top:16px}.task-dialog.ant-modal .ant-modal-container{max-height:calc(100dvh - 32px)}}
+
+.task-dialog .task-row,.task-dialog .task-toolbar { border-color:var(--panel-line); }
+.task-filters button,.task-type-icon { border-radius:6px; }

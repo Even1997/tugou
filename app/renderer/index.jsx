@@ -20,6 +20,7 @@ import { analysisToCanvas } from "../core/analysis-draft.cjs";
 import { MaterialDetails } from "./material-details.jsx";
 import { CanvasImageViewer } from './canvas-image-viewer.jsx';
 import { TaskPanel } from "./tasks.jsx";
+import { HelpPanel } from './help.jsx';
 import { applyResults } from "../core/results.cjs";
 import { stageOutputs } from "../core/generation-output.cjs";
 import "./ui.css";
@@ -33,7 +34,7 @@ import {PreferencesProvider,usePreferences} from './preferences.jsx';
 import {commandFor,shortcutBlocked} from '../core/shortcuts.cjs';
 import {SettingsWorkspace} from './settings.jsx';
 import {PresentationsWorkspace} from './presentations.jsx';
-import {HomeWorkspace} from './home.jsx';
+import {HomeWorkspace,workspaceNames} from './home.jsx';
 import {UpdatePrompt} from './update-prompt.jsx';
 import {useDevPreview} from './dev-preview.jsx';
 import * as pages from '../core/pages.cjs';
@@ -60,6 +61,8 @@ function App() {
   const [record, setRecord] = useState(previewBootstrap.snapshot?.record||null);
   useEffect(()=>{document.title=record?.document.name?`${record.document.name} · 土狗`:'土狗';},[record?.document.name]);
   const [workspace, setWorkspace] = useState(previewBootstrap.snapshot?.workspace||"home");
+  const [lastWorkspace,setLastWorkspace]=useState(()=>{const value=localStorage.getItem('tugou-last-workspace');return Object.hasOwn(workspaceNames,value)?value:null;});
+  useEffect(()=>{if(Object.hasOwn(workspaceNames,workspace)){setLastWorkspace(workspace);localStorage.setItem('tugou-last-workspace',workspace);}},[workspace]);
 
   const [recipeId, setRecipeId] = useState(previewBootstrap.snapshot?.recipeId||null);
   const [moduleId, setModuleId] = useState(previewBootstrap.snapshot?.moduleId||null);
@@ -76,6 +79,7 @@ function App() {
   const [tasks, setTasks] = useState([]),
     [tasksOpen, setTasksOpen] = useState(false);
   const [tasksReady,setTasksReady]=useState(false);
+  const [helpOpen,setHelpOpen]=useState(false);
   const seenResults = useRef(new Set(previewBootstrap.snapshot?.seenResults||[]));
   const history = useRef(previewBootstrap.snapshot?.history||{ past: [], future: [] });
   const pageViews=useRef(previewBootstrap.snapshot?.pageViews||{});
@@ -419,7 +423,7 @@ function App() {
           seenResults.current = new Set();
           setRecord(next);
           setModuleId(null);
-          if(workspace==='home')setWorkspace('canvas');
+          if(workspace==='home'&&lastWorkspace)setWorkspace(lastWorkspace);
           setLayerSelection([]);
           setRecipeId(null);
           setToolSession(null);
@@ -457,6 +461,7 @@ function App() {
   return (
     <div className={"app-shell workspace-" + workspace}>
       <StudioHeader
+        help={()=>setHelpOpen(true)}
         openGithub={() => run(() => api.settings('sourcePage'))}
         deleteProject={deleteProject}
         rename={(name) => change({ ...present.current.document, name })}
@@ -479,14 +484,18 @@ function App() {
         canRedo={Boolean(history.current.future.length)}
       />
       {preview}
-      {(error||autosave.error) && (
+      {error && (
         <div className="message error" role="alert">
-          {error||autosave.error}
-          <Button iconOnly icon="close" onClick={() => {setError('');autosave.clearError();}} aria-label="关闭错误">
+          {error}
+          <Button iconOnly icon="close" onClick={() => setError('')} aria-label="关闭错误">
             ×
           </Button>
         </div>
       )}
+      {autosave.error&&<div className="message error save-recovery" role="alert">
+        <div><strong>尚未保存到磁盘</strong><span>{autosave.error}</span><span>当前编辑仍在此窗口中。请处理错误后重试，并确认顶部显示“已保存”。</span></div>
+        <Button icon="refresh" disabled={busy||autosave.state==='saving'} onClick={save}>重试保存</Button>
+      </div>}
       {record?.recovered && (
         <div className="message">
           当前从上次备份恢复，请检查后保存。损坏的当前文件尚未被覆盖。
@@ -511,7 +520,7 @@ function App() {
               addToCanvas={addToCanvas} addToLayers={(...args)=>{if(!busyRef.current){addAssetLayer(...args);setToolSession(null);}}} />
           </div>
         </FormDialog>}
-        {workspace === 'ppt' ? <PresentationsWorkspace key={record?.id||'empty'} record={record} change={change} disabled={busy} save={save} undo={()=>travel('undo')} redo={()=>travel('redo')} canUndo={Boolean(history.current.past.length)} canRedo={Boolean(history.current.future.length)} createProject={()=>switchProject(()=>api.create('演示文稿工程'))}/> : workspace === 'home' ? <HomeWorkspace projects={projects} projectsReady={projectsReady} record={record} tasks={tasks} tasksReady={tasksReady} busy={busy} create={()=>switchProject(()=>api.create('未命名创作'))} open={id=>switchProject(()=>api.open(id))} navigate={setWorkspace} showTasks={()=>setTasksOpen(true)}/> : workspace === 'settings' ? <SettingsWorkspace openModels={()=>setConnectionOpen(true)} modelsOpen={connectionOpen} /> : workspace === "fonts" ? <FontWorkspace /> : record ? (
+        {workspace === 'ppt' ? <PresentationsWorkspace key={record?.id||'empty'} record={record} change={change} disabled={busy} save={save} undo={()=>travel('undo')} redo={()=>travel('redo')} canUndo={Boolean(history.current.past.length)} canRedo={Boolean(history.current.future.length)} createProject={()=>switchProject(()=>api.create('演示文稿工程'))}/> : workspace === 'home' ? <HomeWorkspace lastWorkspace={lastWorkspace} projects={projects} projectsReady={projectsReady} record={record} tasks={tasks} tasksReady={tasksReady} busy={busy} create={()=>switchProject(()=>api.create('未命名创作'))} open={id=>switchProject(()=>api.open(id))} navigate={setWorkspace} showTasks={()=>setTasksOpen(true)}/> : workspace === 'settings' ? <SettingsWorkspace openModels={()=>setConnectionOpen(true)} modelsOpen={connectionOpen} /> : workspace === "fonts" ? <FontWorkspace /> : record ? (
           <>
             <div className="document-heading">
               <input
@@ -526,7 +535,7 @@ function App() {
                 {record.document.width} × {record.document.height} px
               </span>
             </div>
-            <div
+            {(workspace!=='prompts'||sync.outdated||sync.conflicts||sync.missing)?<div
               className={
                 workspace === "layers" ? "workflow-toolbar composition-toolbar-placeholder" : workspace === "prompts"
                   ? "workflow-toolbar prompt-toolbar"
@@ -554,9 +563,8 @@ function App() {
                   {sync.missing} 项来源已删除
                 </span>
               )}
-              {workspace === "prompts" && <Button iconOnly icon="analyze" disabled={busy} onClick={() => analyzeImage()}>参考图分析</Button>}
               <div id="canvas-actions" />
-            </div>
+            </div>:null}
             {['canvas','layers'].includes(workspace)&&<PageTabs document={record.document} kind={workspace} disabled={busy} activate={activatePage} edit={editPage}/>}
             <fieldset disabled={busy} className="workspace-content">
               {workspace === "prompts" ? (
@@ -568,6 +576,7 @@ function App() {
                   onRecipeSelect={setRecipeId}
                   generateRecipe={generateRecipe}
                   openConnection={()=>setConnectionOpen(true)}
+                  analyzeImage={analyzeImage}
                   busy={busy}
                   document={record.document}
                   change={change}
@@ -684,6 +693,7 @@ function App() {
           }}
         />
       )}
+      <HelpPanel open={helpOpen} close={()=>setHelpOpen(false)} showTasks={()=>setTasksOpen(true)}/>
       {connectionOpen && (
         <ConnectionDialog close={() => setConnectionOpen(false)} />
       )}

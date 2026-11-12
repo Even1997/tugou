@@ -222,6 +222,13 @@ function createLayer(kind, patch = {}) {
     ...patch,
   };
 }
+function moveLineEndpoint(layers,layer,index,target,snap=false){
+  const {lineEndpoints,lineBounds}=require('./shapes.cjs'),ends=lineEndpoints(layer.width,layer.height,layer.linePoints),m=worldMatrix(layers,layer),fixed=point(m,ends[1-index].x,ends[1-index].y);
+  if(snap){const b=lineBounds(fixed,target,true),end=lineEndpoints(b.width,b.height,b.linePoints)[1];target={x:b.x+end.x,y:b.y+end.y};}
+  ends[index]=localPoint(layers,layer,target.x,target.y);
+  const box=lineBounds(ends[0],ends[1]),origin=point(matrix(layer),box.x,box.y),offset=matrix({...layer,...box,x:0,y:0});
+  return {...layer,...box,x:origin.x-offset[4],y:origin.y-offset[5]};
+}
 function moveLayers(layers, ids, dx, dy) {
   const selected = new Set(roots(layers, ids).map((l) => l.id));
   return layers.map((l) => {
@@ -490,6 +497,8 @@ function validateLayers(layers) {
     if (!l || typeof l.id !== "string" || ids.has(l.id))
       throw new Error("图层标识重复或无效");
     ids.add(l.id);
+    require('./rich-text.cjs').validateTextRuns(l);
+    if(l.linePoints!==undefined&&!require('./shapes.cjs').validLinePoints(l.linePoints))throw Error('直线端点无效');
     if(l.fontWeight!==undefined&&(!Number.isInteger(l.fontWeight)||l.fontWeight<1||l.fontWeight>1000))throw Error('文字粗细无效');
     if(l.fontResource&&(l.kind!=='text'||!/^[a-f0-9]{64}\.ttf$/.test(l.fontResource.resource)||typeof l.fontResource.projectId!=='string'||typeof l.fontResource.jobId!=='string'))throw Error('文字字体资源无效');
     if (l.kind === 'adjustment') require('./adjustments.cjs').validateAdjustment(l.adjustment);
@@ -668,6 +677,7 @@ module.exports = {
   alignLayers,
   distributeLayers,
   validateLayers,
+  moveLineEndpoint,
   nativeBlends,
   unsupported,
   snapDelta,

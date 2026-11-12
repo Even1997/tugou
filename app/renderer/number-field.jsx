@@ -27,7 +27,7 @@ export function NumberField({
       (max === undefined || n <= max)
     ) {
       if (n !== value) onChange(n);
-    } else setDraft(String(value ?? 0));
+    } else setDraft(String(Math.round((value ?? 0) * 100) / 100));
   };
   return (
     <label className={shortLabel ? 'compact-number' : undefined}>

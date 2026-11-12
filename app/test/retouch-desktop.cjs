@@ -328,7 +328,7 @@ app.on("browser-window-created", (_e, window) => {
         check(
           "960px top tools and parameters stay within viewport",
           await js(
-            'document.documentElement.scrollWidth<=innerWidth&&document.querySelector(".layer-parameter-row").getBoundingClientRect().height<65',
+            'document.documentElement.scrollWidth<=innerWidth&&document.querySelector(".layer-property-sidebar .layer-parameter-row").scrollWidth<=document.querySelector(".layer-property-sidebar .layer-parameter-row").clientWidth+1',
           ),
         );
         await fs.promises.writeFile(

@@ -43,7 +43,7 @@ function applyContent(slide,{confirmConflicts=false}={}){
   content.blocks=content.blocks.map((b,i)=>{
     let e=elements.find(e=>e.id===b.elementId);
     if(!e){e=require('./presentations.cjs').element('text',{x:72,y:56+(i%5)*120,w:800,h:100,fontSize:i?28:42,bold:!i});elements.push(e);}
-    e.text=b.text;const {draft,...clean}=b;return {...clean,elementId:e.id,baseText:b.text};
+    Object.assign(e,require('./rich-text.cjs').patchText(e,{text:b.text}));const {draft,...clean}=b;return {...clean,elementId:e.id,baseText:b.text};
   });
   return {...slide,content,elements};
 }

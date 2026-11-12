@@ -37,13 +37,13 @@ module.exports=async({w,js,delay,check,wait,click,set,shot,save:readSaved,load,k
   await click('撤销');await save();await load();await click('选择 目标图片');await click('编辑 目标图片 的蒙版');check('disabled state survives undo and reopening',(await save()).layers[1].mask.disabled&&await js(`document.querySelector('.mask-context-label').textContent.includes('已停用')`));
   layers[0].selection={paths:[{operation:'add',points:[180,180,380,180,380,380,180,380]}]};delete layers[1].mask;
   report.id=await js(`(async()=>{const r=await tugou.create('选区生成蒙版后填充');await tugou.save(r.id,{...r.document,width:600,height:600,layers:${JSON.stringify(layers)}},r.revision);return r.id})()`);await load();await click('选择 目标图片');
-  await click('更多编辑工具','summary');await click('蒙版','.composition-more summary');await click('选区生成蒙版','.layer-menu button');await save();
+  await click('蒙版','.composition-primary-tools .layer-menu summary');await click('选区生成蒙版','.layer-menu button');await save();
   check('new mask becomes active editing target',await js(`document.querySelector('[aria-label="编辑 目标图片 的蒙版"]').getAttribute('aria-pressed')==='true'&&!!document.querySelector('.mask-properties')`));
   await key('Escape');
   await click('填充蒙版选区','.mask-selection-actions button');await wait('!document.querySelector("[aria-label=填充蒙版选区]").disabled');doc=await save();
   check('filling newly created mask leaves image pixels unchanged',JSON.stringify(doc.layers[1].bitmap)===JSON.stringify(bitmap)&&(await pixel(doc.layers[1].mask.bitmap,200,200))[3]===0);
   await shot('new-mask-fill');await click('撤销');await save();await click('蒙版载入选区');await save();await click('选择 目标图片');
-  await click('更多编辑工具','summary');await click('蒙版','.composition-more summary');await click('选区生成蒙版','.layer-menu button');await save();
+  await click('蒙版','.composition-primary-tools .layer-menu summary');await click('选区生成蒙版','.layer-menu button');await save();
   check('bitmap selection also creates an active mask target',await js(`document.querySelector('[aria-label="编辑 目标图片 的蒙版"]').getAttribute('aria-pressed')==='true'&&!!document.querySelector('.mask-properties')`));
   await key('Escape');
   await click('填充蒙版选区','.mask-selection-actions button');await wait('!document.querySelector("[aria-label=填充蒙版选区]").disabled');doc=await save();check('bitmap selection fill updates only mask',JSON.stringify(doc.layers[1].bitmap)===JSON.stringify(bitmap)&&(await pixel(doc.layers[1].mask.bitmap,200,200))[3]===0);
