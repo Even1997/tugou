@@ -24,9 +24,9 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   check('real Windows installed font enumeration',lib.system.length>20&&lib.system.some(f=>f.family==='Microsoft YaHei'));
   check('unpublished fonts are absent from dropdown',lib.custom.length===0);
   const projects=await run('font.project.list'),target=projects.projects.find(p=>p.name.includes('粗圆'));
-  await run('workspace.show',{workspace:'fonts'});await wait(`!!Array.from(document.querySelectorAll('.font-project-card')).find(e=>e.textContent.includes('粗圆'))`);
-  await js(`Array.from(document.querySelectorAll('.font-project-card')).find(e=>e.textContent.includes('粗圆')).click()`);await wait(`!!Array.from(document.querySelectorAll('.font-publish button')).find(e=>e.textContent==='发布'&&!e.disabled)`);
-  await js(`document.querySelector('.font-publish button').click()`);await wait(`document.querySelector('.font-publish button')?.textContent==='已发布'`);
+  await run('workspace.show',{workspace:'fonts'});await wait(`!!Array.from(document.querySelectorAll('.font-project-open')).find(e=>e.textContent.includes('粗圆'))`);
+  await js(`Array.from(document.querySelectorAll('.font-project-open')).find(e=>e.textContent.includes('粗圆')).click()`);await wait(`!!Array.from(document.querySelectorAll('.font-publish button.ant-btn-primary')).find(e=>e.textContent==='发布'&&!e.disabled)`);
+  await js(`document.querySelector('.font-publish button.ant-btn-primary').click()`);await wait(`document.querySelector('.font-publish button.ant-btn-primary')?.textContent==='已发布'`);
   check('one click compiles and publishes current glyphs',(await run('font.project.get',{projectId:target.id})).published.sourceRevision===target.current);
   await shot('published-dark');Object.assign(lib,await run('font.library'));check('only published custom font appears',lib.custom.length===1&&lib.custom[0].ready);
   await run('font.project.create',{name:'未生成字体检查',characters:'测试',requestId:require('crypto').randomUUID()});
@@ -72,8 +72,8 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
   const rebuilding=await run('font.build',{projectId:custom.projectId,fontRevision:fontBefore.fontRevision,requestId:require('crypto').randomUUID(),mode:'draft'});
   let built;do{await delay(200);built=await run('font.job.get',{projectId:custom.projectId,id:rebuilding.jobId});}while(['queued','running'].includes(built.task.status));check('new preview builds without changing published font',(await run('font.library')).custom[0].jobId===custom.jobId);
   const beforePublish=await run('font.project.get',{projectId:custom.projectId});
-  await run('workspace.show',{workspace:'fonts'});await wait(`!!Array.from(document.querySelectorAll('.font-project-card')).find(e=>e.textContent.includes('粗圆'))`);await js(`Array.from(document.querySelectorAll('.font-project-card')).find(e=>e.textContent.includes('粗圆')).click()`);
-  await wait(`document.querySelector('.font-publish button')?.textContent==='更新发布'&&!document.querySelector('.font-publish button').disabled`);await js(`document.querySelector('.font-publish button').click()`);await wait(`document.querySelector('.font-publish button')?.textContent==='已发布'`);
+  await run('workspace.show',{workspace:'fonts'});await wait(`!!Array.from(document.querySelectorAll('.font-project-open')).find(e=>e.textContent.includes('粗圆'))`);await js(`Array.from(document.querySelectorAll('.font-project-open')).find(e=>e.textContent.includes('粗圆')).click()`);
+  await wait(`document.querySelector('.font-publish button.ant-btn-primary')?.textContent==='更新发布'&&!document.querySelector('.font-publish button.ant-btn-primary').disabled`);await js(`document.querySelector('.font-publish button.ant-btn-primary').click()`);await wait(`document.querySelector('.font-publish button.ant-btn-primary')?.textContent==='已发布'`);
   const afterPublish=await run('font.project.get',{projectId:custom.projectId});check('update publish reuses completed preview without another build',afterPublish.jobs.length===beforePublish.jobs.length&&afterPublish.published.fontResource.jobId===rebuilding.jobId);
   check('dropdown now selects new publication',(await run('font.library')).custom[0].jobId===rebuilding.jobId);
   check('republishing leaves existing text font version intact',(await object(id)).fontResource.jobId===custom.jobId&&await preview()===customPng);await shot('published-light');
