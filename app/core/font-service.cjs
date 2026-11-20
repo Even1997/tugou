@@ -28,7 +28,7 @@ class FontService {
   }
   async current(p){if(!p.current)fail('NO_FONT_SOURCE','请先处理图集并应用候选');const r=await this.result(p,p.current);if(!r.result?.report||r.task?.status!=='completed')fail('NOT_READY','字体源尚未就绪');return r;}
   async execute(name,a,access){
-    if(name==='font.download')return this.downloads.ensure(a.id);
+    if(name==='font.download')return require('./font-catalog.cjs').downloadFont(this,a);
     // Includes asynchronous completions only through immutable job files; metadata has a single writer.
     const operation=()=>this.dispatch(name,a,access);
     const next=this.pending.then(operation);this.pending=next.catch(()=>{});return next;

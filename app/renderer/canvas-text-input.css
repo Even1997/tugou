@@ -1,5 +1,6 @@
 .layer-text-editor .tiptap,.ppt-text-editor .tiptap{min-height:100%;outline:none;white-space:pre-wrap;overflow-wrap:break-word;cursor:text;user-select:text}
 .layer-text-editor .tiptap p,.ppt-text-editor .tiptap p{margin:0;min-height:1lh}
+[data-keep-preview] .tiptap{-webkit-text-fill-color:transparent;caret-color:currentColor}
 .tiptap .canvas-text-selection{background:color-mix(in srgb,var(--accent) 18%,transparent)}
 .tiptap:focus .canvas-text-selection{background:transparent}
 .tiptap ::selection{background:color-mix(in srgb,var(--accent) 28%,transparent)}

@@ -168,10 +168,13 @@ async function boot() {
   const fonts=await require('./core/font-desktop.cjs').registerFonts({root,tasks,handle,dialog,window});
   handle('create', (name) => projects.create(name));
   handle('open', async(id) => {const record=await projects.read(id);await settings?.remember(record);return record;});
-  handle('save', async(id, document, revision) => {
+  handle('save', async(id, document, revision, metadataOnly) => {
     // A failed recent-project update must not hide a successfully committed revision.
     await projects.projectPath(id);await settings?.remember({id});
-    return projects.save(id,document,revision);
+    const saved=await projects.save(id,document,revision,{detached:true});
+    if(metadataOnly!==true)return saved;
+    const {document:snapshot,...metadata}=saved;
+    return {...metadata,name:snapshot.name};
   });
   handle('import', async () => {
     const choice = await dialog.showOpenDialog(window, { title: '只读导入旧版工程', properties: ['openFile'], filters: [{ name: '土狗工程', extensions: ['json'] }] });

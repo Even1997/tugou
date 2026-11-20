@@ -1,6 +1,6 @@
 const {textFontWeight}=require('./font-weights.cjs');
-const styleKeys=['fontFamily','fontResource','fontSize','fontWeight','color','italic'];
-const baseStyle=e=>({fontFamily:e.fontFamily||'Microsoft YaHei',fontResource:e.fontResource||null,fontSize:e.fontSize||32,fontWeight:textFontWeight({...e,fontWeight:e.fontWeight??(e.bold?700:undefined)}),color:e.color||'#222222',italic:e.italic??!!e.fontStyle?.includes('italic')});
+const styleKeys=['fontFamily','fontResource','fontSource','fontSize','fontWeight','color','italic'];
+const baseStyle=e=>({fontFamily:e.fontFamily||'Microsoft YaHei',fontResource:e.fontResource||null,fontSource:e.fontSource||null,fontSize:e.fontSize||32,fontWeight:textFontWeight({...e,fontWeight:e.fontWeight??(e.bold?700:undefined)}),color:e.color||'#222222',italic:e.italic??!!e.fontStyle?.includes('italic')});
 const textRuns=e=>e.textRuns||[{text:e.text||''}];
 const styledRuns=e=>textRuns(e).map(r=>({...baseStyle(e),...r}));
 function compactRuns(runs){
@@ -16,6 +16,7 @@ function validateTextRuns(e,min=1,max=1000,limit=100000){
   for(const r of e.textRuns){
     if(!r||!str(r.text,limit)||Object.keys(r).some(k=>k!=='text'&&!styleKeys.includes(k)))fail();
     if(r.fontFamily!==undefined&&!str(r.fontFamily,100))fail();
+    if(r.fontSource!=null&&r.fontSource!=='system')fail();
     if(r.fontSize!==undefined&&(!Number.isFinite(r.fontSize)||r.fontSize<min||r.fontSize>max))fail();
     if(r.fontWeight!==undefined&&(!Number.isInteger(r.fontWeight)||r.fontWeight<1||r.fontWeight>1000))fail();
     if(r.italic!==undefined&&typeof r.italic!=='boolean')fail();
@@ -28,7 +29,9 @@ function sliceRuns(runs,start,end){let at=0;return runs.flatMap(r=>{const text=r
 // Plain-text fields and MCP edits retain the formatting of unchanged text.
 function patchText(e,patch){
   if(e.kind!=='text')return {...e,...patch};
-  const next={...e,...patch};if(Object.hasOwn(patch,'textRuns'))return next;
+  const next={...e,...patch};
+  if(e.fontSource&&Object.hasOwn(patch,'fontFamily')&&!Object.hasOwn(patch,'fontSource'))next.fontSource=null;
+  if(Object.hasOwn(patch,'textRuns'))return next;
   if(!e.textRuns)return next;
   let runs=e.textRuns;
   if(patch.text!==undefined&&patch.text!==e.text){
@@ -39,7 +42,7 @@ function patchText(e,patch){
     runs=[...sliceRuns(runs,0,start),{...style,text:text.slice(start,text.length-end)},...sliceRuns(runs,old.length-end,old.length)];
   }
   const keys=styleKeys.filter(k=>Object.hasOwn(patch,k));
-  if(Object.hasOwn(patch,'fontFamily'))keys.push('fontResource');
+  if(Object.hasOwn(patch,'fontFamily'))keys.push('fontResource','fontSource');
   if(Object.hasOwn(patch,'bold')||Object.hasOwn(patch,'fontStyle'))keys.push('fontWeight');
   if(Object.hasOwn(patch,'fontStyle'))keys.push('italic');
   next.textRuns=compactRuns(runs.map(r=>Object.fromEntries(Object.entries(r).filter(([k])=>!keys.includes(k)))));

@@ -5,7 +5,7 @@ function legacyBold(layer){return layer.fontWeight===undefined&&!!layer.fontStyl
 function fontFaces(font){return [{...font,weight:font.weight||400},...(font.variants||[])];}
 function nearestWeight(weights,value){return [...weights].sort((a,b)=>Math.abs(a-value)-Math.abs(b-value)||a-b)[0]||400;}
 function builtinFace(layer){
-  const font=!layer.fontResource&&findBuiltinFont(layer.fontFamily);
+  const font=!layer.fontResource&&layer.fontSource!=='system'&&findBuiltinFont(layer.fontFamily);
   if(!font)return;
   if(legacyBold(layer))return {...font,weight:font.weight||400};
   const faces=fontFaces(font),weight=nearestWeight(faces.map(f=>f.weight),requestedWeight(layer));

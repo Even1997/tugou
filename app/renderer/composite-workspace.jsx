@@ -1,5 +1,6 @@
 import {useImageImport} from './use-image-import.js';
 import {createLayer} from '../core/layers.cjs';
+import {ImageCache} from '../core/image-cache.cjs';
 import {ColorControl} from './color-control.jsx';
 import {useUiView,views} from './ui-view.js';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
@@ -28,7 +29,9 @@ function BoardInspector({board,patch,resize,scaleContent,setScaleContent,createB
 }
 export function CompositeWorkspace({document,change,selected,setSelected,initialPageView,onPageView,...props}) {
   const normalized=useMemo(()=>artboards.normalize(document),[document]);
-  const list=artboards.boards(normalized);
+  const list=useMemo(()=>artboards.boards(normalized),[normalized.layers]);
+  const images=useMemo(()=>({imageCache:new ImageCache(160*1024*1024),previewCache:new ImageCache(32*1024*1024)}),[props.projectId]);
+  useEffect(()=>()=>{images.imageCache.clear();images.previewCache.clear();},[images]);
   const [activeId,setActiveId]=useState(null),[dialog,setDialog]=useState(null),[error,setError]=useState('');
   const [maskId,setMaskId]=useState(null);
   const [context,setContext]=useState(null),[exportRequest,setExportRequest]=useState(null),[notice,setNotice]=useState('');
@@ -49,6 +52,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
   const selectedOwner=selected.length ? artboards.owner(normalized,selected[0]) : null;
   const board=selectedOwner || list.find(b=>b.id===activeId) || list[0];
   const local=useMemo(()=>board?artboards.extract(normalized,board.id):null,[normalized,board?.id]);
+  const preview=useMemo(()=>local?artboards.display(normalized,board.id,local):null,[normalized,board?.id,local]);
   latest.current={normalized,board,source:document,disabled:props.disabled,projectId:props.projectId};
   const run=fn=>{try{setError('');return fn()}catch(e){setError(e.message);return false}};
   const activate=(id,ids=[])=>{setActiveId(id);setSelected(ids)};
@@ -112,15 +116,10 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     importPsd:()=>openPsd(false),exportPsd:()=>openPsd(true),
     export:frame=>{setNotice('');setExportRequest({document:normalized,id:board.id,single:true,frame});},
     contextMenu:(event,id,time=0)=>{event.preventDefault();event.stopPropagation();if(!props.disabled&&!materialControl.current)setContext({id,time,layer:!list.some(b=>b.id===id),x:event.clientX,y:event.clientY});},
-    board,boards:list.map(b=>({...b,x:b.x-board.x,y:b.y-board.y})),layers:normalized.layers,
+    board,boards:list.map(b=>({...b,x:b.x-board.x,y:b.y-board.y})),layers:normalized.layers,images,preview,
     initialView:view.current ? {...view.current,x:view.current.x+board.x*view.current.zoom,y:view.current.y+board.y*view.current.zoom}:null,
     onView:v=>{view.current={...v,x:v.x-board.x*v.zoom,y:v.y-board.y*v.zoom};onPageView?.(view.current)},
-    compose:(edited,drag)=>{
-      const rendered=artboards.display(normalized,board.id,edited);
-      if(!drag)return rendered;
-      const b=artboards.boards(rendered).find(b=>b.id===drag.id);
-      return artboards.update(rendered,b.id,{x:b.x+drag.dx,y:b.y+drag.dy});
-    },
+    compose:(edited,drag)=>edited===local&&!drag?preview:artboards.display(normalized,board.id,edited,drag),
     addShape:(layer,id)=>run(()=>{if(list.find(b=>b.id===id)?.locked)throw Error('请先解锁画板');const result=save({...normalized,layers:[...normalized.layers,{...layer,parentId:id}]});if(result!==false)activate(id,[layer.id]);return result}),
     activate,choose,relocate,maskId,selectMask:id=>{const b=artboards.owner(normalized,id);if(b){setMaskId(id);activate(b.id,[id])}},
     move:(id,dx,dy)=>run(()=>{const b=list.find(b=>b.id===id);return save(artboards.update(normalized,id,{x:b.x+dx,y:b.y+dy}),{deferSave:true})}),
@@ -133,7 +132,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     {error&&<div className="message error" role="alert">{error}<Button iconOnly icon="close" onClick={()=>setError('')}>关闭错误</Button></div>}
     {notice&&<div className="message" role="status">{notice}<Button iconOnly icon="close" onClick={()=>setNotice('')}>关闭保存提示</Button></div>}
     {materialSaving&&<div className="message" role="status">正在保存到素材…</div>}
-    <LayerEditor key={board.id} {...props} disabled={props.disabled||!!exportRequest||!!psdRequest} document={local} change={edit} selected={selected.filter(id=>local.layers.some(l=>l.id===id))} setSelected={setSelected} workspace={workspace}/>
+    <LayerEditor key={`${props.projectId}:${board.id}`} {...props} disabled={props.disabled||!!exportRequest||!!psdRequest} document={local} change={edit} selected={selected.filter(id=>local.layers.some(l=>l.id===id))} setSelected={setSelected} workspace={workspace}/>
     {psdDialog}
     {context&&<Dropdown open trigger={[]} autoFocus overlayClassName="board-context-menu" onOpenChange={open=>{if(!open)setContext(null);}} menu={{items:context.layer?[
       {key:'material',label:'保存到素材',icon:<Icon name="assets"/>},

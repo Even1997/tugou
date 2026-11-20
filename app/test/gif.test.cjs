@@ -1,5 +1,5 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),sharp=require('sharp'),fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path');
-const {encodeGif,inspectGif,limits}=require('../core/gif.cjs'),{timeline,frameAt}=require('../core/gif-timeline.cjs');
+const {encodeGif,inspectGif,limits}=require('../core/gif.cjs'),{timeline,frameAt,nextVisibleFrame}=require('../core/gif-timeline.cjs');
 const png=(color,width=16,height=16)=>sharp({create:{width,height,channels:4,background:color}}).png().toBuffer();
 test('GIF encoding preserves ordered pixels, delays, dimensions and loop',async()=>{
  const bytes=await encodeGif([await png('red'),await png('blue')],{width:16,height:16,delays:[100,250],loop:0});
@@ -32,4 +32,12 @@ test('timeline uses actual frame durations, repeats shorter GIFs and respects hi
 test('GIF batch export names use correct extensions and avoid overwrites',async t=>{
  const dir=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'gif-export-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));await fs.writeFile(path.join(dir,'动图.gif'),'existing');
  const targets=await require('../core/image-export.cjs').batchTargets(dir,['动图','动图'],'gif');assert.deepEqual(targets.map(p=>path.basename(p)),['动图 (2).gif','动图 (3).gif']);
+});
+test('preview ignores offscreen GIF timings and resumes on the visible frame change',()=>{
+ const near={frames:2,delays:[300,300],loop:0},far={frames:2,delays:[100,100],loop:0};
+ const frames=timeline({assets:[{id:'near',gif:near},{id:'far',gif:far}],layers:[{id:'a',kind:'image',assetId:'near'},{id:'b',kind:'image',assetId:'far'}]});
+ assert.equal(nextVisibleFrame(frames,0,new Set()),null);
+ assert.deepEqual(nextVisibleFrame(frames,0,new Set([near])),{index:3,delay:300});
+ assert.deepEqual(nextVisibleFrame(frames,3,new Set([near])),{index:0,delay:300});
+ assert.deepEqual(nextVisibleFrame(frames,0,new Set([near,far])),{index:1,delay:100});
 });

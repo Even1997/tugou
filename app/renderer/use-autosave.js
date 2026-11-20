@@ -12,13 +12,14 @@ export function useAutosave(context){
     dirty:()=>latest.current.dirtyRef.current,
     blocked:()=>latest.current.busyRef.current||input.current.pointers.size>0||input.current.dragging||Date.now()<input.current.scrollUntil,
     snapshot:()=>latest.current.pageDocument(),
-    write:(...args)=>window.tugou.save(...args),
+    write:(id,document,revision)=>window.tugou.save(id,document,revision,true),
     commit:(saved,unchanged)=>{
       const c=latest.current;
-      c.present.current={...saved,document:c.present.current.document};
+      const {name,...metadata}=saved;
+      c.present.current={...metadata,document:c.present.current.document};
       c.setRecord(c.present.current);
       if(unchanged)c.markDirty(false);
-      c.setProjects(list=>list.map(p=>p.id===saved.id?{...p,name:saved.document.name,revision:saved.revision,updatedAt:saved.updatedAt,recovered:false}:p));
+      c.setProjects(list=>list.map(p=>p.id===saved.id?{...p,name:name??saved.document?.name,revision:saved.revision,updatedAt:saved.updatedAt,recovered:false}:p));
     },
     status:(next,message='')=>{setState(next);setError(message);},
   });

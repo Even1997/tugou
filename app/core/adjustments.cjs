@@ -181,7 +181,7 @@ function noise(x, y, seed) {
   n = Math.imul(n ^ (n >>> 13), 1274126177);
   return ((n ^ (n >>> 16)) >>> 0) / 4294967295 - 0.5;
 }
-function adjustPixels(data, width, a, { scale = 1, x = 0, y = 0 } = {}) {
+function adjustPixels(data, width, a, { scale = 1, x = 0, y = 0, pixelX = 0, pixelY = 0 } = {}) {
   validateAdjustment(a);
   const type = a.type;
   // Relative SDR color controls, not Kelvin white balance or RAW highlight recovery.
@@ -322,8 +322,8 @@ function adjustPixels(data, width, a, { scale = 1, x = 0, y = 0 } = {}) {
     } else if (type === "grain" || type === "noise") {
       const index = i / 4,
         size = type === "grain" ? a.size : 1,
-        px = Math.floor((x + (index % width) / scale) / size),
-        py = Math.floor((y + Math.floor(index / width) / scale) / size);
+        px = Math.floor((x + (index % width + pixelX) / scale) / size),
+        py = Math.floor((y + (Math.floor(index / width) + pixelY) / scale) / size);
       for (let c = 0; c < 3; c++)
         data[i + c] +=
           noise(px, py, a.seed + (a.monochrome ? 0 : c * 107)) *

@@ -17,17 +17,22 @@ export function FontPicker({layer,onChange,compact=false}) {
     finally{if(alive.current&&id===request.current)setLoading(false);}
   }
   useEffect(()=>{alive.current=true;refresh();const off=window.tugou.onFontDownload(state=>setDownloads(previous=>({...previous,[state.id]:state})));return()=>{alive.current=false;off();};},[]);
-  function label(text,face,family=shown.fontFamily){
+  async function download(id){
+    setError('');
+    try{await window.tugou.fontCommand('font.download',{id});}
+    catch(e){if(alive.current)setError('字体下载失败：'+e.message);}
+  }
+  function label(text,face){
     const state=face&&downloads[face.id];
-    return <span className="font-option-label"><span>{text}</span>{face&&state?.status!=='ready'&&(state?.status==='downloading'?<span role="progressbar" aria-label="字体下载进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.percent} title={`下载中 ${state.percent}%`}><Progress type="circle" strokeColor="var(--accent)" trailColor="var(--line)" percent={state.percent} size={18} strokeWidth={10} showInfo={false}/></span>:<button type="button" className="font-cloud" data-font-id={face.id} disabled={layer.locked||applying} title={state?.status==='error'?'下载失败，点击重试':'点击下载，完成后离线可用'} aria-label={state?.status==='error'?'重试字体下载':'下载字体'} onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={e=>{e.stopPropagation();choose('builtin:'+family,face.weight);}}>{state?.status==='error'?<Icon name="sync"/>:<Icon name="cloudDownload"/>}</button>)}</span>;
+    return <span className="font-option-label"><span>{text}</span>{face&&state?.status!=='ready'&&(state?.status==='downloading'?<span role="progressbar" aria-label="字体下载进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.percent} title={`下载中 ${state.percent}%`}><Progress type="circle" strokeColor="var(--accent)" trailColor="var(--line)" percent={state.percent} size={18} strokeWidth={10} showInfo={false}/></span>:<button type="button" className="font-cloud" data-font-id={face.id} disabled={layer.locked||applying} title={state?.status==='error'?'下载失败，点击重试':'点击下载，完成后离线可用'} aria-label={state?.status==='error'?'重试字体下载':'下载字体'} onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' ')e.stopPropagation();}} onClick={e=>{e.stopPropagation();download(face.id);}}>{state?.status==='error'?<Icon name="sync"/>:<Icon name="cloudDownload"/>}</button>)}</span>;
   }
   const custom=library.custom.map(f=>({value:`custom:${f.projectId}:${f.jobId||''}`,label:f.name+(f.ready?'':' · 未生成'),searchText:f.name,disabled:!f.ready,font:f}));
-  const builtin=(library.builtin||[]).map(f=>({value:'builtin:'+f.family,label:label(f.name,builtinFace({fontFamily:f.family,fontWeight:requestedWeight(shown)}),f.family),title:f.name,searchText:[f.family,f.name,...f.aliases].join(' ')}));
+  const builtin=(library.builtin||[]).map(f=>({value:'builtin:'+f.family,label:label(f.name,builtinFace({fontFamily:f.family,fontWeight:requestedWeight(shown)})),title:f.name,searchText:[f.family,f.name,...f.aliases].join(' ')}));
   const system=library.system.map(f=>({value:'local:'+f.family,label:f.name,searchText:[f.family,f.name,...f.aliases].join(' ')}));
-  const currentBuiltin=findBuiltinFont(shown.fontFamily);
+  const currentBuiltin=shown.fontSource!=='system'&&findBuiltinFont(shown.fontFamily);
   function weightsFor(font){
     if(font.fontResource)return [400];
-    const builtin=findBuiltinFont(font.fontFamily);
+    const builtin=font.fontSource!=='system'&&findBuiltinFont(font.fontFamily);
     return builtin?fontFaces(builtin).map(f=>f.weight).sort((a,b)=>a-b):library.system.find(f=>f.family===font.fontFamily)?.weights||[400];
   }
   const weights=weightsFor(shown),weight=textFontWeight(shown);
@@ -36,14 +41,14 @@ export function FontPicker({layer,onChange,compact=false}) {
   const value=shown.fontResource?`custom:${shown.fontResource.projectId}:${shown.fontResource.jobId}`:currentBuiltin?'builtin:'+currentBuiltin.family:'local:'+(shown.fontFamily||'Microsoft YaHei');
   if(![...custom,...builtin,...system].some(f=>f.value===value))(layer.fontResource?custom:currentBuiltin?builtin:system).unshift({value,label:currentBuiltin?.name||layer.fontFamily||'Microsoft YaHei',searchText:layer.fontFamily||'Microsoft YaHei'});
   const options=[...(custom.length?[{label:'自定义字体',options:custom}]:[]),...(builtin.length?[{label:'字体目录',options:builtin}]:[]),{label:'本机字体',options:system}];
-  async function choose(next,desiredWeight){
+  async function choose(next){
     const layerId=layer.id;setError('');
     try{
       let patch;
-      if(next.startsWith('local:'))patch={fontFamily:next.slice(6),fontResource:null};
-      else if(next.startsWith('builtin:'))patch={fontFamily:next.slice(8),fontResource:null};
+      if(next.startsWith('local:'))patch={fontFamily:next.slice(6),fontSource:'system',fontResource:null};
+      else if(next.startsWith('builtin:'))patch={fontFamily:next.slice(8),fontSource:null,fontResource:null};
       else {const f=custom.find(f=>f.value===next)?.font;if(!f)return;patch=await window.tugou.fontCommand('font.face',{projectId:f.projectId,jobId:f.jobId});}
-      patch.fontWeight=nearestWeight(weightsFor(patch),desiredWeight??requestedWeight(layer));
+      patch.fontWeight=nearestWeight(weightsFor(patch),requestedWeight(layer));
       setPending({layerId,font:patch});
       await loadTextFont(patch);
       if(alive.current&&currentLayer.current===layerId)onChange(patch);

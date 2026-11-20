@@ -4,7 +4,7 @@ const {lineBounds,lineEndpoints,validLinePoints}=require('./shapes.cjs');
 const uid=()=>globalThis.crypto.randomUUID();
 const sizes={'16:9':[1280,720],'4:3':[960,720]};
 const colors=['#1765d1','#202631','#b95714'];
-const presentationFont=e=>({fontFamily:e.fontFamily,fontWeight:e.fontWeight??(e.bold?700:400),fontResource:e.fontResource});
+const presentationFont=e=>({fontFamily:e.fontFamily,fontWeight:e.fontWeight??(e.bold?700:400),fontSource:e.fontSource,fontResource:e.fontResource});
 const rectangleRadius=e=>rectangleRadii(e)[0];
 const cornerKeys=['topLeft','topRight','bottomRight','bottomLeft'];
 const rectangleRadii=e=>{if(e.kind!=='rect')return [0,0,0,0];const value=e.cornerRounding??e.cornerRadius??0,limit=Math.min(e.w,e.h)/2,scale=e.cornerRounding===undefined?1:limit/100;return cornerKeys.map(k=>Math.min((typeof value==='object'?value[k]:value)*scale,limit));};
@@ -46,6 +46,7 @@ function validate(decks,assets=[]){
         for(const [key,max] of [['cornerRadius',2500],['cornerRounding',100]])if(e[key]!==undefined){const v=e[key],valid=n=>Number.isFinite(n)&&n>=0&&n<=max;if(e.kind!=='rect'||(typeof v==='number'?!valid(v):!v||Array.isArray(v)||Object.keys(v).length!==4||!cornerKeys.every(k=>Object.hasOwn(v,k)&&valid(v[k]))))fail();}
         if(e.fontWeight!==undefined&&(e.kind!=='text'||!Number.isInteger(e.fontWeight)||e.fontWeight<1||e.fontWeight>1000))fail();
         if(e.fontResource!=null&&(e.kind!=='text'||!/^[a-f0-9]{64}\.ttf$/.test(e.fontResource.resource)||!text(e.fontResource.projectId,100)||!e.fontResource.projectId||!text(e.fontResource.jobId,100)||!e.fontResource.jobId))fail();
+        if(e.fontSource!=null&&(e.kind!=='text'||e.fontSource!=='system'))fail();
         require('./rich-text.cjs').validateTextRuns(e,8,240,10000);
         if(e.kind==='text'&&(!text(e.text,10000)||!hex(e.color)||!text(e.fontFamily,100)||!Number.isFinite(e.fontSize)||e.fontSize<8||e.fontSize>240||typeof e.bold!=='boolean'||typeof e.italic!=='boolean'||!['left','center','right'].includes(e.align)))fail();
         if(['rect','ellipse'].includes(e.kind)&&!hex(e.fill))fail();

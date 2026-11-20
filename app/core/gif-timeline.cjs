@@ -10,13 +10,17 @@ function frameAt(gif,time=0){
   return 0;
 }
 function timeline(doc){
+  const gifs=new Map((doc.assets||[]).filter(a=>a.gif?.frames>1).map(a=>[a.id,a.gif]));
+  if(!gifs.size)return [{time:0,delay:100}];
+  const byId=new Map((doc.layers||[]).map(l=>[l.id,l]));
   const animations=[];
   for(const layer of doc.layers||[]){
     if(layer.kind!=='image'||layer.bitmap)continue;
+    const gif=gifs.get(layer.assetId);
+    if(!gif)continue;
     let current=layer,hidden=false;const seen=new Set();
-    while(current&&!seen.has(current.id)){seen.add(current.id);if(current.visible===false)hidden=true;current=doc.layers.find(l=>l.id===current.parentId);}
-    const gif=doc.assets.find(a=>a.id===layer.assetId)?.gif;
-    if(!hidden&&gif?.frames>1){validate(gif);animations.push(gif);}
+    while(current&&!seen.has(current.id)){seen.add(current.id);if(current.visible===false)hidden=true;current=byId.get(current.parentId);}
+    if(!hidden){validate(gif);animations.push(gif);}
   }
   if(!animations.length)return [{time:0,delay:100}];
   const duration=Math.max(...animations.map(g=>g.delays.reduce((a,b)=>a+b,0))),times=new Set([0,duration]);
@@ -27,4 +31,14 @@ function timeline(doc){
   const sorted=[...times].sort((a,b)=>a-b);
   return sorted.slice(0,-1).map((time,i)=>({time,delay:sorted[i+1]-time}));
 }
-module.exports={frameAt,timeline};
+function nextVisibleFrame(frames,index,gifs){
+  if(!gifs.size||frames.length<2)return null;
+  const current=[...gifs].map(gif=>[gif,frameAt(gif,frames[index].time)]);
+  let delay=frames[index].delay;
+  for(let next=(index+1)%frames.length;next!==index;next=(next+1)%frames.length){
+    if(current.some(([gif,number])=>frameAt(gif,frames[next].time)!==number))return {index:next,delay};
+    delay+=frames[next].delay;
+  }
+  return null;
+}
+module.exports={frameAt,timeline,nextVisibleFrame};

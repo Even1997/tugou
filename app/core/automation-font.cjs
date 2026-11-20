@@ -3,9 +3,10 @@ function register(define,{string,object,enumeration}) {
   const project={projectId:string}, revision={...project,fontRevision:{type:'integer',minimum:0}}, request={requestId:string};
   const list={type:'array',minItems:1,maxItems:512,uniqueItems:true,items:string};
   define('font.status','字体运行环境和边界；不安装依赖',{},[],'read');
-  define('font.library','列出字体目录、本机字体、已发布自定义字体；faces 包含每个字重的 id 和下载状态，cloud 需联网下载，ready 可离线使用。用 family、fontWeight 设置文字图层',{},[],'read');
-  define('font.download','按目录中的字重 id 下载并校验字体，缓存后离线可用；重复请求复用缓存或正在进行的下载，不修改工程，不安装系统字体',{id:string},['id'],'file');
-  define('font.face','取得已发布自定义字体的工程内资源引用；把结果传给文字图层属性即可使用，不安装系统字体',{projectId:string,jobId:string},['projectId','jobId'],'read');
+  const fontWeight={type:'integer',minimum:1,maximum:1000};
+  define('font.library','列出全部本机字体、云字体及已发布自定义字体；云字体的 faces 提供字重 ID 和下载状态，ready 可离线使用。用 font.face 取得可应用的文字属性',{},[],'read');
+  define('font.download','按云字体字重 id 或 family（也接受名称和别名）及可选 fontWeight 下载。按名称下载时返回 font 属性供图层和 PPT 使用。下载后离线可用，不改变文档',{id:string,family:string,fontWeight},[],'file');
+  define('font.face','取得文字属性供图层和 PPT 使用。本机或云字体传 source:system/cloud、family（也接受名称和别名）和可选 fontWeight；已发布自定义字体传 projectId、jobId。可用 font.download 提前缓存云字体',{source:enumeration('system','cloud'),family:string,fontWeight,projectId:string,jobId:string},[],'read');
   define('font.publish','将基于当前字形源的已完成build/refine发布到土狗字体列表；不公开上传，不改变已有文字的字体版本。尚无编译产物时先font.build并等待完成',{...revision,...request,jobId:string},['projectId','fontRevision','requestId','jobId'],'file');
   define('font.project.create','新建独立字体工程，字符顺序去重；返回 fontRevision',{name:{type:'string',minLength:1,maxLength:64},characters:{type:'string',maxLength:131066},...request},['name','characters','requestId'],'file');
   define('font.project.list','列出独立字体工程',{},[],'read');
