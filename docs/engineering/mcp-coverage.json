@@ -24,7 +24,7 @@
     {"area":"画板 PNG / GIF 导出","status":"covered","handlers":["chooseExport","cancelExport","writeExport"],"commands":["artboard.export","artboard.timeline","artboard.exportAnimation","task.result","task.cancel"],"note":"PNG 单帧或 GIF 帧范围异步导出，帧号从 1 起；受控目录、不覆盖文件。PSD 复用界面保存位置令牌，但需专用编码写入；PSD 未接 MCP，见对应条目"},
     {"area":"GIF 编码","status":"covered","handlers":["encodeGif"],"commands":["gif.create","task.result","task.cancel"],"note":"有序图片、逐帧时长、尺寸与循环；输出素材可直接加入图层或画布"},
     {"area":"原生编辑和剪贴板","status":"uiOnly","handlers":["editCommand"],"commands":["history.undo","history.redo"],"note":"业务对象复制使用 canvas.duplicate / layer.duplicate，撤销重做已有命令；系统剪贴板和输入框剪切仍由用户控制"},
-    {"area":"宿主窗口、剪贴板和脏状态","status":"uiOnly","handlers":["copyText","dirty","window"],"commands":[],"note":"脏状态由编辑自动维护，窗口与剪贴板不属于文档创作命令"}
+    {"area":"宿主窗口、剪贴板和脏状态","status":"uiOnly","handlers":["copyText","dirty","closeReady","window"],"commands":[],"note":"编辑自动更新脏状态，关闭窗口时由渲染进程回报保存结果"}
   ],
   "editor": [
     {"area":"PPT 文稿、页面、元素与演示","source":"app/renderer/presentations.jsx","status":"covered","commands":["ppt.list","ppt.get","ppt.create","ppt.rename","ppt.duplicate","ppt.delete","ppt.slide.create","ppt.slide.update","ppt.slide.duplicate","ppt.slide.delete","ppt.slide.move","ppt.element.create","ppt.element.update","ppt.element.duplicate","ppt.element.delete","ppt.element.move","ppt.element.effects","ppt.open","ppt.close","ppt.preview","ppt.present","ppt.export"],"note":"共用字体和素材库；元素图层排序、隐藏、锁定及内外阴影和边框；可批次撤销、PNG 预览和全屏翻页。PPTX 导入按原定范围后续提供"},
