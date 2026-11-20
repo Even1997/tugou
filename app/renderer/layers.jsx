@@ -1,4 +1,4 @@
-import {timeline} from '../core/gif-timeline.cjs';
+import {timeline,nextVisibleFrame} from '../core/gif-timeline.cjs';
 import './gif.css';
 import {LayerTextEditor} from './layer-text-editor.jsx';
 import {fitLayerText,layerTextBounds,loadLayerTextFonts} from './layer-text-layout.js';
@@ -98,6 +98,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   const preferences=usePreferences();
   const [replacement,setReplacement]=useState(null);
   const [editingText,setEditingText]=useState(null);
+  const [editingDraft,setEditingDraft]=useState(false);
   const [localPropertiesOpen,setLocalPropertiesOpen]=useState(true);
   const propertiesOpen=workspace?.propertiesOpen??localPropertiesOpen,setPropertiesOpen=workspace?.setPropertiesOpen||setLocalPropertiesOpen;
   const [inspectorTab,setInspectorTab]=useState('adjustments'),[layerTab,setLayerTab]=useState('layers');
@@ -235,9 +236,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     paintTarget:paintOptions.target,
     workspace,
   };
-  if (!engine.current) engine.current = new Compositor();
+  if (!engine.current) engine.current = new Compositor(workspace?.images);
   const painting = usePainting({latest,engine,change,setMessage});
-  const animation=useMemo(()=>{try{return {frames:timeline(workspace?workspace.compose(document):document)}}catch(e){return {frames:[{time:0,delay:100}],error:e.message}}},[document.layers,document.assets,workspace?.layers]);
+  const animationDoc=workspace?.preview||document;
+  const animation=useMemo(()=>{try{return {frames:timeline(animationDoc)}}catch(e){return {frames:[{time:0,delay:100}],error:e.message}}},[animationDoc.layers,animationDoc.assets]);
   const [gifFrame,setGifFrame]=useState(0),[gifPlaying,setGifPlaying]=useState(true);
   const gifIndex=Math.min(gifFrame,animation.frames.length-1),gifTime=animation.frames[gifIndex].time;
 
@@ -270,7 +272,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             const next=patchText(l,values);
             if(!l.textAutoFit)return next;
             if('width' in values||'height' in values){delete next.textAutoFit;return next;}
-            const affectsSize=['text','textRuns','fontSize','fontFamily','fontResource','fontWeight','fontStyle','lineHeight','letterSpacing'].some(key=>key in values);
+            const affectsSize=['text','textRuns','fontSize','fontFamily','fontSource','fontResource','fontWeight','fontStyle','lineHeight','letterSpacing'].some(key=>key in values);
             return affectsSize?fitLayerText(next,document.width):next;
           }),
         ),
@@ -350,10 +352,15 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     }
   }, [size]);
   useEffect(() => {
-    setSelected((previous) =>
-      previous.filter((id) => document.layers.some((l) => l.id === id)),
-    );
+    setSelected(previous=>{
+      const available=new Set(document.layers.map(l=>l.id)),next=previous.filter(id=>available.has(id));
+      return next.length===previous.length?previous:next;
+    });
   }, [document.layers]);
+  const editingId=editingDraft?editingText?.id:undefined;
+  const compared=tool==='select'&&selected.length===1&&comparison===selected[0]?comparison:null;
+  const adjusted=tool==='select'&&selected.length===1&&adjustmentPreview?.source===document&&adjustmentPreview.id===selected[0]?adjustmentPreview:null;
+  const playing=gifPlaying&&animation.frames.length>1&&tool==='select'&&!disabled;
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -372,17 +379,18 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     const frame=requestAnimationFrame(()=>{
     let previewDoc=painting.preview?.document||shown;
-    if(tool==='select'&&selected.length===1){
-      const adjustment=adjustmentPreview?.source===document&&adjustmentPreview.id===selected[0]?adjustmentPreview:null;
-      if(adjustment||comparison===selected[0])previewDoc={...previewDoc,layers:previewDoc.layers.map(l=>l.id===selected[0]?{...l,...(adjustment?{adjustment:adjustment.adjustment}:{}),...(comparison===l.id?{visible:false}:{})}:l)};
-    }
-    if(editingText)previewDoc={...previewDoc,layers:previewDoc.layers.map(l=>l.id===editingText.id?{...l,visible:false}:l)};
+    if(adjusted||compared||editingId)previewDoc={...previewDoc,layers:previewDoc.layers.map(l=>{
+      if(l.id===compared||l.id===editingId)return {...l,visible:false};
+      return l.id===adjusted?.id?{...l,adjustment:adjusted.adjustment}:l;
+    })};
+    const visibleGifs=new Set();
     const render=maskViewId&&maskPreviewMode==="alone"?async()=>{
       const mask=await maskView(previewDoc,previewDoc.layers.find(l=>l.id===maskViewId),engine.current,{width:Math.ceil(size.width*ratio),height:Math.ceil(size.height*ratio),scale:view.zoom*ratio,transform:[view.zoom*ratio,0,0,view.zoom*ratio,view.x*ratio,view.y*ratio],maskOverrides:painting.preview?.maskOverrides});
       output.width=mask.width;output.height=mask.height;output.getContext('2d').drawImage(mask,0,0);mask.width=mask.height=1;
-    }:()=>engine.current
+    }:async()=>engine.current
       .render(workspace ? workspace.compose(previewDoc,boardDraft) : previewDoc, output, {
         time:gifTime,
+        onGif:playing?gif=>visibleGifs.add(gif):undefined,
         maskPreview: maskViewId?{id:maskViewId,mode:maskPreviewMode}:undefined,
         overrides: painting.preview?.overrides,
         maskOverrides: painting.preview?.maskOverrides,
@@ -396,12 +404,16 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     render()
       .then(() => {
         if (controller.signal.aborted) return;
-        canvas.current.width = output.width;
-        canvas.current.height = output.height;
-        canvas.current.getContext("2d").drawImage(output, 0, 0);
+        const target=canvas.current;
+        if(target.width!==output.width)target.width=output.width;
+        if(target.height!==output.height)target.height=output.height;
+        const ctx=target.getContext('2d');
+        ctx.clearRect(0,0,target.width,target.height);
+        ctx.drawImage(output,0,0);
         setRenderError("");
         canvas.current.dataset.rendering='false';
-        if(gifPlaying&&animation.frames.length>1&&tool==='select'&&!disabled)animationTimer=setTimeout(()=>setGifFrame(i=>(i+1)%animation.frames.length),animation.frames[gifIndex].delay);
+        const next=nextVisibleFrame(animation.frames,gifIndex,visibleGifs);
+        if(next)animationTimer=setTimeout(()=>setGifFrame(next.index),next.delay);
       })
       .catch((error) => {
         if (!controller.signal.aborted) setRenderError(error.message);
@@ -411,7 +423,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       });
     });
     return () => {clearTimeout(animationTimer);cancelAnimationFrame(frame);controller.abort()};
-  }, [editingText, shown, view, size, painting.preview,boardDraft,maskViewId,maskPreviewMode,gifTime,gifPlaying,animation,tool,disabled,comparison,adjustmentPreview,selected.join(',')]);
+  }, [editingId,shown,view,size,painting.preview,workspace?.preview,boardDraft,maskViewId,maskPreviewMode,gifTime,gifIndex,playing,animation,compared,adjusted]);
   useEffect(() => {
     let disposed = false;
     if (!selectionPreview.current || !size.width) return;
@@ -1416,7 +1428,28 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
         if (mounted.current) setMerging(false);
       }
     });
-  const issues = unsupported(document.layers);
+  const issues = useMemo(()=>unsupported(document.layers),[document.layers]);
+  const treeLayers=workspace?.layers||shown.layers;
+  const layerTree=useMemo(()=>(
+      <LayerTree
+            query={layerQuery} kind={layerFilter} propertiesOpen={propertiesOpen}
+            layers={treeLayers}
+            selected={selected.length?selected:workspace?[workspace.board.id]:[]}
+            choose={(id,extend,inspect)=>{if(inspect||(workspace?.layers||document.layers).find(l=>l.id===id)?.kind==='adjustment'){setTool('select');setMaskViewId(null)}(workspace?.choose||choose)(id,extend);setPaintOptions({...paintOptions,target:'image'});if(inspect){const same=selected.length===1?selected[0]===id:!selected.length&&workspace?.board.id===id;if(same&&propertiesOpen&&paintOptions.target!=='mask')closeProperties(false);else setPropertiesOpen(true);}setBoardTool(Boolean(workspace?.layers.find(l=>l.id===id)?.artboard))}}
+            disabled={disabled}
+            relocate={(ids,target,placement)=>(workspace?.relocate||relocate)(ids,target,placement,{deferSave:true})}
+            assets={document.assets} paintTarget={paintOptions.target} onMaskView={id=>changeMaskView(id,maskViewId===id&&maskPreviewMode==="alone"?"composite":"alone")} onMask={id=>{const layer=(workspace?.layers||document.layers).find(l=>l.id===id);if(!layer.mask)(workspace?.patchLayer||((id,values)=>change({...document,layers:document.layers.map(l=>l.id===id?{...l,...values}:l)})))(id,{mask:{x:0,y:0,width:1,height:1}});workspace?.selectMask(id);setSelected([id]);setPaintOptions({...paintOptions,target:"mask"});setPropertiesOpen(true)}}
+            patch={workspace?.patchLayer || ((id, values) =>
+              run(() =>
+                commit(
+                  document.layers.map((l) =>
+                    l.id === id ? { ...l, ...values } : l,
+                  ),
+                ),
+              )
+            )}
+          />
+  ),[treeLayers,document,workspace,change,selected,setSelected,layerQuery,layerFilter,propertiesOpen,disabled,paintOptions,maskViewId,maskPreviewMode]);
   const maskEditing=Boolean(single)&&paintOptions.target==='mask';
   const maskPainting=['brush','eraser'].includes(tool)&&maskEditing;
   let brushOutline,sourceMarker;
@@ -1952,7 +1985,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             if (tool === "polygon") {finishPolygon();return;}
             if(disabled||tool!=='select'||workspace?.board.locked||e.target.closest('button,input,textarea'))return;
             const layer=hit(at(e));
-            if(layer?.kind==='text'){drag.current=null;setDraft(null);setSelected([layer.id]);setEditingText(layer);}
+            if(layer?.kind==='text'){drag.current=null;setDraft(null);setSelected([layer.id]);setEditingDraft(false);setEditingText(layer);}
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && tool === "polygon") {
@@ -2071,7 +2104,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           </svg>
           {workspace&&<CanvasRulers view={view} size={size}/>}
           {showControls&&single&&!editingText&&tool==='select'&&<SelectionSizeBadge points={selectionCorners(single)} view={view} size={size}/>}
-          {editingText&&<LayerTextEditor key={editingText.id} layer={editingText} layers={document.layers} view={view} maxWidth={document.width}
+          {editingText&&<LayerTextEditor key={editingText.id} layer={editingText} layers={document.layers} view={view} maxWidth={document.width} draft={editingDraft} onDraft={setEditingDraft}
             onCancel={()=>{setEditingText(null);holder.current?.focus({preventScroll:true});}}
             onCommit={value=>{
               const now=latest.current.document,layer=now.layers.find(l=>l.id===editingText.id);
@@ -2167,24 +2200,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           {layerTab==='layers'?<>
           {searchOpen&&<div className="layer-search"><Input autoFocus aria-label="搜索图层名称" placeholder="搜索图层…" value={layerQuery} onChange={e=>setLayerQuery(e.target.value)} allowClear/></div>}
           <div className="layer-filter-row"><span>锁定</span><Button iconOnly icon="locked" disabled={!single||disabled} onClick={()=>workspace?workspace.patchLayer(single.id,{locked:!single.locked}):commit(document.layers.map(l=>l.id===single.id?{...l,locked:!l.locked}:l))}>{single?.locked?'解锁所选图层':'锁定所选图层'}</Button><span className="filter-spacer"/><label>筛选<Select aria-label="筛选图层类型" value={layerFilter} onChange={e=>setLayerFilter(e.target.value)}>{[['all','全部'],['image','图片'],['text','文字'],['group','画板与分组'],['shape','形状'],['adjustment','调整']].map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></label></div>
-                    <LayerTree
-            query={layerQuery} kind={layerFilter} propertiesOpen={propertiesOpen}
-            layers={workspace?.layers || shown.layers}
-            selected={selected.length?selected:workspace?[workspace.board.id]:[]}
-            choose={(id,extend,inspect)=>{if(inspect||(workspace?.layers||document.layers).find(l=>l.id===id)?.kind==='adjustment'){setTool('select');setMaskViewId(null)}(workspace?.choose||choose)(id,extend);setPaintOptions({...paintOptions,target:'image'});if(inspect){const same=selected.length===1?selected[0]===id:!selected.length&&workspace?.board.id===id;if(same&&propertiesOpen&&paintOptions.target!=='mask')closeProperties(false);else setPropertiesOpen(true);}setBoardTool(Boolean(workspace?.layers.find(l=>l.id===id)?.artboard))}}
-            disabled={disabled}
-            relocate={(ids,target,placement)=>(workspace?.relocate||relocate)(ids,target,placement,{deferSave:true})}
-            assets={document.assets} paintTarget={paintOptions.target} onMaskView={id=>changeMaskView(id,maskViewId===id&&maskPreviewMode==="alone"?"composite":"alone")} onMask={id=>{const layer=(workspace?.layers||document.layers).find(l=>l.id===id);if(!layer.mask)(workspace?.patchLayer||((id,values)=>change({...document,layers:document.layers.map(l=>l.id===id?{...l,...values}:l)})))(id,{mask:{x:0,y:0,width:1,height:1}});workspace?.selectMask(id);setSelected([id]);setPaintOptions({...paintOptions,target:"mask"});setPropertiesOpen(true)}}
-            patch={workspace?.patchLayer || ((id, values) =>
-              run(() =>
-                commit(
-                  document.layers.map((l) =>
-                    l.id === id ? { ...l, ...values } : l,
-                  ),
-                ),
-              )
-            )}
-          />
+          {layerTree}
           </>:<div className="composition-history"><div className="board-actions"><Button icon="undo" disabled={!editHistory?.past.length||disabled} onClick={editHistory?.undo}>撤销</Button><Button icon="redo" disabled={!editHistory?.future.length||disabled} onClick={editHistory?.redo}>重做</Button></div><p className="inspector-caption">本次打开工程的记录 · {editHistory?.past.length||0} 步可撤销</p><div className="history-current"><Icon name="edit"/> 当前状态</div>{[...(editHistory?.past||[])].reverse().map((snapshot,i)=><div className="history-entry" key={i}><Icon name="clock"/><span>编辑前 {i+1}<small>{snapshot.layers.length} 个图层 · {snapshot.name}</small></span></div>)}</div>}
           <div className="composition-layer-footer">
             <Button iconOnly icon="mask" disabled={!single||disabled||inherited(document.layers,single,'locked')} onClick={()=>{setPaintOptions({...paintOptions,target:'mask'});setTool('brush');setPropertiesOpen(true)}}>编辑所选蒙版</Button>

@@ -9,6 +9,10 @@ description: 当前项目后续值得处理的事项
 
 v0.8.19 的 Windows x64、macOS arm64 和 x64 安装包已发布。下述人工体验确认继续保留。 [发布验收](../engineering/release-v0.8.19.md)
 
+多画板、多图层的选中、切换、绘制、图层列表和保存已完成 Windows 源码样例验证。待用真实大工程复测持续拖动帧间隔、大图缓存超预算、高 DPI 与实体 Mac 桌面体验。 [待测试](pending-test.md#多画板与多图层性能)
+
+双击文字、云图标和 MCP 字体改动已移至[待测试](pending-test.md#双击文字与-mcp-字体)。后续在实体 Mac 和高 DPI Windows 上复测选区、候选窗和复杂混排。
+
 PPT 与图层已支持文字选区的字体、字号、颜色、加粗及持久化/导出，验证见[待测试](pending-test.md#ppt-与图层文字选区格式)。后续补实际 WPS/PowerPoint 重开、不同系统输入法候选窗、高 DPI/Mac 与大篇幅混排性能；本次不等同于这些实机验收完成。
 
 PPT 文字双击已改为与图层一致的原位编辑，见[待测试](pending-test.md#ppt-文字双击原位编辑)。不同系统输入法候选窗、触摸输入与高 DPI/Mac 仍需实机确认。

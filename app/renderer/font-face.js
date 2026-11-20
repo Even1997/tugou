@@ -12,7 +12,7 @@ function trimFonts(keep){
 }
 export function textFontFamily(layer) {
   const resource=layer.fontResource?.resource;
-  if(!resource){const builtin=findBuiltinFont(layer.fontFamily);return builtin?'Tugou_Builtin_'+builtin.id+(legacyBold(layer)?'_LegacyBold':''):layer.fontFamily||'Microsoft YaHei';}
+  if(!resource){const builtin=layer.fontSource!=='system'&&findBuiltinFont(layer.fontFamily);return builtin?'Tugou_Builtin_'+builtin.id+(legacyBold(layer)?'_LegacyBold':''):layer.fontFamily||'Microsoft YaHei';}
   if(!/^[a-f0-9]{64}\.ttf$/.test(resource))throw Error('无效的字体资源');
   return 'Tugou_'+resource.slice(0,64);
 }

@@ -41,7 +41,7 @@ function extract(doc, id) {
       if(l.parentId===id){const root={...local};delete root.parentId;return root;}return local;
     })};
 }
-function replace(doc, id, edited) {
+function replaceBoard(doc, id, edited) {
   const b = boards(doc).find(b => b.id === id);
   if (!b) throw Error('画板不存在');
   const ids = descendants(doc.layers,[id]);
@@ -52,6 +52,10 @@ function replace(doc, id, edited) {
     layers:doc.layers.flatMap(l => l.id === id ? [nextBoard,...children] : ids.has(l.id) ? [] : [l])};
   const first = boards(next)[0];
   next.width=first.width; next.height=first.height; next.background=first.background;
+  return next;
+}
+function replace(doc, id, edited) {
+  const next = replaceBoard(doc, id, edited);
   validate(next); return next;
 }
 function create(doc, {width=1024,height=1536,name} = {}) {
@@ -61,7 +65,7 @@ function create(doc, {width=1024,height=1536,name} = {}) {
   const next={...doc,layers:[...doc.layers,b]};validate(next);
   return {document:next,id:b.id};
 }
-function update(doc,id,patch,{scaleContent=false}={}) {
+function updateBoard(doc,id,patch,scaleContent) {
   const b = boards(doc).find(b => b.id === id);
   if (!b) throw Error('画板不存在');
   if(b.locked)throw Error('请先解锁画板');
@@ -76,6 +80,10 @@ function update(doc,id,patch,{scaleContent=false}={}) {
     return scaleContent && l.parentId===id ? {...moved,...decompose(multiply([sx,0,0,sy,0,0],matrix(l)))} : moved;
   })};
   const first=boards(next)[0];next.width=first.width;next.height=first.height;next.background=first.background;
+  return next;
+}
+function update(doc,id,patch,{scaleContent=false}={}) {
+  const next = updateBoard(doc,id,patch,scaleContent);
   validate(next);return next;
 }
 function duplicate(doc,id) {
@@ -94,12 +102,16 @@ function remove(doc,id) {
   const next={...doc,layers:doc.layers.filter(l=>!ids.has(l.id)).map(l=>ids.has(l.maskSourceId)?{...l,maskSourceId:undefined}:l)};
   const first=boards(next)[0];return {...next,width:first.width,height:first.height,background:first.background};
 }
-function display(doc,id,edited) {
-  const combined=replace(doc,id,edited),b=boards(combined).find(b=>b.id===id);
-  return {...combined,infiniteWorkspace:true,selection:undefined,layers:combined.layers.map(l=>{
+function display(doc,id,edited,drag) {
+  // The compositor validates the preview; committing an edit uses replace/update.
+  const combined=replaceBoard(doc,id,edited),b=boards(combined).find(b=>b.id===id);
+  const displayed={...combined,infiniteWorkspace:true,selection:undefined,layers:combined.layers.map(l=>{
     const local=anchorTransform(l,[1,0,0,1,-b.x,-b.y]);
     return l.artboard?{...local,x:l.x-b.x,y:l.y-b.y}:local;
   })};
+  if(!drag)return displayed;
+  const board=boards(displayed).find(b=>b.id===drag.id);
+  return updateBoard(displayed,drag.id,{x:board.x+drag.dx,y:board.y+drag.dy},false);
 }
 function relocate(doc,ids,targetId,placement='inside') {
   if(ids.some(id=>boards(doc).some(b=>b.id===id)))throw Error('拖动画板标题可移动整个画板；画板不能嵌套');

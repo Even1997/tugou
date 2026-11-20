@@ -29,9 +29,16 @@
 | 绘画与修图 | `paint.create` 透明绘画层；`paint.stroke` 支持逐点压感和平滑；`paint.retouch` 支持 `clone/heal/blur/smudge/liquify`；`image.contentFill` 使用当前选区 |
 | 笔刷坐标 | 笔画点为画板坐标；仿制来源 `source:{u,v}` 为原图归一化坐标 0–1；`pressure:true` 时每点 `pressure` 为 0–1 |
 | 排版 | `layout.update` 设置网格、吸附和参考线；参考线位置相对画板 |
+| 文字字体 | `font.library` 列出本机、云端及已发布字体。把 `font.face` 的结果传给图层或 PPT 文字的 `properties` 或 `patch` |
 | 素材筛选 | `asset.search` 按名称、来源、形状筛选，按名称、像素数或时间排序，并分页 |
 | 导演台 | `scene.captureAngles` 拍摄 4/12 方位，创建独立素材和连线结果；`scene.record` 录制 1–60 秒动画为视频素材，后台也能运行 |
 | 迁入 | `project.importLegacy` 导入旧工程及相邻 `resources`；`project.migrateCanvas` 导入包含 `state`、`images` 的历史快照 JSON；保留归档，不切换当前工程 |
+
+## MCP 字体示例
+
+- 本机字体用 `font.face` 传 `{source:'system',family:'Arial',fontWeight:700}`。如果云端目录也有同名字体，仍使用本机字体。
+- 云字体用 `font.download` 传 `{family:'霞鹜文楷',fontWeight:500}`。下载后把结果中的 `font` 传给 `layer.create`、`layer.update`、`ppt.element.create` 或 `ppt.element.update`。也可传目录里的 `{id:'lxgw-wenkai-500'}` 下载，并用 `font.face` 取得字体属性。
+- 已发布自定义字体用 `font.face` 传 `{projectId,jobId}`，将结果作为字体属性使用。
 
 ## GIF 调用示例
 

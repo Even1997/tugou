@@ -8,14 +8,14 @@ const canvas = (w, h) => {
 };
 const clamp = (v) => Math.max(0, Math.min(1, v));
 const order=['shadow','outerGlow','overlay','innerShadow','innerGlow','stroke'];
-export function applyEffects(target, effects, scale = 1) {
+export function applyEffects(target, effects, scale = 1, region) {
   const active = (effects || []).filter((e) => e.enabled && e.opacity > 0).sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type));
   if (!active.length) return;
   active.forEach(validateEffect);
-  const width = target.width,
-    height = target.height,
-    ctx = target.getContext("2d", { willReadFrequently: true }),
-    original = ctx.getImageData(0, 0, width, height),
+  const {x=0,y=0,width=target.width,height=target.height}=region||{};
+  if(width<=0||height<=0)return;
+  const ctx = target.getContext("2d", { willReadFrequently: true }),
+    original = ctx.getImageData(x, y, width, height),
     alpha = Uint8Array.from(
       { length: width * height },
       (_, i) => original.data[i * 4 + 3],
@@ -148,9 +148,9 @@ export function applyEffects(target, effects, scale = 1) {
     }
     const f = front.getContext("2d", { willReadFrequently: true });
     f.putImageData(content, 0, 0);
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(behind, 0, 0);
-    ctx.drawImage(front, 0, 0);
+    ctx.clearRect(x, y, width, height);
+    ctx.drawImage(behind, x, y);
+    ctx.drawImage(front, x, y);
   } finally {
     behind.width = behind.height = front.width = front.height = 1;
   }

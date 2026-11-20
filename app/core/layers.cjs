@@ -50,7 +50,7 @@ function matrix(layer) {
 function worldMatrix(layers, layer, seen = new Set()) {
   if (seen.has(layer.id)) throw new Error("图层分组形成循环");
   seen.add(layer.id);
-  const parent = layers.find((l) => l.id === layer.parentId);
+  const parent = layers instanceof Map ? layers.get(layer.parentId) : layers.find((l) => l.id === layer.parentId);
   return parent
     ? multiply(worldMatrix(layers, parent, seen), matrix(layer))
     : matrix(layer);
@@ -148,8 +148,8 @@ function localCorners(layers,layer) {
   const b=localBounds(layers,layer),q=layer.warp||[0,0,1,0,1,1,0,1];
   return [0,2,4,6].map(i=>({x:b.x+q[i]*b.width,y:b.y+q[i+1]*b.height}));
 }
-function corners(layers, layer) {
-  const m = worldMatrix(layers, layer);
+function corners(layers, layer, parents = layers) {
+  const m = worldMatrix(parents, layer);
   return localCorners(layers,layer).map(p=>point(m,p.x,p.y));
 }
 function bounds(layers, ids) {
@@ -172,7 +172,7 @@ function inherited(layers, layer, key) {
     if (seen.has(layer.id)) return true;
     seen.add(layer.id);
     if (key === "locked" ? layer.locked : layer.visible === false) return true;
-    layer = layers.find((l) => l.id === layer.parentId);
+    layer = layers instanceof Map ? layers.get(layer.parentId) : layers.find((l) => l.id === layer.parentId);
   }
   return false;
 }
@@ -492,15 +492,18 @@ function distributeLayers(layers, ids, axis) {
   return next;
 }
 function validateLayers(layers) {
-  const ids = new Set();
+  const byId = new Map();
+  const {validateTextRuns} = require('./rich-text.cjs');
+  const {validLinePoints} = require('./shapes.cjs');
   for (const l of layers) {
-    if (!l || typeof l.id !== "string" || ids.has(l.id))
+    if (!l || typeof l.id !== "string" || byId.has(l.id))
       throw new Error("图层标识重复或无效");
-    ids.add(l.id);
-    require('./rich-text.cjs').validateTextRuns(l);
-    if(l.linePoints!==undefined&&!require('./shapes.cjs').validLinePoints(l.linePoints))throw Error('直线端点无效');
+    byId.set(l.id, l);
+    validateTextRuns(l);
+    if(l.linePoints!==undefined&&!validLinePoints(l.linePoints))throw Error('直线端点无效');
     if(l.fontWeight!==undefined&&(!Number.isInteger(l.fontWeight)||l.fontWeight<1||l.fontWeight>1000))throw Error('文字粗细无效');
     if(l.fontResource&&(l.kind!=='text'||!/^[a-f0-9]{64}\.ttf$/.test(l.fontResource.resource)||typeof l.fontResource.projectId!=='string'||typeof l.fontResource.jobId!=='string'))throw Error('文字字体资源无效');
+    if(l.fontSource!=null&&(l.kind!=='text'||l.fontSource!=='system'))throw Error('文字字体来源无效');
     if (l.kind === 'adjustment') require('./adjustments.cjs').validateAdjustment(l.adjustment);
     if(l.effects!==undefined){
       if(!Array.isArray(l.effects)||new Set(l.effects.map(e=>e?.id)).size!==l.effects.length)throw new Error('图层特效列表或标识无效');
@@ -537,13 +540,17 @@ function validateLayers(layers) {
         throw new Error("透视四角不能交叉或折叠");
     }
   }
-  for (const l of layers) {
-    if (
-      l.parentId &&
-      !layers.some((p) => p.id === l.parentId && p.kind === "group")
-    )
-      throw new Error("图层分组引用缺失");
-    worldMatrix(layers, l);
+  const checked = new Set();
+  for (const layer of layers) {
+    if (checked.has(layer.id)) continue;
+    const chain = new Set();
+    for (let item = layer; item && !checked.has(item.id); item = byId.get(item.parentId)) {
+      if (chain.has(item.id)) throw new Error("图层分组形成循环");
+      if (item.parentId && byId.get(item.parentId)?.kind !== "group")
+        throw new Error("图层分组引用缺失");
+      chain.add(item.id);
+    }
+    for (const id of chain) checked.add(id);
   }
 }
 const nativeBlends = [

@@ -119,7 +119,7 @@ test('renderer hook keeps live document identity, coalesces drag and content, an
   const source=(await fs.readFile(path.join(__dirname,'../renderer/use-autosave.js'),'utf8')).replace(/^import .*;\r?\n/gm,'').replace('export function','function');
   const slots=[],effects=[];let cursor=0,hook,projects=[{id:'a',name:'old'},{id:'b',name:'untouched'}];
   const gate=deferred(),writes=[];
-  const window=Object.assign(new EventTarget(),{tugou:{save:async(id,document,revision)=>{writes.push({id,document,revision});if(writes.length===1)await gate.promise;return {id,document,revision:revision+1};}}});
+  const window=Object.assign(new EventTarget(),{tugou:{save:async(id,document,revision,metadataOnly)=>{assert.equal(metadataOnly,true);writes.push({id,document,revision});if(writes.length===1)await gate.promise;return {id,name:document.name,revision:revision+1};}}});
   const scope={createAutosave,window,Date,
     useRef:value=>{const i=cursor++;return slots[i]??=( {current:value} );},
     useState:value=>{const i=cursor++;if(!(i in slots))slots[i]=value;return [slots[i],next=>{slots[i]=next;}];},
@@ -152,4 +152,20 @@ test('renderer hook keeps live document identity, coalesces drag and content, an
   c.markDirty(true);await tick(9950);dispatch('wheel');
   await tick(50);assert.equal(writes.length,4);
   await tick(200);await tick(0);assert.equal(writes.length,5);
+});
+test('saving reads the previous revision once and restores its original bytes on recovery',async t=>{
+  const temp=await fs.realpath(os.tmpdir()),root=await fs.mkdtemp(path.join(temp,'tugou-save-backup-'));
+  t.after(async()=>{const actual=await fs.realpath(root);assert.equal(path.dirname(actual),temp);assert.ok(path.basename(actual).startsWith('tugou-save-backup-'));await fs.rm(actual,{recursive:true,force:true});});
+  const store=new ProjectStore(root);await store.init();
+  const previous=await store.create('上一版'),file=await store.projectPath(previous.id),bytes=await fs.readFile(file);
+  const read=store.readSnapshot.bind(store);let reads=0;
+  store.readSnapshot=(...args)=>{reads++;return read(...args);};
+  const input={...previous.document,name:'写入时的快照'},pending=store.save(previous.id,input,previous.revision);
+  input.name='随后修改';
+  const saved=await pending;
+  assert.equal(reads,1);assert.equal(saved.document.name,'写入时的快照');
+  assert.deepEqual(await fs.readFile(file+'.bak'),bytes);
+  await fs.writeFile(file,'malformed');
+  const recovered=await store.read(previous.id);
+  assert.equal(recovered.recovered,true);assert.deepEqual(recovered.document,previous.document);
 });

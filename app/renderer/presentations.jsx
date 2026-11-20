@@ -20,6 +20,13 @@ import {ContentPanel,ContentField,PresentationOutline} from './presentation-cont
 import {usePptZoom} from './use-ppt-zoom.js';
 
 const source=a=>a?.resource?`tugou-media://original/${a.resource}`:a?.dataUrl;
+function EditingSlideText({element,original,style,onCommit,onCancel}){
+  const [draft,setDraft]=useState(false);
+  return <>
+    {!draft&&<div className="ppt-text" style={style}><RichText element={original}/></div>}
+    <CanvasTextInput className="ppt-text ppt-text-editor" element={element} style={style} maxLength={10000} keepPreview={!draft} onDraft={setDraft} onCommit={onCommit} onCancel={onCancel}/>
+  </>;
+}
 const labels={text:'文字',image:'图片',rect:'矩形',ellipse:'圆形',line:'直线'};
 const accentLabel=({value,label})=><span className="ppt-accent-option"><span aria-hidden="true" style={{background:value}}/>{label}</span>;
 const rangeKeys=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'];
@@ -35,7 +42,7 @@ export function SlideStage({deck,slide,assets,selected,onSelect,onGesture,onText
     <div className="ppt-page" style={{width:w,height:h,background:slide.background,transform:`scale(${scale})`}}>
       {slide.elements.filter(e=>e.visible!==false).map(original=>{const e=preview?.id===original.id?preview:original,textStyle=e.kind==='text'?{fontFamily:textFontFamily(presentationFont(e)),fontSize:e.fontSize,fontWeight:textFontWeight(presentationFont(e)),fontStyle:e.italic?'italic':'normal',color:e.color,textAlign:e.align}:undefined;return <div key={e.id} data-element-id={e.id} className={'ppt-element '+(e.kind==='line'?'ppt-line ':'')+(selected===e.id?'selected':'')} style={{left:e.x,top:e.y,width:e.w,height:e.h,transform:`rotate(${e.rotation}deg)`,cursor:onDraw?'crosshair':onSelect?(e.locked?'default':'move'):undefined}}
         onPointerDown={event=>{if(!onSelect)return;event.stopPropagation();onSelect(e.id);onGesture?.(event,e,'move',scale);}} onDoubleClick={()=>e.kind==='text'&&onText?.(e.id)}>
-        {editingText?.element.id===e.id?<CanvasTextInput key={e.id} className="ppt-text ppt-text-editor" element={editingText.element} style={textStyle} maxLength={10000} onCommit={onCommitText} onCancel={onCancelText}/>:<PresentationEffects element={e}>{e.kind==='text'?<div className="ppt-text" style={textStyle}><RichText element={e}/></div>:e.kind==='image'?<img src={source(assets.find(a=>a.id===e.assetId))} alt="" draggable={false}/>:e.kind==='line'?<svg className="ppt-line-shape" width={e.w} height={e.h}><ShapePath shape="line" width={e.w} height={e.h} linePoints={e.linePoints} fill="none" stroke={e.stroke} strokeWidth={e.strokeWidth}/></svg>:<div className="ppt-shape" style={{background:e.fill,borderRadius:e.kind==='ellipse'?'50%':rectangleRadii(e).map(r=>`${r}px`).join(' ')}}/>}</PresentationEffects>}
+        <PresentationEffects element={e}>{editingText?.element.id===e.id?<EditingSlideText element={editingText.element} original={e} style={textStyle} onCommit={onCommitText} onCancel={onCancelText}/>:e.kind==='text'?<div className="ppt-text" style={textStyle}><RichText element={e}/></div>:e.kind==='image'?<img src={source(assets.find(a=>a.id===e.assetId))} alt="" draggable={false}/>:e.kind==='line'?<svg className="ppt-line-shape" width={e.w} height={e.h}><ShapePath shape="line" width={e.w} height={e.h} linePoints={e.linePoints} fill="none" stroke={e.stroke} strokeWidth={e.strokeWidth}/></svg>:<div className="ppt-shape" style={{background:e.fill,borderRadius:e.kind==='ellipse'?'50%':rectangleRadii(e).map(r=>`${r}px`).join(' ')}}/>}</PresentationEffects>
         {e.kind==='line'&&<svg className="ppt-line-hit" width={e.w} height={e.h}><ShapePath shape="line" width={e.w} height={e.h} linePoints={e.linePoints} fill="none" stroke="transparent" strokeWidth={Math.max(e.strokeWidth,12/scale)} style={{pointerEvents:onSelect?'stroke':'none'}}/></svg>}
         {selected===e.id&&onGesture&&!e.locked&&editingText?.element.id!==e.id&&(e.kind==='line'?lineEndpoints(e.w,e.h,e.linePoints).map((p,i)=><button key={i} className="ppt-resize ppt-line-end" aria-label={i?'直线终点':'直线起点'} style={{width:12/scale,height:12/scale,left:p.x-6/scale,top:p.y-6/scale}} onPointerDown={event=>{event.stopPropagation();onGesture(event,e,`line-${i}`,scale);}}/>):<button className="ppt-resize" aria-label="调整元素大小" style={{width:12/scale,height:12/scale,right:-6/scale,bottom:-6/scale}} onPointerDown={event=>{event.stopPropagation();onGesture(event,e,'resize',scale);}}/>)}
       </div>})}

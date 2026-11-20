@@ -131,11 +131,13 @@ function warpEngine() {
   };
 }
 function paths(ctx, list, width = 1, height = 1) {
-  for (const path of list || []) {
+  let temporary;
+  try{for (const path of list || []) {
     const points = path.points;
     if (!points?.length) continue;
-    const temporary = surface(ctx.canvas.width, ctx.canvas.height),
-      c = temporary.getContext("2d", { willReadFrequently: true });
+    temporary ||= surface(ctx.canvas.width, ctx.canvas.height);
+    const c = temporary.getContext("2d", { willReadFrequently: true });
+    c.resetTransform();c.clearRect(0,0,temporary.width,temporary.height);
     c.setTransform(ctx.getTransform());
     c.fillStyle = "#fff";
     c.beginPath();
@@ -154,8 +156,7 @@ function paths(ctx, list, width = 1, height = 1) {
           : "source-over";
     ctx.drawImage(temporary, 0, 0);
     ctx.restore();
-    temporary.width = temporary.height = 1;
-  }
+  }}finally{if(temporary)temporary.width=temporary.height=1;}
 }
 function paintShape(ctx, l) {
   let fill = l.color || "#b0bff2";
@@ -205,23 +206,44 @@ function paintShape(ctx, l) {
 }
 
 const linePadding=(layers,l)=>{if(l.kind!=='shape'||l.shape!=='line')return 0;const m=worldMatrix(layers,l);return (l.strokeWidth||0)/2*Math.hypot(...m.slice(0,4));};
-export function renderPadding(layers) {
+function indexLayers(layers) {
+  const byId=new Map(),children=new Map();
+  for(const layer of layers){
+    byId.set(layer.id,layer);
+    if(layer.visible===false)continue;
+    const list=children.get(layer.parentId)||[];
+    list.push(layer);children.set(layer.parentId,list);
+  }
+  return {byId,children};
+}
+const parents=(doc,frame)=>frame.scene?.byId||doc.layers;
+const layerById=(doc,frame,id)=>frame.scene?frame.scene.byId.get(id):doc.layers.find(l=>l.id===id);
+const childrenOf=(doc,frame,id)=>frame.scene?(frame.scene.children.get(id)||[]):doc.layers.filter(l=>l.parentId===id&&l.visible!==false);
+const assetById=(doc,frame,id)=>frame?.scene?frame.scene.assets.get(id):doc.assets.find(a=>a.id===id);
+function layerRect(doc,frame,layer){
+  const points=corners(doc.layers,layer,parents(doc,frame));
+  const xs=points.map(p=>p.x*frame.scale+frame.transform[4]),ys=points.map(p=>p.y*frame.scale+frame.transform[5]);
+  return {left:Math.min(...xs),top:Math.min(...ys),right:Math.max(...xs),bottom:Math.max(...ys)};
+}
+function rasterBounds(rect,frame,pad){
+  const x=Math.max(0,Math.floor(rect.left)-pad),y=Math.max(0,Math.floor(rect.top)-pad);
+  return {x,y,width:Math.min(frame.width,Math.ceil(rect.right)+pad)-x,height:Math.min(frame.height,Math.ceil(rect.bottom)+pad)-y};
+}
+export function renderPadding(layers, {byId,children}=indexLayers(layers)) {
   const nodePad = (l, visited) => {
     if (visited.has(l.id)) throw new Error("图层或蒙版形成循环");
     const next = new Set([...visited, l.id]);
-    const source = layers.find((n) => n.id === l.maskSourceId);
+    const source = byId.get(l.maskSourceId);
     return Math.max(
       l.kind === "group" ? walk(l.id, next) : 0,
       l.mask && !l.mask.disabled ? (l.mask.feather || 0) * 4 : 0,
       source && source.visible !== false ? nodePad(source, next) : 0,
-      linePadding(layers,l),
+      linePadding(byId,l),
     ) + Math.max(0,...(l.effects||[]).map(effectPadding));
   };
   const walk = (parent, visited = new Set()) => {
     let pad = 0;
-    for (const l of layers.filter(
-      (l) => l.parentId === parent && l.visible !== false,
-    )) {
+    for (const l of children.get(parent)||[]) {
       if (visited.has(l.id)) throw new Error("图层形成循环");
       if (l.kind === "adjustment")
         pad +=
@@ -233,15 +255,17 @@ export function renderPadding(layers) {
   return walk(undefined);
 }
 export class Compositor {
-  constructor({imageBudget}={}) {
-    this.images = new ImageCache(imageBudget);
+  constructor({imageBudget,imageCache,previewCache}={}) {
+    this.images = imageCache||new ImageCache(imageBudget);
+    this.ownsImages = !imageCache;
+    this.previewImages=previewCache;
     this.warp = null;
     this.gifs=new GifFrames();
   }
-  async image(asset,time=0) {
+  async image(asset,time=0,onGif) {
     const url = originalUrl(asset);
     if (!url) throw new Error("图层素材缺失，请检查素材库");
-    if(asset?.gif?.frames>1)return this.gifs.frame(asset,url,time);
+    if(asset?.gif?.frames>1){onGif?.(asset.gif);return this.gifs.frame(asset,url,time);}
     return this.images.load(url,()=>new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
@@ -252,17 +276,17 @@ export class Compositor {
         img.src = url;
       }));
   }
-  prime(asset,image){return this.images.put(originalUrl(asset),image);}
+  prime(asset,image){this.previewImages?.clear();return this.images.put(originalUrl(asset),image);}
   dispose() {
-    this.images.clear();
+    if(this.ownsImages)this.images.clear();
     this.gifs.dispose();
     this.warp?.dispose();
   }
-  async content(l, doc, scale, time=0) {
+  async content(l, doc, scale, time=0, frame) {
     if(l.kind==='shape'&&l.shape==='line'&&!l.warp)return surface(1,1);
     const faces=l.kind==='text'?await loadLayerTextFonts(l):[];
     if (l.kind === "image")
-      return this.image(l.bitmap || doc.assets.find((a) => a.id === l.assetId),time);
+      return this.image(l.bitmap||assetById(doc,frame,l.assetId),time,frame?.onGif);
     const resolution = Math.min(4, Math.max(0.01, scale)),
       c = surface(l.width * resolution, l.height * resolution),
       ctx = c.getContext("2d", { willReadFrequently: true });
@@ -324,7 +348,7 @@ export class Compositor {
         height: anchor?.height || l.height,
         warp: anchor ? anchor.warp : l.warp,
       };
-    let m = anchor?.matrix || worldMatrix(doc.layers, l);
+    let m = anchor?.matrix || worldMatrix(parents(doc,frame), l);
     if (mask.offset)
       m = multiply(
         m,
@@ -406,18 +430,12 @@ export class Compositor {
   intersects(l, doc, frame) {
     const intersects = (layer, margin = 2) => {
       if (layer.visible === false || layer.kind === "adjustment") return false;
-      const padding = margin + (Math.max(0, ...(layer.effects || []).map(effectPadding))+linePadding(doc.layers,layer)) * frame.scale;
+      const padding = margin + (Math.max(0, ...(layer.effects || []).map(effectPadding))+linePadding(parents(doc,frame),layer)) * frame.scale;
       if (layer.kind === "group" && !layer.artboard)
-        return doc.layers.some(child => child.parentId === layer.id && intersects(child, padding));
-      if (layer.artboard && layer.clipContent===false && doc.layers.some(child=>child.parentId===layer.id&&intersects(child,padding)))return true;
-      const points = corners(doc.layers, layer).map(({x, y}) => [
-        x * frame.scale + frame.transform[4],
-        y * frame.scale + frame.transform[5],
-      ]);
-      return !(Math.max(...points.map(p => p[0])) + padding < 0 ||
-          Math.max(...points.map(p => p[1])) + padding < 0 ||
-          Math.min(...points.map(p => p[0])) - padding > frame.width ||
-          Math.min(...points.map(p => p[1])) - padding > frame.height);
+        return childrenOf(doc,frame,layer.id).some(child=>intersects(child,padding));
+      if(layer.artboard&&layer.clipContent===false&&childrenOf(doc,frame,layer.id).some(child=>intersects(child,padding)))return true;
+      const rect=layerRect(doc,frame,layer);
+      return !(rect.right+padding<0||rect.bottom+padding<0||rect.left-padding>frame.width||rect.top-padding>frame.height);
     };
     return intersects(l);
   }
@@ -433,12 +451,13 @@ export class Compositor {
       ctx = c.getContext("2d", { willReadFrequently: true });
     if (l.kind === "group") {
       if (l.artboard) {
-        const m=multiply(frame.transform,worldMatrix(doc.layers,l));
+        const m=multiply(frame.transform,worldMatrix(parents(doc,frame),l));
         ctx.save();ctx.setTransform(...m);
         if(l.clipContent!==false){ctx.beginPath();ctx.rect(0,0,l.width,l.height);ctx.clip();}
         if(l.background!=='transparent'){ctx.fillStyle=l.background;ctx.fillRect(0,0,l.width,l.height);}
         ctx.setTransform(1,0,0,1,0,0);
-        await this.siblings(ctx,doc,l.id,frame,seen);ctx.restore();
+        const scope=l.clipContent!==false?rasterBounds(layerRect(doc,frame,l),frame,2):undefined;
+        await this.siblings(ctx,doc,l.id,frame,seen,undefined,scope);ctx.restore();
       } else await this.siblings(ctx, doc, l.id, frame, seen);
     }
     else if (l.kind !== "adjustment") {
@@ -450,12 +469,13 @@ export class Compositor {
           frame.scale *
             Math.max(Math.abs(l.scaleX || 1), Math.abs(l.scaleY || 1)),
           frame.time,
+          frame,
         ));
       this.geometry(
         ctx,
         content,
         l,
-        multiply(frame.transform, worldMatrix(doc.layers, l)),
+        multiply(frame.transform, worldMatrix(parents(doc,frame), l)),
       );
       if (l.kind !== "image") content.width = content.height = 1;
     }
@@ -477,7 +497,7 @@ export class Compositor {
       ctx.globalCompositeOperation = "source-over";
     }
     if (l.maskSourceId) {
-      const source = doc.layers.find((item) => item.id === l.maskSourceId);
+      const source = layerById(doc,frame,l.maskSourceId);
       if (!source) throw new Error("蒙版来源图层缺失");
       const mask = await this.node(source, doc, frame, seen);
       ctx.globalCompositeOperation = "destination-in";
@@ -487,39 +507,47 @@ export class Compositor {
       ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = "source-over";
     }
-    applyEffects(c,l.effects,frame.scale);
+    if(l.effects?.length){
+      const padding=Math.ceil((linePadding(parents(doc,frame),l)+Math.max(...l.effects.map(effectPadding)))*frame.scale)+2;
+      const region=l.kind==='group'?undefined:rasterBounds(layerRect(doc,frame,l),frame,padding);
+      applyEffects(c,l.effects,frame.scale,region);
+    }
     return c;
   }
-  async adjustment(ctx, layer, doc, frame) {
+  async adjustment(ctx, layer, doc, frame, region) {
     if (layer.visible === false || !layer.opacity) return;
     frame.signal?.throwIfAborted();
-    const source = ctx.getImageData(0, 0, frame.width, frame.height),
+    const {x=0,y=0,width=frame.width,height=frame.height}=region||{};
+    if(width<=0||height<=0)return;
+    const source = ctx.getImageData(x, y, width, height),
       result = new ImageData(
         new Uint8ClampedArray(source.data),
-        frame.width,
-        frame.height,
+        width,
+        height,
       );
     if (layer.adjustment.type === "blur" && layer.adjustment.radius > 0) {
-      const blurred = surface(frame.width, frame.height),
+      const blurred = surface(width, height),
         b = blurred.getContext("2d", { willReadFrequently: true });
       try {
         b.filter = `blur(${layer.adjustment.radius * frame.scale}px)`;
-        b.drawImage(ctx.canvas, 0, 0);
-        result.data.set(b.getImageData(0, 0, frame.width, frame.height).data);
+        b.drawImage(ctx.canvas, -x, -y);
+        result.data.set(b.getImageData(0, 0, width, height).data);
       } finally {
         blurred.width = blurred.height = 1;
       }
     } else
-      adjustPixels(result.data, frame.width, layer.adjustment, {
+      adjustPixels(result.data, width, layer.adjustment, {
         scale: frame.scale,
         x: -frame.transform[4] / frame.scale,
         y: -frame.transform[5] / frame.scale,
+        pixelX:x,
+        pixelY:y,
       });
     let mask;
     if ((layer.mask && !layer.mask.disabled) || layer.maskSourceId) {
       mask = await this.mask(layer, doc, frame);
       if (layer.maskSourceId) {
-        const sourceLayer = doc.layers.find((l) => l.id === layer.maskSourceId);
+        const sourceLayer = layerById(doc,frame,layer.maskSourceId);
         if (!sourceLayer || sourceLayer.kind === "adjustment")
           throw new Error("调整蒙版需要普通来源图层");
         const linked = await this.node(sourceLayer, doc, frame),
@@ -533,16 +561,16 @@ export class Compositor {
     try {
       const alpha = mask
         ?.getContext("2d")
-        .getImageData(0, 0, frame.width, frame.height).data;
+        .getImageData(x, y, width, height).data;
       if (layer.blend && layer.blend !== "source-over") {
-        const blend = surface(frame.width, frame.height),
-          over = surface(frame.width, frame.height),
+        const blend = surface(width, height),
+          over = surface(width, height),
           b = blend.getContext("2d", { willReadFrequently: true }),
           o = over.getContext("2d", { willReadFrequently: true }),
           opaque = new ImageData(
             new Uint8ClampedArray(source.data),
-            frame.width,
-            frame.height,
+            width,
+            height,
           );
         try {
           for (let i = 3; i < result.data.length; i += 4) {
@@ -553,7 +581,7 @@ export class Compositor {
           o.putImageData(result, 0, 0);
           b.globalCompositeOperation = layer.blend;
           b.drawImage(over, 0, 0);
-          result.data.set(b.getImageData(0, 0, frame.width, frame.height).data);
+          result.data.set(b.getImageData(0, 0, width, height).data);
         } finally {
           blend.width = blend.height = over.width = over.height = 1;
         }
@@ -564,15 +592,13 @@ export class Compositor {
           source.data[i + c] +=
             (result.data[i + c] - source.data[i + c]) * weight;
       }
-      ctx.putImageData(source, 0, 0);
+      ctx.putImageData(source,x,y);
     } finally {
       if (mask) mask.width = mask.height = 1;
     }
   }
-  async siblings(ctx, doc, parentId, frame, seen, sequence) {
-    const children =
-      sequence ||
-      doc.layers.filter((l) => l.parentId === parentId && l.visible !== false);
+  async siblings(ctx, doc, parentId, frame, seen, sequence, adjustmentBounds) {
+    const children = sequence || childrenOf(doc,frame,parentId);
     if (children.some((l) => l.kind === "adjustment" && l.clipping)) {
       const chains = [];
       for (const l of children) {
@@ -581,7 +607,7 @@ export class Compositor {
       }
       if (chains.length > 1) {
         for (const chain of chains)
-          await this.siblings(ctx, doc, parentId, frame, seen, chain);
+          await this.siblings(ctx, doc, parentId, frame, seen, chain, adjustmentBounds);
         return;
       }
     }
@@ -595,26 +621,39 @@ export class Compositor {
         for (const l of children) {
           frame.signal?.throwIfAborted();
           if (l.kind === "adjustment") {
-            await this.adjustment(ctx, l, doc, frame);
+            await this.adjustment(ctx, l, doc, frame, adjustmentBounds);
             continue;
           }
-          // Reuse one isolation surface for plain images and copy only their
-          // visible bounds. Original coordinates retain raster edge rounding.
-          if(unclipped&&!frame.overrides?.size&&l.kind==='image'&&l.opacity===1&&(!l.blend||l.blend==='source-over')&&!l.mask&&!l.maskSourceId&&!l.warp&&!l.effects?.length){
+          const plain=unclipped&&(!l.blend||l.blend==='source-over')&&!l.mask&&!l.maskSourceId&&!l.warp&&!l.effects?.length;
+          // Keep the original two draws and pixel coordinates for plain layers.
+          if(plain&&!frame.overrides?.size&&['image','text','shape'].includes(l.kind)){
             if(base){base.width=base.height=1;base=null;}
             if(!this.intersects(l,doc,frame))continue;
-            const content=await this.content(l,doc,frame.scale,frame.time);
+            const pad=Math.ceil(linePadding(parents(doc,frame),l)*frame.scale)+2;
+            const {x,y,width,height}=rasterBounds(layerRect(doc,frame,l),frame,pad);
+            if(width<=0||height<=0)continue;
+            const transform=multiply(frame.transform,worldMatrix(parents(doc,frame),l));
+            const asset=this.previewImages&&l.kind==='image'?(l.bitmap||assetById(doc,frame,l.assetId)):null;
+            const pixels=frame.width*frame.height;
+            const key=asset&&!asset.gif&&pixels*4<=this.previewImages.budget&&asset.width*asset.height>=pixels*4?
+              JSON.stringify([originalUrl(asset),l.width,l.height,transform,frame.width,frame.height]):null;
+            const preview=key&&await this.previewImages.get(key);
             frame.signal?.throwIfAborted();
-            const points=corners(doc.layers,l).map(p=>({x:p.x*frame.scale+frame.transform[4],y:p.y*frame.scale+frame.transform[5]}));
-            const left=Math.max(0,Math.floor(Math.min(...points.map(p=>p.x)))-2),top=Math.max(0,Math.floor(Math.min(...points.map(p=>p.y)))-2);
-            const right=Math.min(frame.width,Math.ceil(Math.max(...points.map(p=>p.x)))+2),bottom=Math.min(frame.height,Math.ceil(Math.max(...points.map(p=>p.y)))+2);
-            if(right<=left||bottom<=top)continue;
-            scratch ||= surface(frame.width,frame.height);
-            const local=scratch.getContext('2d',{willReadFrequently:true});
-            ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
-            this.geometry(local,content,l,multiply(frame.transform,worldMatrix(doc.layers,l)));
-            ctx.drawImage(scratch,left,top,right-left,bottom-top,left,top,right-left,bottom-top);
-            local.clearRect(left,top,right-left,bottom-top);
+            ctx.globalAlpha=l.opacity;ctx.globalCompositeOperation='source-over';
+            if(preview){ctx.drawImage(preview,x,y,width,height,x,y,width,height);continue;}
+            const scale=frame.scale*Math.max(Math.abs(l.scaleX||1),Math.abs(l.scaleY||1));
+            const content=await this.content(l,doc,scale,frame.time,frame);
+            try{
+              frame.signal?.throwIfAborted();
+              scratch ||= surface(frame.width,frame.height);
+              const local=scratch.getContext('2d',{willReadFrequently:true});
+              this.geometry(local,content,l,transform);
+              ctx.drawImage(scratch,x,y,width,height,x,y,width,height);
+              if(key){
+                // Keep the raster in its original viewport so a cache hit uses the same alpha rounding.
+                this.previewImages.put(key,scratch);scratch=null;
+              }else local.clearRect(x,y,width,height);
+            }finally{if(l.kind!=='image')content.width=content.height=1;}
             continue;
           }
           const c = await this.node(l, doc, frame, seen);
@@ -671,7 +710,7 @@ export class Compositor {
               );
           } else {
             flush();
-            await this.adjustment(ctx, l, doc, frame);
+            await this.adjustment(ctx, l, doc, frame, adjustmentBounds);
           }
           continue;
         }
@@ -707,7 +746,14 @@ export class Compositor {
       ctx.globalCompositeOperation = "source-over";
     }
   }
-  async render(
+  async render(doc,target,options={}) {
+    options.signal?.throwIfAborted();
+    validateLayers(doc.layers);
+    const scene={...indexLayers(doc.layers),assets:new Map()};
+    for(const asset of doc.assets||[])if(!scene.assets.has(asset.id))scene.assets.set(asset.id,asset);
+    return this.renderFrame(doc,target,options,scene);
+  }
+  async renderFrame(
     doc,
     target,
     {
@@ -723,14 +769,15 @@ export class Compositor {
       maskPreview,
       padded = false,
       time = 0,
+      onGif,
     } = {},
+    scene,
   ) {
     signal?.throwIfAborted();
-    validateLayers(doc.layers);
     const effectWork=doc.layers.some(l=>l.effects?.some(e=>e.enabled&&e.opacity>0));
     if(effectWork && Math.ceil(width*scale)*Math.ceil(height*scale)*64>384*1024*1024)throw new Error('特效临时内存超出384 MiB，请缩小预览范围或使用分块导出');
     if (!padded) {
-      const pad = renderPadding(doc.layers);
+      const pad = renderPadding(doc.layers,scene);
       if (pad > 0) {
         const pixelPad = Math.ceil(pad * scale),
           margin = pixelPad / scale;
@@ -743,7 +790,7 @@ export class Compositor {
           throw new Error("滤镜临时内存超出384 MiB，请减小预览范围或滤镜半径");
         const expanded = surface(1, 1);
         try {
-          await this.render(doc, expanded, {
+          await this.renderFrame(doc, expanded, {
             scale,
             x: x - margin,
             y: y - margin,
@@ -756,7 +803,8 @@ export class Compositor {
             maskPreview,
             padded: true,
             time,
-          });
+            onGif,
+          },scene);
           target.width = Math.ceil(width * scale);
           target.height = Math.ceil(height * scale);
           target
@@ -784,7 +832,7 @@ export class Compositor {
       if (layer.kind === "image")
         retained.add(
           originalUrl(
-            layer.bitmap || doc.assets.find((a) => a.id === layer.assetId),
+            layer.bitmap || scene.assets.get(layer.assetId),
           ),
         );
       retained.add(originalUrl(layer.mask?.bitmap));
@@ -805,6 +853,8 @@ export class Compositor {
         overrides,
         maskOverrides,
         maskPreview,
+        scene,
+        onGif,
       };
     ctx.save();
     if (!doc.infiniteWorkspace) {

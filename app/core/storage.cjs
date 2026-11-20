@@ -156,7 +156,7 @@ class ProjectStore {
     return safePath(this.root, 'projects', `${id}.json`);
   }
 
-  async read(id) {
+  async readSnapshot(id) {
     const file = await this.projectPath(id);
     const decode = (bytes) => {
       const record = JSON.parse(bytes);
@@ -166,13 +166,22 @@ class ProjectStore {
       validateDocument(record.document);
       return record;
     };
-    try { return { ...decode(await fs.readFile(file, 'utf8')), recovered: false }; }
+    const read = async (file, recovered) => {
+      const bytes = await fs.readFile(file, 'utf8');
+      return { record: decode(bytes), bytes, recovered };
+    };
+    try { return await read(file, false); }
     catch (error) {
       try {
         const backup = await safePath(this.root, 'projects', `${id}.json.bak`);
-        return { ...decode(await fs.readFile(backup, 'utf8')), recovered: true };
+        return await read(backup, true);
       } catch { throw error; }
     }
+  }
+
+  async read(id) {
+    const {record, recovered} = await this.readSnapshot(id);
+    return { ...record, recovered };
   }
 
   async list() {
@@ -190,9 +199,12 @@ class ProjectStore {
   }
 
   async verifyResources(document, folder = this.root) {
-    for (const name of resourcesIn(document)) {
-      const bytes = await fs.readFile(await safePath(folder, 'resources', name));
-      if (hash(bytes) !== name.split('.')[0]) throw new Error(`素材校验失败：${name}`);
+    const resources=resourcesIn(document);
+    if(!resources.size)return;
+    const {hashFile}=require('./runtime-files.cjs');
+    for (const name of resources) {
+      const file=await safePath(folder,'resources',name);
+      if (await hashFile(file) !== name.split('.')[0]) throw new Error(`素材校验失败：${name}`);
     }
   }
 
@@ -211,27 +223,25 @@ class ProjectStore {
     });
   }
 
-  async writeRecord(record) {
+  async writeRecord(record, previous) {
     const file = await this.projectPath(record.id);
-    let previous;
-    try { previous = await this.read(record.id); } catch (error) { if (error.code !== 'ENOENT') throw error; }
-    if (previous) {
-      const { recovered, ...backup } = previous;
-      await atomicWrite(await safePath(this.root, 'projects', `${record.id}.json.bak`), JSON.stringify(backup));
+    if (!previous) {
+      try { previous = await this.readSnapshot(record.id); } catch (error) { if (error.code !== 'ENOENT') throw error; }
     }
+    if (previous) await atomicWrite(await safePath(this.root, 'projects', `${record.id}.json.bak`), previous.bytes);
     await atomicWrite(file, JSON.stringify(record));
     return { ...record, recovered: false };
   }
 
-  save(id, document, expectedRevision) {
-    const snapshot = structuredClone(document);
+  save(id, document, expectedRevision, { detached = false } = {}) {
+    const snapshot = detached ? document : structuredClone(document);
     return this.serialize(async () => {
-      const previous = await this.read(id);
-      if (previous.revision !== expectedRevision) throw new Error('工程已更新，请重新打开后再保存，避免覆盖');
+      const previous = await this.readSnapshot(id);
+      const { recovered, ...record } = previous.record;
+      if (record.revision !== expectedRevision) throw new Error('工程已更新，请重新打开后再保存，避免覆盖');
       validateDocument(snapshot);
       await this.verifyResources(snapshot);
-      const { recovered, ...record } = previous;
-      return this.writeRecord({ ...record, document: snapshot, revision: record.revision + 1, updatedAt: new Date().toISOString() });
+      return this.writeRecord({ ...record, document: snapshot, revision: record.revision + 1, updatedAt: new Date().toISOString() }, previous);
     });
   }
 
