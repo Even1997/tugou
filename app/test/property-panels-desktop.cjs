@@ -74,7 +74,8 @@ app.whenReady().then(async()=>{
     check('view restoration retains collapsed dock',await js(`document.querySelector('[aria-label="PPT 页面面板"]').hidden&&qa.history.length===${history}`));
     w.setSize(1440,960);await js(`(()=>{const L=require(${JSON.stringify(path.resolve(__dirname,'../core/layers.cjs'))}),A=require(${JSON.stringify(path.resolve(__dirname,'../core/adjustments.cjs'))});const layers=[L.createLayer('shape',{name:'面板矩形',x:120,y:100,width:260,height:180}),L.createLayer('text',{name:'面板文字',text:'独立属性面板',x:150,y:330,fontFamily:'Arial'}),L.createLayer('adjustment',{name:'调色',adjustment:A.defaults('brightnessContrast')})];qa.load({...qa.doc,layers});qa.mode('layers');})()`);
     await wait('!!document.querySelector(".layer-stage")');
-    check('layer properties closed by default, layers remain visible',await js(`!document.querySelector('.layer-property-sidebar')&&document.querySelector('[aria-label="图层与历史记录"]').clientWidth>200&&getComputedStyle(document.querySelector('.composition-editor')).gridTemplateColumns.split(' ').length===3`));
+    check('layer properties open by default, layers remain visible',await js(`!!document.querySelector('.layer-property-sidebar')&&document.querySelector('[aria-label="图层与历史记录"]').clientWidth>200&&getComputedStyle(document.querySelector('.composition-editor')).gridTemplateColumns.split(' ').length===4`));
+    await click('关闭属性面板');
     const roomy=await js('document.querySelector(".layer-stage").clientWidth');
     await js('document.querySelector("[data-layer-id]").click()');await delay(100);
     check('selecting layer name opens properties',await js(`!!document.querySelector('.layer-property-sidebar')`));await js('document.querySelector("[data-layer-id]").click()');await delay(100);check('clicking the same layer name closes properties',await js(`!document.querySelector('.layer-property-sidebar')`));
@@ -122,7 +123,9 @@ app.whenReady().then(async()=>{
       }
     }
     await js(`(()=>{const L=require(${JSON.stringify(path.resolve(__dirname,'../core/layers.cjs'))});qa.load({...qa.doc,layers:[L.createLayer('group',{id:'board-a',name:'画板A',artboard:true,width:500,height:500,background:'#ffffff'}),L.createLayer('group',{id:'board-b',name:'画板B',artboard:true,x:650,width:500,height:500,background:'#ffffff'}),L.createLayer('shape',{id:'shape-a',name:'图形A',parentId:'board-a',x:80,y:80,width:100,height:100,mask:{x:0,y:0,width:1,height:1}}),L.createLayer('shape',{id:'shape-a2',name:'图形A2',parentId:'board-a',x:210,y:100,width:60,height:60}),L.createLayer('shape',{id:'shape-b',name:'图形B',parentId:'board-b',x:720,y:80,width:100,height:100})]});qa.mode('boards')})()`);
-    await wait('!!document.querySelector(".composite-workspace")');await click('图形B');
+    await wait('!!document.querySelector(".composite-workspace .layer-stage")');
+    check('artboard properties open on first mount at 960px',await js(`!!document.querySelector('.composite-workspace .board-properties')&&document.querySelector('.layer-stage').clientWidth>380&&document.documentElement.scrollWidth<=innerWidth`));
+    await click('图形B');
     check('cross-board name opens the matching properties',await js(`document.querySelector('[aria-label=图层名称]').value==='图形B'`));await click('图形B');check('same cross-board layer name closes properties',await js(`!document.querySelector('.layer-property-sidebar')`));
     await click('选择 图形A');await wait(`document.querySelector('[aria-label="图层名称"]')?.value==='图形A'`);
     check('cross-board thumbnail opens matching properties',await js(`!!document.querySelector('.layer-property-sidebar')`));await click('关闭属性面板');

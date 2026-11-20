@@ -1,6 +1,7 @@
 import {timeline} from '../core/gif-timeline.cjs';
 import './gif.css';
 import {LayerTextEditor} from './layer-text-editor.jsx';
+import {fitLayerText,layerTextBounds,loadLayerTextFonts} from './layer-text-layout.js';
 import {patchText,sameText} from '../core/rich-text.cjs';
 import {ColorControl} from './color-control.jsx';
 import {CanvasRulers,SelectionSizeBadge,CanvasSelection} from './canvas-chrome.jsx';
@@ -22,6 +23,8 @@ import {
   matrix,
   bounds,
   worldMatrix,
+  homography,
+  project,
   inverse,
   point,
   localPoint,
@@ -95,7 +98,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   const preferences=usePreferences();
   const [replacement,setReplacement]=useState(null);
   const [editingText,setEditingText]=useState(null);
-  const [localPropertiesOpen,setLocalPropertiesOpen]=useState(false);
+  const [localPropertiesOpen,setLocalPropertiesOpen]=useState(true);
   const propertiesOpen=workspace?.propertiesOpen??localPropertiesOpen,setPropertiesOpen=workspace?.setPropertiesOpen||setLocalPropertiesOpen;
   const [inspectorTab,setInspectorTab]=useState('adjustments'),[layerTab,setLayerTab]=useState('layers');
   const [layerQuery,setLayerQuery]=useState(''),[layerFilter,setLayerFilter]=useState('all'),[searchOpen,setSearchOpen]=useState(false);
@@ -179,6 +182,26 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     selectionCache = useRef(null);
   useEffect(() => () => selectionAbort.current?.abort(), [document]);
   const shown = draft || document;
+  const fixedText=useMemo(()=>document.layers.filter(l=>l.kind==='text'&&!l.textAutoFit&&selected.includes(l.id)),[document.layers,selected]);
+  const [fontRevision,setFontRevision]=useState(0);
+  useEffect(()=>{
+    if(!fixedText.length)return;
+    let current=true;
+    Promise.all(fixedText.map(loadLayerTextFonts)).then(faces=>{
+      if(current&&faces.flat().some(Boolean))setFontRevision(n=>n+1);
+    }).catch(()=>{});
+    return()=>{current=false;};
+  },[fixedText]);
+  const textBoxes=useMemo(()=>new Map(fixedText.map(l=>[l.id,layerTextBounds(l)])),[fixedText,fontRevision]);
+  const selectionCorners=layer=>{
+    const box=!warp&&!(draft&&drag.current?.mode==='resize')&&textBoxes.get(layer.id);
+    if(!box)return corners(shown.layers,layer);
+    const m=worldMatrix(shown.layers,layer),h=layer.warp&&homography(layer.warp);
+    return [[box.x,box.y],[box.x+box.width,box.y],[box.x+box.width,box.y+box.height],[box.x,box.y+box.height]].map(([x,y])=>{
+      const p=h&&project(h,x/layer.width,y/layer.height);
+      return p?point(m,p.x*layer.width,p.y*layer.height):point(m,x,y);
+    });
+  };
   useEffect(() => {
     const selector='.composition-primary-tools .layer-menu[open],.composition-primary-tools .shape-picker[open]';
     const position=()=>window.document.querySelectorAll(selector).forEach(menu=>{
@@ -234,17 +257,22 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       if (error.name !== "AbortError") setMessage(error.message);
     }
   };
-  const commit = (layers) => {
+  const commit = (layers, options) => {
     validateLayers(layers);
-    change({ ...latest.current.document, layers });
+    return change({ ...latest.current.document, layers }, options);
   };
   const patch = (values) => {
     if (single && !inherited(document.layers, single, "locked"))
       run(() =>
         commit(
-          document.layers.map((l) =>
-            l.id === single.id ? patchText(l,values) : l,
-          ),
+          document.layers.map(l=>{
+            if(l.id!==single.id)return l;
+            const next=patchText(l,values);
+            if(!l.textAutoFit)return next;
+            if('width' in values||'height' in values){delete next.textAutoFit;return next;}
+            const affectsSize=['text','textRuns','fontSize','fontFamily','fontResource','fontWeight','fontStyle','lineHeight','letterSpacing'].some(key=>key in values);
+            return affectsSize?fitLayerText(next,document.width):next;
+          }),
         ),
       );
   };
@@ -453,13 +481,13 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     element.addEventListener("wheel", wheel, { passive: false });
     return () => element.removeEventListener("wheel", wheel);
   }, []);
-  const action = (fn) =>
+  const action = (fn, options) =>
     run(() => {
       const result = fn();
       if (result.layers) {
-        commit(result.layers);
+        commit(result.layers, options);
         setSelected(result.ids);
-      } else commit(result);
+      } else commit(result, options);
     });
   useEffect(() => {
     const key = (e) => {
@@ -509,16 +537,21 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     window.addEventListener('keyup',release);window.addEventListener('blur',release);
     return () => {release();window.removeEventListener("keydown", key);window.removeEventListener('keyup',release);window.removeEventListener('blur',release)};
   }, [disabled,preferences.value.shortcuts]);
-  const add = (kind, extra = {}) => {
-    const layer = createLayer(kind, {
+  const add = (kind, extra = {}) => run(async()=>{
+    let layer = createLayer(kind, {
       x: document.width * 0.15,
       y: document.height * 0.15,
       ...extra,
     });
-    commit([...document.layers, layer]);
+    if(kind==='text'){
+      await loadLayerTextFonts(layer).catch(()=>{});
+      if(!mounted.current||latest.current.disabled)return;
+      layer=fitLayerText({...layer,textAutoFit:true},latest.current.document.width);
+    }
+    if(commit([...latest.current.document.layers, layer])===false)return;
     setSelected([layer.id]);
     setTool("select");
-  };
+  });
   const addAssets = (assets, dropPoint) => {
     if (!assets.length) return;
     if(assets.some(a=>a.kind&&a.kind!=='image'))throw Error('图层编辑器仅接受图片，请先从视频提取画面');
@@ -596,8 +629,11 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
         local.y >= 0 &&
         local.x <= l.width &&
         local.y <= l.height
-      )
-        return l;
+      ) {
+        const box=l.kind==='text'&&!l.textAutoFit?(textBoxes.get(l.id)??layerTextBounds(l)):null;
+        const margin=4/view.zoom;
+        if(!box||local.x>=box.x-margin&&local.x<=box.x+box.width+margin&&local.y>=box.y-margin&&local.y<=box.y+box.height+margin)return l;
+      }
     }
     return null;
   };
@@ -770,12 +806,14 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     let patch = {};
     if (d.mode === "resize") {
       const local = localPoint(d.doc.layers, l, p.x, p.y),
-        width = Math.max(1, local.x),
+        start = l.kind==='text'?localPoint(d.doc.layers,l,d.start.x,d.start.y):null,
+        width = Math.max(1, start?l.width+local.x-start.x:local.x),
         height = Math.max(
           1,
-          e.shiftKey ? (width * l.height) / l.width : local.y,
+          e.shiftKey ? (width * l.height) / l.width : (start?l.height+local.y-start.y:local.y),
         );
       patch = {width,height};
+      if(l.textAutoFit)patch.textAutoFit=false;
       if(l.kind==='group'){
         const box=localBounds(d.doc.layers,l),sx=Math.max(1,local.x-box.x)/box.width,
           sy=e.shiftKey?sx:Math.max(1,local.y-box.y)/box.height,m=matrix(l),
@@ -823,7 +861,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     if(d.mode==='line-0'||d.mode==='line-1'){
       setDraft(null);const p=at(e);if(Math.hypot(p.sx-d.start.sx,p.sy-d.start.sy)<1)return;
       const next=moveLineEndpoint(d.doc.layers,d.layer,Number(d.mode.at(-1)),p,e.shiftKey),layers=d.doc.layers.map(l=>l.id===next.id?next:l);
-      validateLayers(layers);change({...latest.current.document,layers});return;
+      validateLayers(layers);change({...latest.current.document,layers},{deferSave:true});return;
     }
     if(d.mode==='shape'){
       setShapeDraft(null);
@@ -875,7 +913,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
         ...latest.current.document,
         layers: draft.layers,
         ...(draft.layout ? { layout: draft.layout } : {}),
-      });
+      }, {deferSave:true});
     }
     setDraft(null);
     setPathDraft(null);
@@ -1220,8 +1258,8 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
         out.width=out.height=mask.width=mask.height=1;
       }),
     );
-  const relocate = (ids, targetId, placement) =>
-    action(() => relocateLayers(document.layers, ids, targetId, placement));
+  const relocate = (ids, targetId, placement, options) =>
+    action(() => relocateLayers(document.layers, ids, targetId, placement), options);
   const deselect=()=>{if(document.selection)change({...document,selection:undefined})};
   const inverseSelection=()=>{if(document.selection)change({...document,selection:{...document.selection,inverted:!document.selection.inverted}})};
   const deleteCurrent=()=>{
@@ -1405,7 +1443,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           <Button iconOnly icon="brush" aria-pressed={tool==='brush'} onClick={()=>setTool('brush')}>画笔</Button>
           <ShapePicker active={tool==='shape'} options={shapeOptions} disabled={disabled} choose={options=>{setShapeOptions(options);setTool('shape');setBoardTool(false)}}/>
           <Button iconOnly icon="assets" loading={imageImport.importing} onClick={()=>imageImport.open()} disabled={imageImport.importing}>{imageImport.importing?'导入中…':'图片'}</Button>
-          <Button iconOnly icon="text" onClick={()=>add('text',{name:'文字',text:'输入文字',fontSize:48,color:'#333333',width:600,height:160})}>文字</Button>
+          <Button iconOnly icon="text" onClick={()=>add('text',{name:'文字',text:'输入文字',fontSize:48,color:'#333333'})}>文字</Button>
           <Button iconOnly icon="select" aria-pressed={tool==='hand'} onClick={()=>setTool('hand')}>抓手</Button>
           <Button iconOnly icon="zoomIn" onClick={()=>setView({...view,zoom:Math.min(8,view.zoom*1.25)})}>缩放</Button>
           <hr className="tool-rail-divider"/>
@@ -1427,8 +1465,6 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
                     text: "输入文字",
                     fontSize: 40,
                     color: "#333333",
-                    width: 600,
-                    height: 160,
                   })
                 }
               >
@@ -1997,9 +2033,9 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
               </g>}
               {showControls && tool==='select' && selected.map((id) => {
                 const l = shown.layers.find((l) => l.id === id);
-                if (!l) return null;
+                if (!l||editingText?.id===id) return null;
                 if(l.kind==='shape'&&l.shape==='line'&&!l.warp&&!warp&&single?.id===id&&!inherited(shown.layers,l,'locked')){const m=worldMatrix(shown.layers,l),ends=lineEndpoints(l.width,l.height,l.linePoints).map(p=>point(m,p.x,p.y));return <g key={id}>{single?.id===id&&!inherited(shown.layers,l,'locked')&&ends.map((p,i)=><circle key={i} data-handle={`line-${i}`} aria-label={i?'直线终点':'直线起点'} cx={p.x} cy={p.y} r={6/view.zoom} fill="var(--panel)" stroke="var(--accent)" strokeWidth={1.5/view.zoom} style={{cursor:'crosshair'}}/>)}</g>;}
-                const pts = corners(shown.layers, l);
+                const pts = selectionCorners(l);
                 return <CanvasSelection key={id} points={pts} zoom={view.zoom} editable={single?.id===id&&!inherited(shown.layers,l,'locked')} warp={warp&&l.kind!=='group'}/>;
               })}
               {brushOutline&&<polygon points={brushOutline} fill="none" stroke="var(--text)" strokeWidth={1/view.zoom} style={{pointerEvents:'none'}}/>}
@@ -2034,15 +2070,20 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             </g>
           </svg>
           {workspace&&<CanvasRulers view={view} size={size}/>}
-          {showControls&&single&&tool==='select'&&<SelectionSizeBadge points={corners(shown.layers,shown.layers.find(l=>l.id===single.id)||single)} view={view} size={size}/>}
-          {editingText&&<LayerTextEditor key={editingText.id} layer={editingText} layers={document.layers} view={view}
+          {showControls&&single&&!editingText&&tool==='select'&&<SelectionSizeBadge points={selectionCorners(single)} view={view} size={size}/>}
+          {editingText&&<LayerTextEditor key={editingText.id} layer={editingText} layers={document.layers} view={view} maxWidth={document.width}
             onCancel={()=>{setEditingText(null);holder.current?.focus({preventScroll:true});}}
             onCommit={value=>{
               const now=latest.current.document,layer=now.layers.find(l=>l.id===editingText.id);
               if(!layer||latest.current.disabled||inherited(now.layers,layer,'locked')||latest.current.workspace?.board.locked){setEditingText(null);return;}
               if(!sameText(layer,editingText)){setMessage('文字已被其他操作修改，请复制当前输入后按 Esc 取消，再重新编辑。');return false;}
               if(!sameText(value,editingText)){
-                try{const layers=now.layers.map(l=>l.id===layer.id?{...l,...value}:l);validateLayers(layers);if(change({...now,layers})===false)return false;}
+                try{
+                  const next={...layer,...value};
+                  const measured=next.textAutoFit?fitLayerText(next,now.width):next;
+                  const layers=now.layers.map(l=>l.id===layer.id?measured:l);
+                  validateLayers(layers);if(change({...now,layers})===false)return false;
+                }
                 catch(error){setMessage(error.message);return false;}
               }
               setEditingText(null);
@@ -2132,7 +2173,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             selected={selected.length?selected:workspace?[workspace.board.id]:[]}
             choose={(id,extend,inspect)=>{if(inspect||(workspace?.layers||document.layers).find(l=>l.id===id)?.kind==='adjustment'){setTool('select');setMaskViewId(null)}(workspace?.choose||choose)(id,extend);setPaintOptions({...paintOptions,target:'image'});if(inspect){const same=selected.length===1?selected[0]===id:!selected.length&&workspace?.board.id===id;if(same&&propertiesOpen&&paintOptions.target!=='mask')closeProperties(false);else setPropertiesOpen(true);}setBoardTool(Boolean(workspace?.layers.find(l=>l.id===id)?.artboard))}}
             disabled={disabled}
-            relocate={workspace?.relocate || relocate}
+            relocate={(ids,target,placement)=>(workspace?.relocate||relocate)(ids,target,placement,{deferSave:true})}
             assets={document.assets} paintTarget={paintOptions.target} onMaskView={id=>changeMaskView(id,maskViewId===id&&maskPreviewMode==="alone"?"composite":"alone")} onMask={id=>{const layer=(workspace?.layers||document.layers).find(l=>l.id===id);if(!layer.mask)(workspace?.patchLayer||((id,values)=>change({...document,layers:document.layers.map(l=>l.id===id?{...l,...values}:l)})))(id,{mask:{x:0,y:0,width:1,height:1}});workspace?.selectMask(id);setSelected([id]);setPaintOptions({...paintOptions,target:"mask"});setPropertiesOpen(true)}}
             patch={workspace?.patchLayer || ((id, values) =>
               run(() =>

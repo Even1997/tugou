@@ -186,10 +186,12 @@ function CanvasWorkspace({
           previous.find((entry) => entry.id === edge.id)?.selected || false,
       })),
     );
+  }, [document.tugouCanvas?.nodes,document.tugouCanvas?.edges]);
+  useEffect(() => {
     if (JSON.stringify(flow.getViewport()) !== JSON.stringify(graph.viewport))
       flow.setViewport(graph.viewport);
-  }, [document.tugouCanvas]);
-  const commit = (nextNodes, nextEdges, viewport, history = true, source = current.current.document) => {
+  }, [document.tugouCanvas?.viewport]);
+  const commit = (nextNodes, nextEdges, {source=current.current.document,deferSave=false} = {}) => {
     const clean = fitGroups(nextNodes).map(
       ({ selected, dragging, measured, resizing, ...node }) => node,
     );
@@ -200,17 +202,17 @@ function CanvasWorkspace({
           ...(source.tugouCanvas || emptyCanvas()),
           nodes: clean,
           edges: nextEdges.map(({ selected, ...edge }) => edge),
-          viewport: viewport || flow.getViewport(),
+          viewport: flow.getViewport(),
         },
       },
-      { history },
+      { deferSave },
     );
   };
   const commitRef = useRef(commit);commitRef.current=commit;
-  const resize = useCallback((id,rect) => {
+  const resize = useCallback((id,rect,options) => {
     try {
       const next = current.current.nodes.map(n=>n.id===id?resizeAssetNode(n,rect):n);
-      commitRef.current(next,current.current.edges);setMessage('');
+      commitRef.current(next,current.current.edges,options);setMessage('');
     } catch(e) {setMessage(e.message);}
   },[]);
   const previewResize = useCallback((id,rect) => setNodes(previous=>previous.map(n=>n.id===id?resizeAssetNode(n,rect):n)),[]);
@@ -234,7 +236,7 @@ function CanvasWorkspace({
     let nextEdges=current.current.edges;
     if(pendingLink.current){const link=pendingLink.current,edge={id:crypto.randomUUID(),source:link.type==='source'?link.id:node.id,target:link.type==='source'?node.id:link.id};pendingLink.current=null;if(!canConnect({nodes:[...current.current.nodes,node],edges:nextEdges},edge.source,edge.target)){setMessage('此节点类型不能连接，请重新选择');return;}nextEdges=[...nextEdges,edge];}
     selectAfterAdd.current=node.id;
-    commit([...current.current.nodes, node], nextEdges, undefined, true, source);
+    commit([...current.current.nodes, node], nextEdges, {source});
     setInsertPoint(null);
     setMessage("");
   };
@@ -287,7 +289,7 @@ function CanvasWorkspace({
     const source=current.current.document,target=current.current.nodes.find(n=>n.id===id);
     if(!target)return;
     const next=target.type==='recipe'&&data.snapshot?{...source,recipes:source.recipes.map(r=>r.id===target.data.recipeId?{...r,output:data.snapshot.output}:r)}:source;
-    commit(current.current.nodes.map(n=>n.id===id?{...n,data:{...n.data,...data}}:n),current.current.edges,undefined,true,next);
+    commit(current.current.nodes.map(n=>n.id===id?{...n,data:{...n.data,...data}}:n),current.current.edges,{source:next});
   };
   const patchNode=data=>node&&patchById(node.id,data);
   const inputLocked=id=>disabled||pendingSubmissions.current.has(id)||tasks.some(t=>t.context?.nodeId===id&&['queued','running'].includes(t.status));
@@ -427,7 +429,7 @@ function CanvasWorkspace({
       const next={...source,assets:[...source.assets,...assets]};
       const parent=current.current.nodes.find(n=>n.id===target.parentId);
         const added=assets.slice(1).map((a,i)=>createNode(next,'asset',a.id,{x:target.position.x+(parent?.position.x||0)+(i+1)*300,y:target.position.y+(parent?.position.y||0)}));
-      commit([...current.current.nodes.map(n=>n.id===id?{...n,data:{...n.data,assetId:assets[0].id}}:n),...added],current.current.edges,undefined,true,next);
+      commit([...current.current.nodes.map(n=>n.id===id?{...n,data:{...n.data,assetId:assets[0].id}}:n),...added],current.current.edges,{source:next});
     });}finally{importingNodes.current.delete(id);}
   };
   const compiled = useMemo(() => {
@@ -779,22 +781,15 @@ function CanvasWorkspace({
                       : entry,
                   ),
                   current.current.edges,
+                  {deferSave:true},
                 );
               }}
               onMoveEnd={(_event, viewport) => {
                 setZoom(viewport.zoom);
                 if(uiMoving.current)return;
-                const source = current.current.document.tugouCanvas;
-                if (
-                  source &&
-                  JSON.stringify(source.viewport) !== JSON.stringify(viewport)
-                )
-                  commit(
-                    current.current.nodes,
-                    current.current.edges,
-                    viewport,
-                    false,
-                  );
+                const source = current.current.document, canvas=source.tugouCanvas;
+                if(canvas&&['x','y','zoom'].some(key=>canvas.viewport[key]!==viewport[key]))
+                  change({...source,tugouCanvas:{...canvas,viewport}},{viewOnly:true});
               }}
               isValidConnection={(connection) =>
                 canConnect(
@@ -909,7 +904,7 @@ function CanvasWorkspace({
                   <>
                     <label>生成提示词<TextArea className="canvas-prompt-editor" aria-label="画布生成提示词" value={node.data.snapshot.output||''} onChange={event=>{
                       const output=event.target.value,source=current.current.document;
-                      commit(current.current.nodes.map(n=>n.id===node.id?{...n,data:{...n.data,snapshot:{...n.data.snapshot,output}}}:n),current.current.edges,undefined,true,{...source,recipes:source.recipes.map(r=>r.id===node.data.recipeId?{...r,output}:r)});
+                      commit(current.current.nodes.map(n=>n.id===node.id?{...n,data:{...n.data,snapshot:{...n.data.snapshot,output}}}:n),current.current.edges,{source:{...source,recipes:source.recipes.map(r=>r.id===node.data.recipeId?{...r,output}:r)}});
                     }}/></label>
                     <p className={`state-${nodeStatus(document, node)}`}>
                       {statusLabels[nodeStatus(document, node)]} ·

@@ -120,27 +120,31 @@ function App() {
         setWorkspace(view.workspace);
     });
   }, []);
-  const markDirty = (value) => {
+  const markDirty = (value, autoSave = true) => {
     const previous=dirtyRef.current;
     dirtyRef.current = value;
     setDirty(value);
-    if(value)autosave.queue.changed();else autosave.queue.reset();
+    if(value)autosave.queue.changed(autoSave);else autosave.queue.reset();
     if(previous!==value)api.dirty(value).catch((failure) => setError(failure.message));
   };
   const change = (document, options = {}) => {
     if (busyRef.current) return false;
-    const previous=present.current.document;
-    const removed=pages.list(previous,'canvas').filter(p=>!pages.list(document,'canvas').some(n=>n.id===p.id));
-    if(removed.some(p=>tasks.some(t=>t.context?.projectId===present.current.id&&['running','queued'].includes(t.status)&&pages.content(previous,'canvas',p.id).tugouCanvas.nodes.some(n=>n.id===t.context?.nodeId))))throw Error('此画布仍有运行任务，请先完成或取消任务');
-    if (options.history !== false) {
-      history.current.past.push(present.current.document);
-      history.current.past = history.current.past.slice(-60);
-      history.current.future = [];
+    if (!options.viewOnly) {
+      const previous=present.current.document;
+      const removed=pages.list(previous,'canvas').filter(p=>!pages.list(document,'canvas').some(n=>n.id===p.id));
+      if(removed.some(p=>tasks.some(t=>t.context?.projectId===present.current.id&&['running','queued'].includes(t.status)&&pages.content(previous,'canvas',p.id).tugouCanvas.nodes.some(n=>n.id===t.context?.nodeId))))throw Error('此画布仍有运行任务，请先完成或取消任务');
+      if (options.history !== false) {
+        history.current.past.push(previous);
+        history.current.past = history.current.past.slice(-60);
+        history.current.future = [];
+      }
     }
     present.current = { ...present.current, document };
     setRecord(present.current);
-    markDirty(true);
-    setNotice("");
+    if (!options.viewOnly) {
+      markDirty(true, !options.deferSave);
+      setNotice("");
+    }
     return true;
   };
   const syncOutputs=list=>{
@@ -607,11 +611,7 @@ function App() {
                 <LayerEditor
                   key={record.id+':'+pages.group(record.document,'layers').activeId}
                   initialPageView={pageViews.current[record.id+':'+pages.group(record.document,'layers').activeId]||record.document.compositionView}
-                  onPageView={view=>{
-                    const key=record.id+':'+pages.group(record.document,'layers').activeId,previous=pageViews.current[key]||record.document.compositionView;
-                    pageViews.current[key]=view;
-                    if(!busyRef.current&&previous&&['x','y','zoom'].some(k=>previous[k]!==view[k]))markDirty(true);
-                  }}
+                  onPageView={view=>{pageViews.current[record.id+':'+pages.group(record.document,'layers').activeId]=view;}}
                   projectId={record.id}
                   editHistory={{...history.current,undo:()=>travel('undo'),redo:()=>travel('redo')}}
                   selected={layerSelection}

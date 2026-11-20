@@ -43,7 +43,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     return()=>{window.document.removeEventListener('pointerdown',outside,true);window.document.removeEventListener('keydown',escape,true);};
   },[context]);
   const [scaleContent,setScaleContent]=useState(false);
-  const [propertiesOpen,setPropertiesOpen]=useState(false);
+  const [propertiesOpen,setPropertiesOpen]=useState(true);
   const view=useRef(initialPageView||null), latest=useRef(null);
   useUiView('boards',{get:()=>({activeId,maskId,scaleContent,view:view.current}),restore:v=>{view.current=v.view;setActiveId(v.activeId);setMaskId(v.maskId);setScaleContent(v.scaleContent);},blocked:()=>materialControl.current?'正在保存到素材，请稍后切换':null});
   const selectedOwner=selected.length ? artboards.owner(normalized,selected[0]) : null;
@@ -52,7 +52,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
   latest.current={normalized,board,source:document,disabled:props.disabled,projectId:props.projectId};
   const run=fn=>{try{setError('');return fn()}catch(e){setError(e.message);return false}};
   const activate=(id,ids=[])=>{setActiveId(id);setSelected(ids)};
-  const save=next=>{artboards.validate(next);return change(next)};
+  const save=(next,options)=>{artboards.validate(next);return change(next,options)};
   const saveMaterial=async(id,time)=>{
     if(materialControl.current||latest.current.disabled)return;
     const reason=views.get('layers')?.blocked();
@@ -65,7 +65,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     }catch(e){if(!controller.signal.aborted)setError(e.message);}
     finally{materialControl.current=null;if(!controller.signal.aborted)setMaterialSaving(false);}
   };
-  const edit=next=>run(()=>{if(latest.current.board.locked)throw Error('请先解锁画板');return save(artboards.replace(latest.current.normalized,latest.current.board.id,next))});
+  const edit=(next,options)=>run(()=>{if(latest.current.board.locked)throw Error('请先解锁画板');return save(artboards.replace(latest.current.normalized,latest.current.board.id,next),options)});
   const patch=values=>run(()=>{if(board.locked)throw Error('请先解锁画板');return save(artboards.update(normalized,board.id,values))});
   const resize=values=>run(()=>{if(board.locked)throw Error('请先解锁画板');return save(artboards.update(normalized,board.id,values,{scaleContent}))});
   const applySize=(width,height,scaleContent)=>run(()=>{if(board.locked)throw Error('请先解锁画板');return save(artboards.update(normalized,board.id,{width,height},{scaleContent}))});
@@ -76,10 +76,10 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     if(b.id===id){activate(id);return}
     activate(b.id,extend&&b.id===board.id ? selected.includes(id)?selected.filter(n=>n!==id):[...selected,id] : [id]);
   };
-  const relocate=(ids,targetId,placement)=>run(()=>{
+  const relocate=(ids,targetId,placement,options)=>run(()=>{
     targetId=targetId || board.id;
     const next=artboards.relocate(normalized,ids,targetId,placement);
-    if(save(next)!==false)activate(artboards.owner(next,ids[0]).id,ids);
+    if(save(next,options)!==false)activate(artboards.owner(next,ids[0]).id,ids);
   });
   const emptyImport=useImageImport(assets=>run(()=>{
     const result=artboards.create(normalized,{width:assets[0].width,height:assets[0].height});
@@ -123,7 +123,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     },
     addShape:(layer,id)=>run(()=>{if(list.find(b=>b.id===id)?.locked)throw Error('请先解锁画板');const result=save({...normalized,layers:[...normalized.layers,{...layer,parentId:id}]});if(result!==false)activate(id,[layer.id]);return result}),
     activate,choose,relocate,maskId,selectMask:id=>{const b=artboards.owner(normalized,id);if(b){setMaskId(id);activate(b.id,[id])}},
-    move:(id,dx,dy)=>run(()=>{const b=list.find(b=>b.id===id);return save(artboards.update(normalized,id,{x:b.x+dx,y:b.y+dy}))}),
+    move:(id,dx,dy)=>run(()=>{const b=list.find(b=>b.id===id);return save(artboards.update(normalized,id,{x:b.x+dx,y:b.y+dy}),{deferSave:true})}),
     patchLayer:(id,values)=>run(()=>save({...normalized,layers:normalized.layers.map(l=>l.id===id?{...l,...values}:l)})),
     inspector:<BoardInspector key={`${board.id}-${board.name}`} board={board} patch={patch} resize={resize} scaleContent={scaleContent} setScaleContent={setScaleContent} createBoard={createBoard} applySize={applySize} disabled={props.disabled} canRemove={list.length>1}
       duplicate={()=>run(()=>{const result=artboards.duplicate(normalized,board.id);if(save(result.document)!==false){view.current=null;activate(result.id)}})}
