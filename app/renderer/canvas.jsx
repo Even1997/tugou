@@ -16,6 +16,7 @@ import {
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -29,6 +30,7 @@ import {
   applyEdgeChanges,
   ReactFlowProvider,
   useReactFlow,
+  useStoreApi,
   useKeyPress,
   ConnectionLineType,
   getNodesBounds,
@@ -151,6 +153,23 @@ function CanvasWorkspace({
   const refreshConnection=useCallback(()=>window.tugou.connection().then(setConnection).catch(()=>{}),[]);
   useEffect(()=>{refreshConnection();window.addEventListener('focus',refreshConnection);window.addEventListener('tugou-connection-changed',refreshConnection);return()=>{window.removeEventListener('focus',refreshConnection);window.removeEventListener('tugou-connection-changed',refreshConnection);};},[refreshConnection]);
   const flow = useReactFlow();
+  const flowStore=useStoreApi(),[flowReady,setFlowReady]=useState(false);
+  useLayoutEffect(()=>{
+    const measure=flowStore.getState().updateNodeInternals;
+    let frame=0,pending=new Map();
+    // Measure after ResizeObserver delivery so connecting the results cannot resize nodes inside the observer.
+    flowStore.setState({updateNodeInternals(updates){
+      for(const [id,update] of updates)pending.set(id,update);
+      if(frame)return;
+      frame=requestAnimationFrame(()=>{
+        frame=0;const batch=pending;pending=new Map();
+        for(const [id,update] of batch)if(!update.nodeElement.isConnected)batch.delete(id);
+        if(batch.size)measure(batch);
+      });
+    }});
+    setFlowReady(true);
+    return()=>{cancelAnimationFrame(frame);flowStore.setState({updateNodeInternals:measure});};
+  },[flowStore]);
   const uiMoving=useRef(false);
   const holder = useRef(null),
     current = useRef({ document, nodes, edges });
@@ -723,7 +742,7 @@ function CanvasWorkspace({
               }
             }}
           >
-            <ReactFlow
+            {flowReady&&<ReactFlow
               onlyRenderVisibleElements
               zoomOnDoubleClick={false}
               snapToGrid={preferences.value.canvasSnap}
@@ -826,7 +845,7 @@ function CanvasWorkspace({
               {minimap && (
                 <MiniMap pannable zoomable nodeColor="var(--accent)" />
               )}
-            </ReactFlow>
+            </ReactFlow>}
             {createMenu&&<CanvasNodeMenu position={createMenu} close={()=>{setCreateMenu(null);pendingLink.current=null;}} choose={chooseNode} disabled={disabled} canChoose={pendingLink.current?canCreateLinked:undefined}/>}
           </div>
           <aside
