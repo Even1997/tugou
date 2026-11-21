@@ -1,4 +1,6 @@
 import {GifFrames} from './gif-frames.js';
+import {printPng} from './print-png.js';
+import {paintVector,shapeStyle} from './vector-geometry.js';
 import {shapePoints,lineEndpoints} from '../core/shapes.cjs';
 import {loadLayerTextFonts,paintLayerText} from './layer-text-layout.js';
 import {ImageCache} from '../core/image-cache.cjs';
@@ -159,24 +161,8 @@ function paths(ctx, list, width = 1, height = 1) {
   }}finally{if(temporary)temporary.width=temporary.height=1;}
 }
 function paintShape(ctx, l) {
-  let fill = l.color || "#b0bff2";
-  if (l.gradient) {
-    const angle = (l.gradient.angle * Math.PI) / 180,
-      dx = (Math.cos(angle) * l.width) / 2,
-      dy = (Math.sin(angle) * l.height) / 2;
-    fill = ctx.createLinearGradient(
-      l.width / 2 - dx,
-      l.height / 2 - dy,
-      l.width / 2 + dx,
-      l.height / 2 + dy,
-    );
-    fill.addColorStop(0, l.color || "#b0bff2");
-    fill.addColorStop(1, l.gradient.endColor);
-  }
-  ctx.fillStyle = fill;
-  ctx.strokeStyle = l.stroke || "#222222";
-  ctx.lineWidth = l.strokeWidth || 0;
-  ctx.beginPath();
+  if(l.shape==='path'){paintVector(ctx,l);return;}
+  shapeStyle(ctx,l);
   const polygon=shapePoints(l.shape);
   if(polygon){polygon.forEach(([x,y],i)=>i?ctx.lineTo(x*l.width,y*l.height):ctx.moveTo(x*l.width,y*l.height));ctx.closePath();}
   else if (l.shape === "ellipse")
@@ -205,7 +191,7 @@ function paintShape(ctx, l) {
   if (ctx.lineWidth > 0 && l.strokeWidth > 0) ctx.stroke();
 }
 
-const linePadding=(layers,l)=>{if(l.kind!=='shape'||l.shape!=='line')return 0;const m=worldMatrix(layers,l);return (l.strokeWidth||0)/2*Math.hypot(...m.slice(0,4));};
+const linePadding=(layers,l)=>{if(l.kind!=='shape'||!['line','path'].includes(l.shape))return 0;const m=worldMatrix(layers,l);return (l.strokeWidth||0)/2*Math.hypot(...m.slice(0,4));};
 function indexLayers(layers) {
   const byId=new Map(),children=new Map();
   for(const layer of layers){
@@ -228,6 +214,11 @@ function layerRect(doc,frame,layer){
 function rasterBounds(rect,frame,pad){
   const x=Math.max(0,Math.floor(rect.left)-pad),y=Math.max(0,Math.floor(rect.top)-pad);
   return {x,y,width:Math.min(frame.width,Math.ceil(rect.right)+pad)-x,height:Math.min(frame.height,Math.ceil(rect.bottom)+pad)-y};
+}
+function yieldPreview(frame){
+  if(frame.deadline===undefined||performance.now()<frame.deadline)return;
+  const turn=globalThis.scheduler?.yield?.()||new Promise(resolve=>setTimeout(resolve,0));
+  return turn.then(()=>{frame.deadline=performance.now()+8;frame.signal?.throwIfAborted();});
 }
 export function renderPadding(layers, {byId,children}=indexLayers(layers)) {
   const nodePad = (l, visited) => {
@@ -277,13 +268,50 @@ export class Compositor {
       }));
   }
   prime(asset,image){this.previewImages?.clear();return this.images.put(originalUrl(asset),image);}
+  endVectorDrag(){
+    this.vectorWorker?.terminate();
+    this.vectorWorker=null;
+    this.vectorGesture=null;
+    this.finishVector?.(null);
+  }
+  async vectorBitmap(layer,transform,frame){
+    const gesture=frame.vectorDrag;
+    if(gesture?.layer.id!==layer.id||gesture.rasterFailed)return null;
+    try{
+      const worker=this.vectorWorker||=new Worker(new URL('./vector-raster-worker.js',document.baseURI),{type:'module'});
+      const {part,index}=gesture;
+      const {width,height,color,gradient,fill,stroke,strokeWidth,paths}=gesture.layer;
+      const base=this.vectorGesture===gesture?undefined:{width,height,color,gradient,fill,stroke,strokeWidth,paths};
+      const started=performance.now();
+      const bitmap=await new Promise((resolve,reject)=>{
+        this.finishVector=resolve;
+        worker.onmessage=({data})=>data.error?reject(Error(data.error)):resolve(data.bitmap);
+        worker.onerror=event=>{event.preventDefault();reject(Error('路径预览线程不可用'));};
+        worker.postMessage({base,part,index,node:layer.paths[part].nodes[index],transform,width:frame.width,height:frame.height});
+      });
+      this.vectorGesture=bitmap?gesture:null;
+      // Exclude worker startup. Reduce only the moving fill/stroke when repeat
+      // frames at this scale miss the budget; the editable segment stays sharp.
+      const elapsed=performance.now()-started;
+      if(bitmap&&!base&&gesture.lastRasterScale===frame.scale&&elapsed>24){
+        gesture.rasterRatio=Math.max(.5,(gesture.rasterRatio||1)*Math.sqrt(20/elapsed));
+        gesture.lastRasterScale=undefined;
+      }else gesture.lastRasterScale=frame.scale;
+      return bitmap;
+    }catch{
+      gesture.rasterFailed=true;
+      this.endVectorDrag();
+      return null;
+    }finally{this.finishVector=null;}
+  }
   dispose() {
+    this.endVectorDrag();
     if(this.ownsImages)this.images.clear();
     this.gifs.dispose();
     this.warp?.dispose();
   }
   async content(l, doc, scale, time=0, frame) {
-    if(l.kind==='shape'&&l.shape==='line'&&!l.warp)return surface(1,1);
+    if(l.kind==='shape'&&['line','path'].includes(l.shape)&&!l.warp)return surface(1,1);
     const faces=l.kind==='text'?await loadLayerTextFonts(l):[];
     if (l.kind === "image")
       return this.image(l.bitmap||assetById(doc,frame,l.assetId),time,frame?.onGif);
@@ -304,7 +332,7 @@ export class Compositor {
     if (!l.warp) {
       ctx.save();
       ctx.setTransform(...m);
-      if(l.kind==='shape'&&l.shape==='line'){paintShape(ctx,l);ctx.restore();return;}
+      if(l.kind==='shape'&&['line','path'].includes(l.shape)){paintShape(ctx,l);ctx.restore();return;}
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(image, 0, 0, l.width, l.height);
       ctx.restore();
@@ -461,23 +489,17 @@ export class Compositor {
       } else await this.siblings(ctx, doc, l.id, frame, seen);
     }
     else if (l.kind !== "adjustment") {
-      const content =
-        frame.overrides?.get(l.id) ||
-        (await this.content(
-          l,
-          doc,
-          frame.scale *
-            Math.max(Math.abs(l.scaleX || 1), Math.abs(l.scaleY || 1)),
-          frame.time,
-          frame,
-        ));
-      this.geometry(
-        ctx,
-        content,
-        l,
-        multiply(frame.transform, worldMatrix(parents(doc,frame), l)),
-      );
-      if (l.kind !== "image") content.width = content.height = 1;
+      const transform=multiply(frame.transform,worldMatrix(parents(doc,frame),l));
+      const bitmap=frame.vectorDrag?.layer.id===l.id&&!l.warp?await this.vectorBitmap(l,transform,frame):null;
+      if(bitmap){
+        try{frame.signal?.throwIfAborted();ctx.drawImage(bitmap,0,0);}finally{bitmap.close();}
+      }else{
+        frame.signal?.throwIfAborted();
+        const scale=frame.scale*Math.max(Math.abs(l.scaleX||1),Math.abs(l.scaleY||1));
+        const content=frame.overrides?.get(l.id)||await this.content(l,doc,scale,frame.time,frame);
+        this.geometry(ctx,content,l,transform);
+        if(l.kind!=='image')content.width=content.height=1;
+      }
     }
     const preview = frame.maskPreview?.id === l.id ? frame.maskPreview.mode : null;
     if (l.mask && (preview === 'overlay' || (!preview && !l.mask.disabled))) {
@@ -620,6 +642,7 @@ export class Compositor {
       try {
         for (const l of children) {
           frame.signal?.throwIfAborted();
+          const pause=yieldPreview(frame);if(pause)await pause;
           if (l.kind === "adjustment") {
             await this.adjustment(ctx, l, doc, frame, adjustmentBounds);
             continue;
@@ -628,11 +651,22 @@ export class Compositor {
           // Keep the original two draws and pixel coordinates for plain layers.
           if(plain&&!frame.overrides?.size&&['image','text','shape'].includes(l.kind)){
             if(base){base.width=base.height=1;base=null;}
-            if(!this.intersects(l,doc,frame))continue;
             const pad=Math.ceil(linePadding(parents(doc,frame),l)*frame.scale)+2;
             const {x,y,width,height}=rasterBounds(layerRect(doc,frame,l),frame,pad);
             if(width<=0||height<=0)continue;
             const transform=multiply(frame.transform,worldMatrix(parents(doc,frame),l));
+            if(frame.vectorDrag?.layer.id===l.id){
+              const bitmap=await this.vectorBitmap(l,transform,frame);
+              if(bitmap){
+                try{
+                  frame.signal?.throwIfAborted();
+                  ctx.globalAlpha=l.opacity;ctx.globalCompositeOperation='source-over';
+                  ctx.drawImage(bitmap,x,y,width,height,x,y,width,height);
+                }finally{bitmap.close();}
+                continue;
+              }
+              frame.signal?.throwIfAborted();
+            }
             const asset=this.previewImages&&l.kind==='image'?(l.bitmap||assetById(doc,frame,l.assetId)):null;
             const pixels=frame.width*frame.height;
             const key=asset&&!asset.gif&&pixels*4<=this.previewImages.budget&&asset.width*asset.height>=pixels*4?
@@ -698,6 +732,7 @@ export class Compositor {
     };
     try {
       for (const l of children) {
+        const pause=yieldPreview(frame);if(pause)await pause;
         if (l.visible === false) continue;
         if (l.kind === "adjustment") {
           if (l.clipping) {
@@ -770,6 +805,8 @@ export class Compositor {
       padded = false,
       time = 0,
       onGif,
+      interactive = false,
+      vectorDrag,
     } = {},
     scene,
   ) {
@@ -804,6 +841,8 @@ export class Compositor {
             padded: true,
             time,
             onGif,
+            interactive,
+            vectorDrag,
           },scene);
           target.width = Math.ceil(width * scale);
           target.height = Math.ceil(height * scale);
@@ -855,6 +894,8 @@ export class Compositor {
         maskPreview,
         scene,
         onGif,
+        vectorDrag,
+        deadline:interactive?performance.now()+8:undefined,
       };
     ctx.save();
     if (!doc.infiniteWorkspace) {
@@ -936,7 +977,8 @@ export class Compositor {
       );
       if (!blob) throw new Error("PNG 编码失败");
       signal?.throwIfAborted();
-      return new Uint8Array(await blob.arrayBuffer());
+      const output=doc.printSize?await printPng(blob,doc.printSize.ppi):blob;
+      return new Uint8Array(await output.arrayBuffer());
     } finally {
       out.width = out.height = 1;
     }

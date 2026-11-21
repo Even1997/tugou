@@ -86,6 +86,24 @@ test("alignment and equal gaps work in document space under transformed groups",
     bs = ["a", "b", "c"].map((id) => L.bounds(spaced, [id]));
   close([bs[1].x - bs[0].x - bs[0].width], [bs[2].x - bs[1].x - bs[1].width]);
 });
+test("a reference rectangle moves roots together across transformed parents", () => {
+  const parent=L.createLayer("group",{id:"p",x:120,y:15,rotation:28,scaleX:1.4});
+  const child=shape("child",{parentId:"p",x:12,y:16,width:30,height:40});
+  const free=shape("free",{x:20,y:70,width:90,height:25,rotation:-16});
+  const layers=[parent,child,free], target={x:40,y:50,width:327,height:210};
+  for(const ids of [["child","free"],["p","child","free"]]){
+    for(const axis of ["x","y"])for(const mode of ["start","center","end"]){
+      const next=L.alignLayers({layers},ids,axis,mode,target);
+      const a=L.bounds(next,["child"]),b=L.bounds(next,["free"]);
+      const beforeA=L.bounds(layers,["child"]),beforeB=L.bounds(layers,["free"]);
+      close([a.x-b.x,a.y-b.y],[beforeA.x-beforeB.x,beforeA.y-beforeB.y]);
+      const extent=L.bounds(next,ids), dim=axis==="x"?"width":"height";
+      const t={start:0,center:0.5,end:1}[mode];
+      close([extent[axis]+extent[dim]*t],[target[axis]+target[dim]*t]);
+      assert.equal(L.alignLayers({layers:next},ids,axis,mode,target),next);
+    }
+  }
+});
 test("homography maps all corners and inverse hit testing survives rotation and skew", () => {
   const q = [0.1, 0.2, 0.9, 0, 1.1, 1, 0.05, 0.8],
     h = L.homography(q);

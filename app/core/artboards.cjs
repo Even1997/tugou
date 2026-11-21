@@ -35,7 +35,7 @@ function extract(doc, id) {
   if (!b) throw Error('画板不存在');
   const ids = descendants(doc.layers,[id]);
   return {...doc, name:b.name, width:b.width, height:b.height, background:b.background,
-    selection:b.selection, layout:b.layout,
+    printSize:b.printSize, selection:b.selection, layout:b.layout,
     layers:doc.layers.filter(l => l.id !== id && ids.has(l.id)).map(l => {
       const local = anchorTransform(l,[1,0,0,1,-b.x,-b.y]);
       if(l.parentId===id){const root={...local};delete root.parentId;return root;}return local;
@@ -47,6 +47,7 @@ function replaceBoard(doc, id, edited) {
   const ids = descendants(doc.layers,[id]);
   const nextBoard = {...b,width:edited.width,height:edited.height,background:edited.background,
     selection:edited.selection,layout:edited.layout};
+  if(b.printSize&&(edited.width!==b.width||edited.height!==b.height))nextBoard.printSize={...b.printSize,...require('./board-measure.cjs').dimensions(nextBoard)};
   const children = edited.layers.map(l => anchorTransform({...l,parentId:l.parentId || id},[1,0,0,1,b.x,b.y]));
   const next = {...doc, assets:edited.assets,
     layers:doc.layers.flatMap(l => l.id === id ? [nextBoard,...children] : ids.has(l.id) ? [] : [l])};
@@ -58,10 +59,10 @@ function replace(doc, id, edited) {
   const next = replaceBoard(doc, id, edited);
   validate(next); return next;
 }
-function create(doc, {width=1024,height=1536,name} = {}) {
+function create(doc, {width=1024,height=1536,name,printSize} = {}) {
   const list = boards(doc), x = Math.max(0,...list.map(b => b.x+b.width)) + 100;
   const b = createLayer('group',{artboard:true,name:name || `画板 ${list.length+1}`,x,y:list[0]?.y || 0,
-    width,height,background:'#ffffff',clipContent:true});
+    width,height,...(printSize&&{printSize}),background:'#ffffff',clipContent:true});
   const next={...doc,layers:[...doc.layers,b]};validate(next);
   return {document:next,id:b.id};
 }
@@ -70,6 +71,7 @@ function updateBoard(doc,id,patch,scaleContent) {
   if (!b) throw Error('画板不存在');
   if(b.locked)throw Error('请先解锁画板');
   const nextBoard={...b,...patch};
+  if(b.printSize&&!patch.printSize&&(patch.width!==undefined||patch.height!==undefined))nextBoard.printSize={...b.printSize,...require('./board-measure.cjs').dimensions(nextBoard)};
   const ids = descendants(doc.layers,[id]);
   const sx=scaleContent ? nextBoard.width/b.width : 1, sy=scaleContent ? nextBoard.height/b.height : 1;
   const transform=[sx,0,0,sy,nextBoard.x-b.x*sx,nextBoard.y-b.y*sy];
@@ -135,6 +137,12 @@ function validate(doc) {
       throw Error('画板必须是未旋转的顶层容器');
     if(!Number.isInteger(b.width)||!Number.isInteger(b.height)||b.width>30000||b.height>30000||b.width*b.height>100000000)
       throw Error('画板尺寸需要为整数，单边最多 30000、总计一亿像素');
+    if(b.printSize){
+      const {width,height,unit,ppi}=b.printSize,{measure,units}=require('./board-measure.cjs');
+      if(!Object.hasOwn(units,unit)||!Number.isFinite(ppi))throw Error('画板单位或 PPI 无效');
+      const px=measure(width,height,unit,ppi);
+      if(px.width!==b.width||px.height!==b.height)throw Error('画板物理尺寸与像素尺寸不一致');
+    }
     if(typeof b.name!=='string'||!b.name.trim())throw Error('请输入画板名称');
     if(b.background!=='transparent'&&!/^#[\da-f]{3}([\da-f]{3})?$/i.test(b.background))throw Error('画板背景颜色无效');
   }

@@ -304,7 +304,7 @@ async function boot() {
     return {name:path.basename(choice.target),bytes:bytes.length};
   }));
   handle('chooseExport', async (name, format='png') => {
-    if(!['png','gif','psd','pptx'].includes(format)||(['psd','pptx'].includes(format)&&Array.isArray(name)))throw Error('导出格式无效');
+    if(!['png','gif','psd','pptx','svg'].includes(format)||(['psd','pptx','svg'].includes(format)&&Array.isArray(name)))throw Error('导出格式无效');
     if(Array.isArray(name)){
       if(!name.length||name.length>500||name.some(n=>typeof n!=='string'||n.length>256))throw Error('请选择 1–500 个画板');
       const choice=await dialog.showOpenDialog(window,{title:'选择画板图片保存文件夹',defaultPath:await imageDestination(),properties:['openDirectory','createDirectory']});
@@ -312,7 +312,7 @@ async function boot() {
       const targets=await require('./core/image-export.cjs').batchTargets(choice.filePaths[0],name,format);
       return {files:targets.map(target=>{const token=randomUUID();exports.set(token,{target,exclusive:true,format});return {token,name:path.basename(target)};})};
     }
-    const choice=await dialog.showSaveDialog(window,{title:`保存 ${format.toUpperCase()}`,defaultPath:await imageDestination(pngName(name||'土狗').replace(/\.(png|gif|psd|pptx)$/i,'')+'.'+format),filters:[{name:format==='pptx'?'PowerPoint 演示文稿':format==='psd'?'Photoshop 文档':format==='gif'?'GIF 动图':'PNG 图片',extensions:[format]}]});
+    const choice=await dialog.showSaveDialog(window,{title:`保存 ${format.toUpperCase()}`,defaultPath:await imageDestination(pngName(name||'土狗').replace(/\.(png|gif|psd|pptx)$/i,'')+'.'+format),filters:[{name:format==='pptx'?'PowerPoint 演示文稿':format==='psd'?'Photoshop 文档':format==='svg'?'矢量路径':format==='gif'?'GIF 动图':'PNG 图片',extensions:[format]}]});
     if(choice.canceled||!choice.filePath)return null;
     const target=await safePath(path.dirname(choice.filePath),path.basename(choice.filePath));
     const token=randomUUID();exports.set(token,{target,format});return {token};
@@ -325,9 +325,16 @@ async function boot() {
     await safePath(path.dirname(choice.target),path.basename(choice.target));await atomicWrite(choice.target,bytes);
     await rememberExportDirectory(app.getPath('userData'),choice.target);return {name:path.basename(choice.target),bytes:bytes.length};
   });
+  handle('exportPathSvg',async(token,layers,id)=>{
+    const choice=exports.get(token);if(choice?.format!=='svg')throw Error('SVG 保存位置已失效');
+    require('./core/layers.cjs').validateLayers(layers);
+    const bytes=Buffer.from(require('./core/path-svg.cjs').pathSvg(layers,id));
+    await safePath(path.dirname(choice.target),path.basename(choice.target));await atomicWrite(choice.target,bytes);
+    exports.delete(token);await rememberExportDirectory(app.getPath('userData'),choice.target);return {bytes:bytes.length};
+  });
   handle('writeExport', async (token, bytes) => {
     const choice=exports.get(token);if(!choice)throw new Error('导出目标已失效，请重新选择');
-    if(['psd','pptx'].includes(choice.format))throw Error('请使用对应文档编码保存');
+    if(['psd','pptx','svg'].includes(choice.format))throw Error('请使用对应文档编码保存');
     const target=typeof choice==='string'?choice:choice.target;
     const buffer=Buffer.from(bytes);
     if(choice.format==='gif'){

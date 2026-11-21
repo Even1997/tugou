@@ -1,8 +1,8 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os'),net=require('node:net');
-const {EventEmitter}=require('node:events'),{setTimeout:delay}=require('node:timers/promises');
+const {EventEmitter,once}=require('node:events'),{setTimeout:delay}=require('node:timers/promises');
 const {createDispatcher,startAutomationHost}=require('../core/automation-host.cjs');
 const {bridge,sessionDiagnostic}=require('../core/mcp.cjs');
-async function root(t){const dir=await fs.mkdtemp(path.join(os.tmpdir(),'tugou-session-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));return dir;}
+async function root(t){const dir=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'tugou-session-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));return dir;}
 test('command discovery defaults to compact summaries and supports focused schemas',async t=>{
  const dir=await root(t),dispatch=await createDispatcher({root:dir});
  const summary=await dispatch('list_commands',{}),full=await dispatch('list_commands',{schemas:true});
@@ -42,4 +42,34 @@ test('disconnect aborts a real host wait and repeated startup failures leave no 
  // Force descriptor write failure after bind, then retry: neither attempt may leak reply listeners.
  await fs.rm(host.descriptor);await fs.mkdir(host.descriptor);
  for(let i=0;i<2;i++){await assert.rejects(()=>startAutomationHost({window,ipcMain,app,entryUrl:frame.url,root:dir,tasks:{list:()=>[]}}));assert.equal(ipcMain.listenerCount('tugou:automation-reply'),0);}
+});
+test('disconnect drops work that has not started, and the queue still drains',{timeout:5000},async t=>{
+ const dir=await root(t),ipcMain=new EventEmitter(),app=new EventEmitter(),window=new EventEmitter();
+ const frame={url:'file:///fixture'},contents={mainFrame:frame};
+ app.getPath=()=>dir;window.isDestroyed=()=>false;window.webContents=contents;
+ const snapshots=new EventEmitter();let calls=0;
+ const reply=id=>ipcMain.emit('tugou:automation-reply',{sender:contents,senderFrame:frame},id,{ok:true,value:{revision:'r',document:null}});
+ contents.send=(_channel,{id})=>{if(++calls===1)snapshots.emit('first',id);else reply(id);};
+ const createServer=net.createServer;
+ let server;
+ t.mock.method(net,'createServer',(...args)=>(server=createServer(...args)));
+ const host=await startAutomationHost({window,ipcMain,app,entryUrl:frame.url,root:dir});t.after(host.close);
+
+ const started=once(snapshots,'first');
+ const first=bridge(host.descriptor,'get_state',{});
+ const [firstId]=await started;
+ const {port,token}=JSON.parse(await fs.readFile(host.descriptor,'utf8'));
+ const connected=once(server,'connection');
+ const client=net.createConnection({port,host:'127.0.0.1'});t.after(()=>client.destroy());
+ const [peer]=await connected;
+ const received=once(peer,'data');
+ client.write(JSON.stringify({token,method:'get_state',args:{}})+'\n');
+ await received;
+ const closed=once(peer,'close');
+ client.destroy();await closed;
+
+ reply(firstId);
+ assert.equal((await first).ok,true);
+ assert.equal((await bridge(host.descriptor,'get_state',{})).ok,true);
+ assert.equal(calls,2);
 });

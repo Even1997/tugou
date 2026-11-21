@@ -268,7 +268,7 @@ export function LayerProperties({ layer, patch, document, change, maskEditing, m
         )}
         {layer.kind === "shape" && (
           <>
-            <label>形状类型<Select aria-label="形状类型" value={layer.shape||'rect'} onChange={e=>patch(shapeStyle({fill:layer.fill,strokeWidth:layer.strokeWidth},e.target.value))}>{shapes.map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></label>
+            <label>形状类型<Select aria-label="形状类型" value={layer.shape||'rect'} onChange={e=>patch(shapeStyle({fill:layer.fill,strokeWidth:layer.strokeWidth},e.target.value))}>{layer.shape==='path'&&<option value="path">矢量路径</option>}{shapes.map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></label>
             {layer.shape!=='line'&&<label className="check"><input type="checkbox" aria-label="形状填充开关" checked={layer.fill!==false} onChange={e=>patch({fill:e.target.checked})}/>填充</label>}
             <div className="property-grid">
               {layer.shape!=='line'&&<label>

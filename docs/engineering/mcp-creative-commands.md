@@ -1,6 +1,6 @@
 # MCP 全量创作命令
 
-本轮源码提供 179 条命令，沿用 7 个顶层 MCP 工具与原有 stdio 配置。已有连接无需新增服务器配置；运行旧代码的桌面窗口需要先保存工程，再重启应用及客户端连接。用 `get_state.capabilities.commands` 确认加载的目录。当前工作中的旧窗口不自动重启，以保护未保存内容。
+创作命令沿用 7 个顶层 MCP 工具与原有 stdio 配置。已有连接无需新增服务器配置；运行旧代码的桌面窗口需要先保存工程，再重启应用及客户端连接。用 `get_state.capabilities.commands` 确认加载的目录。当前工作中的旧窗口不自动重启，以保护未保存内容。
 
 ## 调用约定
 
@@ -28,11 +28,24 @@
 | 局部调整 | `layer.adjustmentFromSelection` 创建带当前选区蒙版的调整图层；参数与 `layer.adjustment` 一致 |
 | 绘画与修图 | `paint.create` 透明绘画层；`paint.stroke` 支持逐点压感和平滑；`paint.retouch` 支持 `clone/heal/blur/smudge/liquify`；`image.contentFill` 使用当前选区 |
 | 笔刷坐标 | 笔画点为画板坐标；仿制来源 `source:{u,v}` 为原图归一化坐标 0–1；`pressure:true` 时每点 `pressure` 为 0–1 |
-| 排版 | `layout.update` 设置网格、吸附和参考线；参考线位置相对画板 |
+| 图层排版 | `layer.align` 支持六向对齐，`layer.distribute` 支持水平、垂直等距。两者的 `target` 均可选 `objects`、`selection` 或 `board` |
+| 网格与参考线 | `layout.update` 设置网格、吸附和参考线，位置相对画板 |
 | 文字字体 | `font.library` 列出本机、云端及已发布字体。把 `font.face` 的结果传给图层或 PPT 文字的 `properties` 或 `patch` |
 | 素材筛选 | `asset.search` 按名称、来源、形状筛选，按名称、像素数或时间排序，并分页 |
 | 导演台 | `scene.captureAngles` 拍摄 4/12 方位，创建独立素材和连线结果；`scene.record` 录制 1–60 秒动画为视频素材，后台也能运行 |
 | 迁入 | `project.importLegacy` 导入旧工程及相邻 `resources`；`project.migrateCanvas` 导入包含 `state`、`images` 的历史快照 JSON；保留归档，不切换当前工程 |
+
+## MCP 图层排版
+
+两个命令都接受图层 `ids` 和方向 `axis`（`x` 或 `y`）。`layer.align` 另需 `mode`（`start`、`center` 或 `end`）。例如把标题和图标一起水平居中，可以调用 `layer.align`，参数为 `{"ids":["标题ID","图标ID"],"axis":"x","mode":"center","target":"board"}`。将 ID 替换为实际图层 ID，并在 `run_command` 外层传入实时 `expectedRevision`。
+
+| target | 对齐 | 等距分布 |
+| --- | --- | --- |
+| `objects` | 至少两个独立对象分别对齐到它们的共同外接框 | 保留首尾边缘，均分对象之间的净距 |
+| `selection` | 全部对象一起移到所属画板有效选区的外接框 | 首尾贴选区边缘，中间净距相等 |
+| `board` | 全部对象一起移到所属画板的边缘或中心 | 首尾贴画板边缘，中间净距相等 |
+
+显式指定参照时，所有对象须在同一画板内。选中组及其子层只计一个对象，等距分布至少需要三个独立对象。省略 `target` 会沿用旧调用规则。选区支持加减、相交、反选、羽化和位图，MCP 单次选区扫描及源位图各限 1600 万像素。可以在一个 `batch` 中创建或修改选区再排版。失败时整批回滚，单独重复已完成的排版会返回 `changed: false` 并保留当前撤销记录。
 
 ## MCP 字体示例
 
@@ -68,3 +81,10 @@
 - 本地组件必须已安装；API 生图/分析仍可能收费，保持既有模型配置与请求去重规则。
 - 安装更新、更新源、组件安装、原生系统窗口、剪贴板和工程删除确认仍由用户操作。未开放 shell、脚本执行或任意文件读写。
 - 这些是本轮源码和 Windows 隔离验收结果，不代表新版本已发布；Mac 原生及真实大工程仍需补验。
+
+## 画板单位与矢量路径
+
+- `artboard.create` 接受 `width`、`height`、`unit`（px/mm/cm/in）及 `ppi`。例如 `{"name":"请柬","width":14,"height":20,"unit":"cm","ppi":300}`。读取画板时 width/height 是像素，printSize 保存输入尺寸。`artboard.update` 单改 PPI 时保留已有物理宽高。
+- `layer.create` 传 `kind:"shape"`、`properties.shape:"path"`。例如 `paths:[{closed:false,nodes:[{x:0,y:1,out:[0.2,0.1]},{x:1,y:0,in:[0.8,0.7]}]}]`。坐标与绝对控制点相对于图层宽高归一化，多轮廓使用奇偶填充。使用 `get_object` 读取，`layer.update` 修改外观或整条路径。`layer.pathAnchor` 按 id、contour、index、handle（anchor/in/out）、x、y 修改单点，索引从 0 起。
+- `layer.pathInsertAnchor` 和 `layer.pathDeleteAnchor` 接受 `id`、`contour`、`index`。插入会对锚点之后的曲段做中点细分并返回新索引；闭合轮廓可细分末点到首点的曲段。删除后返回当前可用索引。每个轮廓至少保留两点，一个图层所有轮廓合计最多 12000 点。两项均可放入可撤销的文档批次。
+- `image.vectorize` 接受图片图层 id、requestId 和可选的黑白阈值 threshold（1–254，默认 128）。使用 task.wait、task.result 取得新路径图层 id，原图保留。`layer.exportSvg` 接受路径或纯路径分组 id 与会话文件根目录内的 .svg 路径，沿用独占输出。

@@ -99,6 +99,26 @@ test('direct API request persists original pixels and result independently; merg
   assert.equal(JSON.parse(f.requests[0].body).size, '2048x3072');
   assert.ok(!(await fs.readFile(path.join(f.root, 'tasks.json'), 'utf8')).includes('secret-test-token'));
 });
+test('missing or malformed result records cannot block later results from entering the project', async t => {
+  const f = await fixture(t);
+  const submit = async () => {
+    const { id } = await f.service.start(f.record.id, f.document, 'n');
+    assert.equal((await finished(f)).status, 'completed');
+    return id;
+  };
+  const missing = await submit(), malformed = await submit(), valid = await submit();
+  const resultFile = id => path.join(f.root, 'results', `${id}.json`);
+  await fs.unlink(resultFile(missing));
+  await fs.writeFile(resultFile(malformed), '{');
+
+  const results = await f.service.results(f.record.id);
+  assert.deepEqual(results.map(result => result.id), [valid]);
+  assert.deepEqual(mergeResults(f.document, results).assets.map(asset => asset.id), [`${valid}-0`]);
+  await fs.writeFile(resultFile(malformed), 'null');
+  assert.deepEqual((await f.service.results(f.record.id)).map(result => result.id), [valid]);
+  assert.equal(await fs.readFile(resultFile(malformed), 'utf8'), 'null');
+  assert.equal(f.requests.length, 3);
+});
 test('ordered reference images use multipart edits and retain role descriptions', async t => {
   const f = await fixture(t); f.document.assets.push({ id: 'a', dataUrl: `data:image/png;base64,${png.toString('base64')}` });
   f.document.tugouCanvas.nodes[0].data.snapshot.references.push({ assetId: 'a', role: '仅身份' });

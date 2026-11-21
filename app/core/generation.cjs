@@ -103,8 +103,13 @@ class GenerationService {
     const results = [];
     for (const task of this.tasks.list().filter(t => !['analysis','semantic-analysis','runtime-install'].includes(t.context?.kind) && t.context?.projectId === projectId && t.status === 'completed')) {
       if (!/^[a-f0-9-]{36}$/.test(task.resultId || '')) continue;
-      const result = JSON.parse(await fs.readFile(await safePath(this.root, 'results', `${task.resultId}.json`), 'utf8'));
-      if (result.projectId === projectId && result.id === task.resultId) results.push(result);
+      try {
+        const result = JSON.parse(await fs.readFile(await safePath(this.root, 'results', `${task.resultId}.json`), 'utf8'));
+        if (result?.projectId === projectId && result.id === task.resultId && Array.isArray(result.assets)) results.push(result);
+      } catch (error) {
+        // A lost result must not prevent newer results from reaching the project.
+        if (error.code !== 'ENOENT' && !(error instanceof SyntaxError)) throw error;
+      }
     }
     return results;
   }

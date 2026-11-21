@@ -3,8 +3,11 @@ import {createLayer} from '../core/layers.cjs';
 import {ImageCache} from '../core/image-cache.cjs';
 import {ColorControl} from './color-control.jsx';
 import {useUiView,views} from './ui-view.js';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Modal,Dropdown} from 'antd';
+import {VectorTraceDialog} from './vector-trace-dialog.jsx';
+import {addTracedLayer} from './vector-trace.js';
+import {worldMatrix,decompose,inherited,descendants} from '../core/layers.cjs';
 import {BoardExport} from './board-export.jsx';
 import {PsdDialog} from './psd-dialog.jsx';
 import {Button, Input, Icon, EmptyState} from './components.jsx';
@@ -15,13 +18,16 @@ import './composite-workspace.css';
 import {BoardSizeControl} from './board-size.jsx';
 import {saveCompositionMaterial} from './save-composition-material.js';
 
+import {dimensions,sizePatch} from '../core/board-measure.cjs';
+
 function BoardInspector({board,patch,resize,scaleContent,setScaleContent,createBoard,applySize,duplicate,remove,canRemove,disabled}) {
   const [name,setName]=useState(board.name);
+  const unit=board.printSize?.unit||'px',display=dimensions(board),step=unit==='px'?1:'any';
   return <fieldset className="layer-properties board-properties" disabled={disabled||board.locked}>
     <Input className="inspector-name" aria-label="画板名称" value={name} onChange={e=>setName(e.target.value)} onBlur={()=>{if(name.trim()&&name.trim()!==board.name)patch({name:name.trim()});else if(!name.trim())setName(board.name)}} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur()}}/>
-    <p className="inspector-caption">画板 / {board.width} × {board.height} px</p>
-    <div className="property-grid"><NumberField label="画板属性宽度" shortLabel="W" min={1} max={30000} value={board.width} onChange={width=>resize({width})}/><NumberField label="画板属性高度" shortLabel="H" min={1} max={30000} value={board.height} onChange={height=>resize({height})}/><NumberField label="画板 X" shortLabel="X" value={board.x} onChange={x=>patch({x})}/><NumberField label="画板 Y" shortLabel="Y" value={board.y} onChange={y=>patch({y})}/></div>
-    <div className="board-actions"><Button icon="replace" onClick={()=>resize({width:board.height,height:board.width})}>交换宽高</Button><label className="check"><input type="checkbox" checked={scaleContent} onChange={e=>setScaleContent(e.target.checked)}/>缩放内容</label></div>
+    <p className="inspector-caption">画板 / {display.width} × {display.height} {unit}{board.printSize&&' · '+board.printSize.ppi+' PPI'}</p>
+    <div className="property-grid"><NumberField label="画板属性宽度" shortLabel="W" min={0} step={step} value={display.width} onChange={width=>resize({width,unit})}/><NumberField label="画板属性高度" shortLabel="H" min={0} step={step} value={display.height} onChange={height=>resize({height,unit})}/><NumberField label="画板 X" shortLabel="X" value={board.x} onChange={x=>patch({x})}/><NumberField label="画板 Y" shortLabel="Y" value={board.y} onChange={y=>patch({y})}/></div>
+    <div className="board-actions"><Button icon="replace" onClick={()=>resize({width:display.height,height:display.width,unit})}>交换宽高</Button><label className="check"><input type="checkbox" checked={scaleContent} onChange={e=>setScaleContent(e.target.checked)}/>缩放内容</label></div>
     <label className="check"><input type="checkbox" checked={board.clipContent!==false} onChange={e=>patch({clipContent:e.target.checked})}/>裁切画板外内容</label>
     <div className="board-background"><span>背景</span><ColorControl aria-label="画板背景" value={board.background==='transparent'?'#ffffff':board.background} onChange={e=>patch({background:e.target.value})}/><span>{board.background==='transparent'?'透明':board.background.replace('#','').toUpperCase()}</span><label className="check"><input aria-label="透明背景" type="checkbox" checked={board.background==='transparent'} onChange={e=>patch({background:e.target.checked?'transparent':'#ffffff'})}/>透明</label></div>
     <div className="board-actions board-management"><BoardSizeControl board={board} apply={applySize} disabled={disabled||board.locked}><Button className="board-size-trigger">尺寸预设</Button></BoardSizeControl><BoardSizeControl board={board} creating apply={createBoard} disabled={disabled||board.locked}><Button icon="add">新建画板</Button></BoardSizeControl><Button icon="copy" onClick={duplicate} disabled={disabled}>复制画板</Button><Button icon="delete" onClick={remove} disabled={disabled||!canRemove}>删除画板</Button></div>
@@ -35,6 +41,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
   const [activeId,setActiveId]=useState(null),[dialog,setDialog]=useState(null),[error,setError]=useState('');
   const [maskId,setMaskId]=useState(null);
   const [context,setContext]=useState(null),[exportRequest,setExportRequest]=useState(null),[notice,setNotice]=useState('');
+  const [trace,setTrace]=useState(null);
   const [psdRequest,setPsdRequest]=useState(null);
   const [materialSaving,setMaterialSaving]=useState(false),materialControl=useRef(null);
   useEffect(()=>()=>materialControl.current?.abort(),[]);
@@ -48,6 +55,10 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
   const [scaleContent,setScaleContent]=useState(false);
   const [propertiesOpen,setPropertiesOpen]=useState(true);
   const view=useRef(initialPageView||null), latest=useRef(null);
+  const previewCanvas=useRef(null),hasBoards=list.length>0;
+  const pendingPick=useRef(null);
+  const selectionOptions=useState({});
+  useLayoutEffect(()=>{if(!hasBoards)previewCanvas.current=null;},[hasBoards]);
   useUiView('boards',{get:()=>({activeId,maskId,scaleContent,view:view.current}),restore:v=>{view.current=v.view;setActiveId(v.activeId);setMaskId(v.maskId);setScaleContent(v.scaleContent);},blocked:()=>materialControl.current?'正在保存到素材，请稍后切换':null});
   const selectedOwner=selected.length ? artboards.owner(normalized,selected[0]) : null;
   const board=selectedOwner || list.find(b=>b.id===activeId) || list[0];
@@ -71,9 +82,9 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
   };
   const edit=(next,options)=>run(()=>{if(latest.current.board.locked)throw Error('请先解锁画板');return save(artboards.replace(latest.current.normalized,latest.current.board.id,next),options)});
   const patch=values=>run(()=>{if(board.locked)throw Error('请先解锁画板');return save(artboards.update(normalized,board.id,values))});
-  const resize=values=>run(()=>{if(board.locked)throw Error('请先解锁画板');return save(artboards.update(normalized,board.id,values,{scaleContent}))});
-  const applySize=(width,height,scaleContent)=>run(()=>{if(board.locked)throw Error('请先解锁画板');return save(artboards.update(normalized,board.id,{width,height},{scaleContent}))});
-  const createBoard=(width,height)=>run(()=>{const result=artboards.create(normalized,{width,height});if(save(result.document)===false)return false;view.current=null;activate(result.id)});
+  const resize=values=>run(()=>{if(board.locked)throw Error('请先解锁画板');return save(artboards.update(normalized,board.id,sizePatch(board,values),{scaleContent}))});
+  const applySize=(width,height,scaleContent,printSize)=>run(()=>{if(board.locked)throw Error('请先解锁画板');return save(artboards.update(normalized,board.id,{width,height,printSize},{scaleContent}))});
+  const createBoard=(width,height,_scale,printSize)=>run(()=>{const result=artboards.create(normalized,{width,height,printSize});if(save(result.document)===false)return false;view.current=null;activate(result.id)});
   const choose=(id,extend)=>{
     setMaskId(null);
     const b=artboards.owner(normalized,id);if(!b)return;
@@ -90,6 +101,16 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     const next={...result.document,assets:[...result.document.assets,...assets],layers:[...result.document.layers,...assets.map(a=>createLayer('image',{parentId:result.id,name:a.name,assetId:a.id,width:a.width,height:a.height,x:0,y:0}))]};
     if(save(next)!==false)activate(result.id);
   }),setError,props.disabled);
+  const exportPath=async id=>{
+    const layer=normalized.layers.find(l=>l.id===id);
+    let choice;
+    try{
+      choice=await window.tugou.chooseExport(layer.name,'svg');if(!choice)return;
+      const ids=descendants(normalized.layers,[id]),root={...layer,...decompose(worldMatrix(normalized.layers,layer)),parentId:undefined};
+      await window.tugou.exportPathSvg(choice.token,normalized.layers.filter(l=>ids.has(l.id)).map(l=>l.id===id?root:l),id);
+      setNotice('已保存 SVG');
+    }catch(e){setError(e.message);}finally{if(choice)await window.tugou.cancelExport(choice.token);}
+  };
   const openPsd=exporting=>setPsdRequest({source:document,document:exporting?local:null});
   const psdDialog=psdRequest&&<PsdDialog document={psdRequest.document} close={()=>setPsdRequest(null)} complete={setNotice} apply={data=>{
     if(latest.current.disabled||latest.current.source!==psdRequest.source)throw Error('当前工程已变化，请关闭窗口后重新导入，避免覆盖编辑');
@@ -112,11 +133,11 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     {psdDialog}
   </div>;
   const workspace={
-    propertiesOpen,setPropertiesOpen,
+    propertiesOpen,setPropertiesOpen,pendingPick,selectionOptions,
     importPsd:()=>openPsd(false),exportPsd:()=>openPsd(true),
     export:frame=>{setNotice('');setExportRequest({document:normalized,id:board.id,single:true,frame});},
     contextMenu:(event,id,time=0)=>{event.preventDefault();event.stopPropagation();if(!props.disabled&&!materialControl.current)setContext({id,time,layer:!list.some(b=>b.id===id),x:event.clientX,y:event.clientY});},
-    board,boards:list.map(b=>({...b,x:b.x-board.x,y:b.y-board.y})),layers:normalized.layers,images,preview,
+    board,boards:list.map(b=>({...b,x:b.x-board.x,y:b.y-board.y})),layers:normalized.layers,images,preview,previewCanvas,
     initialView:view.current ? {...view.current,x:view.current.x+board.x*view.current.zoom,y:view.current.y+board.y*view.current.zoom}:null,
     onView:v=>{view.current={...v,x:v.x-board.x*v.zoom,y:v.y-board.y*v.zoom};onPageView?.(view.current)},
     compose:(edited,drag)=>edited===local&&!drag?preview:artboards.display(normalized,board.id,edited,drag),
@@ -128,13 +149,16 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
       duplicate={()=>run(()=>{const result=artboards.duplicate(normalized,board.id);if(save(result.document)!==false){view.current=null;activate(result.id)}})}
       remove={()=>setDialog('delete')}/>,
   };
-  return <div className="composite-workspace" data-dev-update-blocked={exportRequest||psdRequest||materialSaving?'请先完成画板文件处理':undefined}>
+  return <div className="composite-workspace" data-dev-update-blocked={exportRequest||psdRequest||materialSaving||trace?'请先完成画板文件处理':undefined}>
     {error&&<div className="message error" role="alert">{error}<Button iconOnly icon="close" onClick={()=>setError('')}>关闭错误</Button></div>}
     {notice&&<div className="message" role="status">{notice}<Button iconOnly icon="close" onClick={()=>setNotice('')}>关闭保存提示</Button></div>}
     {materialSaving&&<div className="message" role="status">正在保存到素材…</div>}
-    <LayerEditor key={`${props.projectId}:${board.id}`} {...props} disabled={props.disabled||!!exportRequest||!!psdRequest} document={local} change={edit} selected={selected.filter(id=>local.layers.some(l=>l.id===id))} setSelected={setSelected} workspace={workspace}/>
+    <LayerEditor key={`${props.projectId}:${board.id}`} {...props} disabled={props.disabled||!!exportRequest||!!psdRequest||!!trace} document={local} change={edit} selected={selected.filter(id=>local.layers.some(l=>l.id===id))} setSelected={setSelected} workspace={workspace}/>
     {psdDialog}
+    {trace&&<VectorTraceDialog source={trace.source} id={trace.id} close={()=>setTrace(null)} apply={paths=>{setTrace(null);run(()=>{if(latest.current.normalized!==trace.source||latest.current.disabled)throw Error('工程已变化，请重新描摹');const result=addTracedLayer(trace.source,trace.id,paths);if(save(result.document)!==false)activate(artboards.owner(result.document,result.id).id,[result.id]);});}}/>}
     {context&&<Dropdown open trigger={[]} autoFocus overlayClassName="board-context-menu" onOpenChange={open=>{if(!open)setContext(null);}} menu={{items:context.layer?[
+      ...(normalized.layers.find(l=>l.id===context.id)?.kind==='image'?[{key:'trace',label:'图片矢量化…',disabled:inherited(normalized.layers,normalized.layers.find(l=>l.id===context.id),'locked')}]:[]),
+      ...(normalized.layers.some(l=>l.id===context.id&&(l.shape==='path'||l.kind==='group'))?[{key:'svg',label:'导出 SVG'}]:[]),
       {key:'material',label:'保存到素材',icon:<Icon name="assets"/>},
     ]:[
       {key:'save',label:'保存图片',icon:<Icon name="export"/>},
@@ -144,7 +168,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
       {key:'edit',label:'编辑画板'},
       {key:'copy',label:'复制画板'},
       {key:'delete',label:'删除画板',danger:true,disabled:list.length<2||list.find(b=>b.id===context.id)?.locked},
-    ],onClick:({key})=>{const {id,time}=context;setContext(null);if(key==='material'){void saveMaterial(id,time);}else if(key==='save'||key==='batch'){setNotice('');setExportRequest({document:normalized,id,single:key==='save'});}else if(key==='copy')run(()=>{const result=artboards.duplicate(normalized,id);if(save(result.document)!==false)activate(result.id);});else{activate(id);if(key==='delete')setDialog('delete');}}}}><span style={{position:'fixed',left:context.x,top:context.y,width:1,height:1,pointerEvents:'none'}}/></Dropdown>}
+    ],onClick:({key})=>{const {id,time}=context;setContext(null);if(key==='trace'){setTrace({source:normalized,id});}else if(key==='svg'){void exportPath(id);}else if(key==='material'){void saveMaterial(id,time);}else if(key==='save'||key==='batch'){setNotice('');setExportRequest({document:normalized,id,single:key==='save'});}else if(key==='copy')run(()=>{const result=artboards.duplicate(normalized,id);if(save(result.document)!==false)activate(result.id);});else{activate(id);if(key==='delete')setDialog('delete');}}}}><span style={{position:'fixed',left:context.x,top:context.y,width:1,height:1,pointerEvents:'none'}}/></Dropdown>}
     {exportRequest&&<BoardExport document={exportRequest.document} initialId={exportRequest.id} single={exportRequest.single} initialFrame={exportRequest.frame} close={()=>setExportRequest(null)} complete={setNotice}/>}
     {dialog==='delete'&&<Modal open getContainer={()=>window.document.getElementById('dialogs')} transitionName="" maskTransitionName="" title={`删除“${board.name}”？`} onCancel={()=>setDialog(null)} onOk={()=>run(()=>{if(save(artboards.remove(normalized,board.id))===false)return;activate(list.find(b=>b.id!==board.id).id);setDialog(null)})} okText="删除画板" cancelText="取消" okButtonProps={{danger:true}}><p>画板内的 {local.layers.length} 个图层会一起删除。可通过撤销恢复。</p></Modal>}
   </div>;

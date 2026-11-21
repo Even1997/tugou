@@ -185,10 +185,16 @@ class ProjectStore {
   }
 
   async list() {
-    const result = [];
+    const projects = new Map();
     for (const name of await fs.readdir(await safePath(this.root, 'projects'))) {
-      if (!name.endsWith('.json')) continue;
-      const id = name.slice(0, -5);
+      if (name.endsWith('.json')) projects.set(name.slice(0, -5), name);
+      else if (name.endsWith('.json.bak')) {
+        const id = name.slice(0, -9);
+        if (projectPattern.test(id) && !projects.has(id)) projects.set(id, name);
+      }
+    }
+    const result = [];
+    for (const [id, name] of projects) {
       try {
         const record = await this.read(id);
         result.push({ id, name: record.document.name, updatedAt: record.updatedAt, revision: record.revision, recovered: record.recovered,
@@ -216,9 +222,25 @@ class ProjectStore {
       // Keep shared resources and a private recovery copy; stale saves cannot recreate the project.
       const folder = await safePath(this.root, 'deleted-projects', id);
       await fs.mkdir(folder, { recursive: true });
+      const project = await this.projectPath(id);
       const backup = await safePath(this.root, 'projects', `${id}.json.bak`);
-      try { await fs.rename(backup, await safePath(folder, 'project.json.bak')); } catch (e) { if (e.code !== 'ENOENT') throw e; }
-      await fs.rename(await this.projectPath(id), await safePath(folder, 'project.json'));
+      const archivedProject = await safePath(folder, 'project.json');
+      const archivedBackup = await safePath(folder, 'project.json.bak');
+      let backupMoved = false;
+      try {
+        await fs.rename(backup, archivedBackup);
+        backupMoved = true;
+      } catch (error) {
+        if (error.code !== 'ENOENT' || record.recovered) throw error;
+      }
+      try {
+        await fs.rename(project, archivedProject);
+      } catch (error) {
+        if (error.code !== 'ENOENT' || !record.recovered) {
+          if (backupMoved) await fs.rename(archivedBackup, backup);
+          throw error;
+        }
+      }
       return { id };
     });
   }

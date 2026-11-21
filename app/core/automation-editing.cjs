@@ -1,7 +1,7 @@
 const {randomUUID}=require('node:crypto');
 const layers=require('./layers.cjs'),boards=require('./artboards.cjs'),prompts=require('./prompts.cjs');
 const taskLabels={
-  'paint.create':'新建绘画图层','image.contentFill':'内容识别填充','paint.retouch':'图片修图',
+  'image.vectorize':'图片矢量化','paint.create':'新建绘画图层','image.contentFill':'内容识别填充','paint.retouch':'图片修图',
   'selection.color':'色彩选区','selection.grow':'扩展 / 收缩选区','artboard.cropSelection':'裁切画板',
   'layer.adjustmentFromSelection':'局部调整','mask.relink':'重新链接蒙版','gif.create':'GIF 动图制作',
   'artboard.exportAnimation':'画板动画 / 选帧导出','scene.captureAngles':'多方位截图','scene.record':'机位视频录制',
@@ -67,6 +67,7 @@ function register(define,{string,object,enumeration,ids,find,fail,editable,adjus
   const task=(name,desc,props,required)=>define(name,desc+'；返回任务 ID，task.result 读取结果，task.cancel 取消。文档变化时拒绝写回',{...props,requestId:string},[...required,'requestId'],'rendererTask');
   task('paint.create','创建透明绘画图层',{artboardId:string,name:string},['artboardId']);
   task('image.contentFill','在图片图层当前选区内执行内容识别填充',{id:string},['id']);
+  task('image.vectorize','描摹图片原像素中的深色轮廓为可编辑路径，保留原图。task.result 返回新图层 id',{id:string,threshold:integer(1,254)},['id']);
   task('paint.retouch','仿制、修复、模糊、涂抹或液化；点为画板坐标，source 为原图归一化坐标',{id:string,tool:enumeration('clone','heal','blur','smudge','liquify'),points:{type:'array',minItems:1,maxItems:256,items:object({x:num(-1e6,1e6),y:num(-1e6,1e6),pressure:num(0,1)},['x','y'])},source:object({u:num(0,1),v:num(0,1)},['u','v']),size:num(2,1000),opacity:num(1,100),hardness:num(0,100),smoothing:num(0,100),pressure:bool,blurRadius:num(1,100)},['id','tool','points','size']);
   task('selection.color','魔棒或色彩范围选区；contiguous 为 true 只选连续区域，id 省略时采样画板合成',{artboardId:string,id:string,x:integer(0,100000),y:integer(0,100000),tolerance:num(0,255),contiguous:bool,operation:enumeration('replace','add','subtract','intersect')},['artboardId','x','y']);
   task('selection.grow','扩展或收缩选区，正数扩展、负数收缩',{artboardId:string,radius:integer(-100,100)},['artboardId','radius']);

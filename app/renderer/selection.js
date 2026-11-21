@@ -1,51 +1,12 @@
-export function surface(width, height) {
-  const c = document.createElement("canvas");
-  c.width = width;
-  c.height = height;
-  return c;
+import {surface,renderSelectionMask} from './selection-raster.js';
+export {surface};
+// MCP snapshots clone the selection. Its geometry and content-addressed bitmap
+// stay identical when a command only moves layers.
+export function selectionKey(selection,width,height){
+  return selection?JSON.stringify([width,height,selection]):null;
 }
-export async function selectionCanvas(doc, engine) {
-  const out = surface(doc.width, doc.height),
-    ctx = out.getContext("2d", { willReadFrequently: true }),
-    s = doc.selection;
-  if (!s) return out;
-  if (s.bitmap)
-    ctx.drawImage(await engine.image(s.bitmap), 0, 0, doc.width, doc.height);
-  for (const path of s.paths || []) {
-    const tmp = surface(doc.width, doc.height),
-      c = tmp.getContext("2d", { willReadFrequently: true });
-    c.beginPath();
-    for (let i = 0; i < path.points.length; i += 2)
-      i
-        ? c.lineTo(path.points[i], path.points[i + 1])
-        : c.moveTo(path.points[i], path.points[i + 1]);
-    c.closePath();
-    c.fill();
-    ctx.globalCompositeOperation =
-      path.operation === "subtract"
-        ? "destination-out"
-        : path.operation === "intersect"
-          ? "destination-in"
-          : "source-over";
-    ctx.drawImage(tmp, 0, 0);
-    tmp.width = tmp.height = 1;
-  }
-  ctx.globalCompositeOperation = "source-over";
-  if (s.inverted) {
-    ctx.globalCompositeOperation = "source-out";
-    ctx.fillRect(0, 0, doc.width, doc.height);
-    ctx.globalCompositeOperation = "source-over";
-  }
-  if (s.feather) {
-    const tmp = surface(doc.width, doc.height),
-      c = tmp.getContext("2d");
-    c.filter = `blur(${s.feather}px)`;
-    c.drawImage(out, 0, 0);
-    ctx.clearRect(0, 0, doc.width, doc.height);
-    ctx.drawImage(tmp, 0, 0);
-    tmp.width = tmp.height = 1;
-  }
-  return out;
+export async function selectionCanvas(doc,engine){
+  return renderSelectionMask(doc,doc.selection?.bitmap?await engine.image(doc.selection.bitmap):null);
 }
 export function alphaOf(canvas) {
   const data = canvas

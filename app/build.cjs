@@ -15,7 +15,7 @@ const output = process.env.TUGOU_BUILD_DIR || 'dist';
   await fs.copyFile('renderer/index.html', path.join(output,'index.html'));
   await fs.copyFile('renderer/tool-host.html', path.join(output,'tool-host.html'));
   await bundle({entryPoints:['renderer/tool-host.js'],bundle:true,outfile:path.join(output,'tool-host.js'),platform:'browser',format:'iife',minify:true});
-  for(const name of ['selection','content-fill','image-tools','image-composition','raster-encode'])
+  for(const name of ['selection','selection-raster','content-fill','image-tools','image-composition','raster-encode','vector-trace','vector-raster'])
     await bundle({entryPoints:[`renderer/${name}-worker.js`],bundle:true,outfile:path.join(output,`${name}-worker.js`),platform:'browser',format:'iife',minify:true});
   await require('./scripts/third-party-notices.cjs')(output,[...bundledInputs]);
 })().catch((error) => { console.error(error.message); process.exitCode = 1; });

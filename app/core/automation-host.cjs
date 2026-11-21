@@ -28,7 +28,7 @@ function summary(item,kind){
   if(kind==='presentation')return {...require('./automation-presentations.cjs').deckSummary(item),kind};
   if(kind==='slide')return {...require('./automation-presentations.cjs').slideSummary(item),kind};
   if(kind==='slideElement')return {id:item.id,kind,type:item.kind,text:item.text?.slice(0,120),assetId:item.assetId,x:item.x,y:item.y,w:item.w,h:item.h,rotation:item.rotation,visible:item.visible!==false,locked:!!item.locked};
-  return {id:item.id,kind,type:item.type||item.kind,name:item.name||item.data?.name||item.data?.binding?.snapshot?.name,parentId:item.parentId,position:item.position,...(kind==='layer'||kind==='artboard'?{x:item.x,y:item.y,width:item.width,height:item.height,rotation:item.rotation,visible:item.visible,locked:item.locked,hasMask:!!item.mask,coordinateSpace:'parent-local'}:{}),...(kind==='edge'?{source:item.source,target:item.target}:{})};}
+  return {id:item.id,kind,type:item.type||item.kind,name:item.name||item.data?.name||item.data?.binding?.snapshot?.name,parentId:item.parentId,position:item.position,...(kind==='layer'||kind==='artboard'?{x:item.x,y:item.y,width:item.width,height:item.height,printSize:item.printSize,shape:item.shape,rotation:item.rotation,visible:item.visible,locked:item.locked,hasMask:!!item.mask,coordinateSpace:'parent-local'}:{}),...(kind==='edge'?{source:item.source,target:item.target}:{})};}
 
 // The journal records intent BEFORE a paid operation. An ambiguous crash is never retried automatically.
 class RequestJournal {
@@ -61,6 +61,15 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     if(!filename||filename.split(/[\\/]/).some(v=>v==='..'||v.includes(':')))fail('PATH_DENIED','路径不允许越界或包含备用数据流');
     return safePath(filesRoot,filename);
   };
+  const editBatch=async(state,steps)=>{
+    const result=await commands.batch(project(state),steps,args=>ui('layout.measure',args,state.revision));
+    const unchanged=steps.every(s=>['layer.align','layer.distribute'].includes(s.command)&&result.results[s.name].changed===false);
+    if(unchanged){
+      const latest=await snapshot();guard(latest,state.revision);
+      return {...compact(latest),results:result.results};
+    }
+    return {...await commit(state,result.document),results:result.results};
+  };
   const writeNew=async(filename,bytes)=>{const file=await filePath(filename);await fs.mkdir(path.dirname(file),{recursive:true});await filePath(filename);await fs.writeFile(file,bytes,{flag:'wx',mode:0o600});return {path:file,bytes:bytes.length};};
   return async(method,args,{signal,onProgress}={})=>{
     if(!checks[method]?.(args))fail('INVALID_ARGUMENT',`不支持的请求或参数：${method}`);
@@ -81,8 +90,7 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     }
     if(method==='preview'){project(state);return ui('preview',args);}
     if(method==='batch'){
-      guard(state,args.expectedRevision);const result=commands.batch(project(state),args.steps);
-      return {...await commit(state,result.document),results:result.results};
+      guard(state,args.expectedRevision);return editBatch(state,args.steps);
     }
     const name=args.command,input=args.args||{},command=commands.validate(name,input);
     if(!['read','task'].includes(command.effect))guard(state,args.expectedRevision);
@@ -109,8 +117,8 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     if(name==='page.list')return {pages:require('./pages.cjs').list(project(state),input.kind),revision:state.revision};
     if(name==='page.activate')return ui(name,input,state.revision);
     if(command.effect==='document'){
-      const result=commands.batch(project(state),[{name:'result',command:name,args:input}]);
-      return {...await commit(state,result.document),...result.results.result};
+      const {results,...updated}=await editBatch(state,[{name:'result',command:name,args:input}]);
+      return {...updated,...results.result};
     }
     if(command.effect==='session')return compact(await ui(name,input,state.revision));
     if(name.startsWith('font.'))return fonts.execute(name,input,{filePath,writeNew,journal});
@@ -289,6 +297,10 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
       const asset=find(doc.assets,input.id),bytes=asset.kind==='text'?Buffer.from(asset.text||''):await require('./generation.cjs').referenceBytes(root,asset);
       return writeNew(input.path,bytes);
     }
+    if(name==='layer.exportSvg'){
+      if(path.extname(input.path).toLowerCase()!=='.svg')fail('INVALID_ARGUMENT','请选择 .svg 文件');
+      return writeNew(input.path,Buffer.from(require('./path-svg.cjs').pathSvg(doc.layers,input.id)));
+    }
     if(name==='artboard.export'){
       const result=await ui(name,input,state.revision);return writeNew(input.path,Buffer.from(result.data,'base64'));
     }
@@ -327,7 +339,10 @@ async function startAutomationHost({window,ipcMain,app,entryUrl,...services}){
           const request=JSON.parse(buffer.slice(0,end)),provided=Buffer.from(String(request.token||''));
           if(provided.length!==64||!timingSafeEqual(provided,Buffer.from(token)))fail('UNAUTHORIZED','会话凭证无效');
           if(queued>=32)fail('BUSY','请求队列已满');
-          const operation=()=>dispatch(request.method,request.args||{},{signal:cancelled.signal,onProgress:request.progress===true?progress=>{if(!socket.destroyed)socket.write(JSON.stringify({progress})+'\n');}:undefined});
+          const operation=()=>{
+            cancelled.signal.throwIfAborted();
+            return dispatch(request.method,request.args||{},{signal:cancelled.signal,onProgress:request.progress===true?progress=>{if(!socket.destroyed)socket.write(JSON.stringify({progress})+'\n');}:undefined});
+          };
           // Wait does not hold the edit queue, so another client can cancel the same task.
           let result;
           if(request.method==='run_command'&&request.args?.command==='task.wait')result=await operation();

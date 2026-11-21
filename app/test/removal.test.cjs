@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path');
 const {ProjectStore}=require('../core/storage.cjs'),{FontService}=require('../core/font-service.cjs'),{RequestJournal}=require('../core/automation-host.cjs'),{validate}=require('../core/automation-commands.cjs');
 async function fixture(t){
-  const root=await fs.mkdtemp(path.join(os.tmpdir(),'tugou-removal-'));
+  const root=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'tugou-removal-'));
   t.after(async()=>{assert.equal(path.dirname(await fs.realpath(root)),await fs.realpath(os.tmpdir()));assert.ok(path.basename(root).startsWith('tugou-removal-'));await fs.rm(root,{recursive:true,force:true});});
   const list=[],tasks={list:()=>list,completions:new Map()},store=new ProjectStore(root);await store.init();
   const fonts=new FontService(root,tasks),journal=new RequestJournal(path.join(root,'journal.json'));await journal.init();
@@ -21,6 +21,38 @@ test('project deletion checks revisions/tasks, removes backups and retains other
   assert.equal(JSON.parse(await fs.readFile(path.join(root,'deleted-projects',p.id,'project.json'))).revision,p.revision);
   assert.ok(await fs.stat(path.join(root,'deleted-projects',p.id,'project.json.bak')));
   await assert.rejects(store.remove('../outside',1,tasks),/无效/);
+});
+test('projects with only a backup remain discoverable and can be archived',async t=>{
+  const {root,store,tasks}=await fixture(t);
+  const original=await store.create('备份工程');
+  const saved=await store.save(original.id,{...original.document,name:'更新后'},original.revision);
+  const projectFile=await store.projectPath(saved.id);
+  assert.deepEqual((await store.list()).map(p=>p.id),[original.id]);
+  await fs.unlink(projectFile);
+
+  const [recovered]=await store.list();
+  assert.equal(recovered?.id,original.id);
+  assert.equal(recovered.name,original.document.name);
+  assert.equal(recovered.revision,original.revision);
+  assert.equal(recovered.recovered,true);
+  await store.remove(original.id,recovered.revision,tasks);
+
+  const archived=path.join(root,'deleted-projects',original.id,'project.json.bak');
+  assert.equal(JSON.parse(await fs.readFile(archived,'utf8')).revision,original.revision);
+  assert.deepEqual(await store.list(),[]);
+  await assert.rejects(store.save(original.id,original.document,original.revision),{code:'ENOENT'});
+});
+test('failed project archival restores the original backup',async t=>{
+  const {root,store,tasks}=await fixture(t);
+  const original=await store.create('保留备份');
+  const saved=await store.save(original.id,{...original.document,name:'更新后'},original.revision);
+  const projectFile=await store.projectPath(saved.id);
+  await fs.mkdir(path.join(root,'deleted-projects',saved.id,'project.json'),{recursive:true});
+
+  await assert.rejects(store.remove(saved.id,saved.revision,tasks));
+  assert.equal((await store.read(saved.id)).revision,saved.revision);
+  await fs.unlink(projectFile);
+  assert.equal((await store.read(saved.id)).revision,original.revision);
 });
 test('font unpublish, atlas removal and project deletion preserve existing resources and reject conflicts',async t=>{
   const {root,fonts,run,list,tasks}=await fixture(t);let p=await run('project.create',{name:'自定义',characters:'春A',requestId:'create'});

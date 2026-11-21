@@ -42,13 +42,15 @@ app.whenReady().then(async()=>{
         finally{probe.active--;if(options.signal?.aborted)probe.aborts++;}
       };
       const layers=[
-        L('group',{id:'board0',artboard:true,clipContent:true,x:0,y:0,width:540,height:400,background:'#ffffff'}),
+        L('group',{id:'board0',name:'画板一',artboard:true,clipContent:true,x:0,y:0,width:540,height:400,background:'#ffffff'}),
         L('shape',{id:'target',parentId:'board0',x:50,y:52,width:70,height:66,color:'#bc3153',rotation:13,mask:{x:0,y:0,width:.72,height:1},effects:[defaults('shadow')]}),
         L('shape',{id:'above',parentId:'board0',x:130,y:50,width:135,height:90,opacity:.6,color:'#245490'}),
-        L('group',{id:'board1',artboard:true,clipContent:true,x:600,y:0,width:450,height:340,background:'#e4effa'}),
+        L('group',{id:'board1',name:'画板二',artboard:true,clipContent:true,x:600,y:0,width:450,height:340,background:'#e4effa'}),
         L('shape',{id:'neighbor',parentId:'board1',x:22,y:19,width:82,height:71,color:'#34826b'}),
       ];
       window.fixture={...qa.doc,layers,width:540,height:400};qa.load(fixture);qa.mode('boards');
+      window.withOtherAdjustment=()=>qa.load({...fixture,layers:[...fixture.layers,L('adjustment',{id:'other-adjustment',parentId:'board1',
+        adjustment:{...require(root+'/core/adjustments.cjs').defaults('exposure'),exposure:1}})]});
       window.place=()=>views.get('layers').restore({view:{x:40,y:75,zoom:.5},tool:'select'});
       window.point=()=>{
         const r=document.querySelector('.layer-stage').getBoundingClientRect(),m=document.querySelector('.layer-overlay>g').transform.baseVal.consolidate().matrix;
@@ -73,16 +75,35 @@ app.whenReady().then(async()=>{
     };
     await js(`(${setup.toString()})(${JSON.stringify(process.cwd())});void 0`);
     await idle();await placeView();
+    for(const {id,name,selector,body} of [
+      {id:'board1',name:'画板二',selector:'[data-board-label="board1"] > rect',body:true},
+      {id:'board0',name:'画板一',selector:'.board-label-hit[data-board-id="board0"]'},
+    ]){
+      const click=await js(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:Math.round(r.left+${body?50:8}),y:Math.round(r.top+${body?50:8})};})()`);
+      await js(`window.boardFrame=document.querySelector('canvas[aria-label="图层画布"]').toDataURL();probe.hold=true;void 0`);
+      pointer('mouseDown',click.x,click.y);pointer('mouseUp',click.x,click.y);
+      await wait(`!!probe.release&&document.querySelector('[data-board-label="${id}"] > rect')?.getAttribute('stroke')==='var(--accent)'`);
+      check(`switching to ${id} retains the previous bitmap while the new frame is rendering`,await js(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(document.querySelector('canvas[aria-label="图层画布"]').toDataURL()===boardFrame))))`));
+      check(`switching to ${id} updates the inspector without editing the document`,await js(`document.querySelector('[aria-label="画板名称"]').value===${JSON.stringify(name)}&&qa.history.length===0&&probe.writes===0`));
+      await js('probe.release();delete window.boardFrame;void 0');await idle();
+    }
     await js(`window.fullOptions=probe.last.options;document.querySelector('.layer-stage').focus();void 0`);
+    key('Right');
+    await js("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
+    check('an arrow key with only the board selected adds no undo entry',await js('qa.history.length===0'));
     const p=await js('point()');
     pointer('mouseDown',p.x,p.y);
     await wait(`document.querySelector('[data-tree-id="target"]')?.getAttribute('aria-selected')==='true'`);
+    const originalHandle=await js(`Number(document.querySelector('.layer-overlay [data-handle="resize"]').getAttribute('cx'))`);
     await js('probe.hold=true;probe.maxActive=0;window.from=probe.started;window.draws=probe.draws;void 0');
     pointer('mouseMove',p.x+14,p.y+6);await wait('!!probe.release');
     for(let i=1;i<=12;i++){pointer('mouseMove',p.x+14+i*3,p.y+6+i);await delay(10);}
+    await wait(`Math.abs(Number(document.querySelector('.layer-overlay [data-handle="resize"]').getAttribute('cx'))-${originalHandle+100})<.001`);
+    await js('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
     check('high frequency input retains one live render and never records a draft',await js('probe.started===from+1&&probe.maxActive===1&&qa.history.length===0'));
     await js('probe.release();void 0');await idle();
     check('a completed preview is shown and the newest position follows it',await js('probe.started===from+2&&probe.draws===draws+2&&probe.maxActive===1&&probe.aborts===0'));
+    check('the queued preview uses the last native pointer position',await js(`(()=>{const {x,y}=probe.last.document.layers.find(l=>l.id==='target');return x===150&&y===88;})()`));
     check('motion preview uses a smaller raster region',await js('probe.last.options.width<fullOptions.width/2&&probe.last.options.height<fullOptions.height/2'));
     report.previewPixels=await js('pixelParity(fullOptions,probe.last.document)');
     check('cropped preview preserves shadow, mask and overlapping layer pixels',report.previewPixels.sameSize&&report.previewPixels.changed===0);
@@ -100,6 +121,25 @@ app.whenReady().then(async()=>{
     await js('qa.undo();void 0');await idle();check('one undo restores the original layer position',await js(`qa.doc.layers.find(l=>l.id==='target').x===50&&qa.history.length===0`));
     pointer('mouseDown',p.x,p.y);pointer('mouseMove',p.x+32,p.y+12);await delay(50);key('Escape');pointer('mouseUp',p.x+44,p.y+12);await idle();
     check('cancel drops pending motion and creates no history record',await js(`qa.doc.layers.find(l=>l.id==='target').x===50&&qa.history.length===0`));
+    const stage="document.querySelector('.layer-stage')";
+    await js(`window.addEventListener('pointerdown',e=>window.dragPointer=e.pointerId,{once:true,capture:true});void 0`);
+    pointer('mouseDown',p.x,p.y);pointer('mouseMove',p.x+20,p.y+8);
+    await wait(`${stage}.hasPointerCapture(window.dragPointer)&&probe.last.document.layers.find(l=>l.id==='target').x===90`);
+    key('Right');
+    await js(`${stage}.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,ctrlKey:true,deltaY:-100}));void 0`);
+    await js("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
+    check('wheel and arrow input during a drag preserve its scale and document',await js("document.querySelector('.layer-overlay>g').transform.baseVal.consolidate().matrix.a===.5&&qa.history.length===0"));
+    await js("window.dispatchEvent(new Event('blur'));void 0");
+    check('losing window focus releases the active drag immediately',await js(`!${stage}.hasPointerCapture(window.dragPointer)`));
+    pointer('mouseUp',p.x+40,p.y+8);await idle();
+    check('release after focus loss leaves coordinates and undo history intact',await js("qa.doc.layers.find(l=>l.id==='target').x===50&&qa.history.length===0"));
+    const resize=await js(`(()=>{const r=document.querySelector('.layer-overlay [data-handle="resize"]').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)};})()`);
+    pointer('mouseDown',resize.x,resize.y);pointer('mouseMove',resize.x+20,resize.y+10);
+    await wait("probe.last.document.layers.find(l=>l.id==='target').width!==70");
+    await js(`${stage}.releasePointerCapture(window.dragPointer);void 0`);
+    pointer('mouseMove',resize.x+25,resize.y+15);pointer('mouseUp',resize.x+25,resize.y+15);
+    await wait("probe.last.document.layers.find(l=>l.id==='target').width===70");await idle();
+    check('a resize interrupted by capture loss discards the preview',await js("qa.doc.layers.find(l=>l.id==='target').width===70&&qa.history.length===0"));
     const board=await js(`(()=>{const r=document.querySelector('.board-label-hit[data-board-id="board1"]').getBoundingClientRect();return {x:Math.round(r.left+8),y:Math.round(r.top+8)};})()`);
     pointer('mouseDown',board.x,board.y);pointer('mouseMove',board.x+22,board.y+12);await wait(`!!document.querySelector('[data-board-label="board1"]').getAttribute('transform')`);
     pointer('mouseUp',board.x+61,board.y+27);await wait('qa.history.length===1');await idle();
@@ -113,6 +153,45 @@ app.whenReady().then(async()=>{
     check('linked mask uses a full preview',await js('probe.last.options.width===fullOptions.width&&probe.last.options.height===fullOptions.height'));
     pointer('mouseUp',linked.x+17,linked.y+11);await wait('qa.history.length===1');await idle();
     check('release applies grid and guide snapping before recording the move',await js(`(()=>{const {x,y}=qa.doc.layers.find(l=>l.id==='target');return x===89&&y===80&&probe.options.deferSave===true;})()`));
+    await js('withOtherAdjustment();void 0');await wait(`qa.doc.layers.some(l=>l.id==='other-adjustment')`);await idle();await placeView();
+    const adjusted=await js('point()'),beforeAdjustmentDrag=await js('probe.started');
+    pointer('mouseDown',adjusted.x,adjusted.y);pointer('mouseMove',adjusted.x+12,adjusted.y+10);
+    await wait(`probe.started>${beforeAdjustmentDrag}`);await idle();
+    check('an adjustment on another artboard keeps drag rendering regional',await js('probe.last.options.width<fullOptions.width/2&&probe.last.options.height<fullOptions.height/2'));
+    const adjustmentPixels=await js('pixelParity(fullOptions,probe.last.document)');
+    check('regional dragging with an adjustment on another artboard matches the full viewport',adjustmentPixels.sameSize&&adjustmentPixels.changed===0);
+    pointer('mouseUp',adjusted.x+16,adjusted.y+13);await wait('qa.history.length===1');await idle();
+    await js('qa.load(fixture);void 0');await idle();await placeView();
+    await js(`window.controlsToggle=()=>[...document.querySelectorAll('label.check')].find(l=>l.textContent==='显示变换控件').querySelector('input');controlsToggle().click();void 0`);
+    const neighbor=await js(`(()=>{const r=document.querySelector('[data-board-label="board1"] > rect').getBoundingClientRect();return {x:Math.round(r.left+25),y:Math.round(r.top+20)};})()`);
+    pointer('mouseDown',neighbor.x,neighbor.y);
+    await wait(`document.querySelector('[data-tree-id="neighbor"]')?.getAttribute('aria-selected')==='true'`);
+    pointer('mouseMove',neighbor.x+14,neighbor.y+8);pointer('mouseUp',neighbor.x+20,neighbor.y+10);
+    await wait('qa.history.length===1');await idle();
+    check('one press selects and drags across boards with one deferred commit',await js(`(()=>{const l=qa.doc.layers.find(l=>l.id==='neighbor');return l.x===62&&l.y===39&&probe.options.deferSave===true;})()`));
+    check('switching boards retains the selection tool settings',await js('!controlsToggle().checked'));
+    const clickX=neighbor.x+20,clickY=neighbor.y+10;
+    pointer('mouseDown',clickX,clickY);pointer('mouseMove',clickX+1,clickY+1);pointer('mouseUp',clickX+1,clickY+1);
+    await js('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+    check('slight pointer jitter preserves selection and coordinates without history',await js(`qa.history.length===1&&qa.doc.layers.find(l=>l.id==='neighbor').x===62&&document.querySelector('[data-tree-id="neighbor"]').getAttribute('aria-selected')==='true'`));
+    await js(`qa.load({...fixture,layers:fixture.layers.map(l=>l.id==='board1'?{...l,x:0}:l)});void 0`);await idle();await placeView();
+    const overlap=await js('point()');
+    pointer('mouseDown',overlap.x,overlap.y);pointer('mouseUp',overlap.x,overlap.y);
+    await wait(`document.querySelector('[data-tree-id="neighbor"]').getAttribute('aria-selected')==='true'`);
+    check('clicks in overlapping boards select the frontmost visible content',await js('qa.history.length===0'));
+    await placeView();
+    await js(`${stage}.addEventListener('pointerdown',()=>${stage}.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaX:11,deltaY:7})),{capture:true,once:true});void 0`);
+    w.webContents.sendInputEvent({type:'mouseDown',...overlap,button:'middle',clickCount:1});
+    w.webContents.sendInputEvent({type:'mouseUp',x:overlap.x+22,y:overlap.y+18,button:'middle',clickCount:1});
+    await js("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");await idle();
+    check('starting a hand pan in the same frame as a scroll preserves both movements',await js("(()=>{const m=document.querySelector('.layer-overlay>g').transform.baseVal.consolidate().matrix;return m.e===51&&m.f===86&&qa.history.length===0;})()"));
+    key('Right');await wait("qa.doc.layers.find(l=>l.id==='neighbor').x===23");
+    check('the next arrow key nudges the selected layer once',await js('qa.history.length===1'));
+    await js("qa.load({...fixture,layers:fixture.layers.map(l=>l.id==='target'?{...l,locked:true}:l)});qa.select(['target']);void 0");
+    await wait("document.querySelector('[data-tree-id=target]')?.getAttribute('aria-selected')==='true'");
+    await js(`${stage}.focus();void 0`);key('Right');
+    await js("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
+    check('nudging a locked layer leaves its coordinates and undo history intact',await js("qa.doc.layers.find(l=>l.id==='target').x===50&&qa.history.length===0"));
     await js('saveQueue.dispose();void 0');
     check('no renderer errors',report.errors.length===0);
   }catch(error){report.failure=error.stack;}

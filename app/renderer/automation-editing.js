@@ -1,3 +1,4 @@
+import {traceLayer,addTracedLayer} from './vector-trace.js';
 import {Compositor} from './composite.js';
 import {surface,pngBytes,selectionCanvas,alphaOf,alphaCanvas,calculateSelection} from './selection.js';
 import {fillImageSelection} from './content-fill.js';
@@ -47,6 +48,10 @@ export async function runEditingJob({taskId,command,input:a},source,commit,guard
         }
       }
       Object.assign(sceneNode(next,a.nodeId).data,{outputAssetIds:ids,outputAssetId:ids[0]});return apply(next,{assetIds:ids,nodeIds});
+    }
+    if(command==='image.vectorize'){
+      progress(.2,'正在描摹轮廓');const paths=await traceLayer(source,a.id,a.threshold??128,signal);
+      check();const result=addTracedLayer(source,a.id,paths);return apply(result.document,{id:result.id,contours:paths.length});
     }
     const normalized=boards.normalize(source),boardId=a.artboardId||boards.owner(normalized,a.id)?.id;
     if(!boards.boards(normalized).some(b=>b.id===boardId))fail('画板不存在');

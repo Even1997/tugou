@@ -60,6 +60,7 @@
   width: 100%;
   height: 100%;
 }
+.layer-stage > canvas { transform-origin: top left; }
 .selection-preview {
   pointer-events: none;
   opacity: 0.22;

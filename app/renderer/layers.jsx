@@ -1,10 +1,12 @@
 import {timeline,nextVisibleFrame} from '../core/gif-timeline.cjs';
+import {flushSync} from 'react-dom';
 import './gif.css';
 import {LayerTextEditor} from './layer-text-editor.jsx';
-import {fitLayerText,layerTextBounds,loadLayerTextFonts} from './layer-text-layout.js';
+import {fitLayerText,layerTextBounds,loadLayerTextFonts,textBoxCorners} from './layer-text-layout.js';
 import {patchText,sameText} from '../core/rich-text.cjs';
 import {ColorControl} from './color-control.jsx';
 import {CanvasRulers,SelectionSizeBadge,CanvasSelection} from './canvas-chrome.jsx';
+import {LayerAlignment,alignmentCommands} from './layer-alignment.jsx';
 import {Select} from './select.jsx';
 import {deleteTarget,editorShortcut} from '../core/editor-commands.cjs';
 import {commandFor,shortcutBlocked} from '../core/shortcuts.cjs';
@@ -14,7 +16,7 @@ import {useUiView} from './ui-view.js';
 import {useSubjectStatus} from './use-subject-status.js';
 import {Button, Icon, Input, EmptyState} from './components.jsx';
 import {Tooltip} from 'antd';
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   createLayer,
@@ -22,9 +24,8 @@ import {
   localBounds,
   matrix,
   bounds,
+  enclosingBox,
   worldMatrix,
-  homography,
-  project,
   inverse,
   point,
   localPoint,
@@ -47,12 +48,16 @@ import {
   relocateLayers,
 } from "../core/layers.cjs";
 import {shapeBounds,lineBounds,lineEndpoints,shapes} from '../core/shapes.cjs';
+import {hitVector} from './vector-geometry.js';
+import {penShape,moveAnchor,movedPathNode,insertAnchor,removeAnchor} from '../core/vector-path.cjs';
+import {PenPreview,AnchorControls,VectorNodeOptions,denseContour,nearestAnchor} from './vector-controls.jsx';
 import {ShapePicker,ShapeOptions,ShapePath,shapeDefaults} from './shape-tools.jsx';
 import {NumberField} from './number-field.jsx';
 import {LayerProperties, LayerAppearance} from './layer-properties.jsx';
 import { LayerTree } from "./layer-tree.jsx";
 import {
   selectionCanvas,
+  selectionKey,
   alphaOf,
   alphaCanvas,
   pngBytes,
@@ -61,11 +66,13 @@ import {
 } from "./selection.js";
 import { Compositor,renderPadding } from "./composite.js";
 import {createLayerPreviewQueue,previewRegion} from './layer-preview.js';
+import {needsLayerViewportRefresh,placeLayerBitmap,useLayerViewport} from './use-layer-viewport.js';
 import { assetUrl } from "./canvas.jsx";
 import { PaintTools, MaskInk, paintDefaults } from './paint-tools.jsx';
 import { usePainting } from './use-painting.js';
 import { retouchTools, isBrushTool } from './retouch.js';
 import { fillImageSelection } from './content-fill.js';
+import {createSelectionRaster,largeSelection,measureSelection} from './selection-raster-client.js';
 import { paintGeometry, fillMaskSelection } from './paint-target.js';
 import {SelectionActions,selectionTools} from './selection-tools.jsx';
 import { fields as adjustmentTypes, defaults as adjustmentDefaults } from '../core/adjustments.cjs';
@@ -104,7 +111,11 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   const propertiesOpen=workspace?.propertiesOpen??localPropertiesOpen,setPropertiesOpen=workspace?.setPropertiesOpen||setLocalPropertiesOpen;
   const [inspectorTab,setInspectorTab]=useState('adjustments'),[layerTab,setLayerTab]=useState('layers');
   const [layerQuery,setLayerQuery]=useState(''),[layerFilter,setLayerFilter]=useState('all'),[searchOpen,setSearchOpen]=useState(false);
-  const [autoSelect,setAutoSelect]=useState(true),[selectScope,setSelectScope]=useState('layer'),[showControls,setShowControls]=useState(true);
+  const localSelectionOptions=useState({});
+  const [{autoSelect=true,selectScope='layer',showControls=true,alignTo},setSelectionOptions]=workspace?.selectionOptions??localSelectionOptions;
+  const selectionOption=(key,value)=>setSelectionOptions(previous=>({...previous,[key]:value}));
+  const penBoard=useRef(null);
+  const [pen,setPen]=useState([]),[requestedContour,setContour]=useState(0),[anchorIndex,setAnchorIndex]=useState(0);
   const [shapeOptions,setShapeOptions]=useState(shapeDefaults),[shapeDraft,setShapeDraft]=useState(null);
   const [boardTool,setBoardTool]=useState(!selected.length);
   const [exportHost,setExportHost]=useState(null);
@@ -153,8 +164,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   const [maskPreviewMode,setMaskPreviewMode]=useState("alone");
   const changeMaskView=(id,mode)=>{setMaskPreviewMode(mode);setMaskViewId(mode==="composite"?null:id)};
   const commands=useRef({});
+  const canvas=useRef(null);
+  const {view,rasterView,rasterDraft,setView,moveView,getView}=useLayerViewport(workspace?.initialView||{x:40,y:40,zoom:.45},
+    (drawn,next)=>canvas.current?.dataset.rendering==='false'&&needsLayerViewportRefresh(drawn,next,latest.current.size));
   const [tool, setTool] = useState(workspace?.maskId&&workspace.maskId===selected[0]?'brush':'select'),
-    [view, setView] = useState(workspace?.initialView || { x: 40, y: 40, zoom: 0.45 }),
     [size, setSize] = useState({ width: 0, height: 0 }),
     [draft, setDraft] = useState(null),
     [pathDraft, setPathDraft] = useState(null),
@@ -171,25 +184,45 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     [grow, setGrow] = useState(5),
     [fillColor, setFillColor] = useState("#b0bff2"),
     [polygon, setPolygon] = useState([]);
-  useEffect(()=>{setSourceArmed(false)},[tool]);
+  useEffect(()=>{setSourceArmed(false);if(tool!=='pen')setPen([])},[tool]);
+  useEffect(()=>{setContour(0);setAnchorIndex(0);},[selected[0]]);
   useEffect(()=>{setComparison(null)},[document,selected.join(','),tool]);
   useEffect(()=>{const clear=()=>setComparison(null);window.addEventListener('blur',clear);return()=>window.removeEventListener('blur',clear)},[]);
   const holder = useRef(null),
-    canvas = useRef(null),
     drag = useRef(null),
     engine = useRef(null),
     exportAbort = useRef(null),
     latest = useRef(null),
     mounted = useRef(true);
   const previewQueue=useRef(null),drawnPreview=useRef(null);
+  const anchorOverlay=useRef(null),[anchorRelease,setAnchorRelease]=useState(0);
   if(!previewQueue.current)previewQueue.current=createLayerPreviewQueue();
-  const clearDrag=()=>{
+  const clearDrag=finalView=>{
     cancelAnimationFrame(drag.current?.frame);
+    if(drag.current?.dense)anchorOverlay.current?.(null);
+    if(drag.current?.dense&&drag.current.preview){
+      previewQueue.current.cancel();
+      engine.current.endVectorDrag();
+      drag.current.preview=null;
+      setAnchorRelease(n=>n+1);
+    }
+    if(drag.current?.mode==='pan')setView(finalView);
     drag.current=null;
     setMotionPreview(null);
   };
+  const cancelDrag=()=>{
+    const gesture=drag.current;
+    if(!gesture)return;
+    if(gesture.mode==='pen')setPen(gesture.before);
+    clearDrag();
+    setShapeDraft(null);
+    setDraft(null);
+    setPathDraft(null);
+    if(holder.current?.hasPointerCapture(gesture.pointerId))holder.current.releasePointerCapture(gesture.pointerId);
+  };
   const selectionAbort = useRef(null),
     selectionPreview = useRef(null),
+    selectionFrame = useRef(null),
     selectionCache = useRef(null);
   useEffect(() => () => selectionAbort.current?.abort(), [document]);
   const shown = motion?.document || draft || document;
@@ -204,14 +237,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     return()=>{current=false;};
   },[fixedText]);
   const textBoxes=useMemo(()=>new Map(fixedText.map(l=>[l.id,layerTextBounds(l)])),[fixedText,fontRevision]);
-  const selectionCorners=layer=>{
+  const selectionCorners=(layer,layers=shown.layers)=>{
     const box=!warp&&!(draft&&drag.current?.mode==='resize')&&textBoxes.get(layer.id);
-    if(!box)return corners(shown.layers,layer);
-    const m=worldMatrix(shown.layers,layer),h=layer.warp&&homography(layer.warp);
-    return [[box.x,box.y],[box.x+box.width,box.y],[box.x+box.width,box.y+box.height],[box.x,box.y+box.height]].map(([x,y])=>{
-      const p=h&&project(h,x/layer.width,y/layer.height);
-      return p?point(m,p.x*layer.width,p.y*layer.height):point(m,x,y);
-    });
+    if(!box)return corners(layers,layer);
+    return textBoxCorners(layer,worldMatrix(layers,layer),box);
   };
   useEffect(() => {
     const selector='.composition-primary-tools .layer-menu[open],.composition-primary-tools .shape-picker[open]';
@@ -243,6 +272,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     tool,
     operation,
     disabled,
+    editingTextId:editingText?.id,
     paintTarget:paintOptions.target,
     workspace,
   };
@@ -254,9 +284,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   const gifIndex=Math.min(gifFrame,animation.frames.length-1),gifTime=animation.frames[gifIndex].time;
 
   useEffect(()=>{if(selected.length!==1||selected[0]!==maskViewId||paintOptions.target!=='mask'||!document.layers.find(l=>l.id===maskViewId)?.mask)setMaskViewId(null)},[selected,paintOptions.target,document.layers,maskViewId]);
-  const single = shown.layers.find(
-    (l) => selected.length === 1 && l.id === selected[0],
-  );
+  const single = selected.length === 1 ? shown.layers.find(l=>l.id===selected[0]) : undefined;
+  const contour=Math.min(requestedContour,(single?.paths?.length||1)-1);
+  const contourNodes=single?.paths?.[contour]?.nodes;
+  const activeAnchor=Math.min(anchorIndex,(contourNodes?.length||1)-1);
   const subjectImage=single?.bitmap||document.assets.find(a=>a.id===single?.assetId);
   const subjectStatus=useSubjectStatus({width:subjectImage?.width||single?.width,height:subjectImage?.height||single?.height},single?.kind==='image'&&selectionTools.some(([id])=>id===tool));
   const subjectActive=useRef(false),[subjectStage,setSubjectStage]=useState('');
@@ -273,6 +304,40 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     validateLayers(layers);
     return change({ ...latest.current.document, layers }, options);
   };
+  const arrangement=useMemo(()=>{
+    const chosen=roots(document.layers,selected), boxes=new Map();
+    const ids=new Set(selected), members=document.layers.filter(l=>ids.has(l.id));
+    for(const l of members){
+      const points=selectionCorners(l,document.layers);
+      boxes.set(l.id,enclosingBox(points.map(p=>({...p,width:0,height:0}))));
+    }
+    return {count:chosen.length,boxes,box:enclosingBox([...boxes.values()]),
+      locked:members.some(l=>inherited(document.layers,l,'locked'))};
+  },[document.layers,selected,textBoxes,warp]);
+  const defaultTarget=arrangement.count>1?'objects':'board';
+  const target=(!alignTo||(alignTo==='objects'&&arrangement.count<2)||(alignTo==='selection'&&!document.selection))?defaultTarget:alignTo;
+  const [maskExtent,setMaskExtent]=useState(null);
+  const {selection,width:boardWidth,height:boardHeight}=document;
+  const maskKey=useMemo(()=>selectionKey(selection,boardWidth,boardHeight),[selection,boardWidth,boardHeight]);
+  const currentMask=maskExtent?.key===maskKey?maskExtent?.box:null;
+  const needsMaskBounds=target==='selection'&&arrangement.count>0&&!!selection&&!currentMask;
+  useEffect(()=>{
+    if(!needsMaskBounds)return;
+    const controller=new AbortController(),{signal}=controller;
+    (async()=>{
+      const box=await measureSelection({selection,width:boardWidth,height:boardHeight},engine.current,signal);
+      if(!signal.aborted)setMaskExtent({key:maskKey,box});
+    })().catch(error=>{if(!signal.aborted)setMessage(error.message);});
+    return ()=>controller.abort();
+  },[maskKey,needsMaskBounds]);
+  const layoutDisabled=disabled||workspace?.board.locked||arrangement.locked||!arrangement.count||(target==='selection'&&!currentMask);
+  const arrange=(axis,mode)=>run(()=>{
+    if(layoutDisabled||drag.current||editingText)return;
+    const extent=target==='selection'?currentMask:target==='board'?{x:0,y:0,width:boardWidth,height:boardHeight}:null;
+    const layers=mode==='space'?distributeLayers(document.layers,selected,axis,extent,arrangement.boxes)
+      :alignLayers(document,selected,axis,mode,extent,arrangement.boxes);
+    if(layers!==document.layers)commit(layers);
+  });
   const patch = (values) => {
     if (single && !inherited(document.layers, single, "locked"))
       run(() =>
@@ -331,7 +396,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       y: (viewport.height - height * zoom) / 2-top*zoom,
     });
   };
-  useUiView('layers',{get:()=>({view,tool}),restore:v=>{setView(v.view);setTool(v.tool);},blocked:()=>editingText||draft||pathDraft||selectionBusy||painting.busy||merging||imageImport.importing||exportState||drag.current?.pointerId!==undefined||shapeDraft||polygon.length?'图层编辑尚未完成，请先完成当前操作':null});
+  useUiView('layers',{get:()=>({view,tool}),restore:v=>{setView(v.view);setTool(v.tool);},blocked:()=>editingText||draft||pathDraft||selectionBusy||painting.busy||merging||imageImport.importing||exportState||drag.current||pen.length||shapeDraft||polygon.length?'图层编辑尚未完成，请先完成当前操作':null});
   useEffect(() => {
     let previous;
     const observer = new ResizeObserver(([entry]) => {
@@ -368,6 +433,28 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     });
   }, [document.layers]);
   const editingId=editingDraft?editingText?.id:undefined;
+  const syncTextPreview=()=>{
+    const id=latest.current.editingTextId;
+    holder.current?.toggleAttribute('data-keep-preview',!!id&&drawnPreview.current?.editingId!==id);
+  };
+  useLayoutEffect(syncTextPreview,[editingText?.id]);
+  const previewCanvas=workspace?.previewCanvas;
+  useLayoutEffect(()=>{
+    if(!previewCanvas)return;
+    const previous=previewCanvas.current,target=canvas.current;
+    // The editor remounts per board, so carry the visible pixels across before paint.
+    if(previous&&previous!==target){
+      target.width=previous.width;
+      target.height=previous.height;
+      target.getContext('2d').drawImage(previous,0,0);
+      target.style.transform=previous.style.transform;
+    }
+    previewCanvas.current=target;
+  },[previewCanvas]);
+  useLayoutEffect(()=>{
+    placeLayerBitmap(canvas.current,drawnPreview.current?.view,view);
+    placeLayerBitmap(selectionPreview.current,selectionFrame.current,view);
+  },[view]);
   const compared=tool==='select'&&selected.length===1&&comparison===selected[0]?comparison:null;
   const adjusted=tool==='select'&&selected.length===1&&adjustmentPreview?.source===document&&adjustmentPreview.id===selected[0]?adjustmentPreview:null;
   const playing=gifPlaying&&animation.frames.length>1&&tool==='select'&&!disabled;
@@ -379,15 +466,19 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       cancelAnimationFrame(drag.current?.frame);
       exportAbort.current?.abort();
       selectionAbort.current?.abort();
+      selectionCache.current?.raster?.dispose();
+      selectionCache.current=null;
       engine.current.dispose();
     };
   }, []);
-  useEffect(() => {
+  const drawPreview=(motion)=>{
     let animationTimer;
-    const target=canvas.current;
+    const target=canvas.current,view=rasterView;
     if(!size.width||!size.height){previewQueue.current.cancel();drawnPreview.current=null;return;}
     target.dataset.rendering='true';
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    const anchorDrag=motion?.gesture.mode==='anchor'?motion.gesture:null;
+    const denseDrag=anchorDrag?.dense;
+    const ratio = rasterDraft ? .75 : Math.min(window.devicePixelRatio || 1,denseDrag?(anchorDrag.rasterRatio||1):2);
     const scale=view.zoom*ratio,gesture=motion?.gesture,paintingPreview=painting.preview;
     const plainPreview=!draft&&!paintingPreview&&!adjusted&&!compared&&!editingId&&!maskViewId&&!playing;
     previewQueue.current.request(gesture,async(signal,isLatest)=>{
@@ -395,20 +486,22 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       const valid=()=>!signal.aborted&&(!gesture||drag.current===gesture&&latest.current.document===document);
       try{
         if(!valid())return;
-        let previewDoc=paintingPreview?.document||shown;
+        let previewDoc=paintingPreview?.document||motion?.document||draft||document;
         if(adjusted||compared||editingId)previewDoc={...previewDoc,layers:previewDoc.layers.map(l=>{
           if(l.id===compared||l.id===editingId)return {...l,visible:false};
           return l.id===adjusted?.id?{...l,adjustment:adjusted.adjustment}:l;
         })};
         const previous=drawnPreview.current,visibleGifs=new Set();
         let region;
-        if(gesture&&plainPreview&&previous?.plainPreview&&previous.document===document&&previous.workspace===workspace?.preview
+        if(gesture&&!anchorDrag&&plainPreview&&previous?.plainPreview&&previous.document===document&&previous.workspace===workspace?.preview
            &&previous.view===view&&previous.size===size&&previous.ratio===ratio&&previous.gifTime===gifTime&&(!previous.motion||previous.motion.gesture===gesture)){
           if(gesture.bounds===undefined){
             const layers=(workspace?.preview||document).layers;
-            // Adjustments and shared masks can affect other layers outside the moving bounds.
             const local=gesture.mode==='board'?layers:document.layers;
-            const unbounded=layers.some(l=>l.kind==='adjustment'||l.maskSourceId||l.artboard&&l.clipContent===false);
+            const boardLayers=gesture.mode==='board'?descendants(layers,[gesture.boardId]):null;
+            // Other artboards' adjustments are isolated inside their own groups.
+            const unbounded=layers.some(l=>l.maskSourceId||l.artboard&&l.clipContent===false)||
+              local.some(l=>l.kind==='adjustment'&&l.visible!==false&&l.opacity>0&&(!boardLayers||boardLayers.has(l.id)));
             gesture.bounds=unbounded?null:bounds(local,gesture.mode==='board'?[gesture.boardId]:roots(local,gesture.ids).map(l=>l.id));
             if(gesture.bounds)gesture.padding=renderPadding(layers);
           }
@@ -422,8 +515,9 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             time:gifTime,onGif:playing?gif=>visibleGifs.add(gif):undefined,
             maskPreview:maskViewId?{id:maskViewId,mode:maskPreviewMode}:undefined,
             overrides:paintingPreview?.overrides,maskOverrides:paintingPreview?.maskOverrides,
+            vectorDrag:denseDrag?anchorDrag:undefined,
             scale,x:((region?.left||0)/ratio-view.x)/view.zoom,y:((region?.top||0)/ratio-view.y)/view.zoom,
-            width:region?region.width/scale:size.width/view.zoom,height:region?region.height/scale:size.height/view.zoom,signal,
+            width:region?region.width/scale:size.width/view.zoom,height:region?region.height/scale:size.height/view.zoom,signal,interactive:true,
           });
         }
         if(!valid())return;
@@ -436,7 +530,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           ctx.clearRect(left,top,width,height);
           ctx.drawImage(output,0,0,width,height,left,top,width,height);
         }
-        drawnPreview.current={document,workspace:workspace?.preview,view,size,ratio,gifTime,plainPreview,motion};
+        drawnPreview.current={document,workspace:workspace?.preview,view,size,ratio,gifTime,plainPreview,motion,editingId};
+        placeLayerBitmap(target,view,latest.current.view);
+        // Switch the editor ink with the frame that shows or removes the original.
+        syncTextPreview();
         if(isLatest()){
           setRenderError('');target.dataset.rendering='false';
           const next=nextVisibleFrame(animation.frames,gifIndex,visibleGifs);
@@ -447,72 +544,73 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       }finally{output.width=output.height=1;}
     });
     return()=>clearTimeout(animationTimer);
-  }, [editingId,document,shown,view,size,painting.preview,workspace?.preview,motion,maskViewId,maskPreviewMode,gifTime,gifIndex,playing,animation,compared,adjusted]);
+  };
+  useEffect(()=>drawPreview((drag.current?.doc===document&&drag.current.preview)||motion),
+    [editingId,document,shown,rasterView,rasterDraft,size,painting.preview,workspace?.preview,motion,maskViewId,maskPreviewMode,gifTime,gifIndex,playing,animation,compared,adjusted,anchorRelease]);
   useEffect(() => {
     let disposed = false;
     if (!selectionPreview.current || !size.width) return;
-    const c = selectionPreview.current;
-    c.width = size.width;
-    c.height = size.height;
-    if (!document.selection) return;
-    const cache = selectionCache.current;
-    if (
-      !cache ||
-      cache.selection !== document.selection ||
-      cache.width !== document.width ||
-      cache.height !== document.height
-    )
+    const c = selectionPreview.current,view=rasterView;
+    if (!maskKey){
+      selectionCache.current?.raster?.dispose();
+      selectionCache.current=null;
+      if(selectionFrame.current){c.width=c.height=1;selectionFrame.current=null;}
+      return;
+    }
+    if (selectionCache.current?.key!==maskKey){
+      selectionCache.current?.raster?.dispose();
+      const raster=largeSelection(document)?createSelectionRaster(document,engine.current):null;
       selectionCache.current = {
-        selection: document.selection,
-        width: document.width,
-        height: document.height,
-        promise: selectionCanvas(document, engine.current),
+        key:maskKey,
+        raster,
+        promise: raster?.ready||selectionCanvas(document, engine.current),
       };
-    selectionCache.current.promise
-      .then((mask) => {
+    }
+    const cache=selectionCache.current;
+    cache.promise
+      .then(async (mask) => {
         if (disposed) return;
-        const ctx = c.getContext("2d");
-        ctx.drawImage(
-          mask,
-          view.x,
-          view.y,
-          document.width * view.zoom,
-          document.height * view.zoom,
-        );
+        const bitmap=cache.raster?await cache.raster.preview(view,size):null;
+        if(disposed){bitmap?.close();return;}
+        c.width=size.width;c.height=size.height;
+        const ctx = c.getContext("2d", bitmap ? {willReadFrequently:true} : undefined);
+        if(bitmap){try{ctx.drawImage(bitmap,0,0);}finally{bitmap.close();}}
+        else ctx.drawImage(mask,view.x,view.y,document.width*view.zoom,document.height*view.zoom);
         ctx.globalCompositeOperation = "source-in";
         ctx.fillStyle = getComputedStyle(holder.current).getPropertyValue(
           "--accent",
         );
         ctx.fillRect(0, 0, c.width, c.height);
         ctx.globalCompositeOperation = "source-over";
+        selectionFrame.current=view;
+        placeLayerBitmap(c,view,latest.current.view);
       })
       .catch((e) => {
+        if(selectionCache.current===cache){cache.raster?.dispose();selectionCache.current=null;}
         if (!disposed) setMessage(e.message);
       });
     return () => {
       disposed = true;
     };
-  }, [document.selection, document.width, document.height, view, size]);
+  }, [maskKey, rasterView, size]);
   useEffect(() => {
     const element = holder.current;
     const wheel = (e) => {
       if(e.target.closest('.layer-text-editor')&&!e.ctrlKey&&!e.metaKey)return;
       e.preventDefault();
-      const v = latest.current.view;
+      if(drag.current)return;
       if (e.ctrlKey || e.metaKey) {
         const rect = element.getBoundingClientRect(),
           x = e.clientX - rect.left,
-          y = e.clientY - rect.top,
-          zoom = Math.max(
-            0.02,
-            Math.min(8, v.zoom * Math.exp(-e.deltaY * 0.002)),
-          );
-        setView({
-          zoom,
-          x: x - ((x - v.x) * zoom) / v.zoom,
-          y: y - ((y - v.y) * zoom) / v.zoom,
-        });
-      } else setView({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY });
+          y = e.clientY - rect.top, delta=e.deltaY;
+        moveView(v=>{
+          const zoom=Math.max(.02,Math.min(8,v.zoom*Math.exp(-delta*.002)));
+          return {zoom,x:x-(x-v.x)*zoom/v.zoom,y:y-(y-v.y)*zoom/v.zoom};
+        },true);
+      } else {
+        const {deltaX,deltaY}=e;
+        moveView(v=>({...v,x:v.x-deltaX,y:v.y-deltaY}),true);
+      }
     };
     element.addEventListener("wheel", wheel, { passive: false });
     return () => element.removeEventListener("wheel", wheel);
@@ -533,9 +631,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       )
         return;
       const v = latest.current;
+      const shortcut=commandFor(e,window.tugou.platform,preferences.value.shortcuts);
+      if(drag.current&&shortcut&&!['save','undo','redo'].includes(shortcut)){e.preventDefault();return;}
       const command=editorShortcut(e,window.tugou.platform,preferences.value.shortcuts);
       if(command){e.preventDefault();commands.current[command]?.();return;}
-      const shortcut=commandFor(e,window.tugou.platform,preferences.value.shortcuts);
       if(shortcut==='pan'){e.preventDefault();spaceHeld.current=e.code||e.key;holder.current?.classList.add('space-pan');return}
       if(shortcut==='group'||shortcut==='ungroup'){
         e.preventDefault();action(()=>shortcut==='ungroup'?ungroupLayers(v.document.layers,v.selected[0]):groupLayers(v.document.layers,v.selected));return;
@@ -546,31 +645,33 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
         painting.cancel();
         setSourceArmed(false);
         setMessage('');
-        clearDrag();
-        setShapeDraft(null);
-        setDraft(null);
-        setPathDraft(null);
+        cancelDrag();
         setTool("select");
+        setPen([]);
         setPolygon([]);
         selectionAbort.current?.abort();
       }
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        if(!v.selected.length)return;
         e.preventDefault();
+        if(drag.current)return;
         const step = e.shiftKey ? 10 : 1;
-        action(() =>
-          moveLayers(
+        run(() => {
+          const layers=moveLayers(
             v.document.layers,
             v.selected,
             e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0,
             e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0,
-          ),
-        );
+          );
+          if(layers.some((layer,i)=>layer!==v.document.layers[i]))commit(layers);
+        });
       }
     };
     window.addEventListener("keydown", key);
     const release=e=>{if(!e||e.type==='blur'||(e.code||e.key)===spaceHeld.current){spaceHeld.current=false;holder.current?.classList.remove('space-pan')}};
-    window.addEventListener('keyup',release);window.addEventListener('blur',release);
-    return () => {release();window.removeEventListener("keydown", key);window.removeEventListener('keyup',release);window.removeEventListener('blur',release)};
+    const blur=e=>{release(e);cancelDrag();};
+    window.addEventListener('keyup',release);window.addEventListener('blur',blur);
+    return () => {release();window.removeEventListener("keydown", key);window.removeEventListener('keyup',release);window.removeEventListener('blur',blur)};
   }, [disabled,preferences.value.shortcuts]);
   const add = (kind, extra = {}) => run(async()=>{
     let layer = createLayer(kind, {
@@ -638,9 +739,15 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     };
   };
   const motionDelta=(gesture,position)=>{
+    if(!gesture.moved){
+      if(Math.hypot(position.sx-gesture.start.sx,position.sy-gesture.start.sy)<3)return {dx:0,dy:0};
+      gesture.moved=true;
+    }
     const dx=position.x-gesture.start.x,dy=position.y-gesture.start.y;
     return gesture.mode==='move'&&gesture.doc.layout?.snap&&(dx||dy)?snapDelta(gesture.doc.layers,gesture.ids,dx,dy,gesture.doc.layout,latest.current.view.zoom):{dx,dy};
   };
+  const panView=(gesture,event)=>({...gesture.view,
+    x:gesture.view.x+event.clientX-gesture.clientX,y:gesture.view.y+event.clientY-gesture.clientY});
   const ordered = (parentId, depth = 0) =>
     shown.layers
       .filter((l) => l.parentId === parentId)
@@ -658,6 +765,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       )
         continue;
       const local = localPoint(shown.layers, l, p.x, p.y);
+      if(l.shape==='path'){if(hitVector(l,local,view.zoom))return l;continue;}
       if(l.kind==='shape'&&l.shape==='line'&&!l.warp){
         const m=worldMatrix(shown.layers,l),[a,b]=lineEndpoints(l.width,l.height,l.linePoints).map(q=>point(m,q.x,q.y)),dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));
         if(Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy)<=Math.max(6/view.zoom,(l.strokeWidth||0)*Math.max(Math.hypot(m[0],m[1]),Math.hypot(m[2],m[3]))/2))return l;
@@ -676,14 +784,95 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     }
     return null;
   };
+  const pickLayer=(p,scope)=>{
+    let target=hit(p);
+    if(scope==='group'&&target){
+      const byId=new Map(shown.layers.map(layer=>[layer.id,layer]));
+      while(byId.has(target.parentId))target=byId.get(target.parentId);
+    }
+    return target;
+  };
+  useLayoutEffect(()=>{
+    const pick=workspace?.pendingPick?.current;
+    if(!pick||pick.boardId!==workspace.board.id)return;
+    workspace.pendingPick.current=null;
+    const target=pickLayer(pick.start,selectScope);
+    if(!target)return;
+    const ids=[target.id];
+    setSelected(ids);
+    holder.current.focus({preventScroll:true});
+    try{holder.current.setPointerCapture(pick.pointerId);}
+    catch(error){if(error.name==='NotFoundError')return;throw error;}
+    drag.current={start:pick.start,doc:document,ids,mode:'move',pointerId:pick.pointerId};
+  },[workspace?.board.id]);
+  const finishPen=closed=>run(()=>{
+    if(disabled||pen.length<2)return;
+    const layer=createLayer('shape',{...penShape(pen,closed),name:'矢量路径',color:shapeOptions.color,fill:closed,stroke:shapeOptions.stroke,strokeWidth:closed?shapeOptions.strokeWidth:shapeOptions.strokeWidth||2});
+    const target=workspace?.boards.find(b=>b.id===penBoard.current);
+    if(workspace&&!target)return;
+    const saved=target?workspace.addShape({...layer,x:layer.x-target.x,y:layer.y-target.y},target.id):commit([...document.layers,layer]);
+    if(saved===false)return;
+    setSelected([layer.id]);setTool('nodes');setBoardTool(false);setPen([]);
+  });
+  const penNode=(d,p)=>{
+    const {x,y}=d.start,dx=p.x-x,dy=p.y-y;
+    return Math.hypot(dx,dy)*d.zoom<3?{x,y}:{x,y,in:[x-dx,y-dy],out:[x+dx,y+dy]};
+  };
+  const anchorPosition=(d,p)=>{
+    const q=localPoint(d.doc.layers,d.layer,p.x,p.y);
+    return [q.x/d.layer.width+d.offset.x,q.y/d.layer.height+d.offset.y];
+  };
+  const editAnchor=(d,position)=>{
+    const next=moveAnchor(d.layer,d.part,d.index,d.handle,...position);
+    return {...d.doc,layers:d.doc.layers.map(l=>l.id===next.id?next:l)};
+  };
+  const selectAnchorNumber=i=>{
+    setAnchorIndex(i);
+    const n=contourNodes[i],v=getView(),p=point(worldMatrix(shown.layers,single),n.x*single.width,n.y*single.height);
+    const x=p.x*v.zoom+v.x,y=p.y*v.zoom+v.y;
+    if(x<6||x>size.width-6||y<6||y>size.height-6)setView({...v,x:size.width/2-p.x*v.zoom,y:size.height/2-p.y*v.zoom});
+  };
+  const changeAnchorCount=insert=>run(()=>{
+    if(!contourNodes||disabled||workspace?.board.locked||inherited(document.layers,single,'locked')||drag.current||single.warp)return;
+    const next=(insert?insertAnchor:removeAnchor)(single,contour,activeAnchor);
+    if(commit(document.layers.map(l=>l.id===single.id?next:l))!==false)setAnchorIndex(insert?activeAnchor+1:Math.min(activeAnchor,next.paths[contour].nodes.length-1));
+  });
   const down = (e) => {
     if(editingText){holder.current.querySelector('.layer-text-editor .tiptap')?.blur();return;}
-    if (disabled || e.button === 2 || drag.current?.pointerId!==undefined) return;
-    const p = at(e),
-      handle = e.target.dataset.handle;
+    if (disabled || e.button === 2 || drag.current) return;
+    const p = at(e);
+    let handle=e.target.dataset.handle;
     e.preventDefault();
+    holder.current.focus({preventScroll:true});
     if(spaceHeld.current||e.button===1||tool==='hand'){
-      e.preventDefault();holder.current.setPointerCapture(e.pointerId);drag.current={start:p,view,mode:'pan'};return;
+      holder.current.setPointerCapture(e.pointerId);
+      drag.current={view:getView(),mode:'pan',pointerId:e.pointerId,clientX:e.clientX,clientY:e.clientY};return;
+    }
+    if(tool==='pen'){
+      if(workspace&&!pen.length){
+        const b=workspace.boards.findLast(b=>b.visible!==false&&p.x>=b.x&&p.y>=b.y&&p.x<=b.x+b.width&&p.y<=b.y+b.height);
+        if(!b||b.locked){setMessage(b?'请先解锁画板':'请在画板内开始绘制');return;}
+        penBoard.current=b.id;setMessage('');
+      }
+      if(pen.length>=3&&Math.hypot(p.x-pen[0].x,p.y-pen[0].y)*view.zoom<=7){finishPen(true);return;}
+      if(pen.length>=12000){setMessage('单条路径最多 12000 个锚点');return;}
+      holder.current.setPointerCapture(e.pointerId);
+      drag.current={mode:'pen',doc:document,before:pen,start:p,pointerId:e.pointerId,zoom:view.zoom};
+      setPen([...pen,{x:p.x,y:p.y}]);return;
+    }
+    if(tool==='nodes'&&!handle&&single?.shape==='path'&&!single.warp&&denseContour(contourNodes)){
+      const i=nearestAnchor(single,contourNodes,worldMatrix(shown.layers,single),p,view.zoom);
+      if(i>=0)handle='vector:'+contour+':'+i+':anchor';
+    }
+    if(tool==='nodes'&&handle?.startsWith('vector:')&&single?.shape==='path'&&!workspace?.board.locked&&!inherited(document.layers,single,'locked')){
+      holder.current.setPointerCapture(e.pointerId);
+      const [,part,index,type]=handle.split(':'),n=single.paths[+part].nodes[+index],q=localPoint(document.layers,single,p.x,p.y);
+      const [x,y]=type==='anchor'?[n.x,n.y]:n[type];
+      setAnchorIndex(+index);
+      drag.current={mode:'anchor',doc:document,start:p,pointerId:e.pointerId,layer:single,
+        part:+part,index:+index,handle:e.altKey&&type==='anchor'?'curve':type,dense:denseContour(single.paths[+part].nodes),
+        offset:{x:x-q.x/single.width,y:y-q.y/single.height}};
+      return;
     }
     if(isBrushTool(tool)&&paintOptions.target==='mask'&&single?.mask?.disabled)return;
     if(tool==='shape'){
@@ -691,15 +880,23 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       if(workspace&&!target){setMessage('请在画板内拖拽绘制');return;}
       if(target?.locked){setMessage('请先解锁画板');return;}
       if(!shapeOptions.fill&&!shapeOptions.strokeWidth){setMessage('请启用填充或设置描边宽度');return;}
-      holder.current.setPointerCapture(e.pointerId);holder.current.focus();setMessage('');setSelected([]);
-      drag.current={start:p,mode:'shape',options:shapeOptions,board:target};return;
+      holder.current.setPointerCapture(e.pointerId);setMessage('');setSelected([]);
+      drag.current={start:p,mode:'shape',pointerId:e.pointerId,options:shapeOptions,board:target};return;
     }
     const boardId=e.target.dataset.boardId;
     if(boardId&&workspace){
       if(workspace.boards.find(b=>b.id===boardId)?.locked){setMessage('请先解锁画板');return;}
       holder.current.setPointerCapture(e.pointerId);setSelected([]);drag.current={start:p,doc:document,mode:'board',boardId,pointerId:e.pointerId};return;
     }
-    if(workspace){const other=[...workspace.boards].reverse().find(b=>b.id!==workspace.board.id&&p.x>=b.x&&p.y>=b.y&&p.x<=b.x+b.width&&p.y<=b.y+b.height);if(other){workspace.activate(other.id);return;}}
+    if(workspace&&!handle){
+      const board=workspace.boards.findLast(b=>b.visible!==false&&p.x>=b.x&&p.y>=b.y&&p.x<=b.x+b.width&&p.y<=b.y+b.height);
+      if(board&&board.id!==workspace.board.id){
+        if(tool==='select'&&autoSelect&&!board.locked){
+          workspace.pendingPick.current={boardId:board.id,pointerId:e.pointerId,start:{...p,x:p.x-board.x,y:p.y-board.y}};
+        }
+        workspace.activate(board.id);return;
+      }
+    }
     if (e.button === 0 && isBrushTool(tool)) {
       if(paintOptions.target==='mask'&&!['brush','eraser'].includes(tool)){setMessage('请先完成蒙版编辑，再使用修图工具');return;}
       let source=paintSource?.layerId===single?.id?paintSource:null;
@@ -715,7 +912,6 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
         setPaintSource(source);
       }
       holder.current.setPointerCapture(e.pointerId);
-      holder.current.focus();
       setMessage('');
       painting.begin({...p,pressure:e.pressure,pointerType:e.pointerType},{...paintOptions,tool,source,erase:tool==='eraser',line:paintOptions.line || e.shiftKey,connect:e.shiftKey});
       return;
@@ -730,18 +926,15 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     }
     holder.current.setPointerCapture(e.pointerId);
     setMessage("");
-    const base = { start: p, doc: document, view, ids: selected };
+    const base = { start: p, doc: document, view, ids: selected, pointerId:e.pointerId };
     if (handle?.startsWith("guide-")) drag.current = { ...base, mode: handle };
-    else if (e.button === 1 || tool === "hand")
-      drag.current = { ...base, mode: "pan" };
     else if (handle && single && !inherited(document.layers, single, "locked"))
       drag.current = { ...base, mode: handle, layer: single };
     else if (["rect", "ellipse", "lasso"].includes(tool)) {
       drag.current = { ...base, mode: tool, points: [p.x, p.y] };
       setPathDraft([p.x, p.y]);
     } else {
-      let target = autoSelect ? hit(p) : shown.layers.find(l=>selected.includes(l.id));
-      if(autoSelect&&selectScope==='group'&&target){let parent=shown.layers.find(l=>l.id===target.parentId);while(parent){target=parent;parent=shown.layers.find(l=>l.id===parent.parentId)}}
+      const target = autoSelect ? pickLayer(p,selectScope) : shown.layers.find(l=>selected.includes(l.id));
       if (target) {
         const ids = e.shiftKey
           ? selected.includes(target.id)
@@ -751,7 +944,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             ? selected
             : [target.id];
         setSelected(ids);
-        drag.current = { ...base, ids, mode: "move", pointerId:e.pointerId };
+        drag.current = { ...base, ids, mode: "move" };
       } else {
         if (!e.shiftKey) setSelected([]);
         drag.current = {
@@ -770,9 +963,28 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       return;
     }
     const d = drag.current;
-    if (!d) return;
-    if(d.pointerId!==undefined){
-      if(d.pointerId!==e.pointerId)return;
+    if (!d || d.pointerId!==e.pointerId) return;
+    if(d.mode==='pen'){setPen([...d.before,penNode(d,at(e))]);return;}
+    if(d.mode==='anchor'){
+      if(latest.current.document!==d.doc)return;
+      d.position=anchorPosition(d,at(e));
+      if(d.dense){
+        // Update only the active cubic on pointer input. The full path is copied at most once per frame.
+        const node=movedPathNode(d.layer.paths[d.part].nodes[d.index],d.handle,...d.position);
+        flushSync(()=>anchorOverlay.current?.({base:d.layer,index:d.index,contour:d.part,handle:d.handle,node}));
+      }
+      if(d.frame===undefined)d.frame=requestAnimationFrame(()=>{
+        d.frame=undefined;if(drag.current!==d||latest.current.document!==d.doc)return;
+        const preview={gesture:d,document:editAnchor(d,d.position),dx:0,dy:0};
+        if(!d.dense){setMotionPreview(preview);return;}
+        // Only the active control and the canvas change while editing dense geometry.
+        d.preview=preview;
+        drawPreview(preview);
+      });
+      return;
+    }
+    if(d.mode==='pan'){moveView(panView(d,e));return;}
+    if(d.mode==='move'||d.mode==='board'){
       d.position={clientX:e.clientX,clientY:e.clientY};
       if(d.frame===undefined)d.frame=requestAnimationFrame(()=>{
         d.frame=undefined;
@@ -792,14 +1004,6 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     if(d.mode==='line-0'||d.mode==='line-1'){
       const next=moveLineEndpoint(d.doc.layers,d.layer,Number(d.mode.at(-1)),p,e.shiftKey);
       setDraft({...d.doc,layers:d.doc.layers.map(l=>l.id===next.id?next:l)});return;
-    }
-    if (d.mode === "pan") {
-      setView({
-        ...d.view,
-        x: d.view.x + p.sx - d.start.sx,
-        y: d.view.y + p.sy - d.start.sy,
-      });
-      return;
     }
     if (d.mode.startsWith("guide-")) {
       const index = Number(d.mode.split("-")[1]),
@@ -889,14 +1093,21 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       return;
     }
     const d = drag.current;
-    if (!d || d.pointerId!==undefined&&d.pointerId!==e.pointerId) return;
-    clearDrag();
+    if (!d || d.pointerId!==e.pointerId) return;
+    clearDrag(d.mode==='pan'?panView(d,e):undefined);
     if(holder.current.hasPointerCapture(e.pointerId))holder.current.releasePointerCapture(e.pointerId);
-    if(d.pointerId!==undefined){
+    if(d.mode==='pen'){setPen([...d.before,penNode(d,at(e))]);return;}
+    if(d.mode==='anchor'){
+      setDraft(null);const p=at(e);
+      if(d.doc===latest.current.document&&!latest.current.disabled&&Math.hypot(p.sx-d.start.sx,p.sy-d.start.sy)>=1)change(editAnchor(d,anchorPosition(d,p)),{deferSave:true});
+      return;
+    }
+    if(d.mode==='pan')return;
+    if(d.mode==='move'||d.mode==='board'){
       if(d.doc!==latest.current.document||latest.current.disabled)return;
       const {dx,dy}=motionDelta(d,at(e));
       if(d.mode==='board'){
-        if(Math.hypot(dx,dy)>2)workspace.move(d.boardId,dx,dy);else workspace.activate(d.boardId);
+        if(dx||dy)workspace.move(d.boardId,dx,dy);else workspace.activate(d.boardId);
       }else if(dx||dy){
         const layers=moveLayers(d.doc.layers,d.ids,dx,dy);
         if(layers.some((l,i)=>l!==d.doc.layers[i])){
@@ -1481,6 +1692,12 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           />
   ),[treeLayers,document,workspace,change,selected,setSelected,layerQuery,layerFilter,propertiesOpen,disabled,paintOptions,maskViewId,maskPreviewMode]);
   const maskEditing=Boolean(single)&&paintOptions.target==='mask';
+  // Anchor previews only change path geometry. The inspector can keep its committed fields until release.
+  const inspected=drag.current?.mode==='anchor'?drag.current.layer:single;
+  const inspectorLocked=disabled||workspace?.board.locked||Boolean(inspected&&inherited(document.layers,inspected,'locked'));
+  const appearancePanel=useMemo(()=><LayerAppearance layer={inspected} patch={patch} disabled={inspectorLocked}/>,[inspected,document,change,inspectorLocked]);
+  const propertiesPanel=useMemo(()=>!inspected&&workspace?workspace.inspector:<LayerProperties key={inspected?.id||'empty'} compact boardName={workspace?.board.name} maskEditing={maskEditing} maskPreview={maskViewId===inspected?.id?maskPreviewMode:"composite"} maskBusy={selectionBusy||painting.busy} onMaskView={mode=>changeMaskView(inspected?.id,mode)} onLoadMask={loadMaskSelection} layer={inspected?{...inspected,locked:inspectorLocked}:null} patch={patch} document={document} change={change}/>,
+    [inspected,document,workspace,change,inspectorLocked,maskEditing,maskViewId,maskPreviewMode,selectionBusy,painting.busy]);
   const maskPainting=['brush','eraser'].includes(tool)&&maskEditing;
   let brushOutline,sourceMarker;
   if(isBrushTool(tool)&&single&&(single.kind==='image'||maskPainting)) {
@@ -1504,6 +1721,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           <Button iconOnly icon="selection" aria-pressed={selectionTools.some(([id])=>id===tool)} onClick={()=>setTool('rect')}>选区</Button>
           <Button iconOnly icon="crop" disabled={!document.selection||selectionBusy} onClick={cropSelection}>裁切</Button>
           <Button iconOnly icon="brush" aria-pressed={tool==='brush'} onClick={()=>setTool('brush')}>画笔</Button>
+          <Button iconOnly icon="edit" aria-pressed={tool==='pen'} disabled={disabled} onClick={()=>{setTool('pen');setBoardTool(false)}}>钢笔</Button>
           <ShapePicker active={tool==='shape'} options={shapeOptions} disabled={disabled} choose={options=>{setShapeOptions(options);setTool('shape');setBoardTool(false)}}/>
           <Button iconOnly icon="assets" loading={imageImport.importing} onClick={()=>imageImport.open()} disabled={imageImport.importing}>{imageImport.importing?'导入中…':'图片'}</Button>
           <Button iconOnly icon="text" onClick={()=>add('text',{name:'文字',text:'输入文字',fontSize:48,color:'#333333'})}>文字</Button>
@@ -1689,39 +1907,9 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
               <Button onClick={() => updateLayout({ guides: [] })}>
                 清除参考线
               </Button>
-              {[
-                ["x", "start", "左对齐"],
-                ["x", "center", "水平居中"],
-                ["x", "end", "右对齐"],
-                ["y", "start", "顶对齐"],
-                ["y", "center", "垂直居中"],
-                ["y", "end", "底对齐"],
-              ].map(([axis, mode, label]) => (
-                <Button
-                  key={label}
-                  disabled={!selected.length}
-                  onClick={() =>
-                    action(() => alignLayers(document, selected, axis, mode))
-                  }
-                >
-                  {label}
-                </Button>
-              ))}
-              {[
-                ["x", "水平等距"],
-                ["y", "垂直等距"],
-              ].map(([axis, label]) => (
-                <Button
-                  key={axis}
-                  disabled={selected.length < 3}
-                  onClick={() =>
-                    action(() =>
-                      distributeLayers(document.layers, selected, axis),
-                    )
-                  }
-                >
-                  {label}
-                </Button>
+              {alignmentCommands.map(([axis,mode,label])=>(
+                <Button key={label} disabled={layoutDisabled||(mode==='space'&&arrangement.count<3)}
+                  onClick={()=>arrange(axis,mode)}>{label}</Button>
               ))}
             </Menu>
             <Menu name="变换" icon="transform">
@@ -2003,14 +2191,11 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           onPointerMove={move}
           onPointerLeave={()=>setPaintCursor(null)}
           onPointerUp={up}
-          onLostPointerCapture={e=>{if(drag.current?.pointerId===e.pointerId)clearDrag();}}
+          onGotPointerCapture={e=>{if(e.target===holder.current)holder.current.dataset.layoutGesture="";}}
+          onLostPointerCapture={e=>{if(e.target===holder.current)delete holder.current.dataset.layoutGesture;if(drag.current?.pointerId===e.pointerId)cancelDrag();}}
           onPointerCancel={e => {
-            if(drag.current?.pointerId!==undefined&&drag.current.pointerId!==e.pointerId)return;
-            painting.cancel();
-            clearDrag();
-            setDraft(null);
-            setPathDraft(null);
-            setShapeDraft(null);
+            if(drag.current){if(drag.current.pointerId===e.pointerId)cancelDrag();}
+            else painting.cancel();
           }}
           onDoubleClick={e => {
             if (tool === "polygon") {finishPolygon();return;}
@@ -2019,6 +2204,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             if(layer?.kind==='text'){clearDrag();setDraft(null);setSelected([layer.id]);setEditingDraft(false);setEditingText(layer);}
           }}
           onKeyDown={(e) => {
+            if(e.key==='Enter'&&tool==='pen'&&!drag.current){e.preventDefault();finishPen(false);return;}
             if (e.key === "Enter" && tool === "polygon") {
               e.preventDefault();
               finishPolygon();
@@ -2090,6 +2276,8 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
                 <rect className="board-label-hit" data-board-id={b.id} x={b.x} y={b.y-30/view.zoom} width={Math.max(160,b.name.length*14)/view.zoom} height={27/view.zoom} fill="transparent"/>
                 <text data-board-id={b.id} x={b.x} y={b.y-10/view.zoom} fontSize={12/view.zoom} fill={workspace?.board.id===b.id?'var(--accent)':'var(--muted)'} style={{cursor:'move'}}>{b.name} · {b.width} × {b.height}</text>
               </g>)}
+              {tool==='pen'&&<PenPreview nodes={pen} zoom={view.zoom}/>}
+              {tool==='nodes'&&single?.shape==='path'&&!single.warp&&!inherited(shown.layers,single,'locked')&&<AnchorControls ref={anchorOverlay} layer={single} base={drag.current?.mode==='anchor'?drag.current.layer:single} matrix={worldMatrix(shown.layers,single)} view={view} size={size} contour={contour} active={activeAnchor}/>}
               {shapeDraft&&<g className="shape-draft" pointerEvents="none" transform={`translate(${shapeDraft.x} ${shapeDraft.y})`}>
                 <ShapePath shape={shapeDraft.shape} linePoints={shapeDraft.linePoints} width={shapeDraft.width} height={shapeDraft.height} radius={shapeDraft.radius} fill={shapeDraft.fill?shapeDraft.color:'none'} stroke={shapeDraft.stroke} strokeWidth={shapeDraft.strokeWidth}/>
                 <rect width={shapeDraft.width} height={shapeDraft.height} fill="none" stroke="var(--accent)" strokeWidth={1/view.zoom} strokeDasharray={`${4/view.zoom} ${3/view.zoom}`}/>
@@ -2134,6 +2322,11 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             </g>
           </svg>
           {workspace&&<CanvasRulers view={view} size={size}/>}
+          {arrangement.box&&!editingText&&tool!=='nodes'&&!maskEditing&&!draft&&!motion&&!pathDraft&&!shapeDraft&&
+            !pen.length&&!polygon.length&&!painting.busy&&!selectionBusy&&view===rasterView&&!rasterDraft&&
+            <LayerAlignment box={arrangement.box} view={view} size={size} boards={workspace?.boards} imageTools={single?.kind==='image'}
+              count={arrangement.count} target={target} choose={value=>selectionOption('alignTo',value)} hasSelection={!!selection}
+              disabled={layoutDisabled} apply={arrange}/>}
           {showControls&&single&&!editingText&&tool==='select'&&<SelectionSizeBadge points={selectionCorners(single)} view={view} size={size}/>}
           {editingText&&<LayerTextEditor key={editingText.id} layer={editingText} layers={document.layers} view={view} maxWidth={document.width} draft={editingDraft} onDraft={setEditingDraft}
             onCancel={()=>{setEditingText(null);holder.current?.focus({preventScroll:true});}}
@@ -2155,7 +2348,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           <div className="layer-stage-hint">
             {editingText ? '正在编辑文字 · Enter 换行 · Ctrl/⌘＋Enter 完成 · Esc 取消' : tool === "select"
               ? `双击文字编辑 · Shift 多选 · 拖动移动 · ${window.tugou.platform === "darwin" ? "⌘" : "Ctrl"}+滚轮缩放`
-              : tool === "shape"
+              : tool==='pen'?'点击加点 · 拖出手柄 · 点首节点闭合 · Enter 完成':tool==='nodes'?'拖动锚点或曲线手柄': tool === "shape"
                 ? (shapeOptions.shape==='line'?"拖拽绘制直线 · Shift 约束角度 · Esc 取消":"拖拽绘制形状 · Shift 等比 · Esc 取消")
               : tool === "hand"
                 ? "拖动平移"
@@ -2176,12 +2369,11 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       {(animation.frames.length>1||animation.error)&&<div className="gif-timeline">{animation.error?<span role="alert">{animation.error}</span>:<><Button onClick={()=>setGifPlaying(v=>!v)}>{gifPlaying?'暂停动画':'播放动画'}</Button><input aria-label="图层动画帧" type="range" min={1} max={animation.frames.length} value={gifIndex+1} onChange={e=>{setGifPlaying(false);setGifFrame(+e.target.value-1)}}/><span>第 {gifIndex+1} / {animation.frames.length} 帧 · {gifTime} ms</span></>}</div>}
             <details className="layer-tool-settings" key={tool+'-'+boardTool+'-'+maskEditing+'-'+single?.kind} open={tool!=='select'}><summary>{tool==='shape'?'绘制选项':'工具选项'}</summary>
 <div className="layer-parameter-row">
-        <span className="context-tool"><Icon name={boardTool&&tool==='select'?'layout':isBrushTool(tool)?'brush':tool==='select'?'action':tool==='hand'?'select':'selection'}/>{boardTool&&tool==='select'?'画板':maskEditing?(maskPainting?'蒙版画笔':'蒙版选区'):tool==='select'?(single?.kind==='shape'?'形状':single?.kind==='adjustment'?'调色':'移动'):tool==='hand'?'抓手':tool==='shape'?'形状':isBrushTool(tool)?'画笔':'选区'}</span>
-        {tool==='shape'?<ShapeOptions options={shapeOptions} change={setShapeOptions} disabled={disabled}/>:tool==='select'&&single?.kind==='adjustment'?null:tool==='select'?<div className="move-tool-options">
-          <label className="check"><input type="checkbox" checked={autoSelect} onChange={e=>setAutoSelect(e.target.checked)}/>自动选择</label>
-          <Select aria-label="自动选择范围" value={selectScope} onChange={e=>setSelectScope(e.target.value)}><option value="layer">图层</option><option value="group">分组</option></Select>
-          <label className="check"><input type="checkbox" checked={showControls} onChange={e=>setShowControls(e.target.checked)}/>显示变换控件</label>
-          <div className="context-align">{[['x','start','左对齐','align'],['x','center','水平居中','layout'],['y','center','垂直居中','action']].map(([axis,mode,label,icon])=><Button iconOnly icon={icon} key={label} disabled={!selected.length||disabled} onClick={()=>action(()=>alignLayers(document,selected,axis,mode))}>{label}</Button>)}</div>
+        <span className="context-tool"><Icon name={boardTool&&tool==='select'?'layout':isBrushTool(tool)?'brush':tool==='select'?'action':tool==='hand'?'select':'selection'}/>{boardTool&&tool==='select'?'画板':maskEditing?(maskPainting?'蒙版画笔':'蒙版选区'):tool==='select'?(single?.kind==='shape'?'形状':single?.kind==='adjustment'?'调色':'移动'):tool==='hand'?'抓手':tool==='pen'?'钢笔':tool==='nodes'?'锚点':tool==='shape'?'形状':isBrushTool(tool)?'画笔':'选区'}</span>
+        {tool==='pen'?<div><Button disabled={pen.length<2} onClick={()=>finishPen(false)}>完成开放路径</Button><Button disabled={pen.length<3} onClick={()=>finishPen(true)}>闭合路径</Button></div>:tool==='nodes'?<VectorNodeOptions layer={single} contour={contour} active={activeAnchor} locked={inspectorLocked||!!single?.warp} selectContour={i=>{setContour(i);setAnchorIndex(0);}} selectAnchor={selectAnchorNumber} edit={changeAnchorCount} done={()=>setTool('select')}/>:tool==='shape'?<ShapeOptions options={shapeOptions} change={setShapeOptions} disabled={disabled}/>:tool==='select'&&single?.kind==='adjustment'?null:tool==='select'?<div className="move-tool-options">
+          <label className="check"><input type="checkbox" checked={autoSelect} onChange={e=>selectionOption('autoSelect',e.target.checked)}/>自动选择</label>
+          <Select aria-label="自动选择范围" value={selectScope} onChange={e=>selectionOption('selectScope',e.target.value)}><option value="layer">图层</option><option value="group">分组</option></Select>
+          <label className="check"><input type="checkbox" checked={showControls} onChange={e=>selectionOption('showControls',e.target.checked)}/>显示变换控件</label>
           <Button icon="mask" disabled={!single||disabled||inherited(document.layers,single,'locked')} onClick={()=>{setPaintOptions({...paintOptions,target:'mask'});setTool('brush');setPropertiesOpen(true)}}>编辑蒙版</Button>
           <Button icon="adjust" onClick={()=>setInspectorTab('adjustments')}>调整</Button>
         </div>:<label className="tool-choice"><Select aria-label="当前编辑工具" value={tool} onChange={e=>setTool(e.target.value)}>{[['hand','平移'],['brush','画笔'],['eraser','橡皮'],...(maskEditing?[]:retouchTools),...selectionTools].map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></label>}
@@ -2215,9 +2407,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
 {tool==='select'&&single?.kind!=='adjustment'&&single?.effects?.length>0&&<EffectTools key={`${single.id}-${effectId}`} layer={{...single,locked:inherited(document.layers,single,'locked')||disabled}} effectId={effectId} onSelect={setEffectId} patch={patch} onDone={()=>setSelected([])}/>}
 {fillProgress !== null ? <><span role="status">内容感知填充 {Math.round(fillProgress * 100)}%</span><Button onClick={() => selectionAbort.current?.abort()}>取消填充</Button></> : null}</div>
             </details>
-            <LayerAppearance layer={single} patch={patch} disabled={disabled||workspace?.board.locked||Boolean(single&&inherited(document.layers,single,'locked'))}/>
+            {appearancePanel}
             {tool==='select'&&!maskEditing&&single?.kind==='adjustment'&&adjustmentTypes[single.adjustment?.type]&&<AdjustmentTools key={'adjustment-'+single.id} layer={{...single,locked:inherited(document.layers,single,'locked')||workspace?.board.locked||disabled}} patch={patch} onCompare={held=>setComparison(held?single.id:null)} comparing={comparison===single.id} onPreview={previewAdjustment} onAdjustmentCommit={commitAdjustment} onDone={closeProperties}/>}
-            {!single&&workspace?workspace.inspector:<LayerProperties key={single?.id||'empty'} compact boardName={workspace?.board.name} maskEditing={maskEditing} maskPreview={maskViewId===single?.id?maskPreviewMode:"composite"} maskBusy={selectionBusy||painting.busy} onMaskView={mode=>changeMaskView(single?.id,mode)} onLoadMask={loadMaskSelection} layer={single?{...single,locked:disabled||workspace?.board.locked||inherited(document.layers,single,'locked')}:null} patch={patch} document={document} change={change}/>}
+            {propertiesPanel}
+            {single?.shape==='path'&&tool!=='nodes'&&<Button icon="edit" disabled={disabled||!!single.warp||inherited(document.layers,single,'locked')} onClick={()=>setTool('nodes')}>编辑锚点</Button>}
             {single&&workspace&&<label className="layer-board-transfer">所属画板<Select aria-label="移动图层到画板" value={workspace.board.id} onChange={e=>workspace.relocate(selected,e.target.value,'inside')} disabled={disabled||inherited(document.layers,single,'locked')}>{workspace.boards.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Select></label>}
           </div>
         </aside>}

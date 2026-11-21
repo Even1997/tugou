@@ -10,7 +10,7 @@ export function createLayerPreviewQueue(){
       const controller=new AbortController();
       active={gesture,controller};
       try{await draw(controller.signal,()=>!pending&&!controller.signal.aborted);}
-      finally{active=undefined;schedule();}
+      finally{active=undefined;schedule(!pending?.gesture?.dense);}
     };
     if(atFrame)frame=requestAnimationFrame(drawNext);
     else void drawNext();

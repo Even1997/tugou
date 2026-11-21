@@ -4,6 +4,8 @@
 .tiptap .canvas-text-selection{background:color-mix(in srgb,var(--accent) 18%,transparent)}
 .tiptap:focus .canvas-text-selection{background:transparent}
 .tiptap ::selection{background:color-mix(in srgb,var(--accent) 28%,transparent)}
+[data-keep-preview] .tiptap::selection,
+[data-keep-preview] .tiptap ::selection{color:transparent;-webkit-text-fill-color:transparent}
 .layer-text-format{position:absolute;z-index:6;top:8px;left:36px;right:12px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:6px 8px;background:var(--panel);border:1px solid var(--line);border-radius:6px;max-width:590px;font-size:12px}
 .layer-text-format .font-picker{display:flex;gap:8px;min-width:0;flex:1 1 220px}
 .layer-text-format .font-picker>label{display:block;min-width:0;flex:1;font-size:0}

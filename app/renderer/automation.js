@@ -1,23 +1,27 @@
 import {useEffect,useRef} from 'react';
 import {Compositor} from './composite.js';
-import {surface,pngBytes,selectionCanvas} from './selection.js';
+import {surface,pngBytes,selectionCanvas,selectionKey} from './selection.js';
 import {fillMaskSelection,fillPixelsSelection} from './paint-target.js';
 import {mergePlan,mergedDocument} from '../core/merge-layers.cjs';
 import {maskSelection,maskView} from './mask-view.js';
 import * as artboards from '../core/artboards.cjs';
-import {worldMatrix} from '../core/layers.cjs';
+import {worldMatrix,enclosingBox} from '../core/layers.cjs';
+import {loadLayerTextFonts,layerTextBounds,textBoxCorners} from './layer-text-layout.js';
+import {measureSelection} from './selection-raster-client.js';
 import {createStroke} from './painting.js';
 import {renderScene} from './scene-render.js';
 import {sceneNode,appendCapture} from '../core/automation-scene.cjs';
 import {views} from './ui-view.js';
 import {inspectUi,navigateUi,prepareCapture,navigationGuard,leaveGuard,settle} from './ui-automation.js';
 import {group as pageGroup} from '../core/pages.cjs';
+import {printPng} from './print-png.js';
 import {runEditingJob,cancelAutomationJob,automationJobStatus} from './automation-editing.js';
 
 function failure(code,message){const e=new Error(message);e.code=code;throw e;}
 // Shares App's live document and history. Disk records are never used as an editing session.
 export function useAutomation(context) {
   const latest=useRef(context),version=useRef({document:null,id:null,n:0,epoch:crypto.randomUUID()});
+  const measuredSelection=useRef(null);
   latest.current=context;
   useEffect(()=>window.tugou.onAutomation?.(async request=>{
     const current=()=>latest.current;
@@ -39,6 +43,36 @@ export function useAutomation(context) {
     try {
       let value;const {action,args={}}=request;
       if(action==='snapshot')value=state();
+      else if(action==='layout.measure'){
+        guard();
+        const {selection,width,height,text}=args;
+        const boxes=[];
+        for(const {layer,matrix} of text){
+          await loadLayerTextFonts(layer);
+          const box=layerTextBounds(layer);
+          if(!box)continue;
+          const points=textBoxCorners(layer,matrix,box);
+          boxes.push([layer.id,enclosingBox(points.map(p=>({...p,width:0,height:0})))]);
+        }
+        let selectionBox;
+        if(selection){
+          if(selection.bitmap?.width*selection.bitmap?.height>16000000)
+            failure('RESOURCE_LIMIT','MCP 选区位图限 1600 万像素');
+          const projectId=current().present.current.id,key=selectionKey(selection,width,height);
+          const cached=measuredSelection.current;
+          if(cached?.projectId===projectId&&cached.key===key)selectionBox=cached.box;
+          else{
+            const engine=new Compositor(),doc={selection,width,height};
+            try{
+              selectionBox=await measureSelection(doc,engine,undefined,16000000);
+              guard();
+              measuredSelection.current={projectId,key,box:selectionBox};
+            }catch(error){if(error.message==='选区为空')failure('INVALID_TARGET',error.message);throw error;}
+            finally{engine.dispose();}
+          }
+        }
+        guard();value={selectionBox,boxes};
+      }
       else if(action==='job.cancel')value={cancelled:cancelAutomationJob(args.taskId)};
       else if(action==='job.status')value=automationJobStatus(args.taskId);
       else if(action==='job.run'){
@@ -139,8 +173,15 @@ export function useAutomation(context) {
             if(args.mode&&args.mode!=='composite'&&!layer?.mask)failure('INVALID_TARGET','请指定该画板内已有蒙版的图层 id');
             if(args.mode==='mask')canvas=await maskView(doc,layer,engine,{width:Math.ceil(doc.width*scale),height:Math.ceil(doc.height*scale),scale,transform:[scale,0,0,scale,0,0]});
             else{canvas=surface(1,1);await engine.render(doc,canvas,{scale,...(['overlay','original'].includes(args.mode)?{maskPreview:{id:layer.id,mode:args.mode}}:{})});}
+            let dataUrl;
+            if(action==='artboard.export'&&doc.printSize){
+              const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+              if(!blob)throw Error('PNG 编码失败');
+              const output=await printPng(blob,doc.printSize.ppi);
+              dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(output);});
+            }else dataUrl=canvas.toDataURL('image/png');
             if(current().present.current.document!==source)failure('CONFLICT','渲染过程中工程发生变化，请重新预览');
-            const dataUrl=canvas.toDataURL('image/png');value={mimeType:'image/png',data:dataUrl.slice(dataUrl.indexOf(',')+1),width:canvas.width,height:canvas.height,revision:revision()};
+            value={mimeType:'image/png',data:dataUrl.slice(dataUrl.indexOf(',')+1),width:canvas.width,height:canvas.height,revision:revision()};
           }
         }finally{if(canvas)canvas.width=canvas.height=1;engine.dispose();}
       }else failure('UNKNOWN_COMMAND','不支持的界面操作');

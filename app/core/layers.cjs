@@ -137,6 +137,7 @@ function localPoint(layers, layer, x, y) {
 }
 function localBounds(layers, layer) {
   const fallback={x:0,y:0,width:layer.width,height:layer.height};
+  if(layer.shape==='path'&&!layer.warp){const b=require('./vector-path.cjs').pathBox(layer.paths);return {x:b.left*layer.width,y:b.top*layer.height,width:(b.right-b.left)*layer.width,height:(b.bottom-b.top)*layer.height};}
   if(layer.kind!=='group'||layer.artboard)return fallback;
   const children=layers.filter(l=>l.parentId===layer.id&&l.visible!==false&&l.kind!=='adjustment');
   if(!children.length)return fallback;
@@ -435,59 +436,42 @@ function relocateLayers(layers, ids, targetId, placement = "inside") {
   validateLayers(remaining);
   return remaining;
 }
-function alignLayers(document, ids, axis, mode) {
-  const layers = document.layers,
-    chosen = roots(layers, ids);
-  if (!chosen.length) return layers;
-  const extent =
-    chosen.length === 1
-      ? { x: 0, y: 0, width: document.width, height: document.height }
-      : bounds(
-          layers,
-          chosen.map((l) => l.id),
-        );
-  const dimension = axis === "x" ? "width" : "height",
-    factor = mode === "start" ? 0 : mode === "center" ? 0.5 : 1;
-  return chosen.reduce((next, l) => {
-    const box = bounds(layers, [l.id]);
-    const delta =
-      extent[axis] +
-      extent[dimension] * factor -
-      box[axis] -
-      box[dimension] * factor;
-    return moveLayers(
-      next,
-      [l.id],
-      axis === "x" ? delta : 0,
-      axis === "y" ? delta : 0,
-    );
-  }, layers);
+function enclosingBox(boxes) {
+  if (!boxes.length) return null;
+  let left=Infinity, top=Infinity, right=-Infinity, bottom=-Infinity;
+  for (const b of boxes) {
+    left=Math.min(left,b.x); top=Math.min(top,b.y);
+    right=Math.max(right,b.x+b.width); bottom=Math.max(bottom,b.y+b.height);
+  }
+  return {x:left,y:top,width:right-left,height:bottom-top};
 }
-function distributeLayers(layers, ids, axis) {
-  const chosen = roots(layers, ids)
-    .map((l) => ({ l, b: bounds(layers, [l.id]) }))
-    .sort((a, b) => a.b[axis] - b.b[axis]);
-  if (chosen.length < 3) throw new Error("等距分布需要至少三个图层");
-  const d = axis === "x" ? "width" : "height",
-    first = chosen[0].b,
-    last = chosen.at(-1).b,
-    gap =
-      (last[axis] +
-        last[d] -
-        first[axis] -
-        chosen.reduce((sum, { b }) => sum + b[d], 0)) /
-      (chosen.length - 1);
-  let cursor = first[axis],
-    next = layers;
-  for (const { l, b } of chosen) {
-    const delta = cursor - b[axis];
-    next = moveLayers(
-      next,
-      [l.id],
-      axis === "x" ? delta : 0,
-      axis === "y" ? delta : 0,
-    );
-    cursor += b[d] + gap;
+function alignLayers(document, ids, axis, mode, target, boxes) {
+  const layers=document.layers, chosen=roots(layers,ids);
+  if (!chosen.length) return layers;
+  const items=chosen.map(l=>({id:l.id,box:boxes?.get(l.id)||bounds(layers,[l.id])}));
+  const group=enclosingBox(items.map(item=>item.box));
+  // Existing callers use the board for a single layer and the selection for multiple layers.
+  if (target===undefined && items.length===1) target={x:0,y:0,width:document.width,height:document.height};
+  const dimension=axis==='x'?'width':'height';
+  const factor=mode==='start' ? 0 : mode==='center' ? 0.5 : 1;
+  const position=b=>b[axis]+b[dimension]*factor;
+  const move=(next,ids,delta)=>Math.abs(delta)<1e-8?next:moveLayers(next,ids,axis==='x'?delta:0,axis==='y'?delta:0);
+  if (target) return move(layers,ids,position(target)-position(group));
+  return items.reduce((next,item)=>move(next,[item.id],position(group)-position(item.box)),layers);
+}
+function distributeLayers(layers, ids, axis, target, boxes) {
+  const chosen=roots(layers,ids).map(l=>({l,b:boxes?.get(l.id)||bounds(layers,[l.id])}))
+    .sort((a,b)=>a.b[axis]-b.b[axis]);
+  if (chosen.length<3) throw new Error("等距分布需要至少三个图层");
+  const d=axis==='x'?'width':'height', first=chosen[0].b, last=chosen.at(-1).b;
+  const start=target?.[axis]??first[axis];
+  const span=target?.[d]??(last[axis]+last[d]-start);
+  const gap=(span-chosen.reduce((sum,{b})=>sum+b[d],0))/(chosen.length-1);
+  let cursor=start, next=layers;
+  for(const {l,b} of chosen){
+    const delta=cursor-b[axis];
+    if(Math.abs(delta)>=1e-8) next=moveLayers(next,[l.id],axis==='x'?delta:0,axis==='y'?delta:0);
+    cursor+=b[d]+gap;
   }
   return next;
 }
@@ -500,6 +484,7 @@ function validateLayers(layers) {
       throw new Error("图层标识重复或无效");
     byId.set(l.id, l);
     validateTextRuns(l);
+    if(l.shape==='path'){if(l.kind!=='shape')throw Error('路径必须为形状图层');require('./vector-path.cjs').validatePaths(l.paths);}
     if(l.linePoints!==undefined&&!validLinePoints(l.linePoints))throw Error('直线端点无效');
     if(l.fontWeight!==undefined&&(!Number.isInteger(l.fontWeight)||l.fontWeight<1||l.fontWeight>1000))throw Error('文字粗细无效');
     if(l.fontResource&&(l.kind!=='text'||!/^[a-f0-9]{64}\.ttf$/.test(l.fontResource.resource)||typeof l.fontResource.projectId!=='string'||typeof l.fontResource.jobId!=='string'))throw Error('文字字体资源无效');
@@ -681,6 +666,7 @@ module.exports = {
   groupLayers,
   ungroupLayers,
   reorder,
+  enclosingBox,
   alignLayers,
   distributeLayers,
   validateLayers,

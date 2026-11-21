@@ -9,6 +9,8 @@ const string = {type:'string',minLength:1,maxLength:256};
 const text = {type:'string',maxLength:100000};
 const number = {type:'number',minimum:-1000000,maximum:1000000};
 const size = {type:'integer',minimum:1,maximum:100000};
+const boardSize={width:{type:'number',exclusiveMinimum:0},height:{type:'number',exclusiveMinimum:0},unit:{enum:['px','mm','cm','in']},ppi:{type:'number',minimum:1,maximum:2400}};
+const {sizePatch}=require('./board-measure.cjs');
 const bool = {type:'boolean'};
 const enumeration = (...values) => ({enum:values});
 const object = (properties,required=[]) => ({type:'object',properties,required,additionalProperties:false});
@@ -16,7 +18,10 @@ const ids = {type:'array',items:string,minItems:1,maxItems:500,uniqueItems:true}
 const point = object({x:number,y:number},['x','y']);
 const color = {type:'string',pattern:'^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|transparent)$',maxLength:20};
 const transform = {name:string,x:number,y:number,width:size,height:size,rotation:number,opacity:{type:'number',minimum:0,maximum:1},visible:bool,locked:bool,flipX:bool,flipY:bool};
-const layerProps = {...transform,linePoints:{type:'array',items:{type:'number',minimum:0,maximum:1},minItems:4,maxItems:4},text,color,fill:bool,stroke:color,strokeWidth:{type:'number',minimum:0,maximum:1000},fontSize:{type:'number',minimum:1,maximum:1000},fontFamily:string,fontSource:enumeration('system',null),fontWeight:{type:'integer',minimum:1,maximum:1000},fontResource:{anyOf:[{type:'null'},object({resource:{type:'string',pattern:'^[a-f0-9]{64}\\.ttf$'},projectId:string,jobId:string},['resource','projectId','jobId'])]},fontStyle:enumeration('normal','bold','italic','bold italic'),align:enumeration('left','center','right'),shape:enumeration('rect','rounded','ellipse','triangle','diamond','star','line'),radius:{type:'number',minimum:0,maximum:10000},blend:enumeration(...layers.nativeBlends),assetId:string,scaleX:number,scaleY:number,skewX:{type:'number',minimum:-89,maximum:89},warp:{anyOf:[{type:'null'},{type:'array',items:number,minItems:8,maxItems:8}]},clipping:bool,maskSourceId:{anyOf:[string,{type:'null'}]}};
+const vectorCoord={type:'number',minimum:-16,maximum:16},control={type:'array',items:vectorCoord,minItems:2,maxItems:2};
+const anchor=object({x:vectorCoord,y:vectorCoord,in:control,out:control},['x','y']);
+const paths={type:'array',minItems:1,maxItems:1024,description:'复合路径；锚点及绝对控制点按图层宽高归一化，孔洞按奇偶填充',items:object({closed:bool,nodes:{type:'array',minItems:2,maxItems:12000,items:anchor}},['closed','nodes'])};
+const layerProps = {...transform,paths,linePoints:{type:'array',items:{type:'number',minimum:0,maximum:1},minItems:4,maxItems:4},text,color,fill:bool,stroke:color,strokeWidth:{type:'number',minimum:0,maximum:1000},fontSize:{type:'number',minimum:1,maximum:1000},fontFamily:string,fontSource:enumeration('system',null),fontWeight:{type:'integer',minimum:1,maximum:1000},fontResource:{anyOf:[{type:'null'},object({resource:{type:'string',pattern:'^[a-f0-9]{64}\\.ttf$'},projectId:string,jobId:string},['resource','projectId','jobId'])]},fontStyle:enumeration('normal','bold','italic','bold italic'),align:enumeration('left','center','right'),shape:enumeration('rect','rounded','ellipse','triangle','diamond','star','line','path'),radius:{type:'number',minimum:0,maximum:10000},blend:enumeration(...layers.nativeBlends),assetId:string,scaleX:number,scaleY:number,skewX:{type:'number',minimum:-89,maximum:89},warp:{anyOf:[{type:'null'},{type:'array',items:number,minItems:8,maxItems:8}]},clipping:bool,maskSourceId:{anyOf:[string,{type:'null'}]}};
 const nodeProps = {name:string,text,prompt:text,model:{type:'string',maxLength:512},size:string,count:{type:'integer',minimum:1,maximum:15},mode:enumeration('image','text'),quality:string,negativePrompt:text,role:string,inputOrder:{type:'array',items:string,maxItems:500,uniqueItems:true}};
 Object.assign(nodeProps,{camera:text,excludeUpstreamText:bool,resultText:text,inputRoles:{type:'object',maxProperties:500,propertyNames:{maxLength:256},additionalProperties:{type:'string',maxLength:1000}}});
 nodeProps.parameters=object(Object.fromEntries(Object.entries(Object.assign({},...Object.entries(require('./canvas-tools.cjs').defaults).filter(([id])=>Object.hasOwn(require('./canvas-tools.cjs').names,id)).map(([,values])=>values))).map(([key,value])=>[key,key==='frameDelays'?{type:'object',maxProperties:240,additionalProperties:{type:'integer',minimum:20,maximum:60000,multipleOf:10}}:typeof value==='number'?number:typeof value==='boolean'?bool:{type:'string',maxLength:4000}])));
@@ -61,12 +66,22 @@ define('canvas.group','组合至少两个根节点',layerArgs,['ids'],'document'
 define('canvas.ungroup','解除节点组合',{id:string},['id'],'document',(d,a)=>{if(find(d.tugouCanvas?.nodes||[],a.id).type!=='group')fail('INVALID_TARGET','请选择节点组');d.tugouCanvas.nodes=require('./canvas-groups.cjs').ungroupNodes(d.tugouCanvas.nodes,a.id);});
 define('canvas.arrange','排列选中的节点',{ids,mode:enumeration('flow','grid','left','top','horizontal','vertical')},['ids','mode'],'document',(d,a)=>{for(const id of a.ids)find(d.tugouCanvas?.nodes||[],id);d.tugouCanvas.nodes=require('./canvas-layout.cjs').arrangeNodes(d.tugouCanvas.nodes,a.ids,a.mode,d.tugouCanvas.edges);});
 define('canvas.viewport','设置画布视口',{x:number,y:number,zoom:{type:'number',minimum:.05,maximum:4}},['x','y','zoom'],'document',(d,a)=>{d.tugouCanvas||=prompts.emptyCanvas();d.tugouCanvas.viewport=a;});
-define('artboard.create','新建画板并返回 ID；自动放在已有画板右侧',{name:string,width:size,height:size},['name','width','height'],'document',(d,a)=>boards.create(boards.normalize(d),a));
-define('artboard.update','修改画板名称、位置、尺寸、背景',{id:string,patch:object({name:string,x:number,y:number,width:size,height:size,background:color,clipContent:bool}),scaleContent:bool},['id','patch'],'document',(d,a)=>({document:boards.update(boards.normalize(d),a.id,a.patch,{scaleContent:a.scaleContent})}));
+define('artboard.create','按 unit 单位创建画板，默认 px。物理单位默认 300 PPI，返回画板 ID',{name:string,...boardSize},['name','width','height'],'document',(d,a)=>boards.create(boards.normalize(d),sizePatch(d,a)));
+define('artboard.update','修改画板名称、位置、尺寸、背景。width/height 默认按 px；指定 unit 按该单位，单改 ppi 保持物理尺寸',{id:string,patch:object({name:string,x:number,y:number,...boardSize,background:color,clipContent:bool}),scaleContent:bool},['id','patch'],'document',(d,a)=>({document:boards.update(boards.normalize(d),a.id,sizePatch(find(d.layers,a.id),a.patch),{scaleContent:a.scaleContent})}));
 define('artboard.duplicate','复制整个画板',{id:string},['id'],'document',(d,a)=>boards.duplicate(d,a.id));
 define('artboard.delete','删除画板及内容，至少保留一个',{id:string},['id'],'document',(d,a)=>{find(boards.boards(d),a.id);return {document:boards.remove(d,a.id)};});
 define('layer.create','在指定画板内创建文字、形状或图片，坐标相对画板',{artboardId:string,kind:enumeration('text','shape','image'),properties:object(layerProps)},['artboardId','kind'],'document',(d,a)=>{const n=boards.normalize(d),b=find(n.layers,a.artboardId);editable(n,[b.id]);if(!b.artboard)fail('INVALID_TARGET','必须指定画板');if(a.kind==='image')imageAsset(d,a.properties?.assetId);const l=layers.createLayer(a.kind,{text:'文字',color:'#aebcf2',fill:true,shape:'rect',fontSize:48,radius:a.properties?.shape==='rounded'?24:0,...a.properties,parentId:b.id});n.layers.push(l);if(l.maskSourceId)maskSource(n,l,l.maskSourceId);return {document:n,id:l.id};});
 define('layer.update','修改图层属性；坐标相对于父级。锁定图层须先解锁',{id:string,patch:object(layerProps)},['id','patch'],'document',(d,a)=>{const l=find(d.layers,a.id);if(l.artboard)fail('INVALID_TARGET','画板请使用 artboard.update');if(Object.keys(a.patch).length===1&&a.patch.locked===false){if(l.parentId)editable(d,[l.parentId]);}else editable(d,[a.id]);if(a.patch.assetId)imageAsset(d,a.patch.assetId);if(a.patch.maskSourceId)maskSource(d,l,a.patch.maskSourceId);if(a.patch.fontFamily&&!Object.hasOwn(a.patch,'fontResource'))delete l.fontResource;Object.assign(l,require('./rich-text.cjs').patchText(l,a.patch));});
+define('layer.pathAnchor','修改路径的一个锚点或控制点，索引从 0 起，坐标按图层宽高归一化',{id:string,contour:{type:'integer',minimum:0},index:{type:'integer',minimum:0},handle:enumeration('anchor','in','out'),x:vectorCoord,y:vectorCoord},['id','contour','index','handle','x','y'],'document',(d,a)=>{editable(d,[a.id]);const l=find(d.layers,a.id);if(l.shape!=='path'||!l.paths[a.contour]?.nodes[a.index])fail('INVALID_TARGET','路径锚点不存在');l.paths=require('./vector-path.cjs').moveAnchor(l,a.contour,a.index,a.handle,a.x,a.y).paths;});
+for(const [name,description,edit] of [
+  ['layer.pathInsertAnchor','在指定锚点之后二等分曲段并返回新锚点索引，保持曲线外形',require('./vector-path.cjs').insertAnchor],
+  ['layer.pathDeleteAnchor','删除一个路径锚点，每个轮廓至少保留两点',require('./vector-path.cjs').removeAnchor],
+])define(name,description,{id:string,contour:{type:'integer',minimum:0},index:{type:'integer',minimum:0}},['id','contour','index'],'document',(d,a)=>{
+  editable(d,[a.id]);const l=find(d.layers,a.id);
+  l.paths=edit(l,a.contour,a.index).paths;
+  return {index:name==='layer.pathInsertAnchor'?a.index+1:Math.min(a.index,l.paths[a.contour].nodes.length-1)};
+});
+define('layer.exportSvg','将矢量路径或仅含路径的分组导出为可编辑 SVG 文件',{id:string,path:string},['id','path'],'file');
 define('layer.replaceImage','替换图片素材并清除旧像素编辑，保留尺寸、变换、蒙版、层级与特效',{id:string,assetId:string},['id','assetId'],'document',(d,a)=>{
   editable(d,[a.id]);const l=find(d.layers,a.id);if(l.kind!=='image')fail('INVALID_TARGET','请选择图片图层');imageAsset(d,a.assetId);l.assetId=a.assetId;delete l.bitmap;
 });
@@ -80,11 +95,37 @@ define('layer.retouchCopy','原位创建图片修图副本并隐藏原层，保�
 define('layer.move','以世界坐标增量移动图层',{ids,dx:number,dy:number},['ids','dx','dy'],'document',(d,a)=>{contentLayers(d,a.ids);d.layers=layers.moveLayers(d.layers,a.ids,a.dx,a.dy);});
 define('layer.reorder','调整图层顺序',{ids,action:enumeration('top','bottom','up','down')},['ids','action'],'document',(d,a)=>{editable(d,a.ids);d.layers=layers.reorder(d.layers,a.ids,a.action);});
 define('layer.reparent','将图层移动到画板或分组',{ids,targetId:string},['ids','targetId'],'document',(d,a)=>{editable(d,[...a.ids,a.targetId]);return {document:boards.relocate(d,a.ids,a.targetId)};});
-define('layer.align','按选中图层边界对齐；单层相对于所属画板对齐',{ids,axis:enumeration('x','y'),mode:enumeration('start','center','end')},['ids','axis','mode'],'document',(d,a)=>{
-  contentLayers(d,a.ids);const board=boards.owner(d,a.ids[0]);if(!board||a.ids.some(id=>boards.owner(d,id)?.id!==board.id))fail('INVALID_TARGET','请选择同一画板内的图层');
-  const local=boards.extract(d,board.id);return {document:boards.replace(d,board.id,{...local,layers:layers.alignLayers(local,a.ids,a.axis,a.mode)})};
-});
-define('layer.distribute','均匀分布至少三个图层',{ids,axis:enumeration('x','y')},['ids','axis'],'document',(d,a)=>{editable(d,a.ids);if(a.ids.length<3)fail('INVALID_TARGET','至少选择三个图层');d.layers=layers.distributeLayers(d.layers,a.ids,a.axis);});
+const arrangementArgs={ids,axis:enumeration('x','y'),target:enumeration('objects','selection','board')};
+function arrange(d,a,measureLayout){
+  const distribute=!a.mode;
+  if(distribute&&!a.target){
+    // Historic calls without a target distribute in workspace coordinates, including across boards.
+    editable(d,a.ids);
+    if(layers.roots(d.layers,a.ids).length<3)fail('INVALID_TARGET','等距分布至少需要三个独立图层');
+    const next=layers.distributeLayers(d.layers,a.ids,a.axis),changed=next!==d.layers;
+    d.layers=next;return {changed};
+  }
+  contentLayers(d,a.ids);
+  const board=boards.owner(d,a.ids[0]);
+  if(!board||a.ids.some(id=>boards.owner(d,id)?.id!==board.id))fail('INVALID_TARGET','请选择同一画板内的内容图层');
+  const local=boards.extract(d,board.id),chosen=layers.roots(local.layers,a.ids);
+  if(distribute&&chosen.length<3)fail('INVALID_TARGET','等距分布至少需要三个独立图层');
+  if(a.target==='objects'&&chosen.length<2)fail('INVALID_TARGET','对齐到所选对象至少需要两个独立图层');
+  if(a.target==='selection'&&!local.selection)fail('INVALID_TARGET','当前画板没有选区');
+  const apply=({selectionBox,boxes=[]}={})=>{
+    if(a.target==='selection'&&!selectionBox)fail('INVALID_TARGET','选区为空');
+    const extent=a.target==='selection'?selectionBox:a.target==='board'?{x:0,y:0,width:local.width,height:local.height}:a.target==='objects'?null:undefined;
+    const rects=new Map(boxes);
+    const next=distribute?layers.distributeLayers(local.layers,a.ids,a.axis,extent,rects):layers.alignLayers(local,a.ids,a.axis,a.mode,extent,rects);
+    return next===local.layers?{changed:false}:{changed:true,document:boards.replace(d,board.id,{...local,layers:next})};
+  };
+  const text=a.target?chosen.filter(l=>l.kind==='text'&&!l.textAutoFit).map(layer=>({layer,matrix:layers.worldMatrix(local.layers,layer)})):[];
+  if(!text.length&&a.target!=='selection')return apply();
+  if(!measureLayout)fail('UNAVAILABLE','当前命令需要桌面端测量选区或文字边界');
+  return measureLayout({text,width:local.width,height:local.height,selection:a.target==='selection'?local.selection:undefined}).then(apply);
+}
+define('layer.align','沿 x/y 对齐到 objects（所选对象）、selection（所属画板的有效选区）或 board（所属画布）。选区和画布整体平移，保留间距。省略 target 时单选对齐画板，多选各自对齐',{...arrangementArgs,mode:enumeration('start','center','end')},['ids','axis','mode'],'document',arrange);
+define('layer.distribute','沿 x/y 等距分布至少三个独立图层。target 可选 objects、selection、board，范围两端贴边，对象间留相等净距。省略时沿用原有分布范围',arrangementArgs,['ids','axis'],'document',arrange);
 define('selection.polygon','创建自由多边形选区；坐标相对画板，可加减或相交',{artboardId:string,points:{type:'array',items:number,minItems:6,maxItems:20000},operation:enumeration('replace','add','subtract','intersect')},['artboardId','points'],'document',(d,a)=>{if(a.points.length%2)fail('INVALID_ARGUMENT','坐标必须为 x,y 配对');const b=find(d.layers,a.artboardId);if(!b.artboard)fail('INVALID_TARGET','必须指定画板');editable(d,[b.id]);if(b.selection?.inverted&&a.operation&&a.operation!=='replace')fail('INVALID_TARGET','反选后请先用 selection.rasterize 固化选区');const s=a.operation&&a.operation!=='replace'?b.selection||{}:{};b.selection={...s,paths:[...(s.paths||[]),{points:a.points,operation:a.operation||'add'}]};});
 define('selection.rectangle','创建矩形选区',{artboardId:string,x:number,y:number,width:size,height:size,operation:enumeration('replace','add','subtract','intersect')},['artboardId','x','y','width','height'],'document',(d,a)=>{const {x,y,width:w,height:h}=a;return catalog.get('selection.polygon').apply(d,{artboardId:a.artboardId,operation:a.operation,points:[x,y,x+w,y,x+w,y+h,x,y+h]});});
 for(const name of ['clear','invert'])define('selection.'+name,name==='clear'?'取消选区':'反向选择',{artboardId:string},['artboardId'],'document',(d,a)=>{const b=find(d.layers,a.artboardId);if(!b.artboard)fail('INVALID_TARGET','必须指定画板');editable(d,[b.id]);if(name==='clear')delete b.selection;else{if(!b.selection)fail('INVALID_TARGET','没有选区');b.selection={...b.selection,inverted:!b.selection.inverted};}});
@@ -177,20 +218,31 @@ function resolveRefs(value,results) {
   }
   return value;
 }
-function batch(document,steps) {
+function batch(document,steps,measureLayout) {
   if(!Array.isArray(steps)||!steps.length||steps.length>100)fail('INVALID_ARGUMENT','批次需要 1–100 步');
   let draft=structuredClone(document);const results=Object.create(null);
-  for(let i=0;i<steps.length;i++){
+  function runStep(i){
     const step=steps[i];
     if(!step||Object.keys(step).some(k=>!['name','command','args'].includes(k))||!/^[a-zA-Z][\w-]{0,63}$/.test(step.name)||Object.hasOwn(results,step.name))fail('INVALID_ARGUMENT','步骤名称无效或重复');
+    const stepError=e=>{e.message=`步骤 ${i+1} (${step.name}): ${e.message}`;throw e;};
     try {
       const args=resolveRefs(step.args||{},results),c=validate(step.command,args);
       if(c.effect!=='document')fail('NON_TRANSACTIONAL','批次仅允许可撤销文档编辑');
-      const result=c.apply(draft,args)||{};draft=result.document||draft;
-      const {document:ignored,...output}=result;results[step.name]=output;
-      validateDocument(draft);layers.validateLayers(draft.layers);
-    }catch(e){e.message=`步骤 ${i+1} (${step.name}): ${e.message}`;throw e;}
+      const record=(result={})=>{
+        draft=result.document||draft;
+        const {document:ignored,...output}=result;results[step.name]=output;
+        validateDocument(draft);layers.validateLayers(draft.layers);
+      };
+      const result=c.apply(draft,args,measureLayout);
+      if(result instanceof Promise)return result.then(record).catch(stepError);
+      record(result);
+    }catch(e){stepError(e);}
   }
+  if(measureLayout)return (async()=>{
+    for(let i=0;i<steps.length;i++)await runStep(i);
+    return {document:draft,results};
+  })();
+  for(let i=0;i<steps.length;i++)runStep(i);
   return {document:draft,results};
 }
 require('./automation-scene.cjs').register(define,{string,object,enumeration,find,fail});

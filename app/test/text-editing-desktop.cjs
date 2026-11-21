@@ -9,6 +9,19 @@ const choose=async(label,value)=>{await js(`document.querySelector('[aria-label=
 const key=async(keyCode,modifiers=[])=>{w.webContents.sendInputEvent({type:'keyDown',keyCode,modifiers});w.webContents.sendInputEvent({type:'keyUp',keyCode,modifiers});await delay(100)};
 const enterLine=async()=>{w.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});w.webContents.sendInputEvent({type:'char',keyCode:'\r'});w.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});await wait('qa.richEditor().state.doc.childCount===2')};
 const shot=async name=>{await delay(100);fs.writeFileSync(path.join(out,name+'.png'),(await w.capturePage()).toPNG())};
+const previewSelection=async area=>{
+  const rect=await js(`(()=>{const r=getSelection().getRangeAt(0).getBoundingClientRect(),x=Math.floor(r.left),y=Math.floor(r.top);return {x,y,width:Math.ceil(r.right)-x,height:Math.ceil(r.bottom)-y}})()`);
+  const pixels=async color=>{
+    const css=color&&await w.webContents.insertCSS(`[data-keep-preview] .tiptap::selection,[data-keep-preview] .tiptap ::selection{color:${color}!important;-webkit-text-fill-color:${color}!important}`);
+    try{
+      await js('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+      return (await w.capturePage(rect)).toBitmap();
+    }finally{if(css)await w.webContents.removeInsertedCSS(css);}
+  };
+  const actual=await pixels(),transparent=await pixels('transparent'),opaque=await pixels('#ff00ff');
+  check(area+' native selection test detects visible editor glyphs',!opaque.equals(transparent));
+  check(area+' pristine native selection only tints original glyphs',actual.equals(transparent));
+};
 const openText=async(id='t')=>{const p=await js(`(()=>{const L=require(${JSON.stringify(path.resolve(__dirname,'../core/layers.cjs'))}),A=require(${JSON.stringify(path.resolve(__dirname,'../core/artboards.cjs'))}),owner=A.owner(qa.doc,'${id}'),doc=owner?A.extract(qa.doc,owner.id):qa.doc,l=doc.layers.find(l=>l.id==='${id}'),q=L.project(L.homography(l.warp),20/l.width,20/l.height),p=L.point(L.worldMatrix(doc.layers,l),q.x*l.width,q.y*l.height),m=document.querySelector('.layer-overlay>g').transform.baseVal.consolidate().matrix,r=document.querySelector('.layer-stage').getBoundingClientRect();return{x:Math.round(r.x+m.e+p.x*m.a),y:Math.round(r.y+m.f+p.y*m.d)}})()`);w.focus();w.webContents.sendInputEvent({type:'mouseMove',...p});for(const clickCount of [1,2]){w.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount,...p});w.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount,...p});await delay(60)}await delay(100)};
 const openPptText=async()=>{const p=await js(`(()=>{const r=document.querySelector('.ppt-edit-page .ppt-element').getBoundingClientRect();return{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()`);w.focus();w.webContents.sendInputEvent({type:'mouseMove',...p});for(const clickCount of [1,2]){w.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount,...p});w.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount,...p});await delay(60)}await delay(100)};
 app.whenReady().then(async()=>{w=new BrowserWindow({width:1280,height:900,show:false,webPreferences:{nodeIntegration:true,contextIsolation:false,sandbox:false,backgroundThrottling:false}});w.webContents.on('console-message',e=>{if(e.level==='error')report.errors.push(e.message)});w.webContents.session.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(_,cb)=>cb({cancel:true}));
@@ -23,6 +36,7 @@ for(const width of [1440,1060,960])for(const theme of ['light','dark']){w.setSiz
 w.setSize(1280,900);await js(`qa.theme('light');(()=>{const C=require(${JSON.stringify(path.resolve(__dirname,'../core/presentation-content.cjs'))}),F=require(${JSON.stringify(path.resolve(__dirname,'../core/effects.cjs'))}),d=structuredClone(qa.doc),s=d.presentations[0].slides[0];s.elements[0].effects=[F.defaults('shadow'),{...F.defaults('stroke'),position:'center'}];s.content=C.contentOf(s);window.pptTextFixture=d;qa.load(d)})()`);await delay(180);await openPptText();
 check('PPT native double click edits on canvas and keeps dock closed',await js(`!!document.activeElement.closest('.ppt-text-editor')&&document.querySelector('[aria-label="PPT 页面面板"]').hidden&&document.activeElement.getAttribute('role')==='textbox'`));
 check('PPT editing initially retains original glyphs, shadow and border',await js(`(()=>{const e=document.querySelector('.ppt-edit-page .ppt-element .ppt-text-editor'),p=e.parentElement;return e.hasAttribute('data-keep-preview')&&p.querySelector('.ppt-text:not(.ppt-text-editor)').textContent===pptTextFixture.presentations[0].slides[0].elements[0].text&&getComputedStyle(e.querySelector('.tiptap span')).webkitTextFillColor==='rgba(0, 0, 0, 0)'&&p.style.filter.includes('url')&&!!p.querySelector('.ppt-element-border')})()`));
+await previewSelection('PPT');
 check('PPT inline editing blocks external view changes',await js(`(()=>{const v=require(${JSON.stringify(path.resolve(__dirname,'../renderer/ui-view.js'))}).views.get('ppt');try{v.navigate({command:'ppt.close'});return false}catch(e){return e.code==='UI_EDITING'&&!!v.blocked()}})()`));
 await input('画布文字编辑','第一行');await js(`qa.richEditor().commands.setTextSelection(4)`);await enterLine();await w.webContents.insertText('第二行');await wait(`qa.textValue().split(String.fromCharCode(10))[1]==='第二行'`);
 check('PPT native Enter adds line without document history',await js(`qa.textValue().split(String.fromCharCode(10))[1]==='第二行'&&qa.history.length===0`));await shot('ppt-inline-light');await key('Enter',['control']);
@@ -42,9 +56,32 @@ w.setSize(1280,900);await js(`qa.theme('light');(()=>{const L=require(${JSON.str
 const layerPixels=`document.querySelector('canvas[aria-label="图层画布"]').toDataURL()`;
 await wait(`document.querySelector('canvas[aria-label="图层画布"]').dataset.rendering==='false'`);const originalPixels=await js(layerPixels);await openText();
 check('native double click opens and selects canvas text',await js(`!!document.activeElement?.closest('.layer-text-editor')&&getSelection().toString()==='双击编辑文字'&&!document.querySelector('.layer-property-sidebar')`));
-check('opening a layer text editor preserves every compositor pixel',await js(`document.querySelector('.layer-text-editor').hasAttribute('data-keep-preview')`)&&(await js(layerPixels))===originalPixels);
+check('opening a layer text editor preserves every compositor pixel',await js(`!!document.querySelector('.layer-text-editor').closest('[data-keep-preview]')`)&&(await js(layerPixels))===originalPixels);
+await previewSelection('Layer');
 await key('Enter',['control']);check('unchanged layer text creates no undo entry',await js('qa.history.length===0'));await openText();
 check('inline editor blocks external view navigation while editing',await js(`!!require(${JSON.stringify(path.resolve(__dirname,'../renderer/ui-view.js'))}).views.get('layers').blocked()`));
+const inkHidden=`getComputedStyle(document.querySelector('.layer-text-editor .tiptap')).webkitTextFillColor==='rgba(0, 0, 0, 0)'`;
+const holdTextPaint=hidden=>js(`(()=>{
+  const {Compositor}=require(${JSON.stringify(path.resolve(__dirname,'../renderer/composite.js'))});
+  const render=Compositor.prototype.render;
+  Compositor.prototype.render=async function(doc,...args){
+    const layer=doc.layers.find(l=>l.id==='t');
+    if(layer&&(layer.visible===false)===${hidden}){
+      Compositor.prototype.render=render;
+      await new Promise(resolve=>{window.releaseTextPaint=resolve});
+      delete window.releaseTextPaint;
+    }
+    return render.call(this,doc,...args);
+  };
+})()`);
+await holdTextPaint(true);await w.webContents.insertText('草稿');await wait('!!window.releaseTextPaint');
+check('slow canvas keeps draft glyphs hidden until it removes the original',await js(inkHidden)&&(await js(layerPixels))===originalPixels);
+await js('window.releaseTextPaint();void 0');await wait(`document.querySelector('canvas[aria-label="图层画布"]').dataset.rendering==='false'`);
+check('draft glyphs become visible on the completed canvas frame',await js(`!(${inkHidden})`)&&(await js(layerPixels))!==originalPixels);
+await holdTextPaint(false);await key('Z',[process.platform==='darwin'?'meta':'control']);await wait('!!window.releaseTextPaint');
+check('undo keeps editor glyphs visible while the original frame is pending',await js(`!(${inkHidden})&&qa.textValue()==='双击编辑文字'&&qa.history.length===0`));
+await js('window.releaseTextPaint();void 0');await wait(`document.querySelector('canvas[aria-label="图层画布"]').dataset.rendering==='false'`);
+check('undo restores pristine glyphs without a document edit',await js(inkHidden)&&(await js(layerPixels))===originalPixels);
 await input('画布文字编辑','你好，土狗\n第二行');check('typing remains a local draft',await js(`qa.doc.layers[0].text==='双击编辑文字'&&qa.history.length===0`));await wait(`document.querySelector('canvas[aria-label="图层画布"]').dataset.rendering==='false'`);report.typing=await js(`(async()=>{const e=qa.richEditor(),canvas=document.querySelector('canvas[aria-label="图层画布"]'),value=qa.textValue(),set=value=>e.commands.setContent({type:'doc',content:value.split('\\n').map(text=>({type:'paragraph',content:text?[{type:'text',text}]:[]}))});let redraws=0;const observer=new MutationObserver(list=>{redraws+=list.length});observer.observe(canvas,{attributes:true,attributeFilter:['data-rendering']});const start=performance.now();for(let i=0;i<30;i++){set(value+i);await new Promise(r=>requestAnimationFrame(r));}set(value);await new Promise(r=>requestAnimationFrame(r));observer.disconnect();return {updates:30,redraws,totalMs:performance.now()-start,history:qa.history.length}})()`);check('30 draft updates do not repaint compositor or add history',report.typing.redraws===0&&report.typing.history===0);await shot('inline-light');await key('Enter',['control']);check('Ctrl Enter commits one undo step',await js(`!document.querySelector('.layer-text-editor')&&qa.doc.layers[0].text==='你好，土狗\\n第二行'&&qa.history.length===1`));await js('qa.undo()');await delay(100);check('one undo restores original text',await js(`qa.doc.layers[0].text==='双击编辑文字'`));
 await openText();await input('画布文字编辑','取消此输入');await key('Escape');check('Escape cancels draft without adding history',await js(`qa.doc.layers[0].text==='双击编辑文字'&&qa.history.length===0&&!document.querySelector('.layer-text-editor')`));
 await openText();await input('画布文字编辑','点击空白提交');const blank=await js(`(()=>{const r=document.querySelector('.layer-stage').getBoundingClientRect();return{x:Math.round(r.right-20),y:Math.round(r.bottom-30)}})()`);w.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...blank});w.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,...blank});await delay(150);check('canvas background click commits exactly once',await js(`qa.doc.layers[0].text==='点击空白提交'&&qa.history.length===1&&!document.querySelector('.layer-text-editor')`));

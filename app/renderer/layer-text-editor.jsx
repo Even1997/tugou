@@ -10,7 +10,7 @@ export function LayerTextEditor({layer,layers,view,maxWidth,draft,onDraft,onComm
   // Convert the compositor's normalized perspective into editor pixel coordinates.
   const perspective=h?` matrix3d(${[h[0],h[3]*b/w,0,h[6]/w,h[1]*w/b,h[4],0,h[7]/b,0,0,1,0,h[2]*w,h[5]*b,0,1].join(',')})`:'';
   const frame=draft&&layer.textAutoFit?{width:'max-content',maxWidth:Math.max(8,maxWidth),minWidth:8}:{width:w,height:b};
-  return <><TextFormatTools element={layer}/><CanvasTextInput className="layer-text-editor" element={layer} keepPreview={!draft} onDraft={onDraft} onCommit={onCommit} onCancel={onCancel}
+  return <><TextFormatTools element={layer}/><CanvasTextInput className="layer-text-editor" element={layer} onDraft={onDraft} onCommit={onCommit} onCancel={onCancel}
     style={{...frame,transform:`matrix(${m[0]*z},${m[1]*z},${m[2]*z},${m[3]*z},${view.x+m[4]*z},${view.y+m[5]*z})${perspective}`,fontFamily:textFontFamily(layer),fontSize:layer.fontSize||32,fontWeight:textFontWeight(layer),fontStyle:layer.fontStyle?.includes('italic')?'italic':'normal',lineHeight:layer.lineHeight||1.4,letterSpacing:layer.letterSpacing||0,textAlign:layer.align||'left',color:layer.color||'#222222'}}
   /></>;
 }

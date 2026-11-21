@@ -1,6 +1,15 @@
 import {textFontWeight} from '../core/font-weights.cjs';
 import {styledRuns} from '../core/rich-text.cjs';
 import {loadTextFont,textFontFamily} from './font-face.js';
+import {homography,project,point} from '../core/layers.cjs';
+
+export function textBoxCorners(layer,m,box){
+  const h=layer.warp&&homography(layer.warp);
+  return [[box.x,box.y],[box.x+box.width,box.y],[box.x+box.width,box.y+box.height],[box.x,box.y+box.height]].map(([x,y])=>{
+    const p=h&&project(h,x/layer.width,y/layer.height);
+    return p?point(m,p.x*layer.width,p.y*layer.height):point(m,x,y);
+  });
+}
 
 const padding=2;
 const segmenter=new Intl.Segmenter(undefined,{granularity:'grapheme'});
