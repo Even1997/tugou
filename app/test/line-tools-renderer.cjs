@@ -13,7 +13,7 @@ const initial={id:'qa',name:'直线验收',width:1000,height:720,background:'#ff
 window.qa={history:[],future:[]};
 function Harness(){
   const [doc,setDoc]=React.useState(initial),[mode,setMode]=React.useState('ppt'),[selected,setSelected]=React.useState([]),prefs=usePreferences();
-  const change=next=>{L.validateLayers(next.layers);P.validate(next.presentations,next.assets);qa.history.push(doc);qa.future=[];setDoc(next);return true;};
+  const change=(next,options)=>{L.validateLayers(next.layers);P.validate(next.presentations,next.assets);qa.history.push(doc);qa.future=[];setDoc(next);qa.onChange?.(next,options);return true;};
   const undo=()=>{if(qa.history.length){qa.future.push(doc);setDoc(qa.history.pop());}},redo=()=>{if(qa.future.length){qa.history.push(doc);setDoc(qa.future.pop());}};
   Object.assign(qa,{doc,select:setSelected,undo,redo,load:next=>{qa.history=[];qa.future=[];setSelected([]);setDoc(next);},mode:setMode,theme:theme=>prefs.save({theme}),motion:reduceMotion=>prefs.save({reduceMotion})});
   return mode==='ppt'?React.createElement(PresentationsWorkspace,{record:{document:doc},change,save:()=>{},undo,redo,canUndo:!!qa.history.length,canRedo:!!qa.future.length}):React.createElement(mode==='boards'?CompositeWorkspace:LayerEditor,{projectId:'qa',document:doc,change,selected,setSelected,editHistory:{undo,redo,past:qa.history,future:qa.future,canUndo:!!qa.history.length,canRedo:!!qa.future.length}});
