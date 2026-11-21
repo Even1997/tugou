@@ -59,7 +59,8 @@ import {
   calculateSelection,
   surface,
 } from "./selection.js";
-import { Compositor } from "./composite.js";
+import { Compositor,renderPadding } from "./composite.js";
+import {createLayerPreviewQueue,previewRegion} from './layer-preview.js';
 import { assetUrl } from "./canvas.jsx";
 import { PaintTools, MaskInk, paintDefaults } from './paint-tools.jsx';
 import { usePainting } from './use-painting.js';
@@ -137,7 +138,9 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   };
   useEffect(()=>()=>clearTimeout(scrollbarTimer.current),[]);
   const [materialsOpen,setMaterialsOpen]=useState(false);
-  const [boardDraft,setBoardDraft]=useState(null);
+  const [motionPreview,setMotionPreview]=useState(null);
+  const motion=motionPreview?.gesture.doc===document?motionPreview:null;
+  const boardDraft=motion?.board;
   const spaceHeld=useRef(false);
   const [merging, setMerging] = useState(false);
   const [effectId,setEffectId]=useState(null);
@@ -178,11 +181,18 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     exportAbort = useRef(null),
     latest = useRef(null),
     mounted = useRef(true);
+  const previewQueue=useRef(null),drawnPreview=useRef(null);
+  if(!previewQueue.current)previewQueue.current=createLayerPreviewQueue();
+  const clearDrag=()=>{
+    cancelAnimationFrame(drag.current?.frame);
+    drag.current=null;
+    setMotionPreview(null);
+  };
   const selectionAbort = useRef(null),
     selectionPreview = useRef(null),
     selectionCache = useRef(null);
   useEffect(() => () => selectionAbort.current?.abort(), [document]);
-  const shown = draft || document;
+  const shown = motion?.document || draft || document;
   const fixedText=useMemo(()=>document.layers.filter(l=>l.kind==='text'&&!l.textAutoFit&&selected.includes(l.id)),[document.layers,selected]);
   const [fontRevision,setFontRevision]=useState(0);
   useEffect(()=>{
@@ -321,7 +331,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       y: (viewport.height - height * zoom) / 2-top*zoom,
     });
   };
-  useUiView('layers',{get:()=>({view,tool}),restore:v=>{setView(v.view);setTool(v.tool);},blocked:()=>editingText||draft||pathDraft||selectionBusy||painting.busy||merging||imageImport.importing||exportState||boardDraft||shapeDraft||polygon.length?'图层编辑尚未完成，请先完成当前操作':null});
+  useUiView('layers',{get:()=>({view,tool}),restore:v=>{setView(v.view);setTool(v.tool);},blocked:()=>editingText||draft||pathDraft||selectionBusy||painting.busy||merging||imageImport.importing||exportState||drag.current?.pointerId!==undefined||shapeDraft||polygon.length?'图层编辑尚未完成，请先完成当前操作':null});
   useEffect(() => {
     let previous;
     const observer = new ResizeObserver(([entry]) => {
@@ -365,6 +375,8 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     mounted.current = true;
     return () => {
       mounted.current = false;
+      previewQueue.current.cancel();
+      cancelAnimationFrame(drag.current?.frame);
       exportAbort.current?.abort();
       selectionAbort.current?.abort();
       engine.current.dispose();
@@ -372,58 +384,70 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   }, []);
   useEffect(() => {
     let animationTimer;
-    const controller = new AbortController(),
-      output = window.document.createElement("canvas");
-    if (!size.width || !size.height) return;
-    canvas.current.dataset.rendering='true';
+    const target=canvas.current;
+    if(!size.width||!size.height){previewQueue.current.cancel();drawnPreview.current=null;return;}
+    target.dataset.rendering='true';
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    const frame=requestAnimationFrame(()=>{
-    let previewDoc=painting.preview?.document||shown;
-    if(adjusted||compared||editingId)previewDoc={...previewDoc,layers:previewDoc.layers.map(l=>{
-      if(l.id===compared||l.id===editingId)return {...l,visible:false};
-      return l.id===adjusted?.id?{...l,adjustment:adjusted.adjustment}:l;
-    })};
-    const visibleGifs=new Set();
-    const render=maskViewId&&maskPreviewMode==="alone"?async()=>{
-      const mask=await maskView(previewDoc,previewDoc.layers.find(l=>l.id===maskViewId),engine.current,{width:Math.ceil(size.width*ratio),height:Math.ceil(size.height*ratio),scale:view.zoom*ratio,transform:[view.zoom*ratio,0,0,view.zoom*ratio,view.x*ratio,view.y*ratio],maskOverrides:painting.preview?.maskOverrides});
-      output.width=mask.width;output.height=mask.height;output.getContext('2d').drawImage(mask,0,0);mask.width=mask.height=1;
-    }:async()=>engine.current
-      .render(workspace ? workspace.compose(previewDoc,boardDraft) : previewDoc, output, {
-        time:gifTime,
-        onGif:playing?gif=>visibleGifs.add(gif):undefined,
-        maskPreview: maskViewId?{id:maskViewId,mode:maskPreviewMode}:undefined,
-        overrides: painting.preview?.overrides,
-        maskOverrides: painting.preview?.maskOverrides,
-        scale: view.zoom * ratio,
-        x: -view.x / view.zoom,
-        y: -view.y / view.zoom,
-        width: size.width / view.zoom,
-        height: size.height / view.zoom,
-        signal: controller.signal,
-      });
-    render()
-      .then(() => {
-        if (controller.signal.aborted) return;
-        const target=canvas.current;
-        if(target.width!==output.width)target.width=output.width;
-        if(target.height!==output.height)target.height=output.height;
-        const ctx=target.getContext('2d');
-        ctx.clearRect(0,0,target.width,target.height);
-        ctx.drawImage(output,0,0);
-        setRenderError("");
-        canvas.current.dataset.rendering='false';
-        const next=nextVisibleFrame(animation.frames,gifIndex,visibleGifs);
-        if(next)animationTimer=setTimeout(()=>setGifFrame(next.index),next.delay);
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted) setRenderError(error.message);
-      })
-      .finally(() => {
-        output.width = output.height = 1;
-      });
+    const scale=view.zoom*ratio,gesture=motion?.gesture,paintingPreview=painting.preview;
+    const plainPreview=!draft&&!paintingPreview&&!adjusted&&!compared&&!editingId&&!maskViewId&&!playing;
+    previewQueue.current.request(gesture,async(signal,isLatest)=>{
+      const output=window.document.createElement('canvas');
+      const valid=()=>!signal.aborted&&(!gesture||drag.current===gesture&&latest.current.document===document);
+      try{
+        if(!valid())return;
+        let previewDoc=paintingPreview?.document||shown;
+        if(adjusted||compared||editingId)previewDoc={...previewDoc,layers:previewDoc.layers.map(l=>{
+          if(l.id===compared||l.id===editingId)return {...l,visible:false};
+          return l.id===adjusted?.id?{...l,adjustment:adjusted.adjustment}:l;
+        })};
+        const previous=drawnPreview.current,visibleGifs=new Set();
+        let region;
+        if(gesture&&plainPreview&&previous?.plainPreview&&previous.document===document&&previous.workspace===workspace?.preview
+           &&previous.view===view&&previous.size===size&&previous.ratio===ratio&&previous.gifTime===gifTime&&(!previous.motion||previous.motion.gesture===gesture)){
+          if(gesture.bounds===undefined){
+            const layers=(workspace?.preview||document).layers;
+            // Adjustments and shared masks can affect other layers outside the moving bounds.
+            const local=gesture.mode==='board'?layers:document.layers;
+            const unbounded=layers.some(l=>l.kind==='adjustment'||l.maskSourceId||l.artboard&&l.clipContent===false);
+            gesture.bounds=unbounded?null:bounds(local,gesture.mode==='board'?[gesture.boardId]:roots(local,gesture.ids).map(l=>l.id));
+            if(gesture.bounds)gesture.padding=renderPadding(layers);
+          }
+          if(gesture.bounds)region=previewRegion(gesture.bounds,Math.ceil(gesture.padding*scale)+4,motion,previous.motion||{dx:0,dy:0},view,ratio,target.width,target.height);
+        }
+        if(maskViewId&&maskPreviewMode==='alone'){
+          const mask=await maskView(previewDoc,previewDoc.layers.find(l=>l.id===maskViewId),engine.current,{width:Math.ceil(size.width*ratio),height:Math.ceil(size.height*ratio),scale,transform:[scale,0,0,scale,view.x*ratio,view.y*ratio],maskOverrides:paintingPreview?.maskOverrides});
+          output.width=mask.width;output.height=mask.height;output.getContext('2d').drawImage(mask,0,0);mask.width=mask.height=1;
+        }else if(!region||region.width&&region.height){
+          await engine.current.render(workspace?workspace.compose(previewDoc,boardDraft):previewDoc,output,{
+            time:gifTime,onGif:playing?gif=>visibleGifs.add(gif):undefined,
+            maskPreview:maskViewId?{id:maskViewId,mode:maskPreviewMode}:undefined,
+            overrides:paintingPreview?.overrides,maskOverrides:paintingPreview?.maskOverrides,
+            scale,x:((region?.left||0)/ratio-view.x)/view.zoom,y:((region?.top||0)/ratio-view.y)/view.zoom,
+            width:region?region.width/scale:size.width/view.zoom,height:region?region.height/scale:size.height/view.zoom,signal,
+          });
+        }
+        if(!valid())return;
+        if(!region){
+          if(target.width!==output.width)target.width=output.width;
+          if(target.height!==output.height)target.height=output.height;
+          const ctx=target.getContext('2d');ctx.clearRect(0,0,target.width,target.height);ctx.drawImage(output,0,0);
+        }else if(region.width&&region.height){
+          const {left,top,width,height}=region,ctx=target.getContext('2d');
+          ctx.clearRect(left,top,width,height);
+          ctx.drawImage(output,0,0,width,height,left,top,width,height);
+        }
+        drawnPreview.current={document,workspace:workspace?.preview,view,size,ratio,gifTime,plainPreview,motion};
+        if(isLatest()){
+          setRenderError('');target.dataset.rendering='false';
+          const next=nextVisibleFrame(animation.frames,gifIndex,visibleGifs);
+          if(next)animationTimer=setTimeout(()=>setGifFrame(next.index),next.delay);
+        }
+      }catch(error){
+        if(valid()&&isLatest()){setRenderError(error.message);target.dataset.rendering='false';}
+      }finally{output.width=output.height=1;}
     });
-    return () => {clearTimeout(animationTimer);cancelAnimationFrame(frame);controller.abort()};
-  }, [editingId,shown,view,size,painting.preview,workspace?.preview,boardDraft,maskViewId,maskPreviewMode,gifTime,gifIndex,playing,animation,compared,adjusted]);
+    return()=>clearTimeout(animationTimer);
+  }, [editingId,document,shown,view,size,painting.preview,workspace?.preview,motion,maskViewId,maskPreviewMode,gifTime,gifIndex,playing,animation,compared,adjusted]);
   useEffect(() => {
     let disposed = false;
     if (!selectionPreview.current || !size.width) return;
@@ -522,8 +546,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
         painting.cancel();
         setSourceArmed(false);
         setMessage('');
-        drag.current = null;
-        setBoardDraft(null);
+        clearDrag();
         setShapeDraft(null);
         setDraft(null);
         setPathDraft(null);
@@ -614,6 +637,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       sy: e.clientY - r.top,
     };
   };
+  const motionDelta=(gesture,position)=>{
+    const dx=position.x-gesture.start.x,dy=position.y-gesture.start.y;
+    return gesture.mode==='move'&&gesture.doc.layout?.snap&&(dx||dy)?snapDelta(gesture.doc.layers,gesture.ids,dx,dy,gesture.doc.layout,latest.current.view.zoom):{dx,dy};
+  };
   const ordered = (parentId, depth = 0) =>
     shown.layers
       .filter((l) => l.parentId === parentId)
@@ -651,7 +678,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   };
   const down = (e) => {
     if(editingText){holder.current.querySelector('.layer-text-editor .tiptap')?.blur();return;}
-    if (disabled || e.button === 2) return;
+    if (disabled || e.button === 2 || drag.current?.pointerId!==undefined) return;
     const p = at(e),
       handle = e.target.dataset.handle;
     e.preventDefault();
@@ -670,7 +697,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     const boardId=e.target.dataset.boardId;
     if(boardId&&workspace){
       if(workspace.boards.find(b=>b.id===boardId)?.locked){setMessage('请先解锁画板');return;}
-      holder.current.setPointerCapture(e.pointerId);setSelected([]);drag.current={start:p,view,mode:'board',boardId};return;
+      holder.current.setPointerCapture(e.pointerId);setSelected([]);drag.current={start:p,doc:document,mode:'board',boardId,pointerId:e.pointerId};return;
     }
     if(workspace){const other=[...workspace.boards].reverse().find(b=>b.id!==workspace.board.id&&p.x>=b.x&&p.y>=b.y&&p.x<=b.x+b.width&&p.y<=b.y+b.height);if(other){workspace.activate(other.id);return;}}
     if (e.button === 0 && isBrushTool(tool)) {
@@ -724,7 +751,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             ? selected
             : [target.id];
         setSelected(ids);
-        drag.current = { ...base, ids, mode: "move" };
+        drag.current = { ...base, ids, mode: "move", pointerId:e.pointerId };
       } else {
         if (!e.shiftKey) setSelected([]);
         drag.current = {
@@ -744,6 +771,20 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     }
     const d = drag.current;
     if (!d) return;
+    if(d.pointerId!==undefined){
+      if(d.pointerId!==e.pointerId)return;
+      d.position={clientX:e.clientX,clientY:e.clientY};
+      if(d.frame===undefined)d.frame=requestAnimationFrame(()=>{
+        d.frame=undefined;
+        if(drag.current!==d||latest.current.document!==d.doc)return;
+        const {dx,dy}=motionDelta(d,at(d.position));
+        if(dx===(d.delta?.dx||0)&&dy===(d.delta?.dy||0))return;
+        d.delta={dx,dy};
+        if(d.mode==='board')setMotionPreview({gesture:d,dx,dy,board:{id:d.boardId,dx,dy}});
+        else setMotionPreview({gesture:d,dx,dy,document:{...d.doc,layers:moveLayers(d.doc.layers,d.ids,dx,dy)}});
+      });
+      return;
+    }
     const p = at(e),
       dx = p.x - d.start.x,
       dy = p.y - d.start.y;
@@ -751,10 +792,6 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     if(d.mode==='line-0'||d.mode==='line-1'){
       const next=moveLineEndpoint(d.doc.layers,d.layer,Number(d.mode.at(-1)),p,e.shiftKey);
       setDraft({...d.doc,layers:d.doc.layers.map(l=>l.id===next.id?next:l)});return;
-    }
-    if(d.mode==='board'){
-      setBoardDraft({id:d.boardId,dx,dy});
-      return;
     }
     if (d.mode === "pan") {
       setView({
@@ -770,21 +807,6 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           i === index ? { ...g, position: g.axis === "x" ? p.x : p.y } : g,
         );
       setDraft({ ...d.doc, layout: { ...d.doc.layout, guides } });
-      return;
-    }
-    if (d.mode === "move") {
-      const delta = snapDelta(
-        d.doc.layers,
-        d.ids,
-        dx,
-        dy,
-        d.doc.layout,
-        view.zoom,
-      );
-      setDraft({
-        ...d.doc,
-        layers: moveLayers(d.doc.layers, d.ids, delta.dx, delta.dy),
-      });
       return;
     }
     if (["marquee", "rect", "ellipse", "lasso"].includes(d.mode)) {
@@ -867,9 +889,23 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       return;
     }
     const d = drag.current;
-    if (!d) return;
-    drag.current = null;
-    holder.current.releasePointerCapture(e.pointerId);
+    if (!d || d.pointerId!==undefined&&d.pointerId!==e.pointerId) return;
+    clearDrag();
+    if(holder.current.hasPointerCapture(e.pointerId))holder.current.releasePointerCapture(e.pointerId);
+    if(d.pointerId!==undefined){
+      if(d.doc!==latest.current.document||latest.current.disabled)return;
+      const {dx,dy}=motionDelta(d,at(e));
+      if(d.mode==='board'){
+        if(Math.hypot(dx,dy)>2)workspace.move(d.boardId,dx,dy);else workspace.activate(d.boardId);
+      }else if(dx||dy){
+        const layers=moveLayers(d.doc.layers,d.ids,dx,dy);
+        if(layers.some((l,i)=>l!==d.doc.layers[i])){
+          validateLayers(layers);
+          change({...d.doc,layers},{deferSave:true});
+        }
+      }
+      return;
+    }
     if(d.mode==='line-0'||d.mode==='line-1'){
       setDraft(null);const p=at(e);if(Math.hypot(p.sx-d.start.sx,p.sy-d.start.sy)<1)return;
       const next=moveLineEndpoint(d.doc.layers,d.layer,Number(d.mode.at(-1)),p,e.shiftKey),layers=d.doc.layers.map(l=>l.id===next.id?next:l);
@@ -881,12 +917,6 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       const box=(d.options.shape==='line'?lineBounds:shapeBounds)(d.start,p,e.shiftKey),layer=createLayer('shape',{...d.options,...box,name:shapes.find(([id])=>id===d.options.shape)?.[1]||'形状'});
       const saved=workspace?workspace.addShape({...layer,x:layer.x-d.board.x,y:layer.y-d.board.y},d.board.id):change({...latest.current.document,layers:[...latest.current.document.layers,layer]});
       if(saved!==false){setSelected([layer.id]);setTool('select');setBoardTool(false);}return;
-    }
-    if(d.mode==='board'){
-      const p=at(e),dx=p.x-d.start.x,dy=p.y-d.start.y;
-      setBoardDraft(null);
-      if(Math.hypot(dx,dy)>2)workspace.move(d.boardId,dx,dy);else workspace.activate(d.boardId);
-      return;
     }
     if (d.mode === "marquee" && pathDraft) {
       const xs = pathDraft.filter((_, i) => i % 2 === 0),
@@ -1429,7 +1459,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       }
     });
   const issues = useMemo(()=>unsupported(document.layers),[document.layers]);
-  const treeLayers=workspace?.layers||shown.layers;
+  const treeLayers=workspace?.layers||document.layers;
   const layerTree=useMemo(()=>(
       <LayerTree
             query={layerQuery} kind={layerFilter} propertiesOpen={propertiesOpen}
@@ -1464,7 +1494,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     if(['clone','heal'].includes(tool)&&paintSource?.layerId===single.id)sourceMarker=geometry.world(paintSource.u,paintSource.v);
   }
   return (
-    <div className="layer-editor composition-editor" data-properties-open={propertiesOpen||undefined} onContextMenu={e=>{const row=e.target.closest('[data-tree-id]');if(row&&workspace)workspace.contextMenu(e,row.dataset.treeId,gifTime);}} data-dev-update-blocked={editingText||painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||boardDraft||shapeDraft||polygon.length||tool!=='select'?'请先完成图层编辑，并切换到移动工具后更新':undefined}>
+    <div className="layer-editor composition-editor" data-properties-open={propertiesOpen||undefined} onContextMenu={e=>{const row=e.target.closest('[data-tree-id]');if(row&&workspace)workspace.contextMenu(e,row.dataset.treeId,gifTime);}} data-dev-update-blocked={editingText||painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||motion||shapeDraft||polygon.length||tool!=='select'?'请先完成图层编辑，并切换到移动工具后更新':undefined}>
 
       <div className="composition-tool-rail">
         <Button aria-label="向上滚动工具" title="向上滚动工具" icon="collapse" className="tool-rail-scroll tool-rail-scroll-up" data-rail-direction="up" aria-hidden={!railEdges.up} disabled={!railEdges.up} tabIndex={railEdges.up?0:-1} style={{visibility:railEdges.up?'visible':'hidden'}} onClick={()=>scrollTools(-1)} />
@@ -1973,19 +2003,20 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           onPointerMove={move}
           onPointerLeave={()=>setPaintCursor(null)}
           onPointerUp={up}
-          onPointerCancel={() => {
+          onLostPointerCapture={e=>{if(drag.current?.pointerId===e.pointerId)clearDrag();}}
+          onPointerCancel={e => {
+            if(drag.current?.pointerId!==undefined&&drag.current.pointerId!==e.pointerId)return;
             painting.cancel();
-            drag.current = null;
+            clearDrag();
             setDraft(null);
             setPathDraft(null);
-            setBoardDraft(null);
             setShapeDraft(null);
           }}
           onDoubleClick={e => {
             if (tool === "polygon") {finishPolygon();return;}
             if(disabled||tool!=='select'||workspace?.board.locked||e.target.closest('button,input,textarea'))return;
             const layer=hit(at(e));
-            if(layer?.kind==='text'){drag.current=null;setDraft(null);setSelected([layer.id]);setEditingDraft(false);setEditingText(layer);}
+            if(layer?.kind==='text'){clearDrag();setDraft(null);setSelected([layer.id]);setEditingDraft(false);setEditingText(layer);}
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && tool === "polygon") {
