@@ -14,6 +14,8 @@
 
 ## 开发文档
 
+- [v0.8.23 发布说明](releases/v0.8.23.md)
+- [v0.8.23 发布验收](engineering/release-v0.8.23.md)
 - [v0.8.22 发布说明](releases/v0.8.22.md)
 - [v0.8.22 发布验收](engineering/release-v0.8.22.md)
 - [v0.8.21 发布说明](releases/v0.8.21.md)

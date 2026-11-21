@@ -7,7 +7,7 @@ description: 当前项目后续值得处理的事项
 
 ## 设计检查后续整改
 
-v0.8.22 的 Windows x64、macOS arm64 和 x64 安装包已发布。下述人工体验确认继续保留。 [发布验收](../engineering/release-v0.8.22.md)
+v0.8.23 的 Windows x64、macOS arm64 和 x64 安装包已发布。真实工程体验继续列在下方。 [发布验收](../engineering/release-v0.8.23.md)
 
 多画板、多图层的选中、切换、绘制、图层列表和保存已完成 Windows 源码样例验证。拖动和视口预览另有专项回归。待用真实大工程复测大幅连续缩放和平移、含调整图层和关联蒙版的持续拖动、大图缓存超预算和实体 Mac 桌面体验。 [多画板性能](pending-test.md#多画板与多图层性能) · [拖动预览](pending-test.md#图层与画板拖动预览)
 

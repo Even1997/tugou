@@ -12,7 +12,7 @@
 
 Tugou is a creative workspace for everyone. Use each module independently, in any order. Work manually or connect an MCP-compatible AI client to use its canvas, image generation, image tools, and presentation features. Projects and assets stay on your computer; cloud generation and analysis use the model providers you configure.
 
-**Current stable release: v0.8.22** · [Download](https://github.com/Even1997/tugou/releases/latest) · [Release notes](docs/releases/v0.8.22.md) · [Changelog](CHANGELOG.md) · [Developer guide](app/README.md)
+**Current stable release: v0.8.23** · [Download](https://github.com/Even1997/tugou/releases/latest) · [Release notes](docs/releases/v0.8.23.md) · [Changelog](CHANGELOG.md) · [Developer guide](app/README.md)
 
 This page is available in English; the guides linked below are in Chinese. Some application labels remain in Chinese, so the instructions include the original menu names where useful.
 
@@ -38,11 +38,11 @@ Download an installer to get started. You do not need to clone the repository or
 
 | Platform | Installer |
 | --- | --- |
-| Windows x64 | [Download EXE](https://github.com/Even1997/tugou/releases/download/v0.8.22/tugou-0.8.22-win-x64.exe) |
-| macOS 13+ · Apple Silicon (M series) | [Download arm64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.22/tugou-0.8.22-mac-arm64.dmg) |
-| macOS 13+ · Intel | [Download x64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.22/tugou-0.8.22-mac-x64.dmg) |
+| Windows x64 | [Download EXE](https://github.com/Even1997/tugou/releases/download/v0.8.23/tugou-0.8.23-win-x64.exe) |
+| macOS 13+ · Apple Silicon (M series) | [Download arm64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.23/tugou-0.8.23-mac-arm64.dmg) |
+| macOS 13+ · Intel | [Download x64 DMG](https://github.com/Even1997/tugou/releases/download/v0.8.23/tugou-0.8.23-mac-x64.dmg) |
 
-Mac ZIP packages are also available among the [release assets and SHA256 checksums](https://github.com/Even1997/tugou/releases/tag/v0.8.22). There is currently no official Linux installer.
+Mac ZIP packages are also available among the [release assets and SHA256 checksums](https://github.com/Even1997/tugou/releases/tag/v0.8.23). There is currently no official Linux installer.
 
 - **Windows:** Run the EXE and follow the installer. The package has no commercial code signature, so Windows may show an unknown-publisher warning. Verify the download source and checksum.
 - **Mac:** Open the DMG for your processor and drag `Tugou.app` into Applications. The app currently uses ad-hoc signing and is not notarized by Apple. If macOS blocks the first launch, verify the source and follow the system's Privacy & Security instructions.
@@ -122,7 +122,7 @@ Development previews support UI hot reload. Changes to the main process, preload
 
 ## Documentation, license, and feedback
 
-- [Release notes](docs/releases/v0.8.22.md) · [Changelog](CHANGELOG.md) · [Release verification](docs/engineering/release-v0.8.22.md)
+- [Release notes](docs/releases/v0.8.23.md) · [Changelog](CHANGELOG.md) · [Release verification](docs/engineering/release-v0.8.23.md)
 - [PPT design and MCP workflow](docs/engineering/ppt-design-standard.md) · [Font catalog](app/assets/fonts/CATALOG.md)
 - [Developer guide](app/README.md) · [Documentation index](docs/index.md) · [Pending verification](docs/progress/pending-test.md) · [Roadmap](docs/progress/todo.md)
 
