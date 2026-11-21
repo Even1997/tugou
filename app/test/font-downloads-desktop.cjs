@@ -1,5 +1,6 @@
 // Runs against source or a real Windows/macOS package, with an isolated profile.
 const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
+const sharp=require('sharp');
 const out=path.resolve(process.env.TUGOU_FONT_QA_OUT||'test-results/font-downloads-desktop');fs.mkdirSync(out,{recursive:true});
 const profile=fs.realpathSync(fs.mkdtempSync(path.join(out,'profile-'))),main=path.resolve(process.env.TUGOU_TEST_APP||'desktop-main.cjs'),source=path.dirname(main);
 process.env.TUGOU_DATA_DIR=profile;if(process.env.TUGOU_TEST_APP)delete process.env.TUGOU_BUILD_DIR;delete process.env.TUGOU_DEV_PREVIEW;process.argv.push('--mcp-enable');app.setAppPath(source);
@@ -53,7 +54,10 @@ setTimeout(()=>{report.failure='timeout';finish(1);},240000);
         await run('history.undo');check('font change remains undoable',(await object(id)).fontWeight===400);await run('history.redo');await run('project.save');
         offline=true;w.webContents.session.enableNetworkEmulation({offline:true});await js('location.reload()');await wait(`!!document.querySelector('.workspace-rail')`);
         check('saved project renders the same font after offline reload',(await preview()).equals(medium));check('offline reload makes no download request',requests===2);
-        await run('artboard.export',{artboardId:board,path:'offline-font.png'});check('offline PNG export retains rendered glyphs',fs.readFileSync(path.join((await state()).filesRoot,'offline-font.png')).equals(medium));
+        await run('artboard.export',{artboardId:board,path:'offline-font.png'});
+        const pixels=png=>sharp(png).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+        const [exported,reference]=await Promise.all([pixels(path.join((await state()).filesRoot,'offline-font.png')),pixels(medium)]);
+        check('offline PNG export retains rendered glyphs',exported.info.width===reference.info.width&&exported.info.height===reference.info.height&&exported.data.equals(reference.data));
         const response=await js(`window.tugou.fontCommand('font.download',{id:'mplus-1mn-regular'}).then(()=>null,e=>e.message)`);check('uncached font reports an offline error without modifying text',response?.includes('Offline')&&(await object(id)).fontWeight===500);
         const cached=await run('font.download',{family:'霞鹜文楷',fontWeight:500});
         check('MCP downloads by font name and weight from cache while offline',cached.id==='lxgw-wenkai-500'&&cached.status==='ready'&&cached.font.fontWeight===500&&requests===2);
