@@ -19,8 +19,8 @@ class AnalysisService {
     this.root = projects.root;
   }
   async start(projectId, document, assetId, instruction = "") {
-    await this.projects.read(projectId);
-    validateDocument(document);
+    await this.projects.read(projectId,{metadataOnly:true});
+    validateDocument(document,true);
     if (typeof instruction !== "string" || instruction.length > 4000)
       throw failure("分析要求请控制在 4000 字以内");
     const asset = document.assets.find((a) => a.id === assetId);
@@ -176,7 +176,7 @@ class AnalysisService {
     return draft;
   }
   async results(projectId) {
-    await this.projects.read(projectId);
+    await this.projects.read(projectId,{metadataOnly:true});
     const results = [];
     for (const task of this.tasks
       .list()

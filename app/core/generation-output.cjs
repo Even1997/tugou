@@ -34,5 +34,5 @@ function stageActive(document,tasks){
   }
   return changed?{...document,generationOutputNodeIds:[...reserved],tugouCanvas:{...graph,nodes,edges}}:document;
 }
-function stageOutputs(document,tasks){const pages=require('./pages.cjs');let next=document;for(const p of pages.list(document,'canvas'))next=pages.withCanvas(next,p.id,d=>stageActive(d,tasks));return next;}
+function stageOutputs(document,tasks){if(!tasks.length)return document;const pages=require('./pages.cjs');let next=document;for(const p of pages.resident(document,'canvas'))next=pages.withCanvas(next,p.id,d=>stageActive(d,tasks));return next;}
 module.exports={stageOutputs,outputPosition,outputEdge};

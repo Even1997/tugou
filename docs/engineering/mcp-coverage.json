@@ -2,6 +2,7 @@
   "scope": "独立桌面 app 的业务 IPC 与主要编辑动作；不包含历史 web 项目、第三方模型内部功能和每个视觉控件",
   "ipc": [
     {"area":"PPT 文件导出","status":"covered","handlers":["presentationExport"],"commands":["ppt.export"],"note":"界面使用一次性保存令牌；MCP 使用受限 filesRoot 相对路径，拒绝覆盖与越界，导出前后校验实时 revision；均使用相同原生 PPTX 导出器"},
+    {"area":"矢量路径 SVG 导出","status":"covered","handlers":["exportPathSvg"],"commands":["layer.exportSvg"],"note":"可导出单个路径或纯路径分组"},
     {"area":"PSD 文件互通","status":"uiOnly","handlers":["psdRead","psdWrite","psdCancel"],"commands":[],"note":"当前经图层界面选择本机文件，导入前审阅转换报告；PSD 文件读写尚未新增 MCP 命令，导入后的像素图层可沿用 layer/paint/mask 命令编辑"},
     {"area":"工程删除","status":"uiOnly","handlers":["deleteProject"],"commands":[],"note":"管理项目中确认删除；校验持久化版本和运行任务，保留共享资源及本地恢复副本"},
     {"area":"开发预览编辑现场","status":"internal","handlers":["devPreview"],"commands":[],"note":"仅未打包开发模式启用，保存内存检查点和应用界面构建，不向 MCP 暴露"},
@@ -9,6 +10,7 @@
     {"area":"独立字体项目与图集工作台","status":"covered","handlers":["fontCommand","fontImport","fontExport"],"commands":["font.status","font.library","font.download","font.face","font.publish","font.unpublish","font.project.delete","font.atlas.remove","font.project.create","font.project.list","font.project.get","font.atlas.plan","font.atlas.import","font.atlas.preview","font.atlas.recognize","font.atlas.review","font.atlas.process","font.revision.apply","font.glyph.query","font.glyph.preview","font.review.record","font.build","font.outline.refine","font.job.get","font.artifact.preview","font.artifact.export"],"note":"字体单独保存；支持任意字数导入、本地 OCR 默认保留与独立复核草稿；显式模板工具兼容旧工程，merge 合并已应用字形；原生文件对话框对应 MCP 交换目录"},
     {"area":"字体运行环境目录选择","status":"uiOnly","handlers":["fontConfigure"],"commands":["font.status"],"note":"仅选择已安装环境；MCP 可查询状态，不自动安装依赖"},
     {"area":"工程","status":"covered","handlers":["list","create","open","save"],"commands":["project.list","project.create","project.open","project.save"]},
+    {"area":"页签内容按需读取","status":"internal","handlers":["readPage"],"commands":["page.activate"],"note":"画布和图层页通过工程内页面地址读取，列表和普通编辑命令只使用当前页及页签目录"},
     {"area":"旧工程和历史画布迁入","status":"covered","handlers":["import","migrateCanvases"],"commands":["project.importLegacy","project.migrateCanvas"],"note":"使用会话目录中的旧工程文件及相邻 resources，或历史画布 state/images 快照；保留归档，不切换当前工程"},
     {"area":"供应商、唯一 URL、多 Key、模型用途","status":"covered","handlers":["connection","listConnections","listSuppliers","saveConnections","saveConnection","testConnection","fetchModels"],"commands":["models.status","models.provider.create","models.provider.update","models.provider.delete","models.key.create","models.key.update","models.key.delete","models.test","models.fetch","models.set","models.assign"]},
     {"area":"任务查询与取消","status":"covered","handlers":["tasks","cancelTask"],"commands":["task.list","task.get","task.wait","task.cancel"]},

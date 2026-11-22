@@ -45,13 +45,13 @@ class GenerationService {
     await this.tasks.persist();
   }
   async start(projectId, document, nodeId) {
-    await this.projects.read(projectId);
-    validateDocument(document);
+    await this.projects.read(projectId,{metadataOnly:true});
+    validateDocument(document,true);
     const snapshot = structuredClone(document), compiled = compileNode(snapshot, nodeId);
     return this.submit(projectId, snapshot, nodeId, compiled, snapshot.tugouCanvas.nodes.find(n => n.id === nodeId).data.snapshot.name);
   }
   async angle(projectId, document, nodeId, assetId, params) {
-    await this.projects.read(projectId); validateDocument(document);
+    await this.projects.read(projectId,{metadataOnly:true}); validateDocument(document,true);
     const snapshot = structuredClone(document);
     let request;
     try { request = angleRequest(snapshot, nodeId, assetId, params); } catch (e) { throw failure(e.message); }
@@ -99,7 +99,7 @@ class GenerationService {
     return { id: task.id };
   }
   async results(projectId) {
-    await this.projects.read(projectId);
+    await this.projects.read(projectId,{metadataOnly:true});
     const results = [];
     for (const task of this.tasks.list().filter(t => !['analysis','semantic-analysis','runtime-install'].includes(t.context?.kind) && t.context?.projectId === projectId && t.status === 'completed')) {
       if (!/^[a-f0-9-]{36}$/.test(task.resultId || '')) continue;
@@ -114,7 +114,7 @@ class GenerationService {
     return results;
   }
   async assetDetails(projectId, document, assetId, nodeId) {
-    await this.projects.read(projectId); validateDocument(document);
+    await this.projects.read(projectId,{metadataOnly:true}); validateDocument(document,true);
     const asset=document.assets.find(a=>a.id===assetId);
     if(!asset)throw failure('素材已移除');
     let source=asset;

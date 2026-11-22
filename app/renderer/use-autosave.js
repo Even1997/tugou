@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {createAutosave} from '../core/autosave.cjs';
+import {rememberPages,suspendPages} from './page-storage.js';
 
 export function useAutosave(context){
   const latest=useRef(context);latest.current=context;
@@ -12,10 +13,14 @@ export function useAutosave(context){
     dirty:()=>latest.current.dirtyRef.current,
     blocked:()=>latest.current.busyRef.current||input.current.pointers.size>0||input.current.dragging||Date.now()<input.current.scrollUntil,
     snapshot:()=>latest.current.pageDocument(),
-    write:(id,document,revision)=>window.tugou.save(id,document,revision,true),
+    write:async(id,document,revision)=>{
+      const saved=await window.tugou.save(id,suspendPages(document,true),revision,true);
+      rememberPages(document,saved.pageRefs);
+      return saved;
+    },
     commit:(saved,unchanged)=>{
       const c=latest.current;
-      const {name,...metadata}=saved;
+      const {name,pageRefs,...metadata}=saved;
       c.present.current={...metadata,document:c.present.current.document};
       c.setRecord(c.present.current);
       if(unchanged)c.markDirty(false);

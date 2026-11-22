@@ -22,5 +22,5 @@ function extractActive(document){
   }
   return {...document,tugouCanvas:{...graph,nodes,edges}};
 }
-function extractDeskPrompts(document){const pages=require('./pages.cjs');let next=document;for(const p of pages.list(document,'canvas'))next=pages.withCanvas(next,p.id,extractActive);return next;}
+function extractDeskPrompts(document){const pages=require('./pages.cjs');let next=document;for(const p of pages.resident(document,'canvas'))next=pages.withCanvas(next,p.id,extractActive);return next;}
 module.exports={extractDeskPrompts};

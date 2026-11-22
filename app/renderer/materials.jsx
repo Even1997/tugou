@@ -1,3 +1,5 @@
+import {loadPages} from './page-storage.js';
+import {kinds,list} from '../core/pages.cjs';
 import {AssetTime} from './asset-time.jsx';
 import {Select} from './select.jsx';
 import React, { useState, useRef, useMemo } from "react";
@@ -46,10 +48,14 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
           assets: [...latest.current.assets, ...added],
         });
     },setError,disabled);
-  const remove = (ids) => {
+  const remove = (ids) => run(async () => {
     if(disabled||!ids.length)return;
     setError('');setNotice('');
-    const { assets, ...content } = latest.current;
+    const sourceDoc=latest.current;
+    let checked=sourceDoc;
+    for(const kind of kinds)checked=await loadPages(projectId,checked,kind,list(checked,kind).map(p=>p.id));
+    if(latest.current!==sourceDoc)throw Error('工程内容已变化，请重试');
+    const { assets, ...content } = checked;
     const source = JSON.stringify(content);
     const used = ids.filter((id) => source.includes(JSON.stringify(id)));
     if (used.length) {
@@ -63,7 +69,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
       });
       setSelected(current=>current.filter(id=>!ids.includes(id)));
     }
-  };
+  });
   return (
     <section className={`asset-library density-${density}`} onDragOver={imageImport.over} onDrop={e=>{if(hasImageFiles(e))imageImport.drop(e);}}>
       <div className="library-toolbar">

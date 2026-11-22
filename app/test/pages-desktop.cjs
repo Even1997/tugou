@@ -14,6 +14,7 @@ app.on('browser-window-created',(_,w)=>{
     const js=s=>w.webContents.executeJavaScript(s,true),delay=ms=>new Promise(r=>setTimeout(r,ms)),wait=async s=>{for(let i=0;i<120;i++){if(await js(s))return;await delay(50);}throw Error('Timeout '+s);};
     try{
       await wait(`!!document.querySelector('.workspace-rail')`);for(let i=0;i<100&&!fs.existsSync(path.join(profile,'mcp-session.json'));i++)await delay(50);
+      w.show();w.webContents.debugger.attach('1.3');await w.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled',{enabled:true});
       transport=new StdioClientTransport({command:process.execPath,args:[path.resolve('core/mcp.cjs'),'--session',path.join(profile,'mcp-session.json')],env:{...process.env,ELECTRON_RUN_AS_NODE:'1'},stderr:'pipe'});
       const client=new Client({name:'pages-acceptance',version:'1'});await client.connect(transport);
       const call=async(name,args={})=>{const r=await client.callTool({name,arguments:args});if(r.isError)throw Object.assign(Error(r.content[0].text),r.structuredContent?.error);return r;};

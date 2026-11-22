@@ -58,7 +58,7 @@ function checkpoint(context,state){
 }
 async function applyCheckpoint(saved,context){
   if(saved.pages)for(const [kind,id] of Object.entries(saved.pages)){if(!group(context.present.current.document,kind).items.some(p=>p.id===id))fail('VIEW_EXPIRED','原页面已删除，无法恢复该视图');}
-  if(saved.pages)for(const [kind,id] of Object.entries(saved.pages)){if(group(context.present.current.document,kind).activeId!==id)context.activatePage(kind,id,false);}
+  if(saved.pages)for(const [kind,id] of Object.entries(saved.pages)){if(group(context.present.current.document,kind).activeId!==id)await context.activatePage(kind,id,false);}
   context.setWorkspace(saved.workspace);context.setLayerSelection(saved.layerSelection);context.setModuleId(saved.moduleId);context.setRecipeId(saved.recipeId);
   await settle();for(const [key,value] of Object.entries(saved.views).sort(([a],[b])=>(a==='boards'?-1:b==='boards'?1:0))){await (await waitView(key)).restore(value);await settle();}
   const missing=[];for(const v of saved.details){const e=document.querySelector(v.path);if(e?.tagName==='DETAILS')e.open=v.open;else missing.push(v.path);}

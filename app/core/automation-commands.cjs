@@ -134,6 +134,7 @@ define('mask.update','设置蒙版启停、反相、浓度、羽化',{id:string,
 define('mask.delete','移除蒙版并保留原始图像',{id:string},['id'],'document',(d,a)=>{editable(d,[a.id]);delete find(d.layers,a.id).mask;});
 define('asset.rename','修改素材名称',{id:string,name:string},['id','name'],'document',(d,a)=>{find(d.assets,a.id).name=a.name;});
 define('asset.delete','移除未被引用的素材；保留磁盘原文件，可撤销',{ids},['ids'],'document',(d,a)=>{
+  if(Object.values(d.pages||{}).some(group=>group.items.some(p=>p.ref)))fail('UI_NOT_READY','请先读取各页的素材引用');
   a.ids.forEach(id=>find(d.assets,id));const {assets,...content}=d,source=JSON.stringify(content);
   if(a.ids.some(id=>source.includes(JSON.stringify(id))))fail('IN_USE','素材仍被图层、画布或配方引用，请先解除引用');
   d.assets=assets.filter(asset=>!a.ids.includes(asset.id));
@@ -231,7 +232,7 @@ function batch(document,steps,measureLayout) {
       const record=(result={})=>{
         draft=result.document||draft;
         const {document:ignored,...output}=result;results[step.name]=output;
-        validateDocument(draft);layers.validateLayers(draft.layers);
+        validateDocument(draft,true);layers.validateLayers(draft.layers);
       };
       const result=c.apply(draft,args,measureLayout);
       if(result instanceof Promise)return result.then(record).catch(stepError);

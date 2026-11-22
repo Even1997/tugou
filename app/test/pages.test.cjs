@@ -44,3 +44,54 @@ test('MCP rejects removing pages with running generation even inside a batch',as
   const dispatch=await require('../core/automation-host.cjs').createDispatcher({root,ui:async()=>({revision:'r1',projectId:'p',document}),projects:{verifyResources:async()=>{}},tasks:{list:()=>[{status:'running',context:{projectId:'p',nodeId}}]}});
   await assert.rejects(dispatch('batch',{expectedRevision:'r1',steps:[{name:'del',command:'page.delete',args:{kind:'canvas',id:'canvas-main'}}]}),e=>e.code==='BUSY');
 });
+
+test('lazy manifests read active pages only, reuse untouched page files, and recover the previous manifest',async t=>{
+  const root=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'tugou-page-files-'));
+  t.after(()=>fs.rm(root,{recursive:true,force:true}));
+  const store=new ProjectStore(root);await store.init();
+  const record=await store.create();
+  let document=record.document;
+  const payload='一'.repeat(14000);
+  for(let i=0;i<12;i++){
+    document=pages.create(document,'canvas',`画布 ${i+2}`).document;
+    document.tugouCanvas.nodes=Array.from({length:24},(_,n)=>({id:`node-${i}-${n}`,type:'text',position:{x:n*500,y:0},data:{name:`Node ${n}`,text:payload}}));
+    document=pages.create(document,'layers',`图层页 ${i+2}`).document;
+    document.layers=Array.from({length:24},(_,n)=>require('../core/layers.cjs').createLayer('text',{id:`layer-${i}-${n}`,x:n,text:payload}));
+  }
+  const file=await store.projectPath(record.id);
+  await fs.writeFile(file,JSON.stringify({...record,document}));
+  const measure=async run=>{
+    const start=performance.now();
+    const value=await run(),ms=Math.round(performance.now()-start),bytes=Buffer.byteLength(JSON.stringify(value.document));
+    return {value,ms,bytes};
+  };
+  const embedded=await measure(()=>store.read(record.id));
+  const first=await store.readEditor(record.id);
+  assert.equal(first.version,2);
+  assert.equal(JSON.parse(await fs.readFile(file+'.bak','utf8')).version,1);
+  const reads=[],readPage=store.readPage.bind(store);store.readPage=(id,digest)=>{reads.push(digest);return readPage(id,digest);};
+  const lazy=await measure(()=>store.readEditor(record.id));
+  assert.equal(reads.length,2);
+  assert.ok(lazy.bytes*8<embedded.bytes);
+  assert.deepEqual(pages.list(lazy.value.document,'layers'),pages.list(document,'layers'));
+  const inactive=pages.group(lazy.value.document,'canvas').items[1];
+  assert.equal(pages.nodePage(lazy.value.document,'node-0-0'),inactive.id);
+  assert.throws(()=>pages.content(lazy.value.document,'canvas',inactive.id),/尚未加载/);
+  const start=performance.now(),body=await store.readPage(record.id,inactive.ref.hash),switchMs=Math.round(performance.now()-start);
+  const opened=pages.activate(pages.storagePage(lazy.value.document,'canvas',inactive.id,{content:body}),'canvas',inactive.id);
+  assert.equal(opened.tugouCanvas.nodes[0].data.text,payload);
+  assert.equal(reads.length,3);
+  opened.tugouCanvas={...opened.tugouCanvas,nodes:opened.tugouCanvas.nodes.slice(1)};
+  const folder=path.dirname(await store.pagePath(record.id,inactive.ref.hash)),before=await fs.readdir(folder);
+  const second=await store.save(record.id,opened,first.revision);
+  assert.equal((await fs.readdir(folder)).length,before.length+1);
+  assert.equal(reads.length,3);
+  assert.equal((await store.read(record.id)).document.tugouCanvas.nodes.length,23);
+  await fs.writeFile(await store.pagePath(record.id,second.pageRefs.canvas[inactive.id].hash),'corrupt');
+  const recovered=await store.readEditor(record.id);
+  assert.equal(recovered.revision,first.revision);
+  assert.equal(recovered.recovered,true);
+  const repaired=await store.save(record.id,recovered.document,recovered.revision);
+  assert.equal((await store.readEditor(record.id)).revision,repaired.revision);
+  t.diagnostic(`26 tabs, legacy open ${embedded.ms} ms/${embedded.bytes} bytes, indexed open ${lazy.ms} ms/${lazy.bytes} bytes, cold requested page ${switchMs} ms`);
+});

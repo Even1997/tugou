@@ -253,10 +253,11 @@ export class Compositor {
     this.warp = null;
     this.gifs=new GifFrames();
   }
-  async image(asset,time=0,onGif) {
-    const url = originalUrl(asset);
+  async image(asset,time=0,onGif,previewSize=0) {
+    const original = originalUrl(asset);
+    const url = previewSize?`${original.replace('://original/', '://resource/')}?preview=${previewSize}${asset.gif?'&still=1':''}`:original;
     if (!url) throw new Error("图层素材缺失，请检查素材库");
-    if(asset?.gif?.frames>1){onGif?.(asset.gif);return this.gifs.frame(asset,url,time);}
+    if(!previewSize&&asset?.gif?.frames>1){onGif?.(asset.gif);return this.gifs.frame(asset,url,time);}
     return this.images.load(url,()=>new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
@@ -265,7 +266,7 @@ export class Compositor {
           reject(new Error("原图加载失败，未导出不完整画面"));
         };
         img.src = url;
-      }));
+      })).catch(error=>{if(previewSize)return this.image(asset,time,onGif);throw error;});
   }
   prime(asset,image){this.previewImages?.clear();return this.images.put(originalUrl(asset),image);}
   endVectorDrag(){
@@ -313,8 +314,13 @@ export class Compositor {
   async content(l, doc, scale, time=0, frame) {
     if(l.kind==='shape'&&['line','path'].includes(l.shape)&&!l.warp)return surface(1,1);
     const faces=l.kind==='text'?await loadLayerTextFonts(l):[];
-    if (l.kind === "image")
-      return this.image(l.bitmap||assetById(doc,frame,l.assetId),time,frame?.onGif);
+    if (l.kind === "image"){
+      const asset=l.bitmap||assetById(doc,frame,l.assetId);
+      const projected=Math.max(l.width,l.height)*scale;
+      const preview=frame?.imagePreview&&(!asset?.gif||time===0)&&!l.warp&&/^tugou-media:\/\/original\/.+\.(png|jpe?g|webp|gif)$/.test(asset?originalUrl(asset):'')&&
+        projected<=320&&Math.max(asset.width,asset.height)>512;
+      return this.image(asset,time,frame?.onGif,preview?(projected<=72?96:projected<=150?192:384):0);
+    }
     const resolution = Math.min(4, Math.max(0.01, scale)),
       c = surface(l.width * resolution, l.height * resolution),
       ctx = c.getContext("2d", { willReadFrequently: true });
@@ -670,7 +676,7 @@ export class Compositor {
             const asset=this.previewImages&&l.kind==='image'?(l.bitmap||assetById(doc,frame,l.assetId)):null;
             const pixels=frame.width*frame.height;
             const key=asset&&!asset.gif&&pixels*4<=this.previewImages.budget&&asset.width*asset.height>=pixels*4?
-              JSON.stringify([originalUrl(asset),l.width,l.height,transform,frame.width,frame.height]):null;
+              JSON.stringify([originalUrl(asset),l.width,l.height,transform,frame.width,frame.height,frame.imagePreview]):null;
             const preview=key&&await this.previewImages.get(key);
             frame.signal?.throwIfAborted();
             ctx.globalAlpha=l.opacity;ctx.globalCompositeOperation='source-over';
@@ -806,6 +812,7 @@ export class Compositor {
       time = 0,
       onGif,
       interactive = false,
+      imagePreview = false,
       vectorDrag,
     } = {},
     scene,
@@ -842,6 +849,7 @@ export class Compositor {
             time,
             onGif,
             interactive,
+            imagePreview,
             vectorDrag,
           },scene);
           target.width = Math.ceil(width * scale);
@@ -877,12 +885,13 @@ export class Compositor {
       retained.add(originalUrl(layer.mask?.bitmap));
     }
     for (const url of this.images.keys())
-      if (!retained.has(url)) this.images.delete(url);
+      if (!retained.has(url.replace(/^(tugou-media:\/\/)resource\/([^?]+)\?preview=.+$/, '$1original/$2'))) this.images.delete(url);
     this.gifs.retain(retained);
     target.width = Math.ceil(width * scale);
     target.height = Math.ceil(height * scale);
     const ctx = target.getContext("2d", { willReadFrequently: true }),
       frame = {
+        imagePreview,
         time,
         width: target.width,
         height: target.height,

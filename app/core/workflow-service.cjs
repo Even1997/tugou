@@ -16,7 +16,7 @@ async function json(response){try{return JSON.parse((await boundedBytes(response
 class WorkflowService{
   constructor(projects,connections,tasks,inspectImage){Object.assign(this,{projects,connections,tasks,inspectImage});this.root=projects.root;}
   async start(projectId,document,nodeId){
-    await this.projects.read(projectId);validateDocument(document);
+    await this.projects.read(projectId,{metadataOnly:true});validateDocument(document,true);
     return this.submit({projectId,nodeId,compiled:compileWorkflow(document,nodeId),assets:document.assets,label:nodeName(document.tugouCanvas.nodes.find(n=>n.id===nodeId))});
   }
   async retry(id){

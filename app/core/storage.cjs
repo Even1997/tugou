@@ -52,7 +52,7 @@ function resourcesIn(value, found = new Set()) {
   return found;
 }
 
-function validateDocument(document) {
+function validateDocument(document, allowPageRefs = false) {
   if (!document || typeof document !== 'object' || Array.isArray(document)) throw new Error('无效工程');
   if (typeof document.name !== 'string' || !document.name.trim()) throw new Error('请输入工程名称');
   for (const dimension of [document.width, document.height]) {
@@ -76,7 +76,7 @@ function validateDocument(document) {
   require('./presentations.cjs').validate(document.presentations,document.assets);
   if(document.compositionView!==undefined){const v=document.compositionView;if(!v||![v.x,v.y,v.zoom].every(Number.isFinite)||v.zoom<.02||v.zoom>8)throw Error('合成视图无效');}
   if (document.layers.some(l => l.artboard)) require('./artboards.cjs').validate(document);
-  require('./pages.cjs').validate(document,validateDocument);
+  require('./pages.cjs').validate(document,validateDocument,allowPageRefs);
   resourcesIn(document);
 }
 
@@ -137,7 +137,7 @@ function validateCanvas(graph) {
 }
 
 class ProjectStore {
-  constructor(root) { this.root = path.resolve(root); this.pending = Promise.resolve(); }
+  constructor(root) { this.root = path.resolve(root); this.pending = Promise.resolve(); this.resourceChecks=new Map(); }
 
   serialize(operation) {
     const next = this.pending.then(operation);
@@ -156,19 +156,50 @@ class ProjectStore {
     return safePath(this.root, 'projects', `${id}.json`);
   }
 
-  async readSnapshot(id) {
+  async pagePath(id,digest) {
+    if(typeof id!=='string'||typeof digest!=='string'||!projectPattern.test(id)||!require('./pages.cjs').pageFiles.test(digest))throw Error('无效页面文件标识');
+    return safePath(this.root,'project-pages',id,`${digest}.json`);
+  }
+
+  async readPage(id,digest) {
+    const bytes=await fs.readFile(await this.pagePath(id,digest)).catch(error=>{
+      if(error.code==='ENOENT')throw Error('页面文件缺失，请恢复完整工程备份');
+      throw error;
+    });
+    if(hash(bytes)!==digest)throw Error('页面文件损坏，请恢复工程备份');
+    return JSON.parse(bytes);
+  }
+
+  async readSnapshot(id, mode='index') {
     const file = await this.projectPath(id);
-    const decode = (bytes) => {
+    const pages=require('./pages.cjs');
+    const decode = async (bytes) => {
       const record = JSON.parse(bytes);
-      if (record.format !== 'tugou-project' || record.version !== 1 || record.id !== id || !Number.isInteger(record.revision)) {
+      if (record.format !== 'tugou-project' || ![1,2].includes(record.version) || record.id !== id || !Number.isInteger(record.revision)) {
         throw new Error('工程存储格式无效');
       }
-      validateDocument(record.document);
+      validateDocument(record.document,record.version===2);
+      if(record.version===2&&mode!=='index'){
+        let doc=record.document;
+        const entries=pages.kinds.flatMap(kind=>{
+          const g=doc.pages?.[kind];
+          return (g?.items||[]).filter(p=>p.ref&&(mode==='all'||p.id===g.activeId)).map(p=>[kind,p]);
+        });
+        const pageRefs={};
+        // Limit the number of decoded pages in flight for callers that need the whole project.
+        for(const [kind,p] of entries){
+          doc=pages.storagePage(doc,kind,p.id,{content:await this.readPage(id,p.ref.hash)});
+          (pageRefs[kind]??=Object.create(null))[p.id]=p.ref;
+        }
+        validateDocument(doc,mode==='editor');
+        record.document=doc;
+        if(mode==='editor')record.pageRefs=pageRefs;
+      }
       return record;
     };
     const read = async (file, recovered) => {
       const bytes = await fs.readFile(file, 'utf8');
-      return { record: decode(bytes), bytes, recovered };
+      return { record: await decode(bytes), bytes, recovered };
     };
     try { return await read(file, false); }
     catch (error) {
@@ -179,9 +210,23 @@ class ProjectStore {
     }
   }
 
-  async read(id) {
-    const {record, recovered} = await this.readSnapshot(id);
+  async read(id, {metadataOnly=false}={}) {
+    const {record, recovered} = await this.readSnapshot(id,metadataOnly?'index':'all');
     return { ...record, recovered };
+  }
+
+  async readEditor(id) {
+    const opened=await this.readSnapshot(id,'editor');
+    const {record,recovered}=opened;
+    if(recovered||record.version!==1||!Object.values(record.document.pages||{}).some(group=>group.items.length>1))return {...record,recovered};
+    // Convert an existing multi-page project once, preserving its original file as the backup.
+    return this.serialize(async()=>{
+      const current=await this.readSnapshot(id,'editor');
+      if(current.record.version!==1||current.recovered)return {...current.record,recovered:current.recovered};
+      await this.writeRecord(current.record,current);
+      const split=await this.readSnapshot(id,'editor');
+      return {...split.record,recovered:split.recovered};
+    });
   }
 
   async list() {
@@ -196,9 +241,9 @@ class ProjectStore {
     const result = [];
     for (const [id, name] of projects) {
       try {
-        const record = await this.read(id);
-        result.push({ id, name: record.document.name, updatedAt: record.updatedAt, revision: record.revision, recovered: record.recovered,
-          ...(record.origin?.legacyCanvasId ? { canvasNodeCount: record.document.tugouCanvas.nodes.length } : {}) });
+        const {record,recovered} = await this.readSnapshot(id);
+        result.push({ id, name: record.document.name, updatedAt: record.updatedAt, revision: record.revision, recovered,
+          ...(record.origin?.legacyCanvasId ? { canvasNodeCount: record.document.tugouCanvas?.nodes.length??record.document.pages?.canvas.items.find(p=>p.id===record.document.pages.canvas.activeId)?.ref?.nodes.length??0 } : {}) });
       } catch { result.push({ id, name, error: '工程无法读取，请保留原文件并恢复备份' }); }
     }
     return result.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
@@ -210,7 +255,12 @@ class ProjectStore {
     const {hashFile}=require('./runtime-files.cjs');
     for (const name of resources) {
       const file=await safePath(folder,'resources',name);
+      const info=await fs.stat(file,{bigint:true});
+      const stamp=`${info.dev}:${info.ino}:${info.size}:${info.mtimeNs}:${info.ctimeNs}`;
+      if(this.resourceChecks.get(file)===stamp)continue;
       if (await hashFile(file) !== name.split('.')[0]) throw new Error(`素材校验失败：${name}`);
+      if(this.resourceChecks.size>=4096)this.resourceChecks.clear();
+      this.resourceChecks.set(file,stamp);
     }
   }
 
@@ -250,18 +300,50 @@ class ProjectStore {
     if (!previous) {
       try { previous = await this.readSnapshot(record.id); } catch (error) { if (error.code !== 'ENOENT') throw error; }
     }
+    const pages=require('./pages.cjs'),pageRefs={};
+    let document=record.document;
+    for(const kind of pages.kinds){
+      const group=document.pages?.[kind];if(!group)continue;
+      const refs=Object.create(null);
+      for(const p of group.items){
+        let ref=p.ref;
+        if(!ref){
+          const content=pages.content(record.document,kind,p.id),bytes=JSON.stringify(content);
+          ref={hash:hash(bytes),nodes:kind==='canvas'?content.tugouCanvas.nodes.map(n=>n.id):[]};
+          const target=await this.pagePath(record.id,ref.hash);
+          const existing=await fs.readFile(target,'utf8').catch(error=>{if(error.code!=='ENOENT')throw error;});
+          if(existing!==bytes)await atomicWrite(target,bytes);
+        }else{
+          const existing=previous?.record.document.pages?.[kind]?.items.find(item=>item.id===p.id)?.ref;
+          if(existing?.hash===ref.hash)ref=existing;
+          else {
+            const data=await this.readPage(record.id,ref.hash);
+            const projected=pages.storagePage(record.document,kind,p.id,{content:data});
+            validateDocument(projected,true);
+            ref={hash:ref.hash,nodes:kind==='canvas'?data.tugouCanvas.nodes.map(n=>n.id):[]};
+          }
+        }
+        refs[p.id]=ref;
+        document=pages.storagePage(document,kind,p.id,{ref});
+      }
+      pageRefs[kind]=refs;
+    }
+    const version=Object.keys(pageRefs).length?2:1;
+    validateDocument(document,version===2);
     if (previous) await atomicWrite(await safePath(this.root, 'projects', `${record.id}.json.bak`), previous.bytes);
-    await atomicWrite(file, JSON.stringify(record));
-    return { ...record, recovered: false };
+    const {pageRefs:ignored,...metadata}=record;
+    await atomicWrite(file, JSON.stringify({...metadata,version,document}));
+    return { ...record,version,pageRefs,recovered: false };
   }
 
   save(id, document, expectedRevision, { detached = false } = {}) {
     const snapshot = detached ? document : structuredClone(document);
     return this.serialize(async () => {
-      const previous = await this.readSnapshot(id);
+      let previous = await this.readSnapshot(id);
+      if(previous.record.revision!==expectedRevision&&previous.record.version===2)previous=await this.readSnapshot(id,'editor');
       const { recovered, ...record } = previous.record;
       if (record.revision !== expectedRevision) throw new Error('工程已更新，请重新打开后再保存，避免覆盖');
-      validateDocument(snapshot);
+      validateDocument(snapshot,true);
       await this.verifyResources(snapshot);
       return this.writeRecord({ ...record, document: snapshot, revision: record.revision + 1, updatedAt: new Date().toISOString() }, previous);
     });

@@ -20,8 +20,8 @@ class SemanticService {
     });
   }
   async analyze(projectId, document, sourceId) {
-    await this.projects.read(projectId);
-    validateDocument(document);
+    await this.projects.read(projectId,{metadataOnly:true});
+    validateDocument(document,true);
     const source = document.assets.find((a) => a.id === sourceId);
     if (!source) throw fail("请先选择来源素材");
     const busy = () =>
@@ -144,7 +144,7 @@ class SemanticService {
     );
     if (!task || task.status !== "completed")
       throw fail("类别识别尚未完成或不属于当前工程");
-    await this.projects.read(projectId);
+    await this.projects.read(projectId,{metadataOnly:true});
     const draft = await this.readFile(task);
     await this.projects.verifyResources([draft.source]);
     return draft;

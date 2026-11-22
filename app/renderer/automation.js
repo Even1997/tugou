@@ -13,7 +13,8 @@ import {renderScene} from './scene-render.js';
 import {sceneNode,appendCapture} from '../core/automation-scene.cjs';
 import {views} from './ui-view.js';
 import {inspectUi,navigateUi,prepareCapture,navigationGuard,leaveGuard,settle} from './ui-automation.js';
-import {group as pageGroup} from '../core/pages.cjs';
+import {group as pageGroup,kinds as pageKinds} from '../core/pages.cjs';
+import {loadPages,suspendPages} from './page-storage.js';
 import {printPng} from './print-png.js';
 import {runEditingJob,cancelAutomationJob,automationJobStatus} from './automation-editing.js';
 
@@ -39,10 +40,18 @@ export function useAutomation(context) {
       if(current().busyRef.current)failure('BUSY','界面正在处理操作，请稍后重试');
       if(request.expectedRevision!==revision())failure('CONFLICT','实时文档已变化，请重新读取状态后重试');
     };
-    const commit=doc=>{guard();if(['canvas','layers'].some(kind=>pageGroup(doc,kind).activeId!==pageGroup(current().present.current.document,kind).activeId))navigationGuard(current());if(!current().change(doc))failure('BUSY','界面正在处理操作');return state();};
+    const commit=doc=>{guard();if(pageKinds.some(kind=>pageGroup(doc,kind).activeId!==pageGroup(current().present.current.document,kind).activeId))navigationGuard(current());if(!current().change(suspendPages(doc)))failure('BUSY','界面正在处理操作');return state();};
     try {
       let value;const {action,args={}}=request;
       if(action==='snapshot')value=state();
+      else if(action==='pages.load'){
+        guard();value=state();
+        for(const kind of pageKinds){
+          const ids=args[kind]===true?pageGroup(value.document,kind).items.map(p=>p.id):args[kind]||[];
+          value.document=await loadPages(value.projectId,value.document,kind,ids);
+        }
+        guard();
+      }
       else if(action==='layout.measure'){
         guard();
         const {selection,width,height,text}=args;
@@ -90,15 +99,15 @@ export function useAutomation(context) {
         if(!views.has('ppt'))failure('UI_NOT_READY','PPT 工作区尚未就绪');
         await views.get('ppt').navigate({command:action,args});await settle();guard();value=state();
       }
-      else if(action==='page.activate'){guard();const c=current();navigationGuard(c);leaveGuard(c,args.kind);c.activatePage(args.kind,args.id);value=state();}
+      else if(action==='page.activate'){guard();const c=current();navigationGuard(c);leaveGuard(c,args.kind);await c.activatePage(args.kind,args.id);value=state();}
       else if(action==='project.create'||action==='project.open'){
         guard();const c=current();navigationGuard(c);
         c.busyRef.current=true;c.setBusy(true);
         try {
           await c.flushSave();
-          const record=await (action==='project.create'?window.tugou.create(args.name):window.tugou.open(args.id));
+          const record=c.prepareRecord(await (action==='project.create'?window.tugou.create(args.name):window.tugou.open(args.id)));
           c.present.current=record;c.setRecord(record);c.history.current={past:[],future:[]};c.seenResults.current=new Set();
-          c.setLayerSelection([]);c.resetPanels();c.markDirty(record.recovered===true);await c.refresh();
+          c.setLayerSelection([]);c.resetPanels();c.markDirty(record.recovered===true||record.promptsExtracted===true);await c.refresh();
         }finally{c.busyRef.current=false;c.setBusy(false);}
         value=state();
       }else if(action==='project.save'){
@@ -110,7 +119,7 @@ export function useAutomation(context) {
       }else if(action==='history.undo'||action==='history.redo'){
         guard();const c=current(),direction=action.split('.')[1];
         if(!c.history.current[direction==='undo'?'past':'future'].length)failure('EMPTY_HISTORY','没有可撤销或重做的操作');
-        c.travel(direction);value=state();
+        await c.travel(direction);value=state();
       }else if(action==='workspace.show'){
         guard();const c=current();for(const id of args.layerIds||[])if(!c.present.current?.document.layers.some(l=>l.id===id))failure('NOT_FOUND','图层不存在');
         c.setWorkspace(args.workspace);if(args.layerIds)c.setLayerSelection(args.layerIds);value={workspace:args.workspace};

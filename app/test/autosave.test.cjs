@@ -120,7 +120,7 @@ test('renderer hook keeps live document identity, coalesces drag and content, an
   const slots=[],effects=[];let cursor=0,hook,projects=[{id:'a',name:'old'},{id:'b',name:'untouched'}];
   const gate=deferred(),writes=[];
   const window=Object.assign(new EventTarget(),{tugou:{save:async(id,document,revision,metadataOnly)=>{assert.equal(metadataOnly,true);writes.push({id,document,revision});if(writes.length===1)await gate.promise;return {id,name:document.name,revision:revision+1};}}});
-  const scope={createAutosave,window,Date,
+  const scope={createAutosave,window,Date,suspendPages:doc=>doc,rememberPages:()=>{},
     useRef:value=>{const i=cursor++;return slots[i]??=( {current:value} );},
     useState:value=>{const i=cursor++;if(!(i in slots))slots[i]=value;return [slots[i],next=>{slots[i]=next;}];},
     useEffect:fn=>{const i=cursor++;if(!(i in slots)){slots[i]=true;effects.push(fn);}}};

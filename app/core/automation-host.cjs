@@ -51,7 +51,7 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
   const project=state=>{if(!state.document)fail('NO_PROJECT','请先打开工程');return state.document;};
   const commit=async(state,document)=>{
     const pages=require('./pages.cjs'),removed=pages.list(state.document,'canvas').filter(p=>!pages.list(document,'canvas').some(n=>n.id===p.id));
-    if(removed.some(p=>tasks.list().some(t=>t.context?.projectId===state.projectId&&['queued','running'].includes(t.status)&&pages.content(state.document,'canvas',p.id).tugouCanvas.nodes.some(n=>n.id===t.context?.nodeId))))fail('BUSY','此画布仍有运行任务，请先完成或取消任务');
+    if(removed.some(p=>tasks.list().some(t=>t.context?.projectId===state.projectId&&['queued','running'].includes(t.status)&&pages.nodePage(state.document,t.context?.nodeId)===p.id)))fail('BUSY','此画布仍有运行任务，请先完成或取消任务');
     const previous=resourcesIn(state.document),added=[...resourcesIn(document)].filter(name=>!previous.has(name));
     if(added.length)await projects.verifyResources(added.map(resource=>({resource})));
     return compact(await ui('commit',{document},state.revision));
@@ -62,6 +62,24 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     return safePath(filesRoot,filename);
   };
   const editBatch=async(state,steps)=>{
+    const pages=require('./pages.cjs'),doc=project(state),targets={};
+    for(const kind of pages.kinds){
+      const deferred=pages.group(doc,kind).items.filter(p=>p.ref);
+      if(!deferred.length)continue;
+      const ids=new Set();
+      for(const step of steps){
+        const {command,args}=step||{};
+        const pageEdit=command==='page.delete'||command==='page.duplicate';
+        if(command==='asset.delete'||kind==='canvas'&&command==='prompt.sync'||
+          pageEdit&&typeof args?.kind!=='string'||command==='page.delete'&&args.kind===kind){targets[kind]=true;break;}
+        if(command==='page.duplicate'&&args?.kind===kind){
+          if(typeof args.id!=='string'){targets[kind]=true;break;}
+          if(deferred.some(p=>p.id===args.id))ids.add(args.id);
+        }
+      }
+      if(!targets[kind]&&ids.size)targets[kind]=[...ids];
+    }
+    if(Object.keys(targets).length)state=await ui('pages.load',targets,state.revision);
     const result=await commands.batch(project(state),steps,args=>ui('layout.measure',args,state.revision));
     const unchanged=steps.every(s=>['layer.align','layer.distribute'].includes(s.command)&&result.results[s.name].changed===false);
     if(unchanged){

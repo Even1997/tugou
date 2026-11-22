@@ -37,7 +37,7 @@ async function registerSettings({app,window,handle,preferences,projects,fonts,ta
       const config=clientConfig(app.isPackaged?app.getPath('exe'):process.execPath,app.getAppPath(),profile),formats=clientFormats(config);
       return action==='mcpConfig'?formats.codex:{transport:'stdio',...config,formats};
     }
-    if(action==='lastProject'){try{const {id}=JSON.parse(await fs.readFile(path.join(profile,'last-project.json'),'utf8'));return preferences.value.restoreProject?await projects.read(id):null;}catch(e){if(e.code==='ENOENT')return null;throw e;}}
+    if(action==='lastProject'){try{const {id}=JSON.parse(await fs.readFile(path.join(profile,'last-project.json'),'utf8'));return preferences.value.restoreProject?await projects.readEditor(id):null;}catch(e){if(e.code==='ENOENT')return null;throw e;}}
     throw Error('INVALID_SETTINGS_ACTION');
   });
   handle('update',async action=>{if(action==='status')return updates.snapshot();if(action==='check')return updates.check({autoDownload:preferences.value.autoDownload});if(action==='skip')return updates.skip();if(action==='download')return updates.download();if(action==='install')return updates.install();if(action==='openInstaller')return updates.openInstaller();throw Error('INVALID_UPDATE_ACTION');});

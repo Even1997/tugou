@@ -14,7 +14,7 @@ import {CloudMaskPreview} from './cloud-mask-preview.jsx';
 import {NumberField} from './number-field.jsx';
 import {Select} from './select.jsx';
 import {parseCube} from '../core/image-tools.cjs';
-import {originalUrl} from './image-processing.js';
+import {CanvasMediaPreview} from './media-preview.jsx';
 
 export function CanvasToolNode({id,data,selected}){
   const {document,tasks,disabled,submittingIds,runNode,cancelNode,nodeErrors}=useContext(CanvasContext);
@@ -67,7 +67,7 @@ export function CanvasToolSettings({node,document,projectId,change,patch,disable
       <strong>{operation==='gif'?'帧顺序与时长':operation==='mattePair'?'输入顺序：黑底 → 白底':'输入顺序：原图 → 材质'}</strong>
       {!inputs.length&&<p className="muted">连接图片到左侧输入端口。</p>}
       {inputs.map((input,index)=><div className="canvas-tool-input" key={input.nodeId}>
-        <img src={originalUrl(input.asset)} alt=""/><span title={input.asset.name}>{index+1}. {input.asset.name}</span>
+        <CanvasMediaPreview asset={input.asset} thumbnail/><span title={input.asset.name}>{index+1}. {input.asset.name}</span>
         {operation==='gif'&&<NumberField label={`第 ${index+1} 帧时长（毫秒）`} shortLabel="毫秒" value={value.frameDelays[input.nodeId]??value.delay} min={20} max={60000} step={10} disabled={busy} onChange={n=>update({frameDelays:{...value.frameDelays,[input.nodeId]:Math.max(20,Math.round(n/10)*10)}})}/>}
         <Button iconOnly icon="up" aria-label={`前移输入 ${index+1}`} disabled={busy||index===0} onClick={()=>reorder(index,-1)}/><Button iconOnly icon="down" aria-label={`后移输入 ${index+1}`} disabled={busy||index===inputs.length-1} onClick={()=>reorder(index,1)}/>
       </div>)}

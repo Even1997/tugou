@@ -688,7 +688,7 @@ function CanvasWorkspace({
                 }
               >
                 {palette === "asset" ? (
-                  item.kind==='text'?<Icon name="text"/>:<MediaPreview thumbnail asset={item} className="palette-thumbnail"/>
+                  item.kind==='text'?<Icon name="text"/>:<MediaPreview thumbnail still asset={item} loading="lazy" decoding="async" className="palette-thumbnail"/>
                 ) : (
                   <Icon
                     name={

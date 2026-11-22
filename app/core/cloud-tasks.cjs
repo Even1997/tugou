@@ -43,7 +43,7 @@ class CloudTaskService {
     );
     if (raw.id !== id || raw.job.projectId !== task.context.projectId)
       throw fail("任务数据不一致");
-    await this.projects.read(raw.job.projectId);
+    await this.projects.read(raw.job.projectId,{metadataOnly:true});
     await this.projects.verifyResources(
       [raw.asset, raw.job.source, raw.job.mask].filter(Boolean),
     );
@@ -80,8 +80,8 @@ class CloudTaskService {
     await this.tasks.persist();
   }
   async prepare(projectId, document, sourceId, options) {
-    await this.projects.read(projectId);
-    validateDocument(document);
+    await this.projects.read(projectId,{metadataOnly:true});
+    validateDocument(document,true);
     const input =
       document.assets.find((a) => a.id === sourceId) ||
       document.assets.find((a) => a.toolResult?.source?.id === sourceId)

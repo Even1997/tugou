@@ -90,14 +90,14 @@ class ImageTaskService {
     };
   }
   async startNode(projectId,document,nodeId){
-    validateDocument(document);
+    validateDocument(document,true);
     const {asset,inputs,settings,signature}=require('./canvas-tools.cjs').compileTool(document,nodeId);
     if(settings.operation==='cloudExtend')return this.cloud.startNode(projectId,document,nodeId);
     return this.start(projectId,document,settings.operation==='gif'?inputs.map(i=>i.asset.id):[asset.id],settings,{nodeId,signature});
   }
   async start(projectId, document, sourceIds, options, canvas) {
-    await this.projects.read(projectId);
-    validateDocument(document);
+    await this.projects.read(projectId,{metadataOnly:true});
+    validateDocument(document,true);
     if (
       !Array.isArray(sourceIds) ||
       sourceIds.length < 1 ||
@@ -175,7 +175,7 @@ class ImageTaskService {
         typeof job.runtime.provider !== "string")
     )
       throw fail("本地组件快照无效，无法按原参数重试");
-    await this.projects.read(job.projectId);
+    await this.projects.read(job.projectId,{metadataOnly:true});
     validateJob(job);
     await this.projects.verifyResources([
       ...job.inputs,

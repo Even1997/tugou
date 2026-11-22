@@ -516,6 +516,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             maskPreview:maskViewId?{id:maskViewId,mode:maskPreviewMode}:undefined,
             overrides:paintingPreview?.overrides,maskOverrides:paintingPreview?.maskOverrides,
             vectorDrag:denseDrag?anchorDrag:undefined,
+            imagePreview:plainPreview&&view.zoom<=.4,
             scale,x:((region?.left||0)/ratio-view.x)/view.zoom,y:((region?.top||0)/ratio-view.y)/view.zoom,
             width:region?region.width/scale:size.width/view.zoom,height:region?region.height/scale:size.height/view.zoom,signal,interactive:true,
           });

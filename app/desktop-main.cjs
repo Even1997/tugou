@@ -99,13 +99,22 @@ async function boot() {
         return new Response(bytes,{headers:{'Access-Control-Allow-Origin':'*','Content-Type':'font/ttf','Cache-Control':'private, max-age=31536000'}});
       }
       if(!/\.(png|jpe?g|webp|gif)$/.test(name))return mediaResponse(file,request.headers.get('range'));
-      if (url.hostname === 'original' || name.endsWith('.gif')) {
+      const still=url.hostname==='resource'&&url.searchParams.get('still')==='1';
+      const previewSize=Number(url.searchParams.get('preview'));
+      const viewport=url.hostname==='resource'&&[96,192,384].includes(previewSize);
+      if (url.hostname === 'original' || name.endsWith('.gif')&&!still) {
         const bytes = await fs.readFile(file);
         if (hash(bytes) !== name.split('.')[0]) throw new Error('素材校验失败');
         return new Response(bytes, { headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': `image/${name.endsWith('.gif') ? 'gif' : name.endsWith('.png') ? 'png' : name.endsWith('.webp') ? 'webp' : 'jpeg'}`, 'Cache-Control': 'private, max-age=31536000' } });
       }
+      if(still||viewport){
+        const side=viewport?previewSize:384;
+        const thumbnail=await require('sharp')(file).autoOrient().resize(side,side,{fit:'inside',withoutEnlargement:true}).png().toBuffer();
+        return new Response(thumbnail,{headers:{'Access-Control-Allow-Origin':'*','Content-Type':'image/png','Cache-Control':'private, max-age=31536000'}});
+      }
       const thumbnail = await nativeImage.createThumbnailFromPath(file, { width: 384, height: 384 });
-      return new Response(thumbnail.toPNG(), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'private, max-age=31536000' } });
+      if(thumbnail.isEmpty())return new Response(null,{status:404});
+      return new Response(thumbnail.toPNG(), { headers: { 'Access-Control-Allow-Origin':'*', 'Content-Type': 'image/png', 'Cache-Control': 'private, max-age=31536000' } });
     } catch { return new Response(null, { status: 404 }); }
   });
   window = new BrowserWindow({
@@ -167,7 +176,8 @@ async function boot() {
   handle('deleteProject', (id, revision) => projects.remove(id, revision, tasks));
   const fonts=await require('./core/font-desktop.cjs').registerFonts({root,tasks,handle,dialog,window});
   handle('create', (name) => projects.create(name));
-  handle('open', async(id) => {const record=await projects.read(id);await settings?.remember(record);return record;});
+  handle('open', async(id) => {const record=await projects.readEditor(id);await settings?.remember(record);return record;});
+  handle('readPage', (id,digest) => projects.readPage(id,digest));
   handle('save', async(id, document, revision, metadataOnly) => {
     // A failed recent-project update must not hide a successfully committed revision.
     await projects.projectPath(id);await settings?.remember({id});
@@ -198,7 +208,7 @@ async function boot() {
     return require('./core/import-model.cjs').importModel(root,choice.filePaths[0]);
   });
   handle('exportAsset',async(projectId,document,assetId)=>{
-    await projects.read(projectId);require('./core/storage.cjs').validateDocument(document);
+    await projects.read(projectId,{metadataOnly:true});require('./core/storage.cjs').validateDocument(document,true);
     const asset=document.assets.find(a=>a.id===assetId);if(!asset)throw Error('素材不存在');
     const image=!asset.kind||asset.kind==='image';
     const extension=asset.kind==='text'?'txt':(asset.resource||asset.dataUrl?.split('/api/studio/resource/')[1])?.split('.').at(-1)||asset.dataUrl?.match(/^data:image\/(png|jpe?g|webp|gif);/)?.[1];
@@ -212,8 +222,8 @@ async function boot() {
   });
   handle('localToolsStatus', () => localAI.status());
   handle('inspectMetadata', async (projectId,document,assetId) => {
-    await projects.read(projectId);
-    require('./core/storage.cjs').validateDocument(document);
+    await projects.read(projectId,{metadataOnly:true});
+    require('./core/storage.cjs').validateDocument(document,true);
     const asset=document.assets.find(a=>a.id===assetId);
     if(!asset)throw Error('素材不存在');
     return localAI.cleanup.inspect(asset);
