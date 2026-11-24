@@ -25,27 +25,31 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
     const capture=async name=>{w.showInactive();await delay(180);fs.writeFileSync(path.join(out,name+'.png'),(await w.webContents.capturePage()).toPNG());w.hide();};
     const openImport=async()=>{await js(`[...document.querySelectorAll('details')].filter(d=>d.querySelector('summary')?.textContent==='PSD').forEach(d=>d.open=true)`);await click('导入 PSD');};
     const noDialog=()=>wait(`!document.querySelector('.ant-modal')`);
+    const save=async()=>{
+      await js(`(()=>{const button=document.querySelector('.studio-header button[aria-label="保存"]');if(button&&!button.disabled)button.click();})()`);
+      await wait(`document.querySelector('.statusbar [role=status]')?.textContent.trim()==='已保存'`);
+    };
     try{
       w.setSize(1180,800);await wait(`!!document.querySelector('.workspace-rail')`);await click('新建工程');await click('图层');
       const id=await js(`(async()=>(await tugou.list())[0].id)()`);
       await openImport();await capture('import-light');cancelPicker=true;await click('选择 PSD 文件');await wait(`!document.querySelector('.ant-modal [role=status]')`);check('cancel picker leaves project unchanged',!await js(`document.querySelector('[aria-label="保存"]').disabled===false`));cancelPicker=false;
       await click('选择 PSD 文件');await wait(`document.querySelector('.ant-modal [role=status]')?.textContent.includes('分层样稿')`);
       check('import preview shows layer count and requires explicit addition',await js(`document.querySelector('.psd-result').textContent.includes('4 层')&&[...document.querySelectorAll('.ant-modal button')].some(b=>b.textContent==='添加为新画板')`)&&(await js(`tugou.open(${JSON.stringify(id)})`)).document.layers.length===0);
-      await click('添加为新画板');await noDialog();await wait(`!!document.querySelector('.layer-row')`);await click('保存');
+      await click('添加为新画板');await noDialog();await wait(`!!document.querySelector('.layer-row')`);await save();
       let saved=await js(`tugou.open(${JSON.stringify(id)})`);let board=saved.document.layers.find(l=>l.name==='分层样稿');assert.ok(board);
       const A=require('../core/artboards.cjs'),local=A.extract(saved.document,board.id);check('import adds editable nested image layers',local.layers.length===4&&local.layers.filter(l=>l.kind==='image').length===3&&local.layers.find(l=>l.name==='绿色').parentId===local.layers.find(l=>l.kind==='group').id);
-      const count=saved.document.layers.length;await click('撤销');check('one undo removes entire PSD import',await js(`document.querySelectorAll('.layer-row').length<${count}`));await click('重做');await click('保存');check('redo restores import', (await js(`tugou.open(${JSON.stringify(id)})`)).document.layers.length===count);
+      const count=saved.document.layers.length;await click('撤销');check('one undo removes entire PSD import',await js(`document.querySelectorAll('.layer-row').length<${count}`));await click('重做');await save();check('redo restores import', (await js(`tugou.open(${JSON.stringify(id)})`)).document.layers.length===count);
       await js(fs.readFileSync(path.join(out,'qa.js'),'utf8'));
       const pixels=doc=>js(`(async()=>{const engine=new psdQA.Compositor(),c=document.createElement('canvas');await engine.render(${JSON.stringify(doc)},c);const result=[...c.getContext('2d').getImageData(0,0,c.width,c.height).data];engine.dispose();return result})()`);
       const before=await pixels(local);check('imported positioning and z-order render correctly',before[(10*96+10)*4]===255&&before[(22*96+27)*4+1]===255&&before[3]===0);
       await js(`document.querySelector('.layer-menu>summary[aria-label="PSD"]').parentElement.open=true`);await click('导出 PSD');await capture('export-light');await click('保存 PSD');await noDialog();
       const parsed=readPsd(fs.readFileSync(savePath),{useImageData:true,skipThumbnail:true});check('PSD export keeps top-level layers and hidden state',parsed.children.length===3&&parsed.children[2].hidden&&parsed.children[1].name==='分组');
       check('PSD composite equals rendered artwork',Buffer.from(parsed.imageData.data).equals(Buffer.from(before)));
-      selectedFile=savePath;await openImport();await click('选择 PSD 文件');await wait(`document.querySelector('.ant-modal [role=status]')?.textContent.includes('3 层')`);await click('添加为新画板');await noDialog();await click('保存');saved=await js(`tugou.open(${JSON.stringify(id)})`);
+      selectedFile=savePath;await openImport();await click('选择 PSD 文件');await wait(`document.querySelector('.ant-modal [role=status]')?.textContent.includes('3 层')`);await click('添加为新画板');await noDialog();await save();saved=await js(`tugou.open(${JSON.stringify(id)})`);
       const reopened=A.extract(saved.document,saved.document.layers.find(l=>l.artboard&&l.name==='导出').id),after=await pixels(reopened);check('PSD import export reimport preserves visible RGBA exactly',Buffer.from(after).equals(Buffer.from(before)));
       selectedFile=fixture;await openImport();await click('选择 PSD 文件');await wait(`document.querySelector('.ant-modal [role=status]')?.textContent.includes('4 层')`);
       await click('撤销');await click('添加为新画板');await wait(`document.querySelector('.ant-modal [role=alert]')?.textContent.includes('工程已变化')`);
-      check('stale import refuses to overwrite intervening edits',true);await click('取消');await click('重做');await click('保存');
+      check('stale import refuses to overwrite intervening edits',true);await click('取消');await click('重做');await save();
       const shape=require('../core/layers.cjs').createLayer('shape',{name:'额外形状',shape:'rect',fill:true,color:'#ffaa00',x:45,y:30,width:16,height:20,rotation:15});
       const changed={...local,layers:[...local.layers,shape]};const expected=await pixels(changed);
       savePath=path.join(profile,'edited.psd');await js(`(async()=>{const input=await psdQA.renderPsd(${JSON.stringify(changed)},false,new AbortController().signal,()=>{}),target=await tugou.chooseExport('edited','psd');await tugou.psdWrite(crypto.randomUUID(),target.token,input);})()`);
