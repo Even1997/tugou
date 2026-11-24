@@ -1,6 +1,22 @@
 // Included only in the isolated update QA packages, never in a release build.
 const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-if(process.argv.includes('--qa-hold')){setInterval(()=>{},1000);}else{
+if(process.argv.some(arg=>arg==='--qa-hold'||arg==='--qa-graceful')){
+  const os=require('node:os');
+  app.setPath('userData',fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'tugou-installer-qa-')));
+}
+if(process.argv.includes('--qa-hold')){setInterval(()=>{},1000);}else if(process.argv.includes('--qa-graceful')){
+  const report=process.env.TUGOU_CLOSE_QA_FILE;
+  if(!report||path.basename(report)!=='installer-window.json')throw Error('Isolated QA report required');
+  app.whenReady().then(()=>{
+    const {BrowserWindow}=require('electron');
+    const win=new BrowserWindow({width:360,height:220,title:'Tugou Installer QA'});
+    win.on('close',event=>{
+      event.preventDefault();
+      setTimeout(()=>{fs.writeFileSync(report,'saved');app.exit(0);},1200);
+    });
+    win.loadURL('data:text/html,<title>Tugou Installer QA</title>').then(()=>fs.writeFileSync(report,'ready'));
+  });
+}else{
 const out=path.resolve(path.dirname(process.execPath),'..');
 if(path.basename(out)!=='settings-update'||!out.includes('test-results'))throw Error('Isolated QA directory required');
 process.env.TUGOU_DATA_DIR=path.join(out,'profile');
@@ -18,7 +34,7 @@ app.on('browser-window-created',(_,w)=>{w.show=()=>{};w.focus=()=>{};w.webConten
    const preferences=await js(`window.tugou.settings('get')`),restored=await js(`window.tugou.settings('lastProject')`);
    check('new executable really starts at version 0.8.2',preferences.version==='0.8.2');check('installed update retains project and preferences',restored?.document.name==='升级保留工程'&&preferences.preferences.sounds===true);
    check('installed update preserves original resources',fs.readFileSync(path.join(process.env.TUGOU_DATA_DIR,'workspace','resources','upgrade-sentinel.txt'),'utf8')==='KEEP');
-   const {client}=await connect();const state=await client.callTool({name:'get_state',arguments:{}});check('MCP reconnects to upgraded application',!state.isError&&JSON.parse(state.content[0].text).capabilities.commands===136);await client.close();
+   const {client}=await connect();const state=await client.callTool({name:'get_state',arguments:{}});check('MCP reconnects to upgraded application',!state.isError&&JSON.parse(state.content[0].text).capabilities.commands===require('../core/automation-commands.cjs').listCommands().length);await client.close();
    await js(`document.querySelector('.rail-bottom [aria-label="设置"]').click()`);await wait(`!!document.querySelector('[data-settings-tab="updates"]')`);await js(`document.querySelector('[data-settings-tab="updates"]').click()`);await delay(300);await capture('installed-after');report.complete=true;fs.writeFileSync(file,JSON.stringify(report,null,2));clearTimeout(timeout);app.exit(0);return;
  }
  check('old installed version is 0.8.1',app.getVersion()==='0.8.1');check('updater detects real installed NSIS build',(await js(`window.tugou.update('status')`)).supported===true);
