@@ -11,9 +11,11 @@ const point = (m, x, y) => ({
   x: m[0] * x + m[2] * y + m[4],
   y: m[1] * x + m[3] * y + m[5],
 });
+const minDeterminant = 1e-10;
+const determinant = m => m[0] * m[3] - m[1] * m[2];
 function inverse(m) {
-  const d = m[0] * m[3] - m[1] * m[2];
-  if (Math.abs(d) < 1e-10) throw new Error("变换不可逆");
+  const d = determinant(m);
+  if (!Number.isFinite(d) || Math.abs(d) < minDeterminant) throw new Error("变换不可逆");
   return [
     m[3] / d,
     -m[1] / d,
@@ -242,6 +244,51 @@ function moveLayers(layers, ids, dx, dy) {
       y: l.y + m[1] * dx + m[3] * dy,
     };
   });
+}
+// Uniform scaling commutes with the parent's linear transform. Convert the
+// common pivot into each parent space once, including rotated or flipped groups.
+function selectionScale(layers, ids) {
+  const byId=new Map(layers.map(l=>[l.id,l])), selected=new Set(ids);
+  const members=ids.map(id=>byId.get(id));
+  if(members.length<2||members.some(l=>!l||l.artboard||l.kind==='adjustment'||inherited(byId,l,'locked')))return null;
+  const targets=members.filter(l=>{
+    for(let p=byId.get(l.parentId);p;p=byId.get(p.parentId))if(selected.has(p.id))return false;
+    return true;
+  });
+  if(targets.length<2)return null;
+  const groups=targets.filter(l=>l.kind==='group').map(l=>l.id);
+  const branch=groups.length?descendants(layers,targets.map(l=>l.id)):null;
+  const affected=branch?layers.filter(l=>branch.has(l.id)):targets;
+  if(affected.some(l=>l.locked))return null;
+  let smallest=Infinity;
+  for(const l of affected)smallest=Math.min(smallest,Math.abs(determinant(worldMatrix(byId,l))));
+  for(const l of targets){
+    const parent=byId.get(l.parentId);
+    if(parent){
+      const det=determinant(worldMatrix(byId,parent));
+      if(!Number.isFinite(det)||Math.abs(det)<minDeterminant)return null;
+    }
+  }
+  const canScale=factor=>{const det=smallest*factor*factor;return factor===1||(Number.isFinite(det)&&det>minDeterminant);};
+  const box=enclosingBox(targets.flatMap(l=>corners(layers,l,byId).map(p=>({...p,width:0,height:0}))));
+  if(!box||(!box.width&&!box.height))return null;
+  const {x,y,width,height}=box;
+  const pivots={nw:{x,y},ne:{x:x+width,y},se:{x:x+width,y:y+height},sw:{x,y:y+height},center:{x:x+width/2,y:y+height/2}};
+  return {box,pivots,canScale,from(anchor){
+    const origin=pivots[anchor], local=new Map();
+    for(const l of targets){
+      const parent=byId.get(l.parentId);
+      local.set(l.id,parent?point(inverse(worldMatrix(byId,parent)),origin.x,origin.y):origin);
+    }
+    return factor=>{
+      if(!canScale(factor))throw Error('缩放超出可编辑范围，请调整倍率');
+      return factor===1?layers:layers.map(l=>{
+        const pivot=local.get(l.id);
+        return pivot?{...l,x:pivot.x+(l.x-pivot.x)*factor,y:pivot.y+(l.y-pivot.y)*factor,
+          scaleX:(l.scaleX??1)*factor,scaleY:(l.scaleY??1)*factor}:l;
+      });
+    };
+  }};
 }
 function deleteLayers(layers, ids) {
   const selected = descendants(
@@ -661,6 +708,7 @@ module.exports = {
   descendants,
   createLayer,
   moveLayers,
+  selectionScale,
   deleteLayers,
   duplicateLayers,
   groupLayers,

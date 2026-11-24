@@ -32,11 +32,16 @@ app.on('browser-window-created',(_,w)=>{
       await checkArrangement(call,run,state,object,board);
       for(const [name,color] of [['red','#ff0000'],['blue','#0000ff']])fs.writeFileSync(path.join(initial.filesRoot,name+'.png'),await sharp({create:{width:32,height:32,channels:4,background:color}}).png().toBuffer());
       const red=(await run('asset.import',{path:'red.png'})).ids[0],blue=(await run('asset.import',{path:'blue.png'})).ids[0];
+      await checkLiquify(run,job,object,state,board,initial.filesRoot,red,blue);
       const gifArgs={frames:[{assetId:red,delay:100},{assetId:blue,delay:200}],width:32,height:32,loop:0,requestId:'gif-once'};
       const submitted=await run('gif.create',gifArgs),repeated=await run('gif.create',gifArgs);check('GIF request deduplicates before and after task completion',submitted.taskId===repeated.taskId&&repeated.replayed);
       assert.equal((await wait(submitted.taskId)).status,'completed');const gif=(await run('task.result',{id:submitted.taskId})).result.assetId;
       const gifAsset=await object('asset',gif);check('GIF keeps ordered frames, timing and loop',gifAsset.gif.frames===2&&gifAsset.gif.delays.join(',')==='100,200'&&gifAsset.gif.loop===0);
       const layer=(await run('layer.create',{artboardId:board,kind:'image',properties:{assetId:gif,width:32,height:32,x:0,y:0}})).id;
+      const gifRevision=(await state()).revision;
+      const rejected=await run('paint.retouch',{id:layer,tool:'liquify',liquifyMode:'bloat',size:12,points:[{x:16,y:16}],requestId:'animated-liquify'});
+      const rejectedTask=await wait(rejected.taskId);
+      check('liquify preserves the animated source and revision',rejectedTask.status==='failed'&&rejectedTask.message.includes('静态图片')&&(await state()).revision===gifRevision&&!(await object('layer',layer)).bitmap);
       const print=(await run('artboard.create',{name:'印刷',width:14,height:20,unit:'cm',ppi:300})).id;
       const printed=await object('artboard',print);check('physical artboard retains exact input and rounds pixels',printed.width===1654&&printed.height===2362&&printed.printSize.width===14);
       await run('artboard.update',{id:print,patch:{ppi:150}});const resized=await object('artboard',print);
@@ -230,6 +235,46 @@ async function stressArrangement(call,run,state,object,js,w){
   }
 }
 
+async function checkLiquify(run,job,object,state,board,root,red,blue){
+  const create=(assetId,x,width)=>run('layer.create',{artboardId:board,kind:'image',properties:{assetId,x,y:0,width,height:32}});
+  const a=(await create(red,0,32)).id,b=(await create(blue,16,16)).id;
+  const before=await state();
+  await run('layer.scaleSelection',{ids:[a,b],factor:.5,anchor:'nw'});
+  const scaled=await object('layer',b);
+  check('MCP scales both images and spacing in one undo',scaled.x===8&&scaled.scaleX===.5&&(await object('layer',a)).scaleY===.5&&(await state()).history.undo===before.history.undo+1);
+  await run('history.undo');const layer=await run('layer.merge',{ids:[a,b]});
+  const pixels=async name=>{
+    const file='liquify-'+name+'.png';await run('artboard.export',{artboardId:board,path:file});
+    return sharp(path.join(root,file)).ensureAlpha().raw().toBuffer();
+  };
+  const original=await pixels('before');
+  for(const mode of ['push','bloat','pucker']){
+    let sparse;
+    for(const count of [2,161]){
+      const points=Array.from({length:count},(_,i)=>({x:8+17*i/(count-1),y:16}));
+      await job('paint.retouch',{id:layer.id,tool:'liquify',liquifyMode:mode,points,size:15,smoothing:40});
+      const actual=await pixels(mode+'-'+count);
+      assert.ok(!actual.equals(original),'stroke must affect the edge');
+      if(sparse)check(mode+' renders identical sparse and dense paths including the endpoint',actual.equals(sparse));
+      sparse=actual;
+      await run('history.undo');
+    }
+  }
+  for(const mode of ['bloat','pucker']){
+    await job('paint.retouch',{id:layer.id,tool:'liquify',liquifyMode:mode,points:[{x:12,y:16}],size:24});
+    const after=await pixels(mode),at=x=>4*(16*32+x);
+    check('single dab '+mode+' moves the red-blue edge in the expected direction',mode==='bloat'?after[at(16)]>original[at(16)]+80:after[at(15)+2]>original[at(15)+2]+80);
+    check(mode+' leaves distant pixels untouched',after.subarray(0,128).equals(original.subarray(0,128)));
+    await run('history.undo');
+    check(mode+' undo restores all exported pixels',(await pixels(mode+'-undo')).equals(original));
+  }
+  await run('selection.rectangle',{artboardId:board,x:0,y:0,width:32,height:16});
+  await job('paint.retouch',{id:layer.id,tool:'liquify',liquifyMode:'bloat',points:[{x:12,y:16}],size:24});
+  const masked=await pixels('selection'),half=32*16*4;
+  check('radial liquify preserves every channel outside the active selection',!masked.subarray(0,half).equals(original.subarray(0,half))&&masked.subarray(half).equals(original.subarray(half)));
+  await run('selection.clear',{artboardId:board});
+  await run('layer.delete',{ids:[layer.id]});
+}
 async function checkArrangement(call,run,state,object,otherBoard){
   const listed=await call('list_commands',{domain:'layer',schemas:true});
   for(const name of ['layer.align','layer.distribute'])
@@ -243,9 +288,11 @@ async function checkArrangement(call,run,state,object,otherBoard){
   const distribute=target=>run('layer.distribute',{ids,target,axis:'x'});
   const undo=()=>run('history.undo');
   const foreign=(await run('layer.create',{artboardId:otherBoard,kind:'shape'})).id;
+  await assert.rejects(run('layer.scaleSelection',{ids:[ids[0],foreign],factor:2}),/同一画板/);
   await assert.rejects(run('layer.distribute',{ids:[ids[0],ids[1],foreign],axis:'x',target:'board'}),/同一画板/);
   await run('layer.delete',{ids:[foreign]});
   await run('layer.lock',{id:ids[0],locked:true});
+  await assert.rejects(run('layer.scaleSelection',{ids,factor:.5}),/锁定/);
   await assert.rejects(align('board','x','start'),/锁定/);
   await run('layer.lock',{id:ids[0],locked:false});
   await assert.rejects(align('selection','x','end'),/没有选区/);

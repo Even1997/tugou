@@ -39,6 +39,11 @@ export function PaintTools({
   return (
     <>
       {!paint&&<Button icon="copy" disabled={busy||!canCopy} onClick={onCopy}>在副本修图</Button>}
+      {tool==='liquify'&&<label>液化模式
+        <Select aria-label="液化模式" value={options.liquifyMode||'push'} onChange={e=>patch({liquifyMode:e.target.value})}>
+          <option value="push">推移</option><option value="bloat">膨胀</option><option value="pucker">收缩</option>
+        </Select>
+      </label>}
       {paint && (
         <label>
           目标

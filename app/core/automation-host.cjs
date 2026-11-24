@@ -81,7 +81,7 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     }
     if(Object.keys(targets).length)state=await ui('pages.load',targets,state.revision);
     const result=await commands.batch(project(state),steps,args=>ui('layout.measure',args,state.revision));
-    const unchanged=steps.every(s=>['layer.align','layer.distribute'].includes(s.command)&&result.results[s.name].changed===false);
+    const unchanged=steps.every(s=>['layer.align','layer.distribute','layer.scaleSelection'].includes(s.command)&&result.results[s.name].changed===false);
     if(unchanged){
       const latest=await snapshot();guard(latest,state.revision);
       return {...compact(latest),results:result.results};

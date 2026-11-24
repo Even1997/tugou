@@ -11,6 +11,7 @@ import { MaterialGrid } from "./material-grid.jsx";
 import {MediaPreview} from './media-preview.jsx';
 import {useUiView} from './ui-view.js';
 import {ImageSaveMenu} from './image-save-menu.jsx';
+import {menuAction as item} from './context-menu.jsx';
 
 import {
   Button,
@@ -36,7 +37,13 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
     setError('');
     try { await operation(); } catch(e) { setError(e.message); }
   };
-  const saveImage=id=>run(async()=>{setNotice('');if(await window.tugou.exportAsset(projectId,latest.current,id))setNotice('已保存图片');});
+  const saveImage=id=>run(async()=>{setNotice('');const kind=latest.current.assets.find(a=>a.id===id)?.kind;if(await window.tugou.exportAsset(projectId,latest.current,id))setNotice(kind&&kind!=='image'?'已导出素材':'已保存图片');});
+  const menuItems=asset=>[
+    item('preview','查看素材详情',()=>setPreview(asset.id)),
+    item('canvas','添加到画布',()=>addToCanvas('asset',asset.id),{disabled}),
+    ...(!asset.kind||asset.kind==='image'?[item('layers','添加到图层',()=>addToLayers(asset),{disabled}),item('edit','处理图片…',()=>editImages([asset.id]),{disabled})]:[]),
+    ...(asset.kind==='text'?[item('text','复制文字',()=>run(()=>window.tugou.copyText(asset.text||'')))]:[]),
+  ];
   const assets = useMemo(()=>filterMaterials(document.assets,{query,source,shape,sort}),[document.assets,query,source,shape,sort]);
   const detail=assets.find(a=>a.id===focused)||assets[0];
   const assetIds=useMemo(()=>new Set(document.assets.map(a=>a.id)),[document.assets]);
@@ -114,7 +121,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
       {assets.length ? (
         <MaterialGrid items={assets} density={density}>
           {(asset) => (
-            <ImageSaveMenu key={asset.id} asset={asset} save={saveImage} remove={id=>remove([id])} disabled={disabled}>
+            <ImageSaveMenu key={asset.id} asset={asset} save={saveImage} remove={id=>remove([id])} disabled={disabled} actions={menuItems(asset)}>
             <article
               className={`asset-card ${selected.includes(asset.id)||detail?.id===asset.id ? "selected" : ""}`}
               key={asset.id}

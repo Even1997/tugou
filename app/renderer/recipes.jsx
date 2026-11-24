@@ -1,5 +1,7 @@
 import {Select} from './select.jsx';
 import {PromptHoverPreview} from './prompt-hover-preview.jsx';
+import {ContextMenu,useContextMenu,menuAction as item,menuDivider as divider} from './context-menu.jsx';
+import {RemovalDialog} from './removal-dialog.jsx';
 import React, { useEffect, useState } from "react";
 import {
   bindingsFor,
@@ -155,6 +157,8 @@ export function RecipeWorkbench({
     selected = document.recipes.find((r) => r.id === selectedId);
   const [submitting, setSubmitting] = useState(false),[sharedModel,setSharedModel]=useState('');
   const [recipeMenuOpen, setRecipeMenuOpen] = useState(false);
+  const menu=useContextMenu(),[removeId,setRemoveId]=useState(null);
+  const target=document.recipes.find(r=>r.id===menu.context?.id),removing=document.recipes.find(r=>r.id===removeId);
   const parameterError=selected?imageSettingsError(sharedModel,selected):'';
   const refreshModel=()=>window.tugou.connection().then(c=>setSharedModel(c.model||'')).catch(()=>setSharedModel(''));
   useEffect(()=>{refreshModel();window.addEventListener('focus',refreshModel);window.addEventListener('tugou-connection-changed',refreshModel);return()=>{window.removeEventListener('focus',refreshModel);window.removeEventListener('tugou-connection-changed',refreshModel);};},[]);
@@ -178,7 +182,7 @@ export function RecipeWorkbench({
       </PanelHeader>
       {selected ? (
         <>
-          <div className="recipe-choice">
+          <div className="recipe-choice" onContextMenu={e=>{if(!busy)menu.open(e,{id:selected.id});}}>
             <PromptHoverPreview document={document} item={selected} type="recipe" disabled={recipeMenuOpen}>
             <span className="recipe-preview-trigger">
             <Select
@@ -186,7 +190,7 @@ export function RecipeWorkbench({
               value={selected.id}
               onChange={(e) => onSelect(e.target.value)}
               onOpenChange={setRecipeMenuOpen}
-              optionRender={option => <PromptHoverPreview document={document} item={document.recipes.find(r => r.id === option.value)} type="recipe"><span className="recipe-preview-option" data-option-value={option.value}>{option.label}</span></PromptHoverPreview>}
+              optionRender={option => <PromptHoverPreview document={document} item={document.recipes.find(r => r.id === option.value)} type="recipe"><span className="recipe-preview-option" data-option-value={option.value} onContextMenu={e=>{if(!busy)menu.open(e,{id:option.value});}}>{option.label}</span></PromptHoverPreview>}
             >
               {document.recipes.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -404,6 +408,15 @@ export function RecipeWorkbench({
           </Button>
         </EmptyState>
       )}
+      <ContextMenu context={menu.context} close={menu.close} className="recipe-context-menu" items={target&&!busy?[
+        item('open','切换到此配方',()=>onSelect(target.id),{disabled:target.id===selectedId}),
+        item('copy','复制配方',()=>{const copy={...pinRecipe(document,target),id:crypto.randomUUID(),name:target.name+' 副本'};if(change({...document,recipes:[...document.recipes,copy]})!==false)onSelect(copy.id);}),
+        item('canvas','添加到画布',()=>addToCanvas('recipe',target.id)),divider,
+        item('delete','删除配方',()=>setRemoveId(target.id),{danger:true}),
+      ]:[]}/>
+      {removing&&<RemovalDialog title={`删除「${removing.name}」？`} description="画布中已有配方快照会保留。可通过撤销恢复。" close={()=>setRemoveId(null)} remove={()=>{
+        if(busy||change({...document,recipes:document.recipes.filter(r=>r.id!==removeId)})===false)throw Error('当前无法编辑，请稍后重试');if(selectedId===removeId)onSelect(null);
+      }}/>}
     </aside>
   );
 }

@@ -35,6 +35,12 @@
 | 导演台 | `scene.captureAngles` 拍摄 4/12 方位，创建独立素材和连线结果；`scene.record` 录制 1–60 秒动画为视频素材，后台也能运行 |
 | 迁入 | `project.importLegacy` 导入旧工程及相邻 `resources`；`project.migrateCanvas` 导入包含 `state`、`images` 的历史快照 JSON；保留归档，不切换当前工程 |
 
+## 多图缩放与液化
+
+多选缩放会检查整组的累计倍率，包括嵌套分组内的图层。越界时整次操作取消。液化沿笔画长度均匀采样，直线可只传两端。多帧 GIF 请先导出所需的静态帧，导入 PNG 图层后再液化。
+- `layer.scaleSelection` 接受同一画板的多个图层 ID。例如 `{"ids":["照片A","照片B"],"factor":1.5,"anchor":"nw"}` 固定左上角，图片及间距一并放大到 150%。固定点可选 `nw/ne/se/sw/center`，默认中心。全部图层一次撤销。
+- `paint.retouch` 选择 `tool:"liquify"`。默认 `liquifyMode:"push"`，传起点和终点推移。单点膨胀示例为 `{"id":"照片A","tool":"liquify","liquifyMode":"bloat","points":[{"x":80,"y":60}],"size":64,"opacity":50,"requestId":"liquify-1"}`。收缩使用 `pucker`。笔刷直径使用原图像素，落点使用所属画板坐标。写入前取得最新 revision，提交后用 task.wait 查询完成状态。
+
 ## MCP 图层排版
 
 两个命令都接受图层 `ids` 和方向 `axis`（`x` 或 `y`）。`layer.align` 另需 `mode`（`start`、`center` 或 `end`）。例如把标题和图标一起水平居中，可以调用 `layer.align`，参数为 `{"ids":["标题ID","图标ID"],"axis":"x","mode":"center","target":"board"}`。将 ID 替换为实际图层 ID，并在 `run_command` 外层传入实时 `expectedRevision`。

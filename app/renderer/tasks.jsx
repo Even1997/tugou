@@ -1,6 +1,7 @@
 import { Button, FormDialog, EmptyState, Icon } from "./components.jsx";
 import React, { useRef, useState } from "react";
 import { CloudReview } from "./cloud-review.jsx";
+import {ContextMenu,useContextMenu,menuAction as item} from './context-menu.jsx';
 import './tasks.css';
 const labels = {
   queued: "排队中",
@@ -33,6 +34,13 @@ export function TaskPanel({ tasks, close, refresh, openProject }) {
   const [reviewId, setReviewId] = useState(null);
   const [filter,setFilter]=useState('all');
   const visible=tasks.filter(filters.find(([id])=>id===filter)[2]).slice().reverse();
+  const menu=useContextMenu(),target=visible.find(t=>t.id===menu.context?.id),live=target&&['running','queued'].includes(target.status);
+  const actions=target?[
+    ...(target.context?.projectId?[item('open','打开工程',()=>openProject(target.context.projectId))]:[]),
+    ...(target.context?.hasRaw?[item('raw','查看原始图',()=>setReviewId(target.id))]:[]),
+    ...(target.message?[item('copy','复制任务信息',()=>void window.tugou.copyText(target.message).catch(e=>setError(e.message)))]:[]),
+    ...(live?[item('cancel','取消任务',()=>perform(target.id,()=>window.tugou.cancelTask(target.id)),{disabled,danger:true})]:[]),
+  ]:[];
   return (
     <>
       {reviewId && (
@@ -53,7 +61,7 @@ export function TaskPanel({ tasks, close, refresh, openProject }) {
         <div className="task-list" role="region" aria-label="任务记录" tabIndex={0}>
           {!visible.length&&<EmptyState compact icon="tasks" title={tasks.length?'暂无此类任务':'暂无任务'} description={tasks.length?'可以切换筛选查看其他记录。':'生成、分析和图像处理任务会显示在这里。'}/>}
           {visible.map((task) => (
-            <article className="task-row" data-status={task.status} data-task-id={task.id} key={task.id}>
+            <article className="task-row" data-status={task.status} data-task-id={task.id} key={task.id} onContextMenu={e=>menu.open(e,{id:task.id})}>
               <span className="task-type-icon" aria-hidden="true"><Icon name={taskIcon(task)}/></span>
               <div className="task-main"><div className="task-row-heading">
                 <strong title={task.label}>{task.label}</strong>
@@ -98,6 +106,7 @@ export function TaskPanel({ tasks, close, refresh, openProject }) {
             </article>
           ))}
         </div>
+        <ContextMenu context={menu.context} close={menu.close} items={actions} className="task-context-menu"/>
       </FormDialog>
     </>
   );

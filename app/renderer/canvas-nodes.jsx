@@ -10,7 +10,6 @@ import {GenerationChoice,ModelChoice,sizeDescription} from './generation-choice.
 import {GenerationProgress,GenerationOutput} from './generation-progress.jsx';
 import {imageSettingsError,imageResultWarning} from '../core/image-settings.cjs';
 import './canvas-nodes.css';
-import {ImageSaveMenu} from './image-save-menu.jsx';
 import {assetUrl} from './canvas.jsx';
 
 export const CanvasContext=createContext(null);
@@ -24,7 +23,7 @@ export function GroupNode({id,data}){
 }
 
 function NodeResults({node,disabled}){
-  const {document,patch,run,showDetails,saveImage}=useContext(CanvasContext);
+  const {document,patch,run,showDetails}=useContext(CanvasContext);
   const [editing,setEditing]=useState(false),d=node.data;
   const panorama=node.type==='panorama';
   const results=(d.outputAssetIds||[d.outputAssetId]).map(id=>document.assets.find(a=>a.id===id)).filter(Boolean);
@@ -36,9 +35,9 @@ function NodeResults({node,disabled}){
     {!image&&<div className="node-result-heading"><span>生成结果{results.length>1?` · ${results.length}`:''}</span><div>
       {asset.kind==='text'?<><IconButton label={editing?'完成编辑':'编辑生成文本'} icon={editing?'check':'edit'} disabled={disabled} onClick={()=>setEditing(!editing)}/><IconButton label="复制生成文本" icon="copy" onClick={()=>run(()=>window.tugou.copyText(text))}/></>:<IconButton label="预览生成结果" icon="maximize" onClick={()=>showDetails(asset.id,node.id)}/>}
     </div></div>}
-    {image?<ImageSaveMenu asset={asset} save={saveImage}><button className="node-result-preview" aria-label="预览生成结果" onClick={()=>showDetails(asset.id,node.id)}><CanvasMediaPreview asset={asset} style={asset.width&&asset.height?{aspectRatio:`${asset.width} / ${asset.height}`}:undefined}/>{panorama&&<span className="panorama-badge"><Icon name="camera"/>360°</span>}</button></ImageSaveMenu>:asset.kind==='text'&&editing?<TextArea aria-label="编辑生成文本" rows={5} value={text} disabled={disabled} onChange={e=>patch(node.id,{resultText:e.target.value})}/>:<CanvasMediaPreview asset={asset.kind==='text'?{...asset,text}:asset}/>}
+    {image?<button className="node-result-preview" data-preview-asset={asset.id} aria-label="预览生成结果" onClick={()=>showDetails(asset.id,node.id)}><CanvasMediaPreview asset={asset} style={asset.width&&asset.height?{aspectRatio:`${asset.width} / ${asset.height}`}:undefined}/>{panorama&&<span className="panorama-badge"><Icon name="camera"/>360°</span>}</button>:asset.kind==='text'&&editing?<TextArea aria-label="编辑生成文本" rows={5} value={text} disabled={disabled} onChange={e=>patch(node.id,{resultText:e.target.value})}/>:<CanvasMediaPreview asset={asset.kind==='text'?{...asset,text}:asset}/>}
     {image&&<div className="node-result-caption"><strong title={asset.name}>{asset.name}</strong><AssetTime asset={asset}/></div>}
-    {results.length>1&&<><div className="node-result-picker" aria-label="选择引用结果">{results.map((a,i)=><button key={a.id} aria-label={`引用结果 ${i+1}`} aria-pressed={a.id===asset.id} disabled={disabled} onClick={()=>patch(node.id,{outputAssetId:a.id})}>{!a.kind||a.kind==='image'?<CanvasMediaPreview asset={a} thumbnail/>:<span>{i+1}</span>}</button>)}</div><small className="node-current-result">当前引用 · {results.findIndex(a=>a.id===asset.id)+1} / {results.length}</small></>}
+    {results.length>1&&<><div className="node-result-picker" aria-label="选择引用结果">{results.map((a,i)=><button key={a.id} data-preview-asset={a.id} aria-label={`引用结果 ${i+1}`} aria-pressed={a.id===asset.id} disabled={disabled} onClick={()=>patch(node.id,{outputAssetId:a.id})}>{!a.kind||a.kind==='image'?<CanvasMediaPreview asset={a} thumbnail/>:<span>{i+1}</span>}</button>)}</div><small className="node-current-result">当前引用 · {results.findIndex(a=>a.id===asset.id)+1} / {results.length}</small></>}
   </section>;
 }
 
@@ -123,7 +122,7 @@ export const ContentNode=memo(function ContentNode({id,type,data,selected}){
   const startEditing=()=>{setEditorHeight(contentRef.current?.querySelector('.node-text,.node-media-preview')?.offsetHeight);setEditing(true);};
   const asset=document.assets.find(a=>a.id===(type==='asset'?data.assetId:data.outputAssetId));
   const regionMask=data.localEdit&&data.localEdit.assetId===asset?.id?document.assets.find(a=>a.id===data.localEdit?.maskId&&a.width===asset.width&&a.height===asset.height):null;
-  const title=type==='module'?data.binding.snapshot.name:type==='recipe'?data.snapshot.name:type==='asset'?(asset?.name||data.name||'图片'):nodeName(node);
+  const title=data.displayName||(type==='module'?data.binding.snapshot.name:type==='recipe'?data.snapshot.name:type==='asset'?(asset?.name||data.name||'图片'):nodeName(node));
   const label={text:'文本',module:'模块',recipe:'配方',asset:asset?.kind==='video'?'视频':asset?.kind==='audio'?'音频':asset?.kind==='text'?'文本':'图片'}[type]||labels[type];
   const category=type==='module'?data.binding.snapshot.kind:type==='text'?data.kind:undefined;
   const text=type==='module'?(data.binding.overrideText??data.binding.snapshot.text):type==='recipe'?data.snapshot.output:type==='text'?data.text:asset?.kind==='text'?(data.resultText??asset.text):data.prompt;
@@ -154,5 +153,5 @@ export const ContentNode=memo(function ContentNode({id,type,data,selected}){
     </>}
     <Handle type="source" position={Position.Right} title="输出：拖向其他节点，或依次点击两个连接点" aria-label="节点输出"/>
   </div>;
-  return generative?content:<ImageSaveMenu asset={asset} save={saveImage}>{content}</ImageSaveMenu>;
+  return content;
 },(a,b)=>a.id===b.id&&a.type===b.type&&a.data===b.data&&a.selected===b.selected);

@@ -33,6 +33,7 @@ import {
   descendants,
   inherited,
   moveLayers,
+  selectionScale,
   moveLineEndpoint,
   deleteLayers,
   duplicateLayers,
@@ -70,7 +71,7 @@ import {needsLayerViewportRefresh,placeLayerBitmap,useLayerViewport} from './use
 import { assetUrl } from "./canvas.jsx";
 import { PaintTools, MaskInk, paintDefaults } from './paint-tools.jsx';
 import { usePainting } from './use-painting.js';
-import { retouchTools, isBrushTool } from './retouch.js';
+import { retouchTools, isBrushTool, animatedLiquifyMessage } from './retouch.js';
 import { fillImageSelection } from './content-fill.js';
 import {createSelectionRaster,largeSelection,measureSelection} from './selection-raster-client.js';
 import { paintGeometry, fillMaskSelection } from './paint-target.js';
@@ -289,6 +290,10 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   const contourNodes=single?.paths?.[contour]?.nodes;
   const activeAnchor=Math.min(anchorIndex,(contourNodes?.length||1)-1);
   const subjectImage=single?.bitmap||document.assets.find(a=>a.id===single?.assetId);
+  const chooseTool=next=>{
+    if(next==='liquify'&&subjectImage?.gif?.frames>1)setMessage(animatedLiquifyMessage);
+    else setTool(next);
+  };
   const subjectStatus=useSubjectStatus({width:subjectImage?.width||single?.width,height:subjectImage?.height||single?.height},single?.kind==='image'&&selectionTools.some(([id])=>id===tool));
   const subjectActive=useRef(false),[subjectStage,setSubjectStage]=useState('');
   useEffect(()=>window.tugou.onSubjectProgress(stage=>{if(subjectActive.current)setSubjectStage(stage)}),[]);
@@ -315,6 +320,8 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       locked:members.some(l=>inherited(document.layers,l,'locked'))};
   },[document.layers,selected,textBoxes,warp]);
   const defaultTarget=arrangement.count>1?'objects':'board';
+  const scalePlan=useMemo(()=>selected.length>1&&showControls&&tool==='select'&&!disabled&&!workspace?.board.locked
+    ?selectionScale(document.layers,selected):null,[document.layers,selected,showControls,tool,disabled,workspace?.board.locked]);
   const target=(!alignTo||(alignTo==='objects'&&arrangement.count<2)||(alignTo==='selection'&&!document.selection))?defaultTarget:alignTo;
   const [maskExtent,setMaskExtent]=useState(null);
   const {selection,width:boardWidth,height:boardHeight}=document;
@@ -749,26 +756,27 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   };
   const panView=(gesture,event)=>({...gesture.view,
     x:gesture.view.x+event.clientX-gesture.clientX,y:gesture.view.y+event.clientY-gesture.clientY});
-  const ordered = (parentId, depth = 0) =>
-    shown.layers
+  const ordered = (parentId, depth = 0, layers=shown.layers) =>
+    layers
       .filter((l) => l.parentId === parentId)
       .reverse()
       .flatMap((l) => [
         { layer: l, depth },
-        ...(l.kind === "group" ? ordered(l.id, depth + 1) : []),
+        ...(l.kind === "group" ? ordered(l.id, depth + 1,layers) : []),
       ]);
-  const hit = (p) => {
-    for (const { layer: l } of ordered()) {
+  const hit = (p,layers=shown.layers,includeLocked=false,scopeId) => {
+    for (const { layer: l } of ordered(scopeId,0,layers)) {
       if (
         l.kind === "group" || l.kind === 'adjustment' ||
-        inherited(shown.layers, l, "hidden") ||
-        inherited(shown.layers, l, "locked")
+        inherited(layers, l, "hidden") ||
+        !includeLocked&&inherited(layers, l, "locked")
       )
         continue;
-      const local = localPoint(shown.layers, l, p.x, p.y);
+      let local;
+      try { local=localPoint(layers,l,p.x,p.y); } catch { continue; } // Keep layers below an old degenerate transform selectable.
       if(l.shape==='path'){if(hitVector(l,local,view.zoom))return l;continue;}
       if(l.kind==='shape'&&l.shape==='line'&&!l.warp){
-        const m=worldMatrix(shown.layers,l),[a,b]=lineEndpoints(l.width,l.height,l.linePoints).map(q=>point(m,q.x,q.y)),dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));
+        const m=worldMatrix(layers,l),[a,b]=lineEndpoints(l.width,l.height,l.linePoints).map(q=>point(m,q.x,q.y)),dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));
         if(Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy)<=Math.max(6/view.zoom,(l.strokeWidth||0)*Math.max(Math.hypot(m[0],m[1]),Math.hypot(m[2],m[3]))/2))return l;
         continue;
       }
@@ -899,6 +907,8 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       }
     }
     if (e.button === 0 && isBrushTool(tool)) {
+      if(tool==='liquify'&&subjectImage?.gif?.frames>1){setMessage(animatedLiquifyMessage);return;}
+      if(workspace?.board.locked){setMessage('请先解锁画板');return;}
       if(paintOptions.target==='mask'&&!['brush','eraser'].includes(tool)){setMessage('请先完成蒙版编辑，再使用修图工具');return;}
       let source=paintSource?.layerId===single?.id?paintSource:null;
       if(['clone','heal'].includes(tool) && (e.altKey || sourceArmed)) {
@@ -928,7 +938,13 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     holder.current.setPointerCapture(e.pointerId);
     setMessage("");
     const base = { start: p, doc: document, view, ids: selected, pointerId:e.pointerId };
-    if (handle?.startsWith("guide-")) drag.current = { ...base, mode: handle };
+    if(handle?.startsWith('scale-')&&scalePlan){
+      const corner=handle.slice(6),opposite={nw:'se',ne:'sw',se:'nw',sw:'ne'}[corner];
+      const pivot=scalePlan.pivots[opposite],end=scalePlan.pivots[corner],vx=end.x-pivot.x,vy=end.y-pivot.y;
+      drag.current={...base,mode:'scale',pivot,apply:scalePlan.from(opposite),canScale:scalePlan.canScale,bounds:null,
+        factorAt:q=>Math.min(100,Math.max(.01,1+((q.x-p.x)*vx+(q.y-p.y)*vy)/(vx*vx+vy*vy)))};
+    }
+    else if (handle?.startsWith("guide-")) drag.current = { ...base, mode: handle };
     else if (handle && single && !inherited(document.layers, single, "locked"))
       drag.current = { ...base, mode: handle, layer: single };
     else if (["rect", "ellipse", "lasso"].includes(tool)) {
@@ -965,6 +981,15 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     }
     const d = drag.current;
     if (!d || d.pointerId!==e.pointerId) return;
+    if(d.mode==='scale'){
+      d.factor=d.factorAt(at(e));
+      if(!d.canScale(d.factor))d.factor=1;
+      if(d.frame===undefined)d.frame=requestAnimationFrame(()=>{
+        d.frame=undefined;
+        if(drag.current===d&&latest.current.document===d.doc)setMotionPreview({gesture:d,factor:d.factor,document:{...d.doc,layers:d.apply(d.factor)}});
+      });
+      return;
+    }
     if(d.mode==='pen'){setPen([...d.before,penNode(d,at(e))]);return;}
     if(d.mode==='anchor'){
       if(latest.current.document!==d.doc)return;
@@ -1097,6 +1122,12 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     if (!d || d.pointerId!==e.pointerId) return;
     clearDrag(d.mode==='pan'?panView(d,e):undefined);
     if(holder.current.hasPointerCapture(e.pointerId))holder.current.releasePointerCapture(e.pointerId);
+    if(d.mode==='scale'){
+      const factor=d.factorAt(at(e));
+      if(!d.canScale(factor)){setMessage('缩放超出可编辑范围，请调整倍率');return;}
+      if(factor!==1&&d.doc===latest.current.document&&!latest.current.disabled)commit(d.apply(factor),{deferSave:true});
+      return;
+    }
     if(d.mode==='pen'){setPen([...d.before,penNode(d,at(e))]);return;}
     if(d.mode==='anchor'){
       setDraft(null);const p=at(e);
@@ -1671,6 +1702,21 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
       }
     });
   const issues = useMemo(()=>unsupported(document.layers),[document.layers]);
+  const request=workspace?.editorRequest;
+  useLayoutEffect(()=>{
+    if(!request)return;
+    const layer=document.layers.find(l=>l.id===request.id);if(!layer)return;
+    workspace.clearEditorRequest();
+    if(disabled)return;
+    if(request.action==='liquify'&&(layer.bitmap||document.assets.find(a=>a.id===layer.assetId))?.gif?.frames>1){setMessage(animatedLiquifyMessage);return;}
+    setPropertiesOpen(true);setBoardTool(false);setMaskViewId(null);
+    setTool(request.action==='anchors'?'nodes':request.action==='mask'?'brush':request.action==='liquify'?'liquify':'select');
+    setPaintOptions(p=>({...p,target:request.action==='mask'?'mask':'image'}));
+    if(request.action==='replace')setReplacement({targetId:layer.id,assetId:layer.assetId});
+    else if(request.action==='load-mask')loadMaskSelection();
+    else if(request.action==='merge')merge();
+  },[request,document.layers,disabled]);
+  const rightClickAllowed=()=>!disabled&&!editingText&&!drag.current&&!painting.busy&&!selectionBusy&&!merging&&!exportState&&!imageImport.importing&&!draft&&!pathDraft&&!shapeDraft&&!pen.length&&!polygon.length;
   const treeLayers=workspace?.layers||document.layers;
   const layerTree=useMemo(()=>(
       <LayerTree
@@ -1712,7 +1758,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     if(['clone','heal'].includes(tool)&&paintSource?.layerId===single.id)sourceMarker=geometry.world(paintSource.u,paintSource.v);
   }
   return (
-    <div className="layer-editor composition-editor" data-properties-open={propertiesOpen||undefined} onContextMenu={e=>{const row=e.target.closest('[data-tree-id]');if(row&&workspace)workspace.contextMenu(e,row.dataset.treeId,gifTime);}} data-dev-update-blocked={editingText||painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||motion||shapeDraft||polygon.length||tool!=='select'?'请先完成图层编辑，并切换到移动工具后更新':undefined}>
+    <div className="layer-editor composition-editor" data-properties-open={propertiesOpen||undefined} onContextMenu={e=>{const row=e.target.closest('[data-tree-id]');if(row&&workspace&&rightClickAllowed())workspace.contextMenu(e,row.dataset.treeId,gifTime);}} data-dev-update-blocked={editingText||painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||motion||shapeDraft||polygon.length||tool!=='select'?'请先完成图层编辑，并切换到移动工具后更新':undefined}>
 
       <div className="composition-tool-rail">
         <Button aria-label="向上滚动工具" title="向上滚动工具" icon="collapse" className="tool-rail-scroll tool-rail-scroll-up" data-rail-direction="up" aria-hidden={!railEdges.up} disabled={!railEdges.up} tabIndex={railEdges.up?0:-1} style={{visibility:railEdges.up?'visible':'hidden'}} onClick={()=>scrollTools(-1)} />
@@ -1730,7 +1776,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           <Button iconOnly icon="zoomIn" onClick={()=>setView({...view,zoom:Math.min(8,view.zoom*1.25)})}>缩放</Button>
           <hr className="tool-rail-divider"/>
             {workspace?.importPsd&&<Menu name="PSD" icon="layers"><Button disabled={disabled||imageImport.importing||painting.busy} onClick={()=>workspace.importPsd()}>导入 PSD</Button><Button disabled={disabled||painting.busy||!!renderError} onClick={()=>workspace.exportPsd()}>导出 PSD</Button></Menu>}
-            <Menu name="修图" icon="tools">{retouchTools.map(([id,name])=><Button key={id} aria-pressed={tool===id} onClick={()=>setTool(id)}>{name}</Button>)}<Button disabled={disabled || selectionBusy || !document.selection || single?.kind !== 'image' || maskEditing} onClick={contentFill}>内容感知填充</Button></Menu>
+            <Menu name="修图" icon="tools">{retouchTools.map(([id,name])=><Button key={id} aria-pressed={tool===id} onClick={()=>chooseTool(id)}>{name}</Button>)}<Button disabled={disabled || selectionBusy || !document.selection || single?.kind !== 'image' || maskEditing} onClick={contentFill}>内容感知填充</Button></Menu>
             <Menu name="添加" icon="add">
               <Button
                 disabled={imageImport.importing||disabled}
@@ -2188,7 +2234,19 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           onDragOver={e=>{if(hasImageFiles(e)){imageImport.over(e);return;}if(!disabled&&e.dataTransfer.types.includes(materialMime)){e.preventDefault();e.dataTransfer.dropEffect='copy';}}}
           onDrop={e=>{if(hasImageFiles(e)){imageImport.drop(e,at(e));return;}if(disabled||!e.dataTransfer.types.includes(materialMime))return;e.preventDefault();run(()=>addAssets([readMaterialDrop(e,projectId,latest.current.document)],at(e)));}}
           onPointerDown={down}
-          onContextMenu={e=>{if(!workspace)return;const p=at(e),id=e.target.closest('[data-board-id]')?.dataset.boardId||hit(p)?.id||[...workspace.boards].reverse().find(b=>p.x>=b.x&&p.y>=b.y&&p.x<=b.x+b.width&&p.y<=b.y+b.height)?.id;if(id)workspace.contextMenu(e,id,gifTime);}}
+          onContextMenu={e=>{
+            if(!workspace||!rightClickAllowed())return;
+            const label=e.target.closest('[data-board-id]')?.dataset.boardId;
+            if(label){workspace.contextMenu(e,label,gifTime);return;}
+            const p=at(e);
+            for(const b of [...workspace.boards].reverse()){
+              const inside=p.x>=b.x&&p.y>=b.y&&p.x<=b.x+b.width&&p.y<=b.y+b.height;
+              if(b.visible===false||!inside&&b.clipContent!==false)continue;
+              const layer=hit(p,workspace.preview.layers,true,b.id);
+              if(layer||inside){workspace.contextMenu(e,layer?.id||b.id,gifTime);return;}
+            }
+            workspace.contextMenu(e,null,gifTime,imageImport.open);
+          }}
           onPointerMove={move}
           onPointerLeave={()=>setPaintCursor(null)}
           onPointerUp={up}
@@ -2284,13 +2342,21 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
                 <rect width={shapeDraft.width} height={shapeDraft.height} fill="none" stroke="var(--accent)" strokeWidth={1/view.zoom} strokeDasharray={`${4/view.zoom} ${3/view.zoom}`}/>
                 <text x={shapeDraft.width/2} y={shapeDraft.height+20/view.zoom} textAnchor="middle" fontSize={11/view.zoom} fill="var(--accent)">{Math.round(shapeDraft.width)} × {Math.round(shapeDraft.height)} px</text>
               </g>}
-              {showControls && tool==='select' && selected.map((id) => {
+              {showControls && tool==='select' && motion?.gesture.mode!=='scale' && selected.map((id) => {
                 const l = shown.layers.find((l) => l.id === id);
                 if (!l||editingText?.id===id) return null;
                 if(l.kind==='shape'&&l.shape==='line'&&!l.warp&&!warp&&single?.id===id&&!inherited(shown.layers,l,'locked')){const m=worldMatrix(shown.layers,l),ends=lineEndpoints(l.width,l.height,l.linePoints).map(p=>point(m,p.x,p.y));return <g key={id}>{single?.id===id&&!inherited(shown.layers,l,'locked')&&ends.map((p,i)=><circle key={i} data-handle={`line-${i}`} aria-label={i?'直线终点':'直线起点'} cx={p.x} cy={p.y} r={6/view.zoom} fill="var(--panel)" stroke="var(--accent)" strokeWidth={1.5/view.zoom} style={{cursor:'crosshair'}}/>)}</g>;}
                 const pts = selectionCorners(l);
                 return <CanvasSelection key={id} points={pts} zoom={view.zoom} editable={single?.id===id&&!inherited(shown.layers,l,'locked')} warp={warp&&l.kind!=='group'}/>;
               })}
+              {scalePlan&&(!motion||motion.gesture.mode==='scale')&&<g aria-label="多选缩放框"
+                transform={motion?`translate(${motion.gesture.pivot.x} ${motion.gesture.pivot.y}) scale(${motion.factor}) translate(${-motion.gesture.pivot.x} ${-motion.gesture.pivot.y})`:undefined}>
+                <rect {...scalePlan.box} fill="none" stroke="var(--accent)" vectorEffect="non-scaling-stroke"/>
+                {['nw','ne','se','sw'].map(corner=><circle key={corner} data-handle={'scale-'+corner}
+                  cx={scalePlan.pivots[corner].x} cy={scalePlan.pivots[corner].y} r={5/(view.zoom*(motion?.factor||1))}
+                  fill="var(--panel)" stroke="var(--accent)" vectorEffect="non-scaling-stroke"
+                  style={{cursor:['ne','sw'].includes(corner)?'nesw-resize':'nwse-resize'}}/>)}
+              </g>}
               {brushOutline&&<polygon points={brushOutline} fill="none" stroke="var(--text)" strokeWidth={1/view.zoom} style={{pointerEvents:'none'}}/>}
               {painting.guide&&<line aria-label="直线绘画引导" x1={painting.guide.from.x} y1={painting.guide.from.y} x2={painting.guide.to.x} y2={painting.guide.to.y} stroke="var(--accent)" strokeWidth={1.5/view.zoom} strokeDasharray={`${5/view.zoom} ${3/view.zoom}`} style={{pointerEvents:'none'}}/>}
               {sourceMarker&&<path aria-label="修图来源" d={`M ${sourceMarker.x-8/view.zoom} ${sourceMarker.y} h ${16/view.zoom} M ${sourceMarker.x} ${sourceMarker.y-8/view.zoom} v ${16/view.zoom}`} stroke="var(--accent)" strokeWidth={1.5/view.zoom} style={{pointerEvents:'none'}}/>}
@@ -2348,11 +2414,12 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             }}/> }
           <div className="layer-stage-hint">
             {editingText ? '正在编辑文字 · Enter 换行 · Ctrl/⌘＋Enter 完成 · Esc 取消' : tool === "select"
-              ? `双击文字编辑 · Shift 多选 · 拖动移动 · ${window.tugou.platform === "darwin" ? "⌘" : "Ctrl"}+滚轮缩放`
+              ? scalePlan?'拖动角点等比缩放 · Esc 取消':`双击文字编辑 · Shift 多选 · 拖动移动 · ${window.tugou.platform === "darwin" ? "⌘" : "Ctrl"}+滚轮缩放`
               : tool==='pen'?'点击加点 · 拖出手柄 · 点首节点闭合 · Enter 完成':tool==='nodes'?'拖动锚点或曲线手柄': tool === "shape"
                 ? (shapeOptions.shape==='line'?"拖拽绘制直线 · Shift 约束角度 · Esc 取消":"拖拽绘制形状 · Shift 等比 · Esc 取消")
               : tool === "hand"
                 ? "拖动平移"
+                : tool==='liquify'?(paintOptions.liquifyMode==='bloat'?'点击或拖动膨胀':paintOptions.liquifyMode==='pucker'?'点击或拖动收缩':'沿拖动方向推移')+' · Esc 取消笔触'
                 : retouchTools.some(([id])=>id===tool)
                   ? `${sourceArmed?'点击设置来源 · ':['clone','heal'].includes(tool)?'Alt 点击取样 · ':''}拖动修图 · Esc 取消笔触`
                 : ['brush','eraser'].includes(tool)
@@ -2377,7 +2444,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
           <label className="check"><input type="checkbox" checked={showControls} onChange={e=>selectionOption('showControls',e.target.checked)}/>显示变换控件</label>
           <Button icon="mask" disabled={!single||disabled||inherited(document.layers,single,'locked')} onClick={()=>{setPaintOptions({...paintOptions,target:'mask'});setTool('brush');setPropertiesOpen(true)}}>编辑蒙版</Button>
           <Button icon="adjust" onClick={()=>setInspectorTab('adjustments')}>调整</Button>
-        </div>:<label className="tool-choice"><Select aria-label="当前编辑工具" value={tool} onChange={e=>setTool(e.target.value)}>{[['hand','平移'],['brush','画笔'],['eraser','橡皮'],...(maskEditing?[]:retouchTools),...selectionTools].map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></label>}
+        </div>:<label className="tool-choice"><Select aria-label="当前编辑工具" value={tool} onChange={e=>chooseTool(e.target.value)}>{[['hand','平移'],['brush','画笔'],['eraser','橡皮'],...(maskEditing?[]:retouchTools),...selectionTools].map(([id,label])=><option key={id} value={id}>{label}</option>)}</Select></label>}
             {["wand", "range"].includes(tool) && (
               <>
                 <NumberField

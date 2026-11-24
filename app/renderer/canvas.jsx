@@ -12,6 +12,7 @@ import {
   EmptyState,
   useTheme,
   ToolPopover,
+  FormDialog,
 } from "./components.jsx";
 import React, {
   useCallback,
@@ -45,6 +46,7 @@ import {
   refreshNode,
 } from "../core/prompts.cjs";
 import { CanvasNodeMenu } from './canvas-node-menu.jsx';
+import {ContextMenu,useContextMenu,menuAction as item,menuDivider as divider} from './context-menu.jsx';
 import {types as workflowTypes,nodeName,nodeWidth,compileWorkflow,workflowNode,inputsOf} from '../core/workflow-nodes.cjs';
 import {CanvasContext,ContentNode,GroupNode} from './canvas-nodes.jsx';
 import {WorkflowSettings} from './workflow-settings.jsx';
@@ -132,6 +134,8 @@ function CanvasWorkspace({
     catch(error){setMessage(error.message);}
   },[projectId]);
   const [createMenu,setCreateMenu] = useState(null);
+  const contextMenu=useContextMenu();
+  const [renameNodeId,setRenameNodeId]=useState(null);
   const [insertPoint,setInsertPoint] = useState(null);
   const selectAfterAdd = useRef(null);
   const pendingLink=useRef(null);
@@ -275,19 +279,18 @@ function CanvasWorkspace({
     const candidate=createNode(document,Object.hasOwn(toolNames,type)?'imageTool':type==='emptyImage'?'asset':type,Object.hasOwn(toolNames,type)?type:undefined,{x:0,y:0});
     return canConnect({nodes:[...nodes,candidate],edges},link.type==='source'?link.id:candidate.id,link.type==='source'?candidate.id:link.id);
   };
-  const remove = () => {
-    const ids = new Set(
-      nodes.filter((node) => node.selected).map((node) => node.id),
-    );
+  const removeTargets = (nodeIds,edgeIds) => {
+    const ids = new Set(nodeIds), links=new Set(edgeIds);
     nodes.filter(n=>ids.has(n.parentId)).forEach(n=>ids.add(n.id));
     commit(
       nodes.filter((node) => !ids.has(node.id)),
       edges.filter(
         (edge) =>
-          !edge.selected && !ids.has(edge.source) && !ids.has(edge.target),
+          !links.has(edge.id) && !ids.has(edge.source) && !ids.has(edge.target),
       ),
     );
   };
+  const remove=()=>removeTargets(nodes.filter(n=>n.selected).map(n=>n.id),edges.filter(e=>e.selected).map(e=>e.id));
   const selected = nodes.filter((node) => node.selected);
   const layoutNodes=layoutSelection(nodes,selected.map(n=>n.id));
   const layoutSameParent=new Set(layoutNodes.map(n=>n.parentId||null)).size<=1;
@@ -340,7 +343,7 @@ function CanvasWorkspace({
           : nodes.map((n) => ({
               id: n.id,
               asset: document.assets.find(a=>a.id===(n.type==="asset"?n.data.assetId:n.data.outputAssetId)),
-              name:
+              name:n.data.displayName||(
                 n.type === "module"
                   ? n.data.binding.snapshot.name
                   : n.type === "recipe"
@@ -348,21 +351,24 @@ function CanvasWorkspace({
                     : n.type === "asset"
                       ? document.assets.find((a) => a.id === n.data.assetId)
                           ?.name || (n.data.assetId?"缺失素材":"图片")
-                      : nodeName(n),
+                      : nodeName(n)),
             }))
   ).filter((item) => item.name?.includes(query));
-  const copy = () => {
-    const ids = new Set(selected.map((n) => n.id));
+  const copyNodes = targets => {
+    const ids = new Set(targets.map(n=>n.id));
     nodes.filter(n=>ids.has(n.parentId)).forEach(n=>ids.add(n.id));
-    setClipboard({
+    return {
       nodes: structuredClone(nodes.filter(n=>ids.has(n.id)).map(n=>{if(!n.parentId||ids.has(n.parentId))return n;const parent=nodes.find(p=>p.id===n.parentId),{parentId,...child}=n;return {...child,position:{x:n.position.x+parent.position.x,y:n.position.y+parent.position.y}};})),
       edges: structuredClone(
         edges.filter((e) => ids.has(e.source) && ids.has(e.target)),
       ),
-    });
+    };
   };
-  const paste = () => {
-    if (!clipboard) return;
+  const copy=()=>setClipboard(copyNodes(selected));
+  const pasteNodes = (clipboard,point) => {
+    if(!clipboard?.nodes.length)return;
+    const roots=clipboard.nodes.filter(n=>!n.parentId);
+    const dx=point?point.x-Math.min(...roots.map(n=>n.position.x)):40,dy=point?point.y-Math.min(...roots.map(n=>n.position.y)):40;
     const ids = new Map(
       clipboard.nodes.map((n) => [n.id, crypto.randomUUID()]),
     );
@@ -375,7 +381,7 @@ function CanvasWorkspace({
           data:{...n.data,...(n.data.promptNodeId?{promptNodeId:ids.get(n.data.promptNodeId)||n.data.promptNodeId}:{}),...(n.type==='text'&&n.data.text?{text:n.data.text.replace(/@\[node:([^\]]+)\]/g,(_,id)=>`@[node:${ids.get(id)||id}]`)}:{}),...(n.data.prompt?{prompt:n.data.prompt.replace(/@\[node:([^\]]+)\]/g,(_,id)=>`@[node:${ids.get(id)||id}]`)}:{}),...(n.data.inputOrder?{inputOrder:n.data.inputOrder.map(id=>ids.get(id)||id)}:{}),...(n.data.firstFrameId?{firstFrameId:ids.get(n.data.firstFrameId)||n.data.firstFrameId}:{}),...(n.data.lastFrameId?{lastFrameId:ids.get(n.data.lastFrameId)||n.data.lastFrameId}:{}),...(n.data.inputRoles?{inputRoles:Object.fromEntries(Object.entries(n.data.inputRoles).map(([id,role])=>[ids.get(id)||id,role]))}:{})},
           id: ids.get(n.id),
           selected: false,
-          position: { x: n.position.x + (n.parentId?0:40), y: n.position.y + (n.parentId?0:40) },
+          position: { x: n.position.x + (n.parentId?0:dx), y: n.position.y + (n.parentId?0:dy) },
         })),
       ],
       [
@@ -389,6 +395,7 @@ function CanvasWorkspace({
       ],
     );
   };
+  const paste=()=>pasteNodes(clipboard);
   const imageImport = useImageImport((assets,point) => {
       const doc = current.current.document,
         next = { ...doc, assets: [...doc.assets, ...assets] },
@@ -474,6 +481,54 @@ function CanvasWorkspace({
     flow.fitView({nodes:[{id}],padding:.4,maxZoom:1,duration:200});
   },[flow]);
   const nodeContext=useMemo(()=>({document:document.tugouCanvas?document:{...document,tugouCanvas:graph},saveImage,paintImage:(nodeId,assetId)=>{if(disabled)return;const source=document.assets.find(a=>a.id===assetId),node=graph.nodes.find(n=>n.id===nodeId);if(source&&node)setPaintSession({nodeId,source,document,mask:node.data.localEdit?.assetId===assetId?document.assets.find(a=>a.id===node.data.localEdit.maskId):null});},resize,previewResize,disabled,tasks,patch:patchById,runNode,cancelNode,submittingIds,connection,refreshConnection,run,importNodeImage,openNodeScene:setSceneNode,showDetails,openConnection,openRecipe,nodeErrors,locateNode,moveInput,removeInput,replaceImage:(nodeId,assetId)=>setReplacement({nodeId,assetId}),updateReference:id=>commit(current.current.nodes.map(n=>n.id===id?refreshNode(current.current.document,n):n),current.current.edges),sizedIds:new Set(sizedKey?sizedKey.split('|'):[])}),[document,disabled,tasks,submittingIds,connection,nodeErrors,sizedKey,resize,previewResize,showDetails,openConnection,openRecipe,projectId,locateNode,saveImage]);
+  const openContext=(event,type,id)=>{
+    if(disabled||event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
+    setCreateMenu(null);pendingLink.current=null;setInsertPoint(null);
+    const ids=type==='node'&&selected.some(n=>n.id===id)?selected.map(n=>n.id):[id];
+    contextMenu.open(event,{type,id,ids,assetId:event.target.closest('[data-preview-asset]')?.dataset.previewAsset});
+  };
+  const contextItems=()=>{
+    const c=contextMenu.context;if(!c||disabled)return [];
+    if(c.type==='pane'){
+      const point=flow.screenToFlowPosition({x:c.x,y:c.y});
+      return [item('add','添加节点…',()=>setCreateMenu({x:c.x,y:c.y,point})),
+        item('paste','粘贴节点',()=>pasteNodes(clipboard,point),{disabled:!clipboard?.nodes.length}),
+        item('fit','查看全部节点',()=>flow.fitView({duration:200,maxZoom:1}),{disabled:!nodes.length})];
+    }
+    if(c.type==='edge'){
+      const edge=edges.find(e=>e.id===c.id);if(!edge)return [];
+      return [item('delete','断开连接',()=>removeTargets([],[edge.id]),{danger:true,disabled:inputLocked(edge.target)})];
+    }
+    const target=nodes.find(n=>n.id===c.id);if(!target)return [];
+    const owned=new Set(c.ids),active=nodes.filter(n=>owned.has(n.id)),ids=active.map(n=>n.id);
+    const blocked=nodes.some(n=>(owned.has(n.id)||owned.has(n.parentId))&&inputLocked(n.id));
+    const multiple=active.length>1;
+    const asset=document.assets.find(a=>a.id===(c.assetId||target.data.assetId||target.data.outputAssetId));
+    const image=asset&&(!asset.kind||asset.kind==='image');
+    const arrangeNodesForMenu=layoutSelection(nodes,ids),sameParent=new Set(arrangeNodesForMenu.map(n=>n.parentId||null)).size<=1;
+    return [
+      ...(!multiple?[item('locate','定位节点',()=>locateNode(target.id)),item('rename',target.type==='group'?'重命名分组…':'重命名节点…',()=>setRenameNodeId(target.id),{disabled:blocked})]:[]),
+      item('copy',multiple?'复制所选节点':'复制节点',()=>setClipboard(copyNodes(active))),
+      item('duplicate',multiple?'创建所选节点副本':'创建节点副本',()=>pasteNodes(copyNodes(active)),{disabled:blocked}),
+      item('cut',multiple?'剪切所选节点':'剪切节点',()=>{setClipboard(copyNodes(active));removeTargets(ids,[]);},{disabled:blocked}),
+      ...(multiple?[
+        item('group','创建分组',()=>run(()=>{const next=groupNodes(nodes,ids);selectAfterAdd.current=next[0].id;commit(next,edges);}),{disabled:blocked||active.some(n=>n.type==='group'||n.parentId)}),
+        {key:'arrange',label:'排版',disabled:blocked||!sameParent,children:[['flow','按连接整理',2],['left','左对齐',2],['top','顶部对齐',2],['horizontal','水平等间距',3],['vertical','垂直等间距',3],['grid','按行整理',2]].map(([key,label,min])=>item(key,label,()=>run(()=>{const next=arrangeNodes(nodes,ids,key,edges);if(next!==nodes)commit(next,edges);}),{disabled:arrangeNodesForMenu.length<min}))},
+      ]:target.type==='group'?[item('ungroup','解散分组',()=>run(()=>commit(ungroupNodes(nodes,target.id),edges)),{disabled:blocked})]:[]),
+      ...(!multiple&&image?[divider,
+        item('view','查看原图',()=>showDetails(asset.id,target.id)),item('save','保存图片…',()=>saveImage(asset.id)),
+        item('replace','替换图片…',()=>setReplacement({nodeId:target.id,assetId:asset.id}),{disabled:blocked||asset.id!==(target.data.assetId||target.data.outputAssetId)}),
+        item('tools','处理图片…',()=>editImages([asset.id],'resize',[target.id]),{disabled:blocked}),
+      ]:[]),
+      ...(!multiple&&target.type==='text'&&target.data.text?[item('copy-text','复制文字',()=>run(()=>window.tugou.copyText(target.data.text)))]:[]),
+      divider,
+      item('delete',multiple?'删除所选节点':target.type==='group'?'删除分组及节点':'删除节点',()=>removeTargets(ids,[]),{danger:true,disabled:blocked}),
+    ];
+  };
+  const renameTarget=renameNodeId?nodes.find(n=>n.id===renameNodeId):null;
+  const linkedNode=renameTarget&&['asset','module','recipe'].includes(renameTarget.type);
+  const renameDefault=renameTarget&&(renameTarget.data.displayName||renameTarget.data.binding?.snapshot.name||renameTarget.data.snapshot?.name||
+    (renameTarget.type==='asset'&&document.assets.find(a=>a.id===renameTarget.data.assetId)?.name)||nodeName(renameTarget)||'');
   return (
     <CanvasContext.Provider value={nodeContext}>
       <div
@@ -749,9 +804,13 @@ function CanvasWorkspace({
               snapGrid={[preferences.value.canvasGridSize,preferences.value.canvasGridSize]}
               zoomOnScroll={preferences.value.canvasWheel==='zoom'}
               panOnScroll={preferences.value.canvasWheel==='pan'}
-              onMoveStart={()=>setCreateMenu(null)}
+              onMoveStart={()=>{setCreateMenu(null);contextMenu.close();}}
               onPaneClick={()=>setCreateMenu(null)}
               onNodeClick={()=>setCreateMenu(null)}
+              onPaneContextMenu={event=>openContext(event,'pane')}
+              onNodeContextMenu={(event,n)=>openContext(event,'node',n.id)}
+              onEdgeContextMenu={(event,edge)=>openContext(event,'edge',edge.id)}
+              onSelectionContextMenu={(event,nodes)=>{if(nodes.length)openContext(event,'node',nodes[0].id);}}
               onNodeDoubleClick={(_,n)=>{if(n.type==='director'||n.type==='panorama'&&n.data.outputAssetId)setSceneNode(n.id);}}
               onConnectEnd={(event,state)=>{
                 if(disabled||state.isValid||!state.fromNode||!event.target.closest('.react-flow__pane'))return;
@@ -847,6 +906,13 @@ function CanvasWorkspace({
               )}
             </ReactFlow>}
             {createMenu&&<CanvasNodeMenu position={createMenu} close={()=>{setCreateMenu(null);pendingLink.current=null;}} choose={chooseNode} disabled={disabled} canChoose={pendingLink.current?canCreateLinked:undefined}/>}
+            <ContextMenu context={contextMenu.context} close={contextMenu.close} items={contextItems()} className="canvas-context-menu"/>
+            {renameTarget&&<FormDialog title="重命名节点" close={()=>setRenameNodeId(null)} width={420}>
+              <form onSubmit={e=>{e.preventDefault();const name=String(new FormData(e.currentTarget).get('name')).trim();if(!name||inputLocked(renameTarget.id))return;patchById(renameTarget.id,linkedNode?{displayName:name}:{name});setRenameNodeId(null);}}>
+                <label>名称 <Input autoFocus required name="name" aria-label="节点名称" maxLength={120} defaultValue={renameDefault}/></label>
+                <div className="dialog-footer"><Button onClick={()=>setRenameNodeId(null)}>取消</Button><Button primary type="submit" disabled={inputLocked(renameTarget.id)}>保存名称</Button></div>
+              </form>
+            </FormDialog>}
           </div>
           <aside
             className={`canvas-inspector ${selected.length ? "" : "collapsed"}`}

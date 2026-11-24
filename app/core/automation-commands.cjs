@@ -93,6 +93,16 @@ for(const [name,description,handler] of [
 define('layer.ungroup','解除图层组合',{id:string},['id'],'document',(d,a)=>{editable(d,[a.id]);if(find(d.layers,a.id).artboard)fail('INVALID_TARGET','不能解除画板');const result=layers.ungroupLayers(d.layers,a.id);d.layers=result.layers;return {ids:result.ids};});
 define('layer.retouchCopy','原位创建图片修图副本并隐藏原层，保留当前外观和原像素；一次撤销恢复',{id:string},['id'],'document',(d,a)=>{editable(d,[a.id]);const result=require('./retouch-copy.cjs').retouchCopy(d.layers,a.id);d.layers=result.layers;return {id:result.id};});
 define('layer.move','以世界坐标增量移动图层',{ids,dx:number,dy:number},['ids','dx','dy'],'document',(d,a)=>{contentLayers(d,a.ids);d.layers=layers.moveLayers(d.layers,a.ids,a.dx,a.dy);});
+
+define('layer.scaleSelection','同一画板内多选图层整体等比缩放，间距同比例变化。factor 为倍率，anchor 为固定角（nw/ne/se/sw）或中心（默认）',{ids:{...ids,minItems:2},factor:{type:'number',minimum:0.01,maximum:100},anchor:enumeration('center','nw','ne','se','sw')},['ids','factor'],'document',(d,a)=>{
+  contentLayers(d,a.ids);
+  const board=boards.owner(d,a.ids[0]);
+  if(!board||a.ids.some(id=>boards.owner(d,id)?.id!==board.id))fail('INVALID_TARGET','请选择同一画板内的图层');
+  const plan=layers.selectionScale(d.layers,a.ids);
+  if(!plan)fail('INVALID_TARGET','请选择至少两个可缩放且已解锁的独立图层');
+  d.layers=plan.from(a.anchor||'center')(a.factor);
+  return {changed:a.factor!==1};
+});
 define('layer.reorder','调整图层顺序',{ids,action:enumeration('top','bottom','up','down')},['ids','action'],'document',(d,a)=>{editable(d,a.ids);d.layers=layers.reorder(d.layers,a.ids,a.action);});
 define('layer.reparent','将图层移动到画板或分组',{ids,targetId:string},['ids','targetId'],'document',(d,a)=>{editable(d,[...a.ids,a.targetId]);return {document:boards.relocate(d,a.ids,a.targetId)};});
 const arrangementArgs={ids,axis:enumeration('x','y'),target:enumeration('objects','selection','board')};
@@ -204,6 +214,7 @@ define('image.process','异步执行本地图像处理；返回任务 ID，结�
 function validate(name,args) {
   const c=catalog.get(name);if(!c)fail('UNKNOWN_COMMAND',`未知命令：${name}`);
   if(!c.validate(args))fail('INVALID_ARGUMENT',`${name}: ${ajv.errorsText(c.validate.errors)}`);
+  if(name==='paint.retouch'&&args.liquifyMode&&args.tool!=='liquify')fail('INVALID_ARGUMENT','liquifyMode 仅用于液化工具');
   return c;
 }
 function listCommands(domain,schemas=true){return [...catalog.values()].filter(c=>!domain||c.name.startsWith(domain+'.')).map(({validate,apply,inputSchema,...c})=>schemas?{...c,inputSchema}:{...c,required:inputSchema.required});}

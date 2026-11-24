@@ -10,6 +10,7 @@ export const retouchTools = [
 ];
 export const isBrushTool = (tool) =>
   ["brush", "eraser", ...retouchTools.map(([id]) => id)].includes(tool);
+export const animatedLiquifyMessage = '液化仅支持静态图片，请先将所需的 GIF 帧导出为 PNG 并导入图层';
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const yieldFrame = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -53,11 +54,13 @@ export async function createRetouchStroke(doc, layer, engine, options) {
     inherited(doc.layers, layer, "hidden")
   )
     throw new Error("请先显示并解锁图层及所属分组");
-  const image = await engine.image(
-    layer.bitmap || doc.assets.find((a) => a.id === layer.assetId),
-  );
-  const width = image.naturalWidth,
-    height = image.naturalHeight;
+  const asset = layer.bitmap || doc.assets.find((a) => a.id === layer.assetId);
+  const liquify = options.tool === 'liquify';
+  if (asset?.gif?.frames > 1) throw new Error(liquify ? animatedLiquifyMessage : '修图仅支持静态图片，请先导出所需的 GIF 帧');
+  const image = await engine.image(asset);
+  const width = image.naturalWidth || image.width,
+    height = image.naturalHeight || image.height;
+  if (!(width > 0 && height > 0)) throw new Error('图片像素尺寸无效');
   const output = surface(width, height),
     ctx = output.getContext("2d", { willReadFrequently: true });
   ctx.drawImage(image, 0, 0);
@@ -229,11 +232,13 @@ export async function createRetouchStroke(doc, layer, engine, options) {
     const moving = ["smudge", "liquify"].includes(options.tool),
       dx = previous ? p.x - previous.x : 0,
       dy = previous ? p.y - previous.y : 0;
-    if (moving && !Math.hypot(dx, dy)) return;
-    const target = moving
-        ? ctx.getImageData(x, y, w, h)
-        : read(image, x, y, w, h),
-      result = ctx.getImageData(x, y, w, h);
+    const radial=options.tool==='liquify'&&['bloat','pucker'].includes(options.liquifyMode);
+    const distance=Math.hypot(dx,dy);
+    if (moving && !distance && (!radial || previous)) return;
+    // A click applies one radial dab. Moving accumulates by distance rather than pointer event frequency.
+    const radialStep=radial?(options.liquifyMode==='bloat'?1:-1)*(previous?Math.min(.45,distance/r):.45):0;
+    const result = ctx.getImageData(x, y, w, h),
+      target = moving ? result : read(image, x, y, w, h);
     const selection = maskContext?.getImageData(x, y, w, h).data;
     let source,
       originX,
@@ -256,7 +261,7 @@ export async function createRetouchStroke(doc, layer, engine, options) {
         options.blurRadius,
       );
     } else {
-      padding = Math.ceil(Math.hypot(dx, dy)) + 2;
+      padding = Math.ceil(radial?Math.abs(radialStep)*r:distance) + 2;
       originX = Math.max(0, x - padding);
       originY = Math.max(0, y - padding);
       source = ctx.getImageData(
@@ -270,7 +275,7 @@ export async function createRetouchStroke(doc, layer, engine, options) {
       strength = options.opacity / 100;
     peakPatchBytes = Math.max(
       peakPatchBytes,
-      target.data.byteLength +
+      (moving ? 0 : target.data.byteLength) +
         result.data.byteLength +
         source.data.byteLength +
         (selection?.byteLength || 0),
@@ -301,9 +306,9 @@ export async function createRetouchStroke(doc, layer, engine, options) {
           sx -= dx;
           sy -= dy;
         } else if (options.tool === "liquify") {
-          const pull = (1 - d * d) ** 2 * strength;
-          sx -= dx * pull;
-          sy -= dy * pull;
+          const pull = (1 - d * d) ** 2 * strength * falloff;
+          sx -= (radial?(gx+.5-p.x)*radialStep:dx) * pull;
+          sy -= (radial?(gy+.5-p.y)*radialStep:dy) * pull;
         }
         sample(source.data, source.width, source.height, sx, sy, color);
         if (options.tool === "heal") {
@@ -314,7 +319,7 @@ export async function createRetouchStroke(doc, layer, engine, options) {
               clamp(color[k] / color[3] + correction[k], 0, 255) * alpha;
           color[3] = alpha;
         }
-        for (let k = 0; k < 4; k++) result.data[n + k] = target.data[n + k];
+        if (!moving) for (let k = 0; k < 4; k++) result.data[n + k] = target.data[n + k];
         mix(
           result.data,
           n,
@@ -326,6 +331,17 @@ export async function createRetouchStroke(doc, layer, engine, options) {
     abort();
     ctx.putImageData(result, x, y);
   };
+  const spacing = Math.max(2, options.size * .2);
+  const follow = 1 - (options.smoothing / 100) * .9;
+  let carried = 0, dab;
+  const interpolate = (a,b,t) => ({
+    x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t, pressure:a.pressure+(b.pressure-a.pressure)*t,
+  });
+  const flushLiquify = async () => {
+    if (dab && last && (last.x !== dab.x || last.y !== dab.y)) await stamp(last,dab);
+    dab=last;
+    carried=0;
+  };
   return {
     canvas: output,
     async add(point) {
@@ -333,13 +349,13 @@ export async function createRetouchStroke(doc, layer, engine, options) {
       const p = local(point);
       if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
       if (!last) {
-        last = filtered = p;
+        last = filtered = dab = p;
         if (["clone", "heal"].includes(options.tool)) await prepareSource(p);
         await stamp(p);
         return;
       }
-      const follow = 1 - (options.smoothing / 100) * 0.9;
-      filtered = {
+      // Liquify smooths uniformly spaced dabs, independent of input event rate.
+      filtered = liquify ? p : {
         x: filtered.x + (p.x - filtered.x) * follow,
         y: filtered.y + (p.y - filtered.y) * follow,
         pressure: p.pressure,
@@ -360,12 +376,35 @@ export async function createRetouchStroke(doc, layer, engine, options) {
         if (!a) {
           if (b < 0) {
             last = filtered;
+            if (liquify) { dab=null; carried=0; }
             return;
           }
           continue;
         }
         if (a < 0) from = Math.max(from, b / a);
         else to = Math.min(to, b / a);
+      }
+      if (liquify) {
+        const start=last;
+        last=p;
+        if (from>to) { dab=null; carried=0; return; }
+        const length=Math.hypot(dx,dy);
+        if (!length) return;
+        if (!dab || from>0) { dab=interpolate(start,p,from); carried=0; }
+        const visible=length*(to-from);
+        let offset=spacing-carried;
+        for (; offset<=visible+1e-9; offset+=spacing) {
+          const sample=interpolate(start,p,Math.min(to,from+offset/length));
+          const next=interpolate(dab,sample,follow);
+          await stamp(next,dab);
+          dab=next;
+        }
+        carried=Math.max(0,visible+spacing-offset);
+        if (to<1) {
+          await stamp(interpolate(start,p,to),dab);
+          dab=null; carried=0;
+        }
+        return;
       }
       const count = Math.max(
         1,
@@ -388,6 +427,7 @@ export async function createRetouchStroke(doc, layer, engine, options) {
         }
       last = filtered;
     },
+    finish: liquify ? flushLiquify : undefined,
     render() {
       return output;
     },

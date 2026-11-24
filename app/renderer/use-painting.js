@@ -212,7 +212,8 @@ export function usePainting({ latest, engine, change, setMessage }) {
           Math.hypot(point.x - a.start.x, point.y - a.start.y) * a.zoom < 3
             ? a.linkFrom
             : undefined;
-        a.stroke.finish?.(point, from);
+        await a.stroke.finish?.(point, from);
+        if (active.current !== a) return;
         cancelAnimationFrame(a.frame);
         show(a);
         encoder.current??=new RasterEncoder();encoded=await encoder.current.encode(a.stroke.canvas);

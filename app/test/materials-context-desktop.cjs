@@ -43,7 +43,7 @@ app.on('browser-window-created',(_,w)=>{
    await js(`window.confirmCalls=[];window.confirmResult=false;window.confirm=message=>{window.confirmCalls.push(message);return window.confirmResult;};void 0;`);
    await js(`(${card('保留图片')}).querySelector('input').click()`);
    await context('待删除图片');
-   check('image menu contains save and danger delete',await js(`document.querySelectorAll('.image-save-menu [role=menuitem]').length===2&&document.querySelector('.image-save-menu .ant-dropdown-menu-item-danger')?.textContent==='删除'`));
+   check('image menu contains save, add-to-layer and danger delete',await js(`[...document.querySelectorAll('.image-save-menu [role=menuitem]')].some(e=>e.textContent==='保存图片…')&&[...document.querySelectorAll('.image-save-menu [role=menuitem]')].some(e=>e.textContent==='添加到图层')&&document.querySelector('.image-save-menu .ant-dropdown-menu-item-danger')?.textContent==='删除'`));
    await capture('image-menu');await item('删除');
    check('cancel keeps clicked image and selection',await has('待删除图片')&&await js(`(${card('保留图片')}).querySelector('input').checked&&window.confirmCalls[0].includes('原文件不会删除')`));
    await js('window.confirmResult=true');await context('待删除图片');await item('删除');
@@ -54,7 +54,7 @@ app.on('browser-window-created',(_,w)=>{
     const revision=(await state()).revision,confirms=await js('window.confirmCalls.length');await context(name);await item('删除');
     check(name+' prevents deletion without changing document',await has(name)&&(await state()).revision===revision&&await js(`window.confirmCalls.length===${confirms}&&document.querySelector('[role=alert]').textContent.includes('仍被')`));
    }
-   await context('文本素材');check('text material has delete only',await js(`document.querySelectorAll('.image-save-menu [role=menuitem]').length===1&&document.querySelector('.image-save-menu [role=menuitem]').textContent==='删除'`));
+   await context('文本素材');check('text material offers text-specific actions and danger delete',await js(`(()=>{const labels=[...document.querySelectorAll('.image-save-menu [role=menuitem]')].map(e=>e.textContent);return labels.includes('复制文字')&&labels.includes('导出原文件…')&&labels.includes('删除')&&!labels.includes('保存图片…')&&!labels.includes('添加到图层')})()`));
    await item('删除');check('text deletion succeeds and clears old error',!await has('文本素材')&&await js(`!document.querySelector('.asset-library [role=alert]')`));
    await context('保留图片');await item('保存图片…');check('save action still opens export dialog',saves===1&&await has('保留图片'));
    await js(`(${card('待删除图片')}).querySelector('input').click();document.querySelector('.library-toolbar [aria-label="移除 (2)"]').click()`);await delay(150);

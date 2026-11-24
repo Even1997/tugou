@@ -307,8 +307,23 @@ window.retouchQA.verify = async () => {
     await pending,
   );
   const cancelMs = performance.now() - start;
+  const stripes=surface(96,64), ink=stripes.getContext('2d');
+  ink.fillStyle='white';ink.fillRect(0,0,96,64);
+  ink.fillStyle='black';for(let x=0;x<96;x+=4)ink.fillRect(x,0,2,64);
+  const striped={...layer,width:96,height:64,bitmap:{dataUrl:stripes.toDataURL()}},times={};
+  let sparse;
+  for(const count of [2,161]){
+    const stroke=await createRetouchStroke({...doc,width:96,height:64,layers:[striped]},striped,engine,
+      {...options,tool:'liquify',liquifyMode:'bloat',size:32,hardness:80,smoothing:0});
+    const began=performance.now();
+    for(let i=0;i<count;i++)await stroke.add({x:24+40*i/(count-1),y:32});
+    await stroke.finish();times[count]=Math.round(performance.now()-began);
+    const pixels=stroke.canvas.getContext('2d').getImageData(0,0,96,64).data;
+    if(sparse)check('two and 161 samples along 40px produce identical liquified stripes',pixels.every((v,i)=>v===sparse[i]));
+    sparse=pixels;stroke.dispose();
+  }
   engine.dispose();
-  return { checks, cancelMs };
+  return { checks, cancelMs, liquifyMilliseconds:times };
 };
 window.retouchQA.verifyLarge = async () => {
   const base = surface(10000, 10000),

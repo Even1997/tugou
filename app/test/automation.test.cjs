@@ -6,6 +6,35 @@ const step=(name,command,args={})=>({name,command,args});
 const ref=name=>({$ref:name+'.id'});
 const apply=(d,command,args)=>batch(d,[step('one',command,args)]);
 
+test('shared selection scale preserves world corners through rotated parents, flips and nested selection',()=>{
+ const L=require('../core/layers.cjs'),make=(kind,props)=>L.createLayer(kind,props);
+ const board=make('group',{id:'board',artboard:true,background:'#ffffff',x:240,y:120,width:500,height:400});
+ const group=make('group',{id:'group',parentId:'board',x:45,y:66,rotation:-24,scaleX:1.4,scaleY:.8});
+ const a=make('image',{id:'a',parentId:'group',x:37,y:53,rotation:20,flipX:true,width:70,height:80});
+ const b=make('image',{id:'b',parentId:'board',x:140,y:110,rotation:55,flipY:true,width:42,height:36});
+ const doc={...base(),layers:[board,group,a,b]};
+ for(const ids of [['a','b'],['group','a','b']])for(const anchor of ['nw','ne','se','sw','center'])for(const factor of [.5,2]){
+   const pivot=L.selectionScale(doc.layers,ids).pivots[anchor];
+   const next=apply(doc,'layer.scaleSelection',{ids,factor,anchor}).document;
+   for(const l of [a,b]){
+     const before=L.corners(doc.layers,l),after=L.corners(next.layers,next.layers.find(v=>v.id===l.id));
+     before.forEach((p,i)=>{for(const axis of ['x','y'])assert.ok(Math.abs(after[i][axis]-(pivot[axis]+(p[axis]-pivot[axis])*factor))<1e-8);});
+   }
+ }
+ for(const factor of [0,-1,101])assert.throws(()=>apply(doc,'layer.scaleSelection',{ids:['a','b'],factor}));
+ const shrink=d=>apply(d,'layer.scaleSelection',{ids:['group','b'],factor:.01}).document;
+ const tiny=shrink(shrink(doc)),before=structuredClone(tiny);
+ assert.throws(()=>shrink(tiny),/超出可编辑范围/);
+ assert.deepEqual(tiny,before);
+ for(const l of tiny.layers)assert.doesNotThrow(()=>L.localPoint(tiny.layers,l,50,35));
+ assert.throws(()=>shrink({...doc,layers:[board,group,{...a,scaleX:1e-4,scaleY:1e-4},b]}),/超出可编辑范围/);
+ assert.throws(()=>apply({...doc,layers:[board,group,{...a,locked:true},b]},'layer.scaleSelection',{ids:['group','b'],factor:2}));
+ assert.throws(()=>apply(doc,'layer.scaleSelection',{ids:['group','a'],factor:2}));
+ const stroke={id:'a',requestId:'r',tool:'liquify',points:[{x:5,y:5}],size:8};
+ for(const liquifyMode of ['push','bloat','pucker'])assert.doesNotThrow(()=>validate('paint.retouch',{...stroke,liquifyMode}));
+ for(const extra of [{liquifyMode:'bad'},{tool:'blur',liquifyMode:'bloat'}])assert.throws(()=>validate('paint.retouch',{...stroke,...extra}));
+});
+
 test('cutout edge schema exposes source-pixel bounds and rejects invalid requests',()=>{
  const args={ids:['a'],requestId:'edge-test',settings:{operation:'cutout',model:'u2netp',edgeShrink:1,edgeFeather:0.5}};
  assert.doesNotThrow(()=>validate('image.process',args));

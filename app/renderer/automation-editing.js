@@ -95,7 +95,7 @@ export async function runEditingJob({taskId,command,input:a},source,commit,guard
       if(length>20000)fail('单次笔画过长，请拆分笔画');
       const stroke=await createRetouchStroke(doc,layer,engine,{opacity:100,hardness:80,smoothing:0,blurRadius:5,...a});
       const abort=()=>stroke.dispose();signal.addEventListener('abort',abort,{once:true});
-      try{for(let i=0;i<a.points.length;i++){check();await stroke.add({...a.points[i],pointerType:a.pressure?'pen':'mouse'});progress((i+1)/a.points.length,'处理修图笔画');}check();return replaceLayer({bitmap:await save(stroke.render(),'修图笔画')},{id:layer.id});}
+      try{for(let i=0;i<a.points.length;i++){check();await stroke.add({...a.points[i],pointerType:a.pressure?'pen':'mouse'});progress((i+1)/a.points.length,'处理修图笔画');}check();await stroke.finish?.();return replaceLayer({bitmap:await save(stroke.render(),'修图笔画')},{id:layer.id});}
       finally{signal.removeEventListener('abort',abort);stroke.dispose();}
     }
     if(command==='mask.relink'){

@@ -21,6 +21,32 @@ app.whenReady().then(async()=>{
     await js("qa.undo();void 0");await wait("x('a')===20");
     await js("document.querySelector('[data-tree-id=b] .layer-preview').dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}));void 0");
     await wait("choice()==='objects'");
+    const corner=await js("(()=>{const r=document.querySelector('[data-handle=scale-se]').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()");
+    const enlarge={x:corner.x+100,y:corner.y+35};
+    const pointer=type=>w.webContents.sendInputEvent({type,button:'left',clickCount:1,...(type==='mouseDown'?corner:enlarge),...(type==='mouseMove'?{modifiers:['leftButtonDown']}:{})});
+    pointer('mouseDown');pointer('mouseMove');await wait("document.querySelector('[aria-label=多选缩放框]').hasAttribute('transform')");
+    assert.equal(await js('qa.history.length'),0);
+    w.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});w.webContents.sendInputEvent({type:'keyUp',keyCode:'Escape'});pointer('mouseUp');
+    await wait("visible()&&qa.history.length===0");
+    await js('qa.onChange=(_,opts)=>qa.lastOptions=opts;void 0');
+    pointer('mouseDown');pointer('mouseMove');pointer('mouseUp');
+    await wait("qa.history.length===1&&qa.lastOptions?.deferSave===true");
+    assert.deepEqual(await js("[x('a'),x('b'),qa.doc.layers.find(l=>l.id==='a').scaleX]"),[20,140,1.5]);
+    await js('qa.undo();void 0');await wait("x('b')===100&&visible()");
+    await js("qa.load({...qa.doc,layers:qa.doc.layers.map(l=>l.id==='a'?{...l,scaleX:.0001,scaleY:.0001}:l)});qa.select(['a','b']);void 0");
+    const cornerPoint=name=>js("(()=>{const r=document.querySelector('[data-handle=scale-"+name+"]').getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)}})()");
+    await wait("document.querySelector('[data-handle=scale-se]')");
+    const se=await cornerPoint('se'),nw=await cornerPoint('nw');
+    w.webContents.sendInputEvent({type:'mouseDown',...se,button:'left',clickCount:1});
+    w.webContents.sendInputEvent({type:'mouseMove',...nw,modifiers:['leftButtonDown']});
+    w.webContents.sendInputEvent({type:'mouseUp',...nw,button:'left',clickCount:1});
+    await wait("document.querySelector('.message')?.textContent.includes('超出可编辑范围')");
+    assert.equal(await js('qa.history.length'),0);
+    await js("qa.load({...qa.doc,layers:qa.doc.layers.map(l=>l.id==='a'?{...l,scaleX:1,scaleY:1}:l.id==='b'?{...l,scaleX:1e-6,scaleY:1e-6}:l)});qa.select(['c']);setView();void 0");await wait("document.querySelector('[data-tree-id=c][aria-selected=true]')");
+    const underlying=await js("pickPoint()");
+    for(const type of ['mouseDown','mouseUp'])w.webContents.sendInputEvent({type,...underlying,button:'left',clickCount:1});
+    await wait("document.querySelector('[data-tree-id=a][aria-selected=true]')");
+    await js("qa.load({...qa.doc,layers:qa.doc.layers.map(l=>l.id==='b'?{...l,scaleX:1,scaleY:1}:l)});qa.select(['a','b']);void 0");await wait("choice()==='objects'");
     await js("press('左对齐')");await wait("x('a')===20&&x('b')===20&&qa.history.length===1");
     await js("qa.undo();void 0");await wait("x('b')===100");
     async function choose(ref){
@@ -52,7 +78,29 @@ app.whenReady().then(async()=>{
     await js("press('左对齐')");assert.equal(await js('qa.history.length'),0);
     await js("bar().querySelector('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));void 0");
     await wait("document.querySelector('[data-option-value=selection]')?.closest('.ant-select-item-option-disabled')");
-    assert.deepEqual(errors,[]);console.log('PASS tree, canvas, three references, spacing, distribution, undo, no-op, 200% positioning, drag visibility');
+    assert.equal(await js("document.querySelectorAll('[data-handle^=scale-]').length"),0);
+    await js("qa.select([]);document.activeElement?.blur();void 0");await wait('!bar()');
+    await js("document.querySelector('[data-tree-id=b]').dispatchEvent(new MouseEvent('contextmenu',{button:2,bubbles:true,cancelable:true,clientX:220,clientY:220}));void 0");
+    const liquify="[...document.querySelectorAll('.studio-context-menu [role=menuitem]')].find(i=>i.textContent.trim()==='液化')";
+    await wait(liquify);await js(liquify+'.click();void 0');
+    const control="document.querySelector('[aria-label=液化模式]')?.closest('.studio-select')";
+    await wait(control+"?.dataset.value==='push'");
+    for(const mode of ['bloat','pucker']){
+      await js(control+".querySelector('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));void 0");
+      const option="document.querySelector('[data-option-value="+mode+"]')";await wait(option);await js(option+'.click();void 0');
+      await wait(control+"?.dataset.value==='"+mode+"'");
+    }
+    const sharp=require('sharp'),{encodeGif}=require('../core/gif.cjs');
+    const frames=await Promise.all(['red','blue'].map(background=>sharp({create:{width:32,height:32,channels:4,background}}).png().toBuffer()));
+    const gif=await encodeGif(frames,{width:32,height:32,delays:[100,100]});
+    const asset={id:'animated',width:32,height:32,dataUrl:'data:image/gif;base64,'+Buffer.from(gif).toString('base64'),gif:{frames:2,delays:[100,100],loop:0}};
+    await js("qa.load({...qa.doc,assets:["+JSON.stringify(asset)+"],layers:qa.doc.layers.map(l=>l.id==='b'?{...l,bitmap:undefined,assetId:'animated'}:l)});qa.select(['b']);setView();void 0");
+    await wait("document.querySelector('.layer-stage.tool-select')&&qa.doc.assets.some(a=>a.id==='animated')");
+    await js("document.querySelector('[data-tree-id=b]').dispatchEvent(new MouseEvent('contextmenu',{button:2,bubbles:true,cancelable:true,clientX:220,clientY:220}));void 0");
+    await wait(liquify);await js(liquify+'.click();void 0');
+    await wait("document.querySelector('.message')?.textContent.includes('静态图片')");
+    assert.equal(await js("qa.history.length===0&&!document.querySelector('[aria-label=液化模式]')"),true);
+    assert.deepEqual(errors,[]);console.log('PASS alignment, multi-image scale preview, cancel, one deferred-save commit, lock, and image context liquify modes');
     app.exit(0);
   }catch(e){console.error(e.stack,errors,await js("({count:qa.history.length,x:qa.doc.layers.map(l=>[l.id,l.x,l.y,l.width]),target:choice(),disabled:bar()&&button('右对齐').disabled,msg:document.querySelector('[role=alert],.message.error')?.textContent})").catch(()=>null));app.exit(1);}
 });
@@ -111,8 +159,10 @@ function fixture(root){
   const board=createLayer('group',{id:'board',artboard:true,x:400,y:300,width:260,height:200,background:'#ffffff',clipContent:true,
     selection:{paths:[{operation:'add',points:[40,40,210,40,210,150,40,150]},{operation:'subtract',points:[0,0,60,0,60,200,0,200]}]}});
   const shape=(id,x,w)=>createLayer('shape',{id,name:id,parentId:'board',x,y:45,width:w,height:35});
+  const canvas=document.createElement('canvas');canvas.width=30;canvas.height=35;canvas.getContext('2d').fillRect(0,0,30,35);
+  const image=(id,x,w)=>({...shape(id,x,w),kind:'image',bitmap:{dataUrl:canvas.toDataURL(),width:30,height:35}});
   const other=createLayer('group',{id:'other',artboard:true,background:'transparent',x:0,y:0,width:140,height:100});
-  qa.load({...qa.doc,layers:[other,board,shape('a',20,30),shape('b',100,20),shape('c',200,20)]});qa.mode('boards');qa.select(['a']);
+  qa.load({...qa.doc,layers:[other,board,image('a',20,30),image('b',100,20),shape('c',200,20)]});qa.mode('boards');qa.select(['a']);
   Object.assign(window,{
     setView:()=>views.get('layers').restore({view:{x:36,y:32,zoom:2},tool:'select'}),
     editNodes:()=>views.get('layers').restore({view:{x:30,y:16,zoom:2},tool:'nodes'}),

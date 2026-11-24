@@ -5,6 +5,7 @@ import {templates,group} from '../core/font-library.cjs';
 import './font-workspace.css';
 import {FontRecognition} from './font-recognition.jsx';
 import {RemovalDialog} from './removal-dialog.jsx';
+import {ContextMenu,useContextMenu,menuAction as item} from './context-menu.jsx';
 
 const api=window.tugou,call=(name,args={})=>api.fontCommand('font.'+name,args),request=()=>crypto.randomUUID();
 const count=value=>[...(value||'')].length;
@@ -14,17 +15,21 @@ const operation={recognize:'识别文字',plan:'准备模板',process:'校正字
 export function FontWorkspace(){
   const [projects,setProjects]=useState([]),[selected,setSelected]=useState(null),[creating,setCreating]=useState(false),[error,setError]=useState('');
   const [removing,setRemoving]=useState(null);
+  const menu=useContextMenu(),target=projects.find(p=>p.id===menu.context?.id);
   const refresh=()=>call('project.list').then(r=>setProjects(r.projects)).catch(e=>setError(e.message));
   useEffect(()=>{refresh();},[selected]);
   return <section className="font-workspace" aria-label="字体工作区">
     {selected?<FontProject key={selected} id={selected} back={()=>setSelected(null)} remove={setRemoving}/>:<>
       <header className="font-heading"><h1>我的字体</h1>{projects.length>0&&<Button primary icon="add" onClick={()=>setCreating(true)}>新建字体</Button>}</header>
       {error&&<p role="alert" className="font-error">{error}</p>}
-      {projects.length>0?<div className="font-projects">{projects.map(p=><div className="font-project-card" key={p.id}><button className="font-project-open" onClick={()=>setSelected(p.id)}>
+      {projects.length>0?<div className="font-projects">{projects.map(p=><div className="font-project-card" key={p.id} onContextMenu={e=>menu.open(e,{id:p.id})}><button className="font-project-open" onClick={()=>setSelected(p.id)}>
         <div className="font-card-specimen" aria-hidden="true">{[...p.characters].slice(0,4).join('')}<small>参考字符</small></div>
         <strong>{p.name}</strong><span>{count(p.covered)} 字形</span>
       </button><Button iconOnly icon="delete" aria-label={'删除字体 '+p.name} onClick={()=>setRemoving(p)}/></div>)}<button className="font-project-card font-project-new" onClick={()=>setCreating(true)}><Icon name="add"/><span>新建字体</span></button></div>:<EmptyState icon="text" title="创建你的第一款字体"><Button primary icon="add" onClick={()=>setCreating(true)}>新建字体</Button></EmptyState>}
     </>}
+    <ContextMenu context={menu.context} close={menu.close} className="font-context-menu" items={target&&!selected?[
+      item('open','打开字体工程',()=>setSelected(target.id)),item('delete','删除字体',()=>setRemoving(target),{danger:true}),
+    ]:[]}/>
     {creating&&<CreateFont close={()=>setCreating(false)} created={p=>{setCreating(false);setSelected(p.id);}}/>}
     {removing&&<RemovalDialog title={'删除字体「'+removing.name+'」？'} description="字体工程将从列表和字体选择器移除，不能通过撤销恢复。已在其他工程使用的字体及已导出的文件保留。" close={()=>setRemoving(null)} remove={async()=>{await call('project.delete',{projectId:removing.id,fontRevision:removing.fontRevision,requestId:request()});if(selected===removing.id)setSelected(null);await refresh();}}/>}
   </section>;

@@ -9,6 +9,8 @@ import {
 } from "../core/prompts.cjs";
 import { RecipeWorkbench, PromptPreview } from "./recipes.jsx";
 import {PromptHoverPreview} from './prompt-hover-preview.jsx';
+import {ContextMenu,useContextMenu,menuAction as item,menuDivider as divider} from './context-menu.jsx';
+import {RemovalDialog} from './removal-dialog.jsx';
 import {
   Button,
   Icon,
@@ -35,6 +37,7 @@ export function PromptWorkbench({
   busy,
 }) {
   const [query, setQuery] = useState("");
+  const menu=useContextMenu(),[removing,setRemoving]=useState(null),[error,setError]=useState('');
   useUiView('prompts',{get:()=>({query}),restore:v=>setQuery(v.query)});
   const selectedId = activeId ?? document.modules[0]?.id,
     selected = document.modules.find((m) => m.id === selectedId),
@@ -42,6 +45,11 @@ export function PromptWorkbench({
       (r) => r.id === (recipeId ?? document.recipes[0]?.id),
     );
   const update = (patch) => change(editModule(document, selectedId, patch));
+  const copyModule=module=>{
+    const copy={...module,id:crypto.randomUUID(),name:`${module.name} 副本`,global:false};
+    if(change({...document,modules:[...document.modules,copy]})!==false)onSelect(copy.id);
+  };
+  const target=document.modules.find(m=>m.id===menu.context?.id);
   const add = () => {
     const module = {
       id: crypto.randomUUID(),
@@ -70,6 +78,7 @@ export function PromptWorkbench({
               <Button
                 className={`module ${m.id === selectedId ? "selected" : ""}`}
                 onClick={() => onSelect(m.id)}
+                onContextMenu={e=>{if(!busy)menu.open(e,{id:m.id});}}
                 draggable
                 onDragStart={(e) =>
                   e.dataTransfer.setData(
@@ -89,6 +98,16 @@ export function PromptWorkbench({
         </div>
       </aside>
       <section className="module-editor">
+        {error&&<p role="alert">{error}</p>}
+        <ContextMenu context={menu.context} close={menu.close} className="prompt-context-menu" items={target&&!busy?[
+          item('edit','编辑模块',()=>onSelect(target.id)),item('copy','复制模块',()=>copyModule(target)),
+          item('text','复制提示词',()=>void window.tugou.copyText(target.text).catch(e=>setError(e.message))),
+          item('canvas','添加到画布',()=>addToCanvas('module',target.id)),divider,
+          item('delete','删除模块',()=>setRemoving(target),{danger:true}),
+        ]:[]}/>
+        {removing&&<RemovalDialog title={`删除「${removing.name}」？`} description="已使用的引用会保留快照。可通过撤销恢复。" close={()=>setRemoving(null)} remove={()=>{
+          if(busy||change(removeModule(document,removing.id))===false)throw Error('当前无法编辑，请稍后重试');if(selectedId===removing.id)onSelect(null);
+        }}/>}
         {selected ? (
           <>
             <div className="editor-heading">
@@ -112,16 +131,7 @@ export function PromptWorkbench({
               <IconButton
                 label="复制模块"
                 icon="copy"
-                onClick={() => {
-                  const copy = {
-                    ...selected,
-                    id: crypto.randomUUID(),
-                    name: `${selected.name} 副本`,
-                    global: false,
-                  };
-                  change({ ...document, modules: [...document.modules, copy] });
-                  onSelect(copy.id);
-                }}
+                onClick={()=>copyModule(selected)}
               />
               <IconButton
                 label="删除模块"
