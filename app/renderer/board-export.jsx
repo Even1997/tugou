@@ -3,11 +3,14 @@ import {Modal} from 'antd';
 import {Button} from './components.jsx';
 import {Select} from './select.jsx';
 import {Compositor} from './composite.js';
+import {exportContactSheet} from './contact-sheet.js';
+import {useTheme} from './components.jsx';
 import {boards,extract} from '../core/artboards.cjs';
 import {timeline} from '../core/gif-timeline.cjs';
 import './gif.css';
 
 export function BoardExport({document,initialId,single,initialFrame=0,close,complete}){
+  const theme=useTheme();
   const list=boards(document),[chosen,setChosen]=useState([initialId]),[state,setState]=useState(null),[error,setError]=useState(''),[format,setFormat]=useState('png'),[frame,setFrame]=useState(initialFrame+1),[first,setFirst]=useState(1),[last,setLast]=useState(null);
   const control=useRef(null),alive=useRef(true),preview=useRef(null);
   const animation=useMemo(()=>{try{return {frames:timeline({...document,layers:list.filter(b=>chosen.includes(b.id)).flatMap(b=>extract(document,b.id).layers)})};}catch(e){return {frames:[{time:0,delay:100}],error:e.message}}},[document,chosen.join(',')]);
@@ -31,6 +34,22 @@ export function BoardExport({document,initialId,single,initialFrame=0,close,comp
     try{
       if(animation.error)throw Error(animation.error);
       if(format==='gif'&&start>end)throw Error('结束帧不能早于开始帧');
+      if(format==='sheet'){
+        engine=new Compositor();
+        const items=[];
+        for(let i=0;i<selected.length;i++){
+          controller.signal.throwIfAborted();
+          const board=selected[i],doc=extract(document,board.id),c=window.document.createElement('canvas');
+          if(alive.current)setState({label:`正在渲染审稿拼图 ${i+1}/${selected.length}…`,progress:i/selected.length});
+          await engine.render(doc,c,{scale:Math.min(1,1120/Math.max(doc.width,doc.height)),time:animation.frames[current-1].time,signal:controller.signal});
+          items.push({title:board.name,subtitle:`${board.width} × ${board.height} px`,canvas:c});
+        }
+        if(alive.current)setState({label:'正在保存审稿拼图…',progress:0.95,writing:true});
+        const ok=await exportContactSheet({filename:`${document.name || '画板'}_审稿拼图`,title:`${document.name || '工程'} · 审稿拼图`,items,columns:selected.length<=2?selected.length:3,theme:theme.mode});
+        items.forEach(item=>{item.canvas.width=item.canvas.height=1;});
+        if(ok&&alive.current){complete(`已保存审稿拼图（含 ${selected.length} 张画板）`);close();}
+        return;
+      }
       const choice=await window.tugou.chooseExport(single?selected[0].name:selected.map(b=>b.name),format);
       if(!choice)return;
       files=choice.files||[choice];controller.signal.throwIfAborted();engine=new Compositor();
@@ -55,9 +74,9 @@ export function BoardExport({document,initialId,single,initialFrame=0,close,comp
       engine?.dispose();await Promise.allSettled(files.map(file=>window.tugou.cancelExport(file.token)));control.current=null;if(alive.current)setState(null);
     }
   };
-  return <Modal open centered styles={{body:{maxHeight:'calc(100vh - 220px)',overflowY:'auto'}}} title={single?'导出画板':'批量导出画板'} width={580} getContainer={()=>window.document.getElementById('dialogs')} transitionName="" maskTransitionName="" onCancel={()=>{if(!state)close();}} closable={!state} maskClosable={!state} footer={<><Button disabled={state?.writing} onClick={()=>state?control.current?.abort():close()}>{state?'取消导出':'取消'}</Button><Button primary disabled={!!state||!chosen.length||!!animation.error||(format==='gif'&&start>end)} onClick={save}>保存 {format.toUpperCase()}</Button></>}>
+  return <Modal open centered styles={{body:{maxHeight:'calc(100vh - 220px)',overflowY:'auto'}}} title={single?'导出画板':'批量导出画板'} width={580} getContainer={()=>window.document.getElementById('dialogs')} transitionName="" maskTransitionName="" onCancel={()=>{if(!state)close();}} closable={!state} maskClosable={!state} footer={<><Button disabled={state?.writing} onClick={()=>state?control.current?.abort():close()}>{state?'取消导出':'取消'}</Button><Button primary disabled={!!state||!chosen.length||!!animation.error||(format==='gif'&&start>end)} onClick={save}>保存 {format==='sheet'?'审稿拼图':format.toUpperCase()}</Button></>}>
     <canvas ref={preview} className="gif-export-preview" aria-label="导出帧预览"/>
-    <div className="gif-export-settings"><label>导出格式<Select aria-label="导出格式" value={format} disabled={!!state} onChange={e=>setFormat(e.target.value)}><option value="png">PNG 图片 · 指定帧</option><option value="gif">GIF 动图 · 帧范围</option></Select></label><label className="gif-frame-slider"><span>预览 / PNG 导出帧 <b>{current} / {count}</b></span><input aria-label="预览 / PNG 导出帧" type="range" value={current} min={1} max={count} step={1} disabled={!!state||count===1} onChange={e=>setFrame(+e.target.value)}/></label>{format==='gif'&&<><label className="gif-frame-slider"><span>开始帧 <b>{start} / {count}</b></span><input aria-label="开始帧" type="range" min={1} max={end} value={start} disabled={!!state||count===1} onChange={e=>{setFirst(+e.target.value);setFrame(+e.target.value)}}/></label><label className="gif-frame-slider"><span>结束帧 <b>{end} / {count}</b></span><input aria-label="结束帧" type="range" min={start} max={count} value={end} disabled={!!state||count===1} onChange={e=>{setLast(+e.target.value);setFrame(+e.target.value)}}/></label></>}</div>
+    <div className="gif-export-settings"><label>导出格式<Select aria-label="导出格式" value={format} disabled={!!state} onChange={e=>setFormat(e.target.value)}><option value="png">PNG 图片 · 指定帧</option><option value="gif">GIF 动图 · 帧范围</option>{!single&&<option value="sheet">审稿拼图 · Contact Sheet PNG</option>}</Select></label><label className="gif-frame-slider"><span>预览 / PNG 导出帧 <b>{current} / {count}</b></span><input aria-label="预览 / PNG 导出帧" type="range" value={current} min={1} max={count} step={1} disabled={!!state||count===1} onChange={e=>setFrame(+e.target.value)}/></label>{format==='gif'&&<><label className="gif-frame-slider"><span>开始帧 <b>{start} / {count}</b></span><input aria-label="开始帧" type="range" min={1} max={end} value={start} disabled={!!state||count===1} onChange={e=>{setFirst(+e.target.value);setFrame(+e.target.value)}}/></label><label className="gif-frame-slider"><span>结束帧 <b>{end} / {count}</b></span><input aria-label="结束帧" type="range" min={start} max={count} value={end} disabled={!!state||count===1} onChange={e=>{setLast(+e.target.value);setFrame(+e.target.value)}}/></label></>}</div>
     <p className="muted">共 {count} 帧 · 原始画板尺寸。PNG 保存所选帧；GIF 保留帧时长并循环播放，含背景与所有可见图层。多张 GIF 按最长动画一轮合成。</p>
     {!single&&<><div className="dialog-actions"><Button disabled={!!state} onClick={()=>setChosen(list.map(b=>b.id))}>全选画板</Button><Button disabled={!!state} onClick={()=>setChosen([])}>清空选择</Button></div><div className="board-export-list">{list.map(b=><label key={b.id}><input type="checkbox" aria-label={`保存画板 ${b.name}`} checked={chosen.includes(b.id)} disabled={!!state} onChange={e=>setChosen(ids=>e.target.checked?[...ids,b.id]:ids.filter(id=>id!==b.id))}/><span>{b.name}</span><small>{b.width} × {b.height} px</small></label>)}</div><p className="muted">同名文件自动编号，不覆盖已有图片。</p></>}
     {state&&<div role="status"><p>{state.label}</p><progress aria-label="画板保存进度" max={1} value={state.progress}/></div>}

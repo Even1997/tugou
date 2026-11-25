@@ -24,11 +24,11 @@ function collection(document,kind,args){
   if(kind==='presentation')return document.presentations||[];
   if(['slide','slideElement'].includes(kind)){if(!args.presentationId)fail('INVALID_ARGUMENT','请指定 presentationId');const p=find(document.presentations||[],args.presentationId);if(kind==='slide')return p.slides;if(!args.slideId)fail('INVALID_ARGUMENT','请指定 slideId');return find(p.slides,args.slideId).elements;}
   return ({canvasNode:document.tugouCanvas?.nodes||[],edge:document.tugouCanvas?.edges||[],layer:document.layers,artboard:document.layers.filter(l=>l.artboard),asset:document.assets,prompt:document.modules,recipe:document.recipes})[kind];}
-function summary(item,kind){
+function summary(item,kind,workspaces){
   if(kind==='presentation')return {...require('./automation-presentations.cjs').deckSummary(item),kind};
   if(kind==='slide')return {...require('./automation-presentations.cjs').slideSummary(item),kind};
   if(kind==='slideElement')return {id:item.id,kind,type:item.kind,text:item.text?.slice(0,120),assetId:item.assetId,x:item.x,y:item.y,w:item.w,h:item.h,rotation:item.rotation,visible:item.visible!==false,locked:!!item.locked};
-  return {id:item.id,kind,type:item.type||item.kind,name:item.name||item.data?.name||item.data?.binding?.snapshot?.name,parentId:item.parentId,position:item.position,...(kind==='layer'||kind==='artboard'?{x:item.x,y:item.y,width:item.width,height:item.height,printSize:item.printSize,shape:item.shape,rotation:item.rotation,visible:item.visible,locked:item.locked,hasMask:!!item.mask,coordinateSpace:'parent-local'}:{}),...(kind==='edge'?{source:item.source,target:item.target}:{})};}
+  return {id:item.id,kind,type:item.type||item.kind,name:item.name||item.data?.name||item.data?.binding?.snapshot?.name,parentId:item.parentId,position:item.position,...(kind==='asset'?{rating:item.rating||0,workspaces:workspaces?.get(item.id)||[],width:item.width,height:item.height}:{}),...(kind==='layer'||kind==='artboard'?{x:item.x,y:item.y,width:item.width,height:item.height,printSize:item.printSize,shape:item.shape,rotation:item.rotation,visible:item.visible,locked:item.locked,hasMask:!!item.mask,coordinateSpace:'parent-local'}:{}),...(kind==='edge'?{source:item.source,target:item.target}:{})};}
 
 // The journal records intent BEFORE a paid operation. An ambiguous crash is never retried automatically.
 class RequestJournal {
@@ -104,7 +104,8 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
       const list=isScene?sceneNode(doc,args.nodeId).data.scene[args.kind==='camera'?'cameras':'objects']:collection(doc,args.kind,args);
       if(method==='get_object'){const item=find(list,args.id);return {revision:state.revision,kind:args.kind,object:args.kind==='presentation'?{...require('./automation-presentations.cjs').deckSummary(item),slides:item.slides.map(require('./automation-presentations.cjs').slideSummary)}:args.kind==='slide'?{...item,content:require('./presentation-content.cjs').contentOf(item),contentStatus:require('./presentation-content.cjs').contentStatus(item)}:item};}
       const matched=list.filter(v=>!args.search||[v.id,v.name,v.text,v.data?.name,v.data?.text].some(s=>String(s||'').toLowerCase().includes(args.search.toLowerCase()))),offset=args.offset||0,limit=args.limit||50;
-      return {revision:state.revision,total:matched.length,offset,nextOffset:offset+limit<matched.length?offset+limit:null,objects:matched.slice(offset,offset+limit).map(v=>({...summary(v,args.kind),...(['slide','slideElement'].includes(args.kind)?{index:list.indexOf(v)}:{})}))};
+      const workspaces=args.kind==='asset'?require('./materials.cjs').materialWorkspaces(doc):null;
+      return {revision:state.revision,total:matched.length,offset,nextOffset:offset+limit<matched.length?offset+limit:null,objects:matched.slice(offset,offset+limit).map(v=>({...summary(v,args.kind,workspaces),...(['slide','slideElement'].includes(args.kind)?{index:list.indexOf(v)}:{})}))};
     }
     if(method==='preview'){project(state);return ui('preview',args);}
     if(method==='batch'){
@@ -171,9 +172,14 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
       return {task,timedOut:['queued','running'].includes(task.status)};
     }
     const doc=project(state);
+    if(name==='project.brandKit.get'){
+      const kit=doc.brandKit||{};
+      return {revision:state.revision,brandKit:{colors:Array.isArray(kit.colors)?kit.colors:[],headingFont:kit.headingFont||'',bodyFont:kit.bodyFont||''}};
+    }
     if(name==='asset.search'){
-      const list=require('./materials.cjs').filterMaterials(doc.assets,input),offset=input.offset||0,limit=input.limit||50;
-      return {revision:state.revision,total:list.length,offset,nextOffset:offset+limit<list.length?offset+limit:null,objects:list.slice(offset,offset+limit)};
+      const materials=require('./materials.cjs'),workspaces=materials.materialWorkspaces(doc);
+      const list=materials.filterMaterials(doc.assets,{...input,workspaces}),offset=input.offset||0,limit=input.limit||50;
+      return {revision:state.revision,total:list.length,offset,nextOffset:offset+limit<list.length?offset+limit:null,objects:list.slice(offset,offset+limit).map(a=>({...a,workspaces:workspaces.get(a.id)||[]}))};
     }
     if(name==='artboard.timeline'){
       const b=require('./artboards.cjs');find(b.boards(doc),input.artboardId);
@@ -321,6 +327,18 @@ async function createDispatcher({ui,capture,projects,connections,tasks,workflow,
     }
     if(name==='artboard.export'){
       const result=await ui(name,input,state.revision);return writeNew(input.path,Buffer.from(result.data,'base64'));
+    }
+    if(name==='artboard.exportSheet'||name==='asset.exportSheet'){
+      await filePath(input.path);
+      if(path.extname(input.path).toLowerCase()!=='.png')fail('INVALID_ARGUMENT','审稿拼图导出文件必须为 .png');
+      if(name==='artboard.exportSheet'){
+        const b=require('./artboards.cjs'),allBoards=b.boards(b.normalize(doc));
+        for(const id of input.artboardIds)find(allBoards,id);
+      }else{
+        for(const id of input.assetIds){const a=find(doc.assets,id);if(a.kind&&a.kind!=='image')fail('INVALID_TARGET','审稿拼图仅支持图片素材');}
+      }
+      const result=await ui(name,input,state.revision);
+      return writeNew(input.path,Buffer.from(result.data,'base64'));
     }
     fail('UNKNOWN_COMMAND','命令尚未接入');
   };

@@ -26,6 +26,7 @@ import {
   Paintbrush, Eraser, Crop, SlidersHorizontal, PanelsTopLeft, AlignLeft, Rotate3d, Plug,
   SquareDashed, Blend, Clipboard, ZoomIn, ZoomOut, RefreshCw, ScanSearch, ListFilter,
   Info, CircleHelp, LoaderCircle, ArrowUp, ArrowDown, ChevronRight, ChevronDown, CloudDownload, CircleCheck,
+  Star, Pin, Pipette, Grid2x2, Table2, Terminal,
 } from 'lucide-react';
 import {usePreferences} from './preferences.jsx';
 import {messages} from './settings-messages.js';
@@ -118,6 +119,12 @@ const icons = {
   filter: ListFilter,
   info: Info,
   help: CircleHelp,
+  star: Star,
+  pin: Pin,
+  eyedropper: Pipette,
+  matrix: Grid2x2,
+  table: Table2,
+  command: Terminal,
   github: GithubOutlineIcon,
   loading: LoaderCircle,
   up: ArrowUp,
@@ -130,6 +137,41 @@ const icons = {
 export function Icon({ name, className = "", ...props }) {
   const Component = icons[name] || Shapes;
   return <span aria-hidden="true" data-icon={name} className={`anticon studio-icon ${name === 'loading' ? 'anticon-spin ' : ''}${name === 'collapse' || name === 'expand' ? 'disclosure-icon ' : ''}${className}`} {...props}><Component size="1em" strokeWidth={1.45} focusable="false"/></span>;
+}
+export function StarRating({ value = 0, onChange, disabled = false, compact = false, className = "", "aria-label": ariaLabel = "星级评分" }) {
+  const [hovered, setHovered] = useState(0);
+  const display = hovered || value;
+  return (
+    <div
+      className={`star-rating${compact ? " is-compact" : ""}${value > 0 ? " has-rating" : ""} ${className}`}
+      role="group"
+      aria-label={ariaLabel}
+      onMouseLeave={() => setHovered(0)}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {[1, 2, 3, 4, 5].map((n) => {
+        const filled = n <= display;
+        return (
+          <button
+            key={n}
+            type="button"
+            disabled={disabled || !onChange}
+            className={`star-rating-btn${filled ? " is-lit" : ""}`}
+            aria-label={value === n ? `清除 ${n} 星评分` : `评为 ${n} 星`}
+            aria-pressed={value === n}
+            title={value === n ? "再次点击清除评分" : `打 ${n} 星`}
+            onMouseEnter={() => !disabled && setHovered(n)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange?.(value === n ? 0 : n);
+            }}
+          >
+            <Star size="1em" strokeWidth={1.6} aria-hidden="true" />
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 const ThemeContext = createContext({ mode: "dark" });
 export function useTheme() {

@@ -32,6 +32,11 @@ export function StudioHeader({
   redo,
   canUndo,
   canRedo,
+  historyPast = [],
+  historyFuture = [],
+  jumpHistory,
+  openPalette,
+  openBrandKit,
   rename,
   deleteProject,
   openGithub,
@@ -77,6 +82,7 @@ export function StudioHeader({
             <Button icon="add" disabled={busy} onClick={create}>{t('create')}</Button>
             <Button icon="import" disabled={busy} onClick={importProject}>{t('importProject')}</Button>
             <Button icon="edit" disabled={!record || busy} onClick={()=>{setName(record.document.name);setRenaming(true);}}>{t('rename')}</Button>
+            {openBrandKit&&<Button icon="style" disabled={!record || busy} onClick={openBrandKit}>视觉规范 / 色板</Button>}
             <Button icon="open" aria-label="管理项目" disabled={busy} onClick={()=>setManaging(true)}>管理项目</Button>
           </ToolPopover>
         </div>
@@ -95,6 +101,28 @@ export function StudioHeader({
             disabled={!canRedo || busy}
             onClick={redo}
           />
+          {jumpHistory&&<ToolPopover label="历史记录" icon="clock" disabled={busy || (!historyPast.length && !historyFuture.length)} className="history-popover-menu">
+            <div className="history-list" role="menu" aria-label="编辑历史">
+              <div className="history-list-head">
+                <strong>编辑历史</strong>
+                <small>{historyPast.length} 步可撤销</small>
+              </div>
+              {historyFuture.length>0&&historyFuture.slice().reverse().map((item, idx) => {
+                const steps = historyFuture.length - idx;
+                return <button key={`f-${idx}`} type="button" className="history-row is-future" onClick={() => jumpHistory('redo', steps)}><span>{item.label}</span><time>{item.time}</time></button>;
+              })}
+              <div className="history-row is-current"><span>当前状态</span><time>现在</time></div>
+              {historyPast.slice(-20).reverse().map((item, idx) => {
+                const steps = idx + 1;
+                return <button key={`p-${idx}`} type="button" className="history-row" onClick={() => jumpHistory('undo', steps)}><span>{item.label}</span><time>{item.time}</time></button>;
+              })}
+            </div>
+          </ToolPopover>}
+          {openPalette&&<IconButton
+            label={window.tugou.platform === 'darwin' ? '命令面板 (⌘K)' : '命令面板 (Ctrl+K)'}
+            icon="search"
+            onClick={openPalette}
+          />}
           <span className="header-save-state" role="status" data-save-state={saveState}>{workspace==='fonts'?t('fontAuto'):t(saveState==='saving'?'saving':saveState==='saveFailed'?'saveFailed':dirty?'unsavedLabel':'saved')}</span>
           <Button icon="tasks" className="header-tasks-btn" onClick={tasks}>
             {t('tasks')}
@@ -154,7 +182,7 @@ export function StudioHeader({
               aria-current={workspace === id ? "page" : undefined}
               onClick={() => setWorkspace(id)}
               onDragOver={event=>{
-                if(!record||busy||!['canvas','layers','assets'].includes(id)||!(event.dataTransfer.types.includes(materialMime)||event.dataTransfer.types.includes('Files')))return;
+                if(!record||busy||!['canvas','layers','assets','ppt'].includes(id)||!(event.dataTransfer.types.includes(materialMime)||event.dataTransfer.types.includes('Files')))return;
                 event.preventDefault();
                 if(!dragTimer.current&&workspace!==id)dragTimer.current=setTimeout(()=>{setWorkspace(id);dragTimer.current=null;},400);
               }}

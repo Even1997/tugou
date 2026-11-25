@@ -17,6 +17,8 @@ import {group as pageGroup,kinds as pageKinds} from '../core/pages.cjs';
 import {loadPages,suspendPages} from './page-storage.js';
 import {printPng} from './print-png.js';
 import {runEditingJob,cancelAutomationJob,automationJobStatus} from './automation-editing.js';
+import {renderContactSheet} from './contact-sheet.js';
+import {originalUrl} from './image-processing.js';
 
 function failure(code,message){const e=new Error(message);e.code=code;throw e;}
 // Shares App's live document and history. Disk records are never used as an editing session.
@@ -133,6 +135,41 @@ export function useAutomation(context) {
           guard();const bytes=Uint8Array.from(atob(result.data),c=>c.charCodeAt(0));
           const asset=await window.tugou.storeRaster([...bytes],args.name||'导演台截图');
           const next=appendCapture(source,args.nodeId,asset);value={...commit(next.document),nodeId:next.nodeId,assetId:next.assetId};
+        }
+      }else if(action==='artboard.exportSheet'||action==='asset.exportSheet'){
+        guard();
+        const source=current().present.current?.document;if(!source)failure('NO_PROJECT','请先打开工程');
+        const items=[];
+        const engine=action==='artboard.exportSheet'?new Compositor():null;
+        try{
+          if(action==='artboard.exportSheet'){
+            const normalized=artboards.normalize(source);
+            for(const id of args.artboardIds){
+              const doc=artboards.extract(normalized,id);
+              if(doc.width*doc.height>16000000)failure('RESOURCE_LIMIT','MCP 拼图单张画板限 1600 万像素');
+              const c=surface(1,1);
+              await engine.render(doc,c,{scale:Math.min(1,1120/Math.max(doc.width,doc.height))});
+              items.push({title:doc.name,subtitle:`${doc.width} × ${doc.height} px`,canvas:c});
+            }
+          }else{
+            for(const id of args.assetIds){
+              const asset=source.assets.find(a=>a.id===id);
+              if(!asset||(asset.kind&&asset.kind!=='image'))failure('INVALID_TARGET','审稿拼图仅支持图片素材');
+              items.push({title:asset.name,subtitle:`${asset.width} × ${asset.height}`,url:originalUrl(asset)});
+            }
+          }
+          const bytes=await renderContactSheet({
+            title:args.title||`${source.name||'工程'} · 审稿拼图`,
+            items,
+            columns:args.columns||(items.length<=2?items.length:3),
+            theme:args.theme||'light',
+          });
+          if(current().present.current.document!==source)failure('CONFLICT','渲染过程中工程发生变化，请重试');
+          const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(new Blob([bytes],{type:'image/png'}));});
+          value={mimeType:'image/png',data:dataUrl.slice(dataUrl.indexOf(',')+1),count:items.length,revision:revision()};
+        }finally{
+          items.forEach(item=>{if(item.canvas)item.canvas.width=item.canvas.height=1;});
+          engine?.dispose();
         }
       }else if(['preview','artboard.export','mask.fill','image.fillSelection','layer.merge','mask.loadSelection','selection.rasterize','selection.subjectResult','paint.stroke'].includes(action)){
         if(action!=='preview')guard();

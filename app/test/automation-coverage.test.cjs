@@ -77,7 +77,7 @@ test('MCP unused asset deletion is undoable document data; referenced assets rej
   const result=batch(d,[{name:'remove',command:'asset.delete',args:{ids:['b']}}]);assert.deepEqual(result.document.assets,[{id:'a'}]);assert.equal(d.assets.length,2);
 });
 test('new commands have strict schemas and shared workflow fields are writable',()=>{
-  assert.equal(listCommands().length,209);
+  assert.equal(listCommands().length,217);
   validate('image.processNode',{nodeId:'tool',requestId:'once'});
   validate('canvas.update',{id:'tool',properties:{parameters:{model:'anime',scale:2}}});
   assert.ok(!listCommands().some(c=>c.name==='models.cli.save'));
@@ -96,5 +96,85 @@ test('coverage inventory accounts for every desktop business handler and names r
     for(const name of row.commands)assert.ok(names.has(name),name);
     if(row.source)await fs.access(path.join(__dirname,'../..',row.source));
   }
+});
+
+test('MCP brandKit, asset.star, artboard.dataMerge, canvas.matrix and exportSheet commands work end-to-end',async t=>{
+  const pngMagic=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]);
+  const f=await fixture(t,{
+    filesRoot:null,
+  });
+  const filesRoot=await fs.mkdtemp(path.join(os.tmpdir(),'tugou-mcp-sheets-'));
+  t.after(()=>fs.rm(filesRoot,{recursive:true,force:true}));
+  const boards=require('../core/artboards.cjs'),layers=require('../core/layers.cjs'),wf=require('../core/workflow-nodes.cjs');
+  const created=boards.create({width:800,height:600,layers:[]},{width:800,height:600,name:'请柬模板'});
+  const textLayer=layers.createLayer('text',{parentId:created.id,name:'称呼',text:'欢迎 {{姓名}} · {{桌号}}',x:40,y:40,width:400,height:60,fontSize:32,color:'#111111'});
+  const gen=wf.workflowNode('image',{x:100,y:100});gen.id='g1';gen.data.prompt='唯美花艺';
+  const live={
+    revision:'r1',projectId:'project',
+    document:{
+      id:'project',name:'MCP新能力',width:800,height:600,background:'#ffffff',modules:[],recipes:[],jobs:[],
+      assets:[{id:'a1',kind:'image',name:'图1',width:400,height:300},{id:'a2',kind:'image',name:'图2',width:400,height:300}],
+      layers:[...created.document.layers,textLayer],
+      tugouCanvas:{version:1,nodes:[{id:'n1',type:'asset',position:{x:0,y:0},data:{assetId:'a1',role:'参考图'}},gen],edges:[{id:'e1',source:'n1',target:'g1'}],viewport:{x:0,y:0,zoom:1}},
+    },
+  };
+  let rev=1;
+  const dispatch=await createDispatcher({
+    root:f.root,filesRoot,connections:f.connections,projects:{verifyResources:async()=>{}},
+    ui:async(action,args)=>{
+      if(action==='snapshot')return structuredClone(live);
+      if(action==='commit'){live.document=structuredClone(args.document);live.revision=`r${++rev}`;return structuredClone(live);}
+      if(action==='artboard.exportSheet'||action==='asset.exportSheet'){return {mimeType:'image/png',data:pngMagic.toString('base64')};}
+      return structuredClone(live);
+    },
+  });
+  const run=(command,args={})=>dispatch('run_command',{command,args,expectedRevision:live.revision});
+
+  // 1. Brand Kit get & update
+  assert.deepEqual((await run('project.brandKit.get')).brandKit,{colors:[],headingFont:'',bodyFont:''});
+  const updatedKit=await run('project.brandKit.update',{colors:[{hex:'#2563eb',name:'主题蓝'}],headingFont:'思源宋体'});
+  assert.equal(updatedKit.brandKit.colors[0].hex,'#2563EB');
+  assert.equal((await run('project.brandKit.get')).brandKit.headingFont,'思源宋体');
+
+  // 2. Asset 0-5 star rating + asset.search(minRating/rating/sort) + query_objects rating summary
+  await run('asset.rate',{ids:['a1'],rating:5});
+  await run('asset.rate',{ids:['a2'],rating:3});
+  const highRated=await run('asset.search',{minRating:4});
+  assert.deepEqual(highRated.objects.map(a=>a.id),['a1']);
+  const exactThree=await run('asset.search',{rating:3});
+  assert.deepEqual(exactThree.objects.map(a=>a.id),['a2']);
+  const sortedByRating=await run('asset.search',{sort:'rating'});
+  assert.deepEqual(sortedByRating.objects.map(a=>a.id),['a1','a2']);
+  const queried=await dispatch('query_objects',{kind:'asset'});
+  assert.equal(queried.objects.find(a=>a.id==='a1').rating,5);
+  assert.equal(queried.objects.find(a=>a.id==='a2').rating,3);
+  assert.deepEqual(queried.objects.find(a=>a.id==='a1').workspaces,['canvas']);
+  assert.deepEqual(queried.objects.find(a=>a.id==='a2').workspaces,[]);
+  const canvasOnly=await run('asset.search',{workspace:'canvas'});
+  assert.deepEqual(canvasOnly.objects.map(a=>a.id),['a1']);
+  const unusedOnly=await run('asset.search',{workspace:'unused'});
+  assert.deepEqual(unusedOnly.objects.map(a=>a.id),['a2']);
+
+  // 3. Artboard Data Merge
+  const merged=await run('artboard.dataMerge',{artboardId:created.id,rows:[{'姓名':'张三','桌号':'1号桌'},{'姓名':'李四','桌号':'2号桌'}]});
+  assert.equal(merged.ids.length,2);
+  const mergedTexts=live.document.layers.filter(l=>l.kind==='text').map(l=>l.text);
+  assert.ok(mergedTexts.includes('欢迎 张三 · 1号桌'));
+  assert.ok(mergedTexts.includes('欢迎 李四 · 2号桌'));
+
+  // 4. Canvas Matrix expansion with inherited edges & bounds check
+  const matrix=await run('canvas.matrix',{nodeId:'g1',variants:['水彩','胶片'],models:['model-a']});
+  assert.equal(matrix.ids.length,2);
+  assert.equal(live.document.tugouCanvas.edges.filter(e=>e.source==='n1').length,3);
+  await assert.rejects(()=>run('canvas.matrix',{nodeId:'g1',variants:['单变体']}),e=>e.code==='INVALID_ARGUMENT');
+  await assert.rejects(()=>run('canvas.matrix',{nodeId:'n1',variants:['A','B']}),e=>e.code==='INVALID_TARGET');
+
+  // 5. Contact Sheet exports (artboard & asset) with extension & overwrite guards
+  const sheetRes=await run('artboard.exportSheet',{artboardIds:[created.id,...merged.ids],path:'review/boards.png',columns:3});
+  assert.equal(sheetRes.bytes,pngMagic.length);
+  const assetSheetRes=await run('asset.exportSheet',{assetIds:['a1','a2'],path:'review/assets.png',theme:'dark'});
+  assert.equal(assetSheetRes.bytes,pngMagic.length);
+  await assert.rejects(()=>run('asset.exportSheet',{assetIds:['a1'],path:'review/assets.jpg'}),e=>e.code==='INVALID_ARGUMENT');
+  await assert.rejects(()=>run('asset.exportSheet',{assetIds:['a1'],path:'review/assets.png'}),e=>e.code==='EEXIST');
 });
 

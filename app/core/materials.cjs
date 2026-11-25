@@ -7,35 +7,97 @@ function materialSource(asset) {
       ? "generated"
       : "imported";
 }
+function materialWorkspaces(document) {
+  const canvasIds = new Set();
+  const layerIds = new Set();
+  const pptIds = new Set();
+  const addCanvasNodes = (nodes) => {
+    for (const n of nodes || []) {
+      const d = n?.data;
+      if (!d) continue;
+      if (d.assetId) canvasIds.add(d.assetId);
+      if (d.outputAssetId) canvasIds.add(d.outputAssetId);
+      if (Array.isArray(d.outputAssetIds)) for (const id of d.outputAssetIds) if (id) canvasIds.add(id);
+      if (d.localEdit?.assetId) canvasIds.add(d.localEdit.assetId);
+      if (d.localEdit?.maskId) canvasIds.add(d.localEdit.maskId);
+    }
+  };
+  const addLayers = (list) => {
+    for (const l of list || []) {
+      if (!l) continue;
+      if (l.assetId) layerIds.add(l.assetId);
+      if (l.bitmap?.id) layerIds.add(l.bitmap.id);
+      if (l.mask?.bitmap?.id) layerIds.add(l.mask.bitmap.id);
+    }
+  };
+  addCanvasNodes(document?.tugouCanvas?.nodes);
+  for (const p of document?.pages?.canvas?.items || []) {
+    if (!p?.ref && p?.content?.tugouCanvas?.nodes) addCanvasNodes(p.content.tugouCanvas.nodes);
+  }
+  addLayers(document?.layers);
+  for (const p of document?.pages?.layers?.items || []) {
+    if (!p?.ref && p?.content?.layers) addLayers(p.content.layers);
+  }
+  for (const deck of document?.presentations || []) {
+    for (const slide of deck?.slides || []) {
+      for (const el of slide?.elements || []) {
+        if (el?.assetId) pptIds.add(el.assetId);
+      }
+    }
+  }
+  const map = new Map();
+  for (const a of document?.assets || []) {
+    if (!a?.id) continue;
+    const list = [];
+    if (canvasIds.has(a.id) || a.generation || a.recipeId) list.push("canvas");
+    if (layerIds.has(a.id) || a.layerSnapshot) list.push("layers");
+    if (pptIds.has(a.id)) list.push("ppt");
+    map.set(a.id, list);
+  }
+  return map;
+}
 function filterMaterials(
   assets,
-  { query = "", source = "all", shape = "all", sort = "newest" } = {},
+  { query = "", source = "all", workspace = "all", workspaces, shape = "all", sort = "newest", minRating = 0, rating } = {},
 ) {
   const text = query.trim().toLocaleLowerCase();
   return assets
     .map((asset, index) => ({ asset, index }))
     .filter(
-      ({ asset: a }) =>
-        String(a.name || "")
-          .toLocaleLowerCase()
-          .includes(text) &&
-        (source === "all" || materialSource(a) === source) &&
-        (shape === "all" ||
-          (shape === "portrait"
-            ? a.height > a.width
-            : shape === "landscape"
-              ? a.width > a.height
-              : a.width > 0 && a.width === a.height)),
+      ({ asset: a }) => {
+        const stars = Number.isInteger(a.rating) ? a.rating : 0;
+        const scopes = workspaces?.get(a.id) || [];
+        return (
+          String(a.name || "")
+            .toLocaleLowerCase()
+            .includes(text) &&
+          (rating !== undefined ? stars === rating : stars >= (minRating || 0)) &&
+          (workspace === "all" || !workspaces
+            ? true
+            : workspace === "unused"
+              ? scopes.length === 0
+              : scopes.includes(workspace)) &&
+          (source === "all" || materialSource(a) === source) &&
+          (shape === "all" ||
+            (shape === "portrait"
+              ? a.height > a.width
+              : shape === "landscape"
+                ? a.width > a.height
+                : a.width > 0 && a.width === a.height))
+        );
+      },
     )
     .sort((a, b) =>
-      sort === "name"
-        ? names.compare(String(a.asset.name || ""),String(b.asset.name || "")) || a.index - b.index
-        : sort === "pixels"
-          ? (b.asset.width || 0) * (b.asset.height || 0) -
-              (a.asset.width || 0) * (a.asset.height || 0) || b.index - a.index
-          : sort === "oldest"
-            ? a.index - b.index
-            : b.index - a.index,
+      sort === "rating"
+        ? (b.asset.rating || 0) - (a.asset.rating || 0) || b.index - a.index
+        : sort === "name"
+          ? names.compare(String(a.asset.name || ""),String(b.asset.name || "")) || a.index - b.index
+          : sort === "pixels"
+            ? (b.asset.width || 0) * (b.asset.height || 0) -
+                (a.asset.width || 0) * (a.asset.height || 0) || b.index - a.index
+            : sort === "oldest"
+              ? a.index - b.index
+              : b.index - a.index,
     )
     .map((x) => x.asset);
 }
@@ -86,4 +148,4 @@ function replaceLayerAsset(document, layerId, expectedAssetId, asset) {
     layers: document.layers.map((l) => (l.id === layerId ? next : l)),
   };
 }
-module.exports = { materialSource, filterMaterials, replaceLayerAsset };
+module.exports = { materialSource, materialWorkspaces, filterMaterials, replaceLayerAsset };

@@ -76,7 +76,7 @@ function Player({deck,assets,index,setIndex,full,onClose}){
   </div>;
 }
 
-export function PresentationsWorkspace({record,change,disabled,createProject,save,undo,redo,canUndo,canRedo}){
+export function PresentationsWorkspace({record,change,disabled,createProject,save,undo,redo,canUndo,canRedo,focusTarget}){
   const doc=record?.document,decks=doc?.presentations||[],assets=doc?.assets||[];
   const [active,setActive]=useState(null),[pageId,setPageId]=useState(null),[selection,setSelection]=useState(null),[dialog,setDialog]=useState(null),[query,setQuery]=useState(''),[listPage,setListPage]=useState(0),[player,setPlayer]=useState(null),[failure,setFailure]=useState(''),[notice,setNotice]=useState(''),[working,setWorking]=useState(false),[preview,setPreview]=useState(null),[picker,setPicker]=useState(false);
   const gesture=useRef(null),latest=useRef(null),mounted=useRef(true);
@@ -92,6 +92,16 @@ export function PresentationsWorkspace({record,change,disabled,createProject,sav
   const closeDock=()=>{setDockOpen(false);document.querySelector(`.ppt-workspace [data-panel="${dockTab}"]`)?.focus();};
   latest.current={doc,deck,current,busy};
   useEffect(()=>{if(player&&!deck)setPlayer(null);else if(player&&player.start>=deck.slides.length)setPlayer(p=>p?{...p,start:deck.slides.length-1}:null);},[deck,player]);
+  useEffect(()=>{
+    if(!focusTarget?.deckId)return;
+    const targetDeck=decks.find(d=>d.id===focusTarget.deckId);
+    if(!targetDeck)return;
+    setActive(targetDeck.id);
+    const targetSlide=targetDeck.slides.find(s=>s.id===focusTarget.slideId)||targetDeck.slides[0];
+    if(targetSlide)setPageId(targetSlide.id);
+    if(focusTarget.elementId)setSelection(focusTarget.elementId);
+    setSidebar('pages');
+  },[focusTarget?.nonce]);
   const viewState=()=>({presentationId:deck?.id||null,slideId:(player?deck?.slides[Math.min(player.start,deck.slides.length-1)]:current)?.id||null,elementId:chosen?.id||null,sidebar,panel,dockOpen,designTab,mode:player&&deck?'present':deck?'edit':'library',fullscreen:!!document.fullscreenElement?.classList.contains('ppt-player')});
   const navigatePresentation=({command,args={}})=>{
     const fail=(code,message)=>{throw Object.assign(Error(message),{code})};

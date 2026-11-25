@@ -27,3 +27,4 @@
   .canvas-image-compare .image-compare-hint { max-width: 210px; }
 }
 .canvas-image-compare .image-compare-grid.is-detail { grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: none; grid-auto-rows: max(260px,var(--compare-detail-height)); }
+.canvas-image-compare .image-compare-cell > header .ant-btn { height: 24px; padding-inline: 8px; font-size: 11.5px; flex-shrink: 0; }

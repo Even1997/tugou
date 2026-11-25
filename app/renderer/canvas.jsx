@@ -36,6 +36,7 @@ import {
   ReactFlowProvider,
   useReactFlow,
   useStoreApi,
+  useViewport,
   useKeyPress,
   ConnectionLineType,
   getNodesBounds,
@@ -68,6 +69,7 @@ import { ReplaceImageDialog } from "./replace-image.jsx";
 import { copyAssetPrompt } from "./material-details.jsx";
 import { CanvasImageDetails } from './canvas-image-details.jsx';
 import {CanvasImageCompare} from './canvas-image-compare.jsx';
+import {MatrixRunDialog} from './canvas-matrix.jsx';
 import { resizeAssetNode } from "../core/canvas-view.cjs";
 import { DisplayControls, AngleDialog } from "./canvas-view-tools.jsx";
 import { useImageImport, hasImageFiles } from './use-image-import.js';
@@ -117,6 +119,23 @@ function CanvasEdge({id,target,sourceX,sourceY,targetX,targetY,sourcePosition,ta
 const edgeTypes={default:CanvasEdge};
 const consoleTypes=new Set(['recipe','imageTool',...workflowTypes]);
 
+function CanvasSnapGuides({ guides }) {
+  const { x: tx, y: ty, zoom } = useViewport();
+  if (!guides.x.length && !guides.y.length) return null;
+  return (
+    <svg className="canvas-snap-guides" aria-hidden="true">
+      {guides.x.map((gx, idx) => {
+        const sx = gx * zoom + tx;
+        return <line key={`x-${idx}`} x1={sx} y1="0" x2={sx} y2="100%" />;
+      })}
+      {guides.y.map((gy, idx) => {
+        const sy = gy * zoom + ty;
+        return <line key={`y-${idx}`} x1="0" y1={sy} x2="100%" y2={sy} />;
+      })}
+    </svg>
+  );
+}
+
 function CanvasWorkspace({
   projectId,
   document,
@@ -128,6 +147,9 @@ function CanvasWorkspace({
   disabled,
   editImages,
   addToLayers,
+  addToPpt,
+  pinAsset,
+  rateAsset,
   showDetails,
   openConnection,
   analyzeImage,
@@ -189,6 +211,8 @@ function CanvasWorkspace({
   },[]);
   const [replacement,setReplacement]=useState(null);
   const [comparison,setComparison]=useState(null);
+  const [matrixNodeId,setMatrixNodeId]=useState(null);
+  const [snapGuides,setSnapGuides]=useState({x:[],y:[]});
   const [paintSession,setPaintSession]=useState(null);
   const [angleSource,setAngleSource]=useState(null);
   const [sceneNode,setSceneNode]=useState(null);
@@ -707,7 +731,10 @@ function CanvasWorkspace({
       ]:target.type==='group'?[item('ungroup','解散分组',()=>run(()=>commit(ungroupNodes(nodes,target.id),edges)),{disabled:blocked})]:[]),
       ...(!multiple&&image?[divider,
         item('view','查看原图',()=>showDetails(asset.id,target.id)),item('copy-img','复制图片',()=>run(async()=>{await copyAssetImage(asset);if(mounted.current)setMessage('已复制图片到剪贴板');})),item('save','保存图片…',()=>saveImage(asset.id)),
+        ...(rateAsset?[{key:'rate',label:`星级评分${asset.rating?`（${asset.rating}星）`:''}`,children:[5,4,3,2,1,0].map(n=>item(`rate-${n}`,n?`${'★'.repeat(n)} ${n} 星`:'清除评分',()=>rateAsset(asset.id,n)))}]:[]),
+        ...(pinAsset?[item('pin','钉住参考图',()=>pinAsset(asset.id))]:[]),
         ...(addToLayers?[item('layers','发送到图层',()=>addToLayers(asset),{disabled:blocked})]:[]),
+        ...(addToPpt?[item('ppt','发送到 PPT',()=>addToPpt(asset),{disabled:blocked})]:[]),
         item('replace','替换图片…',()=>setReplacement({nodeId:target.id,assetId:asset.id}),{disabled:blocked||asset.id!==(target.data.assetId||target.data.outputAssetId)}),
         item('tools','处理图片…',()=>editImages([asset.id],'resize',[target.id]),{disabled:blocked}),
       ]:[]),
@@ -774,22 +801,26 @@ function CanvasWorkspace({
                   {activeTask?(activeTask.status==="queued"?"等待中":node.type==='imageTool'?'处理中':"生成中"):submittingIds.has(node.id)?"提交中":node.type==='imageTool'?'开始处理':node.type==='config'?'开始生成':node.type==='textgen'?'生成文本':"生成图片"}
                 </Button>}
                 {activeTask&&<Button iconOnly icon="stop" onClick={()=>run(async()=>{await window.tugou.cancelTask(activeTask.id);await refreshTasks();})}>{node?.type==='imageTool'?'取消处理':'取消生成'}</Button>}
+                {node&&['image','config'].includes(node.type)&&<Button iconOnly icon="matrix" disabled={disabled||Boolean(activeTask)} onClick={()=>setMatrixNodeId(node.id)}>矩阵跑图</Button>}
                 {node?.type==='director'&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>打开导演台</Button>}
                 {selectedMedia&&<><Button iconOnly icon="tools" onClick={()=>setMediaTool({asset:selectedMedia,nodeId:node.id})}>媒体工具</Button><Button iconOnly icon="export" onClick={()=>run(()=>window.tugou.exportAsset(projectId,current.current.document,selectedMedia.id))}>导出媒体</Button></>}
                 {node?.type==='panorama'&&node.data.outputAssetId&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>环视全景</Button>}
                 {node?.type==='asset'&&document.assets.find(a=>a.id===node.data.assetId)?.projection&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>环视全景</Button>}
                 {selectedImages.length>0&&<>
-                  {selectedImages.length>1&&<Button icon="assets" onClick={()=>setComparison(selectedImages.map(n=>document.assets.find(a=>a.id===(n.data.assetId||n.data.outputAssetId))))}>多图对比</Button>}
+                  {selectedImages.length>1&&<Button icon="assets" onClick={()=>setComparison(selectedImages.map(n=>({nodeId:n.id,assetId:n.data.assetId||n.data.outputAssetId})))}>多图对比</Button>}
                   {selectedImage&&<Button iconOnly icon="replace" disabled={disabled} onClick={()=>setReplacement({nodeId:node.id,assetId:selectedImage.id})}>替换图片</Button>}
                   <Button iconOnly icon="crop" disabled={disabled} onClick={()=>editSelectedImages("crop")}>裁剪</Button>
                   <Button iconOnly icon="zoomIn" disabled={disabled} onClick={()=>editSelectedImages("resize")}>放大</Button>
                   {selectedImage&&<Button iconOnly icon="export" onClick={()=>saveImage(selectedImage.id)}>保存图片</Button>}
                   {addToLayers&&selectedImage&&<Button iconOnly icon="layers" disabled={disabled} onClick={()=>addToLayers(selectedImage)}>发送到图层</Button>}
+                  {addToPpt&&selectedImage&&<Button iconOnly icon="ppt" disabled={disabled} onClick={()=>addToPpt(selectedImage)}>发送到 PPT</Button>}
                   {selectedImage&&<DisplayControls node={node} resize={resize} patch={patchNode} disabled={disabled}/>}
                   <ToolPopover label="图片工具" icon="tools">
                     <div className="image-tool-detail">
                       <Button disabled={disabled||!selectedImage||Boolean(activeTask)} onClick={()=>setAngleSource({nodeId:node.id,asset:selectedImage})}>AI 多角度</Button>
                       <Button disabled={disabled||!selectedImage} onClick={()=>showDetails(selectedImage.id,node.id)}>查看原图</Button>
+                      {pinAsset&&<Button disabled={!selectedImage} onClick={()=>pinAsset(selectedImage.id)}>钉住参考图</Button>}
+                      {rateAsset&&<Button disabled={!selectedImage} onClick={()=>rateAsset(selectedImage.id,(selectedImage?.rating||0)>=5?0:(selectedImage?.rating||0)+1)}>{selectedImage?.rating?`评分：${selectedImage.rating} 星（+1）`:'打星评分'}</Button>}
                       <Button disabled={disabled||!selectedImage} onClick={()=>run(async()=>{await copyAssetImage(selectedImage);if(mounted.current)setMessage('已复制图片到剪贴板');})}>复制图片</Button>
                       <Button disabled={disabled||!selectedImage} onClick={async()=>{
                         try{await copyAssetPrompt(await window.tugou.assetDetails(projectId,current.current.document,selectedImage.id,node.id));if(mounted.current)setMessage("提示词已复制");}
@@ -1032,7 +1063,70 @@ function CanvasWorkspace({
               onEdgesChange={(changes) =>
                 setEdges((previous) => applyEdgeChanges(changes, previous))
               }
+              onNodeDragStart={(event, _node, dragged) => {
+                if (disabled || !event.altKey || !dragged?.length) return;
+                const draggedIds = new Set(dragged.map((n) => n.id));
+                const clones = dragged
+                  .filter((n) => n.type !== "group" && (!n.parentId || !draggedIds.has(n.parentId)))
+                  .map((n) => ({
+                    ...structuredClone(n),
+                    id: crypto.randomUUID(),
+                    selected: false,
+                    dragging: false,
+                    position: { x: n.position.x, y: n.position.y },
+                  }));
+                if (clones.length) {
+                  setNodes((prev) => [...prev, ...clones]);
+                  setMessage(`已按 Alt 复制 ${clones.length} 个节点`);
+                }
+              }}
+              onNodeDrag={(_event, draggedNode, moved) => {
+                if (disabled || moved.length !== 1 || draggedNode.parentId) {
+                  if (snapGuides.x.length || snapGuides.y.length) setSnapGuides({ x: [], y: [] });
+                  return;
+                }
+                const threshold = 6;
+                const w = draggedNode.width || draggedNode.measured?.width || nodeWidth(draggedNode.type);
+                const h = draggedNode.height || draggedNode.measured?.height || 260;
+                const nx = draggedNode.position.x, ny = draggedNode.position.y;
+                const xTargets = [nx, nx + w / 2, nx + w];
+                const yTargets = [ny, ny + h / 2, ny + h];
+                let bestDx = null, snapX = null, bestDy = null, snapY = null;
+                for (const other of current.current.nodes) {
+                  if (other.id === draggedNode.id || other.parentId) continue;
+                  const ow = other.width || other.measured?.width || nodeWidth(other.type);
+                  const oh = other.height || other.measured?.height || 260;
+                  const ox = other.position.x, oy = other.position.y;
+                  for (const oVal of [ox, ox + ow / 2, ox + ow]) {
+                    for (const tVal of xTargets) {
+                      const diff = oVal - tVal;
+                      if (Math.abs(diff) <= threshold && (bestDx === null || Math.abs(diff) < Math.abs(bestDx))) {
+                        bestDx = diff;
+                        snapX = oVal;
+                      }
+                    }
+                  }
+                  for (const oVal of [oy, oy + oh / 2, oy + oh]) {
+                    for (const tVal of yTargets) {
+                      const diff = oVal - tVal;
+                      if (Math.abs(diff) <= threshold && (bestDy === null || Math.abs(diff) < Math.abs(bestDy))) {
+                        bestDy = diff;
+                        snapY = oVal;
+                      }
+                    }
+                  }
+                }
+                if (bestDx !== null || bestDy !== null) {
+                  const sx = nx + (bestDx || 0);
+                  const sy = ny + (bestDy || 0);
+                  setNodes((prev) => prev.map((n) => (n.id === draggedNode.id ? { ...n, position: { x: sx, y: sy } } : n)));
+                  setSnapGuides({ x: snapX !== null ? [snapX] : [], y: snapY !== null ? [snapY] : [] });
+                } else if (snapGuides.x.length || snapGuides.y.length) {
+                  setSnapGuides({ x: [], y: [] });
+                }
+              }}
               onNodeDragStop={(_event, _node, moved) => {
+                setSnapGuides({ x: [], y: [] });
                 const positions = new Map(
                   moved.map((entry) => [entry.id, entry.position]),
                 );
@@ -1088,6 +1182,7 @@ function CanvasWorkspace({
               {minimap && (
                 <MiniMap pannable zoomable nodeColor="var(--accent)" />
               )}
+              <CanvasSnapGuides guides={snapGuides} />
             </ReactFlow>}
             {flowReady&&!nodes.length&&<div className="canvas-empty-guide" aria-hidden="true">
               <strong>无限画布</strong>
@@ -1225,7 +1320,72 @@ function CanvasWorkspace({
           if(change(next)===false)throw Error('工程正在保存，请稍后应用区域');
         }}/>}
       {replacement&&<ReplaceImageDialog document={document} change={change} targetId={replacement.nodeId} assetId={replacement.assetId} close={()=>setReplacement(null)}/>}
-      {comparison&&<CanvasImageCompare assets={comparison} close={()=>setComparison(null)}/>}
+      {comparison&&(()=>{
+        const liveAssets=comparison.map(entry=>document.assets.find(a=>a.id===entry.assetId)).filter(Boolean);
+        return liveAssets.length?<CanvasImageCompare
+          assets={liveAssets}
+          close={()=>setComparison(null)}
+          onRate={rateAsset}
+          onKeepOnly={keepAssetId=>{
+            const removeIds=new Set(comparison.filter(c=>c.assetId!==keepAssetId).map(c=>c.nodeId));
+            const nextDoc={...current.current.document,assets:current.current.document.assets.map(a=>a.id===keepAssetId?{...a,rating:5}:a)};
+            commit(
+              current.current.nodes.filter(n=>!removeIds.has(n.id)),
+              current.current.edges.filter(e=>!removeIds.has(e.source)&&!removeIds.has(e.target)),
+              {source:nextDoc},
+            );
+            setComparison(null);
+            setMessage('已评为 5 星定稿并移走其余候选节点');
+          }}
+        />:null;
+      })()}
+      {matrixNodeId&&(()=>{
+        const sourceNode=nodes.find(n=>n.id===matrixNodeId);
+        if(!sourceNode)return null;
+        return <MatrixRunDialog
+          node={sourceNode}
+          connection={connection}
+          close={()=>setMatrixNodeId(null)}
+          onRun={({combos,autoRun})=>{
+            const incoming=current.current.edges.filter(e=>e.target===sourceNode.id);
+            const cols=Math.min(3,combos.length);
+            const baseX=sourceNode.position.x+(sourceNode.width||sourceNode.measured?.width||nodeWidth(sourceNode.type))+80;
+            const baseY=sourceNode.position.y;
+            const basePrompt=String(sourceNode.data.prompt||'').trim();
+            const baseName=nodeName(sourceNode)||'生成';
+            const createdNodes=[],createdEdges=[];
+            combos.forEach(({variant,model},idx)=>{
+              const id=crypto.randomUUID();
+              const nextData={...structuredClone(sourceNode.data)};
+              delete nextData.outputAssetId;
+              delete nextData.outputAssetIds;
+              nextData.prompt=[basePrompt,variant].filter(Boolean).join('，');
+              if(model)nextData.model=model;
+              const tag=[variant,model].filter(Boolean).join(' · ').slice(0,28)||`变体 ${idx+1}`;
+              nextData.name=`${baseName} · ${tag}`;
+              createdNodes.push({
+                ...structuredClone(sourceNode),
+                id,
+                selected:true,
+                parentId:undefined,
+                position:{x:baseX+(idx%cols)*360,y:baseY+Math.floor(idx/cols)*320},
+                data:nextData,
+              });
+              for(const edge of incoming){
+                createdEdges.push({id:crypto.randomUUID(),source:edge.source,target:id});
+              }
+            });
+            commit(
+              [...current.current.nodes.map(n=>({...n,selected:false})),...createdNodes],
+              [...current.current.edges,...createdEdges],
+            );
+            setMessage(`已展开 ${createdNodes.length} 个矩阵对比节点`);
+            if(autoRun){
+              setTimeout(()=>{createdNodes.forEach(n=>{void runNode(n.id);});},60);
+            }
+          }}
+        />;
+      })()}
       {angleSource&&<AngleDialog source={angleSource.asset} sourceUrl={assetUrl(angleSource.asset)} close={()=>setAngleSource(null)} submit={async params=>{
         await window.tugou.generateAngle(projectId,current.current.document,angleSource.nodeId,angleSource.asset.id,params);
         await refreshTasks();

@@ -9,6 +9,7 @@ import {VectorTraceDialog} from './vector-trace-dialog.jsx';
 import {addTracedLayer} from './vector-trace.js';
 import {worldMatrix,decompose,inherited,descendants} from '../core/layers.cjs';
 import {BoardExport} from './board-export.jsx';
+import {DataMergeDialog} from './data-merge.jsx';
 import {PsdDialog} from './psd-dialog.jsx';
 import {Button, Input, Icon, EmptyState, FormDialog} from './components.jsx';
 import {ContextMenu,useContextMenu,menuAction as item,menuDivider as divider} from './context-menu.jsx';
@@ -24,7 +25,7 @@ import {Compositor} from './composite.js';
 
 import {dimensions,sizePatch} from '../core/board-measure.cjs';
 
-function BoardInspector({board,patch,resize,scaleContent,setScaleContent,createBoard,applySize,duplicate,remove,canRemove,disabled}) {
+function BoardInspector({board,patch,resize,scaleContent,setScaleContent,createBoard,applySize,duplicate,remove,canRemove,disabled,openDataMerge,openBatchExport}) {
   const [name,setName]=useState(board.name);
   const unit=board.printSize?.unit||'px',display=dimensions(board),step=unit==='px'?1:'any';
   return <fieldset className="layer-properties board-properties" disabled={disabled||board.locked}>
@@ -34,7 +35,7 @@ function BoardInspector({board,patch,resize,scaleContent,setScaleContent,createB
     <div className="board-actions"><Button icon="replace" onClick={()=>resize({width:display.height,height:display.width,unit})}>交换宽高</Button><label className="check"><input type="checkbox" checked={scaleContent} onChange={e=>setScaleContent(e.target.checked)}/>缩放内容</label></div>
     <label className="check"><input type="checkbox" checked={board.clipContent!==false} onChange={e=>patch({clipContent:e.target.checked})}/>裁切画板外内容</label>
     <div className="board-background"><span>背景</span><ColorControl aria-label="画板背景" value={board.background==='transparent'?'#ffffff':board.background} onChange={e=>patch({background:e.target.value})}/><span>{board.background==='transparent'?'透明':board.background.replace('#','').toUpperCase()}</span><label className="check"><input aria-label="透明背景" type="checkbox" checked={board.background==='transparent'} onChange={e=>patch({background:e.target.checked?'transparent':'#ffffff'})}/>透明</label></div>
-    <div className="board-actions board-management"><BoardSizeControl board={board} apply={applySize} disabled={disabled||board.locked}><Button className="board-size-trigger">尺寸预设</Button></BoardSizeControl><BoardSizeControl board={board} creating apply={createBoard} disabled={disabled||board.locked}><Button icon="add">新建画板</Button></BoardSizeControl><Button icon="copy" onClick={duplicate} disabled={disabled}>复制画板</Button><Button icon="delete" onClick={remove} disabled={disabled||!canRemove}>删除画板</Button></div>
+    <div className="board-actions board-management"><BoardSizeControl board={board} apply={applySize} disabled={disabled||board.locked}><Button className="board-size-trigger">尺寸预设</Button></BoardSizeControl><BoardSizeControl board={board} creating apply={createBoard} disabled={disabled||board.locked}><Button icon="add">新建画板</Button></BoardSizeControl><Button icon="copy" onClick={duplicate} disabled={disabled}>复制画板</Button><Button icon="table" onClick={openDataMerge} disabled={disabled}>批量套版</Button><Button icon="export" onClick={openBatchExport} disabled={disabled}>导出 / 审稿拼图</Button><Button icon="delete" onClick={remove} disabled={disabled||!canRemove}>删除画板</Button></div>
   </fieldset>;
 }
 export function CompositeWorkspace({document,change,selected,setSelected,initialPageView,onPageView,...props}) {
@@ -45,7 +46,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
   const [activeId,setActiveId]=useState(null),[dialog,setDialog]=useState(null),[error,setError]=useState('');
   const [maskId,setMaskId]=useState(null);
   const menu=useContextMenu(),[renameId,setRenameId]=useState(null),[editorRequest,setEditorRequest]=useState(null);
-  const [exportRequest,setExportRequest]=useState(null),[notice,setNotice]=useState('');
+  const [exportRequest,setExportRequest]=useState(null),[mergeBoardId,setMergeBoardId]=useState(null),[notice,setNotice]=useState('');
   const [trace,setTrace]=useState(null);
   const [psdRequest,setPsdRequest]=useState(null);
   const [materialSaving,setMaterialSaving]=useState(''),materialControl=useRef(null);
@@ -160,6 +161,8 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     move:(id,dx,dy)=>run(()=>{const b=list.find(b=>b.id===id);return save(artboards.update(normalized,id,{x:b.x+dx,y:b.y+dy}),{deferSave:true})}),
     patchLayer:(id,values)=>run(()=>save({...normalized,layers:normalized.layers.map(l=>l.id===id?{...l,...values}:l)})),
     inspector:<BoardInspector key={`${board.id}-${board.name}`} board={board} patch={patch} resize={resize} scaleContent={scaleContent} setScaleContent={setScaleContent} createBoard={createBoard} applySize={applySize} disabled={props.disabled} canRemove={list.length>1}
+      openDataMerge={()=>setMergeBoardId(board.id)}
+      openBatchExport={()=>setExportRequest({document:normalized,id:board.id,single:false})}
       duplicate={()=>run(()=>{const result=artboards.duplicate(normalized,board.id);if(save(result.document)!==false){view.current=null;activate(result.id)}})}
       remove={()=>setDialog(board.id)}/>,
   };
@@ -174,7 +177,8 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
     if(target.artboard)return [
       item('save','保存图片',()=>setExportRequest({document:normalized,id,single:true}),{icon:<Icon name="export"/>}),
       item('material','保存到素材',()=>void saveMaterial(id,time),{icon:<Icon name="assets"/>}),
-      item('batch','批量保存画板…',()=>setExportRequest({document:normalized,id,single:false})),divider,
+      item('batch','批量保存 / 审稿拼图…',()=>setExportRequest({document:normalized,id,single:false})),
+      item('merge','批量套版生成…',()=>setMergeBoardId(id),{icon:<Icon name="table"/>}),divider,
       item('edit','编辑画板',()=>{activate(id);setPropertiesOpen(true);}),
       item('rename','重命名画板…',()=>setRenameId(id),{disabled:target.locked}),
       item('lock',target.locked?'解锁画板':'锁定画板',()=>workspace.patchLayer(id,{locked:!target.locked})),
@@ -214,6 +218,7 @@ export function CompositeWorkspace({document,change,selected,setSelected,initial
       </form>
     </FormDialog>}
     {exportRequest&&<BoardExport document={exportRequest.document} initialId={exportRequest.id} single={exportRequest.single} initialFrame={exportRequest.frame} close={()=>setExportRequest(null)} complete={setNotice}/>}
+    {mergeBoardId&&<DataMergeDialog document={normalized} boardId={mergeBoardId} change={save} close={()=>setMergeBoardId(null)} complete={setNotice}/>}
     {deleteBoard&&<Modal open getContainer={()=>window.document.getElementById('dialogs')} transitionName="" maskTransitionName="" title={`删除“${deleteBoard.name}”？`} onCancel={()=>setDialog(null)} onOk={()=>run(()=>{if(props.disabled||save(artboards.remove(normalized,deleteBoard.id))===false)return;if(board.id===deleteBoard.id)activate(list.find(b=>b.id!==deleteBoard.id).id);setDialog(null)})} okText="删除画板" cancelText="取消" okButtonProps={{danger:true,disabled:props.disabled}}><p>画板内的图层会一起删除。可通过撤销恢复。</p></Modal>}
   </div>;
 }

@@ -80,7 +80,7 @@ function register(define,{string,object,enumeration,ids,find,fail,editable,adjus
   task('scene.record','录制导演台关键帧动画为视频素材，时长 1–60 秒；支持取消',{nodeId:string,duration:num(1,60),maxSize:integer(64,2048)},['nodeId','duration']);
   define('artboard.timeline','读取画板 GIF 合成时间轴，返回从 1 起的帧号和毫秒时间',{artboardId:string},['artboardId'],'read');
   define('task.result','读取当前工程 MCP 本地处理任务的结果',{id:string},['id'],'read');
-  define('asset.search','按素材来源、形状和名称筛选，可按时间/名称/像素排序',{query:{type:'string',maxLength:256},source:enumeration('all','processed','generated','imported'),shape:enumeration('all','portrait','landscape','square'),sort:enumeration('newest','oldest','name','pixels'),offset:integer(0,1000000),limit:integer(1,100)},[],'read');
+  define('asset.search','按素材工作区归属、来源、形状、星级和名称筛选，可按时间/名称/像素/评分排序',{query:{type:'string',maxLength:256},workspace:enumeration('all','canvas','layers','ppt','unused'),source:enumeration('all','processed','generated','imported'),shape:enumeration('all','portrait','landscape','square'),minRating:integer(0,5),rating:integer(0,5),sort:enumeration('newest','oldest','name','pixels','rating'),offset:integer(0,1000000),limit:integer(1,100)},[],'read');
   define('project.importLegacy','从会话文件目录导入旧版工程及相邻 resources 目录，不切换当前工程',{path:string},['path'],'file');
   define('project.migrateCanvas','导入历史画布快照 JSON 文件（state 和 images），保留原始归档；不切换工程',{path:string},['path'],'file');
 }

@@ -8,6 +8,9 @@
 .canvas-card .node-caption::before,.desk-heading::before { content:''; width:7px; height:7px; border-radius:50%; flex-shrink:0; background:var(--muted); }
 .node-shell[data-node-role="desk"] .desk-heading::before { background:var(--accent); }
 .node-shell[data-node-role="result"] .node-caption::before { background:var(--success); }
+.node-shell[data-pending-state="active"] .node-caption::before { background:var(--accent); }
+.node-shell[data-pending-state="cancelled"] .node-caption::before { background:var(--warn); }
+.node-shell[data-pending-state="failed"] .node-caption::before { background:var(--danger); }
 .node-shell[data-node-role="tool"] .node-caption::before { background:var(--warn); }
 .node-caption strong { font-size:13px; font-weight:600; color:var(--text); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .node-caption>.anticon { font-size:13.5px; color:var(--muted); flex-shrink:0; }
@@ -152,19 +155,32 @@
 .inspector-generation-params>summary { cursor:pointer; }
 .inspector-generation-params { padding:14px 0; border-block:1px solid var(--line); font-size:12px; }
 
-.generation-output-placeholder { min-height:250px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:18px; padding:24px 8px; background:var(--surface); border:1px dashed var(--line); border-radius:8px; }
-.generation-output-placeholder>.anticon { font-size:24px; color:var(--accent); }
-.generation-output-placeholder>strong { font-size:13px; font-weight:500; }
-.generation-output-placeholder>.node-warning { padding:0 8px; overflow-wrap:anywhere; }
-.generation-progress { width:100%; min-width:0; display:flex; flex-direction:column; gap:10px; color:var(--muted); font-size:11px; }
-.generation-progress>div:first-child { display:flex; justify-content:space-between; gap:8px; font-variant-numeric:tabular-nums; }
-.generation-progress>small { font-size:10px; text-align:center; line-height:1.6; }
+.generation-output-placeholder { min-height:236px; flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:12px; padding:22px 18px 18px; background:var(--work-surface); border:0; border-radius:0 0 11px 11px; }
+.generation-output-emblem { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; border:1px solid var(--panel-line); background:var(--panel); color:var(--muted); box-shadow:0 1px 2px rgba(0,0,0,.04); }
+.generation-output-emblem .anticon { font-size:20px; }
+.generation-output-placeholder.is-active .generation-output-emblem,
+.generation-output-placeholder.is-loading .generation-output-emblem { background:var(--accent-bg); border-color:var(--accent-line); color:var(--accent); }
+.generation-output-placeholder.is-cancelled .generation-output-emblem { background:color-mix(in srgb,var(--warn) 10%,var(--panel)); border-color:color-mix(in srgb,var(--warn) 28%,var(--line)); color:var(--warn); }
+.generation-output-placeholder.is-failed .generation-output-emblem { background:color-mix(in srgb,var(--danger) 10%,var(--panel)); border-color:color-mix(in srgb,var(--danger) 28%,var(--line)); color:var(--danger); }
+.generation-output-heading { display:flex; flex-direction:column; align-items:center; gap:2px; text-align:center; }
+.generation-output-heading strong { font-size:14px; font-weight:600; color:var(--text); letter-spacing:-.01em; }
+.generation-progress { width:100%; min-width:0; display:flex; flex-direction:column; gap:8px; color:var(--muted); font-size:11.5px; }
+.generation-output-placeholder .generation-progress { padding:8px 11px; border:1px solid var(--panel-line); border-radius:8px; background:var(--panel); }
+.generation-progress-row { display:flex; align-items:center; justify-content:space-between; gap:8px; font-variant-numeric:tabular-nums; }
+.generation-progress-time { color:var(--text); font-weight:500; }
+.generation-progress>small { font-size:11px; color:var(--subtle); text-align:center; line-height:1.5; }
 .generation-progress.is-compact { padding:6px 0; }
-.generation-progress-track { height:4px; overflow:hidden; border-radius:99px; background:var(--surface); }
+.generation-progress-track { height:5px; overflow:hidden; border-radius:99px; background:var(--line); }
 .generation-progress-track>span { display:block; height:100%; background:var(--accent); border-radius:99px; transition:width .2s var(--ease-ui); }
-.generation-progress-track.is-indeterminate>span { width:35%; animation:generation-wait 1.6s ease-in-out infinite; }
-.generation-output-actions { display:flex; gap:6px; }
-.generation-output-actions .ant-btn { height:28px; font-size:11px; padding:0 8px; }
+.generation-progress-track.is-indeterminate>span { width:36%; animation:generation-wait 1.5s ease-in-out infinite; }
+.generation-output-note { width:100%; margin:0; padding:8px 10px; border-radius:8px; font-size:11.5px; line-height:1.55; text-align:center; overflow-wrap:anywhere; }
+.generation-output-note.is-muted { border:1px solid var(--panel-line); background:color-mix(in srgb,var(--surface) 70%,var(--panel)); color:var(--muted); }
+.generation-output-note.is-danger { border:1px solid color-mix(in srgb,var(--danger) 28%,var(--line)); background:color-mix(in srgb,var(--danger) 8%,var(--panel)); color:var(--danger); }
+.generation-output-actions { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:2px; }
+.generation-output-actions .ant-btn { height:32px; font-size:12px; font-weight:500; border-radius:8px; padding:0 10px; justify-content:center; }
+.generation-output-actions .ant-btn:not(.ant-btn-primary) { background:var(--panel); border:1px solid var(--line-strong); color:var(--text); }
+.generation-output-actions .ant-btn:not(.ant-btn-primary):hover:not(:disabled) { background:var(--hover); border-color:var(--accent-line); color:var(--text); }
+.generation-output-actions .ant-btn:only-child { grid-column:1 / -1; }
 @keyframes generation-wait { from { transform:translateX(-100%); } to { transform:translateX(290%); } }
 @media(prefers-reduced-motion:reduce) { .generation-progress-track.is-indeterminate>span { animation:none; width:100%; opacity:.45; } }
 

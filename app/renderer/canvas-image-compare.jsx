@@ -1,5 +1,5 @@
 import React, {useLayoutEffect, useRef, useState} from 'react';
-import {Button, FormDialog} from './components.jsx';
+import {Button, FormDialog, StarRating} from './components.jsx';
 import {originalUrl} from './image-processing.js';
 import './canvas-image-compare.css';
 
@@ -9,7 +9,7 @@ const zoomView = (view, delta) => {
   return {scale,x:clamp(view.x,scale),y:clamp(view.y,scale)};
 };
 
-export function CanvasImageCompare({assets, close}) {
+export function CanvasImageCompare({assets, close, onRate, onKeepOnly}) {
   const [views, setViews] = useState(()=>assets.map(()=>({scale:1,x:0,y:0})));
   const [linked, setLinked] = useState(true);
   const [active, setActive] = useState(0);
@@ -69,7 +69,13 @@ export function CanvasImageCompare({assets, close}) {
     </div>
     <div ref={grid} className={`image-compare-grid${overview?'':' is-detail'}`} style={{'--compare-columns':columns,'--compare-rows':Math.ceil(assets.length/columns),'--compare-small-rows':Math.ceil(assets.length/2)}}>
       {assets.map((asset,index)=>{const view=views[index],canPan=linked?linkedPan:view.scale>1;return <section className={`image-compare-cell${!linked&&active===index?' is-active':''}`} key={index} aria-label={`对比图片 ${index+1}：${asset.name||'未命名图片'}`} onPointerDownCapture={event=>{setActive(index);event.currentTarget.querySelector('.image-compare-stage').focus({preventScroll:true});}}>
-        <header><span className="image-compare-index">{index+1}</span><span className="image-compare-name" title={asset.name}>{asset.name||'未命名图片'}</span><small>{asset.width} × {asset.height} · {factor(view.scale)}</small></header>
+        <header>
+          <span className="image-compare-index">{index+1}</span>
+          <span className="image-compare-name" title={asset.name}>{asset.name||'未命名图片'}</span>
+          <small>{asset.width} × {asset.height} · {factor(view.scale)}</small>
+          {onRate&&<StarRating compact value={asset.rating||0} onChange={r=>onRate(asset.id,r)} aria-label={`给 ${asset.name||'图片'} 打星`}/>}
+          {onKeepOnly&&assets.length>1&&<Button size="small" icon="check" onClick={e=>{e.stopPropagation();onKeepOnly(asset.id);}}>留此图</Button>}
+        </header>
         <div className="image-compare-stage" tabIndex={0} onFocus={()=>setActive(index)} aria-label={`查看图片 ${index+1}，放大后可用方向键平移`} style={{cursor:canPan?'grab':'default'}}
           onKeyDown={event=>{
             const direction={ArrowLeft:[.05,0],ArrowRight:[-.05,0],ArrowUp:[0,.05],ArrowDown:[0,-.05]}[event.key];

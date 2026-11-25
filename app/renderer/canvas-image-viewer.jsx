@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Image } from "antd";
-import { Button } from "./components.jsx";
+import { Button, StarRating } from "./components.jsx";
 import { originalUrl } from "./image-processing.js";
 import { copyAssetImage } from "./image-clipboard.js";
 import "./canvas-image-viewer.css";
 
-export function CanvasImageViewer({ asset, assets, close, onSave }) {
+export function CanvasImageViewer({ asset, assets, close, onSave, onPin, onRate }) {
   const list = useMemo(() => {
     const images = (assets || []).filter((a) => a && (!a.kind || a.kind === "image"));
     if (!images.length) return asset ? [asset] : [];
@@ -81,12 +81,17 @@ export function CanvasImageViewer({ asset, assets, close, onSave }) {
         close();
         return;
       }
+      if (onRate && !e.ctrlKey && !e.metaKey && !e.shiftKey && /^[0-5]$/.test(e.key) && !e.target?.closest?.("input,textarea,select")) {
+        e.preventDefault();
+        e.stopPropagation();
+        const target = list[index] || asset;
+        if (target) onRate(target.id, Number(e.key));
+        return;
+      }
       const action = {
         "+": () => actionsRef.current?.onZoomIn(),
         "=": () => actionsRef.current?.onZoomIn(),
         "-": () => actionsRef.current?.onZoomOut(),
-        0: () => reset(false),
-        1: () => reset(true),
       }[e.key];
       if (action) {
         e.preventDefault();
@@ -94,13 +99,22 @@ export function CanvasImageViewer({ asset, assets, close, onSave }) {
         action();
       }
     };
+    const onWheel = (e) => {
+      if ((!e.ctrlKey && !e.metaKey) || !e.target?.closest?.(".canvas-image-viewer")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.deltaY < 0) actionsRef.current?.onZoomIn?.();
+      else if (e.deltaY > 0) actionsRef.current?.onZoomOut?.();
+    };
     window.addEventListener("resize", resize);
     window.addEventListener("keydown", key, true);
+    window.addEventListener("wheel", onWheel, { passive: false, capture: true });
     return () => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("keydown", key, true);
+      window.removeEventListener("wheel", onWheel, { capture: true });
     };
-  }, [list.length, close]);
+  }, [list, index, asset, onRate, close]);
 
   if (!current) return null;
 
@@ -172,8 +186,20 @@ export function CanvasImageViewer({ asset, assets, close, onSave }) {
               <Button iconOnly icon="zoomIn" aria-label="放大图片" disabled={info.transform.scale >= 50} onClick={info.actions.onZoomIn} />
               <Button onClick={() => reset(false)}>适应窗口</Button>
               <Button onClick={() => reset(true)}>100%</Button>
+              {onRate && (
+                <>
+                  <span className="viewer-sep" aria-hidden="true" />
+                  <StarRating
+                    className="viewer-rating"
+                    value={current.rating || 0}
+                    onChange={(r) => onRate(current.id, r)}
+                    aria-label="给当前图片打星（数字键 0–5）"
+                  />
+                </>
+              )}
               <span className="viewer-sep" aria-hidden="true" />
               <Button icon={copied ? "check" : "copy"} onClick={handleCopy}>{copied ? "已复制" : "复制图片"}</Button>
+              {onPin && <Button icon="pin" onClick={() => { onPin(current.id); close(); }}>钉住参考</Button>}
               {onSave && <Button icon="export" onClick={() => onSave(current)}>保存图片</Button>}
             </div>
           );

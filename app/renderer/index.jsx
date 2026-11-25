@@ -12,8 +12,11 @@ import { ConnectionDialog } from "./connection.jsx";
 import { ImageTools } from "./image-tools.jsx";
 import { AssetLibrary } from "./materials.jsx";
 import { StudioHeader, StudioStatus } from "./shell.jsx";
-import { ThemeProvider, Button, FormDialog, Icon } from "./components.jsx";
-import { ShortcutsDialog } from "./command-palette.jsx";
+import { ThemeProvider, Button, FormDialog, Icon, useTheme } from "./components.jsx";
+import { CommandPalette, ShortcutsDialog } from "./command-palette.jsx";
+import { PinReference } from "./pin-reference.jsx";
+import { BrandKitProvider, BrandKitDialog, normalizeBrandKit, extractPaletteFromAsset } from "./brand-kit.jsx";
+import { create as createDeck, element as pptElement } from "../core/presentations.cjs";
 import { InfiniteCanvas } from "./canvas.jsx";
 import { CompositeWorkspace as LayerEditor } from "./composite-workspace.jsx";
 import { AnalysisDialog } from "./analysis.jsx";
@@ -65,8 +68,25 @@ function prepareRecord(record){
 
 const allPages=(id,doc,kind)=>loadPages(id,doc,kind,pages.list(doc,kind).map(p=>p.id));
 
+function describeChange(previous, next) {
+  if (!previous || !next) return "编辑工程";
+  if (previous.name !== next.name) return "重命名工程";
+  if (previous.brandKit !== next.brandKit) return "更新视觉规范";
+  if (previous.tugouCanvas !== next.tugouCanvas) return "编辑无限画布";
+  if (previous.layers !== next.layers) return "编辑图层与画板";
+  if (previous.presentations !== next.presentations) return "编辑 PPT";
+  if (previous.assets !== next.assets) return "更新素材库";
+  if (previous.modules !== next.modules || previous.recipes !== next.recipes) return "编辑提示词";
+  return "编辑工程";
+}
+const nowTime = () => {
+  const d = new Date();
+  return [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, "0")).join(":");
+};
+
 function App() {
   const preferences=usePreferences();
+  const theme=useTheme();
   useEffect(()=>{
     const preventFileNavigation=event=>{if(event.dataTransfer?.types.includes('Files'))event.preventDefault();};
     window.addEventListener('dragover',preventFileNavigation);window.addEventListener('drop',preventFileNavigation);
@@ -119,6 +139,10 @@ function App() {
   const [tasksReady,setTasksReady]=useState(false);
   const [helpOpen,setHelpOpen]=useState(false);
   const [shortcutsOpen,setShortcutsOpen]=useState(false);
+  const [paletteOpen,setPaletteOpen]=useState(false);
+  const [brandKitOpen,setBrandKitOpen]=useState(false);
+  const [pinnedAssetId,setPinnedAssetId]=useState(null);
+  const [pptFocus,setPptFocus]=useState(null);
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => setNotice(""), 3400);
@@ -126,6 +150,7 @@ function App() {
   }, [notice]);
   const seenResults = useRef(new Set(previewBootstrap.snapshot?.seenResults||[]));
   const history = useRef(previewBootstrap.snapshot?.history||{ past: [], future: [] });
+  const historyMeta = useRef({ past: [], future: [] });
   const pageViews=useRef(previewBootstrap.snapshot?.pageViews||{});
   const navigation=useRef(0);
   const present = useRef(record),
@@ -199,6 +224,9 @@ function App() {
         history.current.past.push(previous);
         history.current.past = history.current.past.slice(-60);
         history.current.future = [];
+        historyMeta.current.past.push({ label: describeChange(previous, document), time: nowTime() });
+        historyMeta.current.past = historyMeta.current.past.slice(-60);
+        historyMeta.current.future = [];
       }
     }
     present.current = { ...present.current, document };
@@ -303,10 +331,17 @@ function App() {
     if(busyRef.current||present.current?.document!==current.document||history.current[from].at(-1)!==next)throw Error('页面已变化，请重试');
     history.current[from].pop();
     history.current[to].push(suspendPages(current.document));
+    const movedMeta = historyMeta.current[from].pop() || { label: "编辑工程", time: nowTime() };
+    historyMeta.current[to].push(movedMeta);
     present.current = { ...present.current, document: suspendPages(focus?pages.activate(loaded,focus.kind,focus.id):loaded) };
     if(focus){setWorkspace(focus.kind);setLayerSelection([]);}
     setRecord(present.current);
     markDirty(true);
+  };
+  const jumpHistory = async (direction, steps) => {
+    for (let i = 0; i < steps; i++) {
+      await travel(direction);
+    }
   };
   const pageDocument=()=>{
     const {id,document:doc}=present.current;
@@ -430,6 +465,95 @@ function App() {
     setLayerSelection(present.current.document.layers.slice(-pending.length).map(l=>l.id));
     setWorkspace("layers");
   };
+  const addAssetToPpt = (asset) => {
+    const doc = present.current?.document;
+    if (!doc || !asset) return;
+    if (asset.kind && asset.kind !== "image") {
+      setNotice("PPT 仅支持插入图片素材");
+      return;
+    }
+    if (!Number.isFinite(asset.width) || !Number.isFinite(asset.height) || asset.width <= 0 || asset.height <= 0) {
+      setError("图片尺寸无效");
+      return;
+    }
+    const decks = doc.presentations || [];
+    const targetDeck = decks[0] || createDeck("演示文稿", "16:9", "#1765d1");
+    const targetSlide = targetDeck.slides[0];
+    if (targetSlide.elements.length >= 200) {
+      setError("目标 PPT 页面元素已达上限（200 个）");
+      return;
+    }
+    const k = Math.min(600 / asset.width, 400 / asset.height);
+    const imgEl = pptElement("image", {
+      assetId: asset.id,
+      x: 140,
+      y: 160,
+      w: Math.max(8, Math.round(asset.width * k)),
+      h: Math.max(8, Math.round(asset.height * k)),
+    });
+    const updatedDeck = {
+      ...targetDeck,
+      slides: targetDeck.slides.map((s, idx) =>
+        idx === 0 ? { ...s, elements: [...s.elements, imgEl] } : s,
+      ),
+    };
+    const nextDecks = decks.length
+      ? decks.map((d) => (d.id === updatedDeck.id ? updatedDeck : d))
+      : [updatedDeck];
+    if (change({ ...doc, presentations: nextDecks }) === false) return;
+    setPptFocus({ deckId: updatedDeck.id, slideId: targetSlide.id, elementId: imgEl.id, nonce: Date.now() });
+    setWorkspace("ppt");
+    setNotice(`已发送「${asset.name}」到 PPT`);
+  };
+  const rateAsset = (assetId, rating) => {
+    const doc = present.current?.document;
+    if (!doc) return;
+    const ids = Array.isArray(assetId) ? assetId : [assetId];
+    const targetSet = new Set(ids);
+    const nextRating = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+    change({
+      ...doc,
+      assets: doc.assets.map((a) => {
+        if (!targetSet.has(a.id)) return a;
+        const copy = { ...a };
+        if (nextRating > 0) copy.rating = nextRating;
+        else delete copy.rating;
+        return copy;
+      }),
+    });
+  };
+  const addBrandColor = (hex) => {
+    const doc = present.current?.document;
+    if (!doc) return;
+    const normalized = String(hex || "").trim().toUpperCase();
+    if (!/^#[0-9A-F]{6}$/.test(normalized)) return;
+    const kit = normalizeBrandKit(doc.brandKit);
+    if (kit.colors.some((c) => c.hex === normalized)) {
+      setNotice(`工程色板已包含 ${normalized}`);
+      return;
+    }
+    change({
+      ...doc,
+      brandKit: {
+        ...kit,
+        colors: [...kit.colors, { hex: normalized, name: `色 ${kit.colors.length + 1}` }].slice(0, 24),
+      },
+    });
+    setNotice(`已添加 ${normalized} 到工程色板`);
+  };
+  const extractBrandFromAsset = (asset) =>
+    run(async () => {
+      const doc = present.current?.document;
+      if (!doc || !asset) return;
+      const extracted = await extractPaletteFromAsset(asset, 6);
+      const kit = normalizeBrandKit(present.current.document.brandKit);
+      const merged = [
+        ...kit.colors,
+        ...extracted.filter((e) => !kit.colors.some((c) => c.hex === e.hex)),
+      ].slice(0, 24);
+      change({ ...present.current.document, brandKit: { ...kit, colors: merged } });
+      setNotice(`已从「${asset.name}」提取 ${extracted.length} 个主题色到工程色板`);
+    });
   const sync = record
     ? syncCounts(record.document)
     : { outdated: 0, conflicts: 0, missing: 0 };
@@ -495,6 +619,13 @@ function App() {
   }));
   useEffect(() => {
     const handler = (event) => {
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'k') {
+        if (!window.document.querySelector('[role="dialog"]') || paletteOpen) {
+          event.preventDefault();
+          setPaletteOpen((open) => !open);
+        }
+        return;
+      }
       if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey && !shortcutBlocked(event)) {
         event.preventDefault();
         setShortcutsOpen((open) => !open);
@@ -527,6 +658,9 @@ function App() {
         const next = prepareRecord(await operation());
         if (next) {
           history.current = { past: [], future: [] };
+          historyMeta.current = { past: [], future: [] };
+          setPinnedAssetId(null);
+          setBrandKitOpen(false);
           present.current = next;
           seenResults.current = new Set();
           setRecord(next);
@@ -552,7 +686,7 @@ function App() {
       await autosave.queue.flush();
       await api.deleteProject(project.id,present.current?.id===project.id?present.current.revision:project.revision);
       if(present.current?.id===project.id){
-        present.current=null;setRecord(null);history.current={past:[],future:[]};seenResults.current=new Set();
+        present.current=null;setRecord(null);history.current={past:[],future:[]};historyMeta.current={past:[],future:[]};setPinnedAssetId(null);setBrandKitOpen(false);seenResults.current=new Set();
         setModuleId(null);setRecipeId(null);setLayerSelection([]);setToolSession(null);setDetailsSession(null);setAnalysisOpen(false);setAnalysisSource(null);markDirty(false);
       }
       await refresh();setNotice('项目已删除');
@@ -566,7 +700,14 @@ function App() {
     freeze:value=>{busyRef.current=value;setBusy(value);},
     getSnapshot:()=>({record:present.current,projects,workspace,recipeId,moduleId,layerSelection,dirty:dirtyRef.current,history:history.current,pageViews:pageViews.current,seenResults:[...seenResults.current]}),
     blockReason:()=>busyRef.current||autosave.queue.saving?'等待当前操作完成':['fonts','tools'].includes(workspace)?'请先完成当前编辑，再切换工作区应用更新':tasks.some(t=>['running','queued'].includes(t.status))?'等待任务完成':''});
+  const brandKitValue = {
+    brandKit: normalizeBrandKit(record?.document?.brandKit),
+    addColor: record && !busy ? addBrandColor : null,
+    openBrandKit: record && !busy ? () => setBrandKitOpen(true) : null,
+  };
+  const pinnedAsset = pinnedAssetId ? record?.document?.assets?.find((a) => a.id === pinnedAssetId) : null;
   return (
+    <BrandKitProvider value={brandKitValue}>
     <div className={"app-shell workspace-" + workspace}>
       <StudioHeader
         help={()=>setHelpOpen(true)}
@@ -591,6 +732,11 @@ function App() {
         redo={() => run(()=>travel("redo"))}
         canUndo={Boolean(history.current.past.length)}
         canRedo={Boolean(history.current.future.length)}
+        historyPast={historyMeta.current.past}
+        historyFuture={historyMeta.current.future}
+        jumpHistory={(dir, steps) => run(() => jumpHistory(dir, steps))}
+        openPalette={() => setPaletteOpen(true)}
+        openBrandKit={() => setBrandKitOpen(true)}
       />
       {preview}
       {error && (
@@ -629,7 +775,7 @@ function App() {
               addToCanvas={addToCanvas} addToLayers={(...args)=>{if(!busyRef.current){addAssetLayer(...args);setToolSession(null);}}} />
           </div>
         </FormDialog>}
-        {workspace === 'ppt' ? <PresentationsWorkspace key={record?.id||'empty'} record={record} change={change} disabled={busy} save={save} undo={()=>run(()=>travel('undo'))} redo={()=>run(()=>travel('redo'))} canUndo={Boolean(history.current.past.length)} canRedo={Boolean(history.current.future.length)} createProject={()=>switchProject(()=>api.create('演示文稿工程'),{stay:true})}/> : workspace === 'home' ? <HomeWorkspace lastWorkspace={lastWorkspace} projects={projects} projectsReady={projectsReady} record={record} dirty={dirty} tasks={tasks} tasksReady={tasksReady} busy={busy} create={()=>switchProject(()=>api.create('未命名创作'))} open={id=>switchProject(()=>api.open(id))} renameProject={(name)=>change({ ...present.current.document, name })} deleteProject={deleteProject} navigate={setWorkspace} showTasks={()=>setTasksOpen(true)}/> : workspace === 'settings' ? <SettingsWorkspace openModels={()=>setConnectionOpen(true)} modelsOpen={connectionOpen} /> : workspace === "fonts" ? <FontWorkspace /> : record ? (
+        {workspace === 'ppt' ? <PresentationsWorkspace key={record?.id||'empty'} record={record} change={change} disabled={busy} save={save} undo={()=>run(()=>travel('undo'))} redo={()=>run(()=>travel('redo'))} canUndo={Boolean(history.current.past.length)} canRedo={Boolean(history.current.future.length)} focusTarget={pptFocus} createProject={()=>switchProject(()=>api.create('演示文稿工程'),{stay:true})}/> : workspace === 'home' ? <HomeWorkspace lastWorkspace={lastWorkspace} projects={projects} projectsReady={projectsReady} record={record} dirty={dirty} tasks={tasks} tasksReady={tasksReady} busy={busy} create={()=>switchProject(()=>api.create('未命名创作'))} open={id=>switchProject(()=>api.open(id))} renameProject={(name)=>change({ ...present.current.document, name })} deleteProject={deleteProject} navigate={setWorkspace} showTasks={()=>setTasksOpen(true)}/> : workspace === 'settings' ? <SettingsWorkspace openModels={()=>setConnectionOpen(true)} modelsOpen={connectionOpen} /> : workspace === "fonts" ? <FontWorkspace /> : record ? (
           <>
             <div className="document-heading">
               <input
@@ -708,6 +854,9 @@ function App() {
                   disabled={busy}
                   editImages={openImageTools}
                   addToLayers={addAssetLayer}
+                  addToPpt={addAssetToPpt}
+                  pinAsset={setPinnedAssetId}
+                  rateAsset={rateAsset}
                   document={record.document}
                   change={change}
                   openRecipe={(id) => {
@@ -752,6 +901,10 @@ function App() {
                   editImages={openImageTools}
                   addToCanvas={addToCanvas}
                   addToLayers={addAssetLayer}
+                  addToPpt={addAssetToPpt}
+                  pinAsset={setPinnedAssetId}
+                  rateAsset={rateAsset}
+                  extractPalette={extractBrandFromAsset}
                 />
               )}
             </fieldset>
@@ -788,7 +941,7 @@ function App() {
         openTasks={() => setTasksOpen(true)}
         connection={() => setConnectionOpen(true)}
       />
-      {detailsSession&&record&&(()=>{const asset=record.document.assets.find(a=>a.id===detailsSession.assetId);return asset&&(!asset.kind||asset.kind==='image')?<CanvasImageViewer key={asset.id} asset={asset} assets={record.document.assets.filter(a=>!a.kind||a.kind==='image')} onSave={a=>run(async()=>{if(await api.exportAsset(record.id,present.current.document,a.id))setNotice('已保存图片');})} close={()=>setDetailsSession(null)}/>:<MaterialDetails {...detailsSession} projectId={record.id} document={record.document} change={change} close={()=>setDetailsSession(null)} editImages={openImageTools} analyzeImage={analyzeImage} addToLayers={addAssetLayer} addToCanvas={addToCanvas}/>;})()}
+      {detailsSession&&record&&(()=>{const asset=record.document.assets.find(a=>a.id===detailsSession.assetId);return asset&&(!asset.kind||asset.kind==='image')?<CanvasImageViewer key={asset.id} asset={asset} assets={record.document.assets.filter(a=>!a.kind||a.kind==='image')} onRate={rateAsset} onPin={setPinnedAssetId} onSave={a=>run(async()=>{if(await api.exportAsset(record.id,present.current.document,a.id))setNotice('已保存图片');})} close={()=>setDetailsSession(null)}/>:<MaterialDetails {...detailsSession} projectId={record.id} document={record.document} change={change} close={()=>setDetailsSession(null)} editImages={openImageTools} analyzeImage={analyzeImage} addToLayers={addAssetLayer} addToCanvas={addToCanvas} rateAsset={rateAsset}/>;})()}
       {analysisOpen && record && <AnalysisDialog key={record.id+":"+(analysisSource?.assetId||"")} initialAssetId={analysisSource?.assetId} sendToCanvas={sendAnalysisToCanvas} projectId={record.id} document={record.document} change={change} tasks={tasks} refreshTasks={refreshTasks} close={() => setAnalysisOpen(false)} onSelect={setModuleId} />}
       {tasksOpen && (
         <TaskPanel
@@ -806,6 +959,49 @@ function App() {
         <ConnectionDialog close={() => setConnectionOpen(false)} />
       )}
       {shortcutsOpen && <ShortcutsDialog close={() => setShortcutsOpen(false)} />}
+      {brandKitOpen && record && (
+        <BrandKitDialog
+          document={record.document}
+          change={change}
+          onNotice={setNotice}
+          close={() => setBrandKitOpen(false)}
+        />
+      )}
+      {paletteOpen && (
+        <CommandPalette
+          close={() => setPaletteOpen(false)}
+          workspace={workspace}
+          setWorkspace={setWorkspace}
+          projects={projects}
+          record={record}
+          openProject={(id) => switchProject(() => api.open(id))}
+          createProject={() => switchProject(() => api.create("未命名创作"))}
+          save={save}
+          dirty={dirty}
+          openConnection={() => setConnectionOpen(true)}
+          openTasks={() => setTasksOpen(true)}
+          openBrandKit={() => setBrandKitOpen(true)}
+          openShortcuts={() => setShortcutsOpen(true)}
+          toggleTheme={theme.toggle}
+          showDetails={(assetId) => setDetailsSession({ assetId })}
+          addToCanvas={addToCanvas}
+          addToLayers={addAssetLayer}
+          addToPpt={addAssetToPpt}
+          pinAsset={setPinnedAssetId}
+          openRecipe={(id) => {
+            setRecipeId(id);
+            setWorkspace("prompts");
+          }}
+        />
+      )}
+      {pinnedAsset && (
+        <PinReference
+          asset={pinnedAsset}
+          close={() => setPinnedAssetId(null)}
+          onPickColor={(hex) => setNotice(`已吸取并复制颜色 ${hex}`)}
+          onAddBrandColor={addBrandColor}
+        />
+      )}
       {notice && (
         <div className="studio-toast" role="status" aria-live="polite">
           <Icon name="checkCircle" />
@@ -816,6 +1012,7 @@ function App() {
         </div>
       )}
     </div>
+    </BrandKitProvider>
   );
 }
 

@@ -5,7 +5,9 @@ import {Select} from './select.jsx';
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useClipboardImagePaste } from "./image-clipboard.js";
 import { CanvasImageViewer } from "./canvas-image-viewer.jsx";
-import {filterMaterials,materialSource} from '../core/materials.cjs';
+import { exportContactSheet } from "./contact-sheet.js";
+import { originalUrl } from "./image-processing.js";
+import {filterMaterials,materialSource,materialWorkspaces} from '../core/materials.cjs';
 import {dragMaterial} from './material-drag.js';
 import {useImageImport,hasImageFiles} from './use-image-import.js';
 import { MaterialDetails } from "./material-details.jsx";
@@ -18,14 +20,36 @@ import {menuAction as item} from './context-menu.jsx';
 
 import {
   Button,
+  StarRating,
+  useTheme,
   PanelHeader,
   SearchField,
   EmptyState,
   ToolPopover,
 } from "./components.jsx";
 
-export function AssetLibrary({ projectId, document, change, addToCanvas, addToLayers, editImages, analyzeImage, replaceLayer, replacementTarget, disabled }) {
-  const [source,setSource]=useState('all'),[shape,setShape]=useState('all'),[sort,setSort]=useState('newest');
+const workspaceLabels = { canvas: "画布", layers: "图层", ppt: "PPT", unused: "未使用" };
+
+export function AssetLibrary({ projectId, document, change, addToCanvas, addToLayers, addToPpt, pinAsset, rateAsset, extractPalette, editImages, analyzeImage, replaceLayer, replacementTarget, disabled }) {
+  const theme = useTheme();
+  const [workspaceFilter,setWorkspaceFilter]=useState('all'),[source,setSource]=useState('all'),[minRating,setMinRating]=useState(0),[shape,setShape]=useState('all'),[sort,setSort]=useState('newest');
+  const [scopeDoc,setScopeDoc]=useState(document);
+  useEffect(()=>{
+    setScopeDoc(document);
+    const hasDeferred=kinds.some(kind=>list(document,kind).some(p=>document.pages?.[kind]?.items?.find(x=>x.id===p.id)?.ref));
+    if(!hasDeferred)return;
+    let alive=true;
+    (async()=>{
+      try{
+        let full=document;
+        for(const kind of kinds)full=await loadPages(projectId,full,kind,list(full,kind).map(p=>p.id));
+        if(alive)setScopeDoc(full);
+      }catch{}
+    })();
+    return()=>{alive=false;};
+  },[projectId,document]);
+  const workspaces=useMemo(()=>materialWorkspaces(scopeDoc),[scopeDoc]);
+
   const [query, setQuery] = useState(""),
     [preview, setPreview] = useState(null),
     [focused,setFocused]=useState(null),
@@ -36,7 +60,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
     [quickLookId, setQuickLookId] = useState(null);
   const latest = useRef(document);
   const [notice,setNotice]=useState('');
-  useUiView('assets',{get:()=>({source,shape,sort,query,focused,selected,density}),restore:v=>{setSource(v.source);setShape(v.shape);setSort(v.sort);setQuery(v.query);setFocused(v.focused);setSelected(v.selected);setDensity(v.density);}});
+  useUiView('assets',{get:()=>({workspaceFilter,source,shape,sort,query,focused,selected,density}),restore:v=>{if(v.workspaceFilter)setWorkspaceFilter(v.workspaceFilter);setSource(v.source);setShape(v.shape);setSort(v.sort);setQuery(v.query);setFocused(v.focused);setSelected(v.selected);setDensity(v.density);}});
   latest.current = document;
   const run = async (operation) => {
     setError('');
@@ -45,11 +69,18 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
   const saveImage=id=>run(async()=>{setNotice('');const kind=latest.current.assets.find(a=>a.id===id)?.kind;if(await window.tugou.exportAsset(projectId,latest.current,id))setNotice(kind&&kind!=='image'?'已导出素材':'已保存图片');});
   const menuItems=asset=>[
     item('preview','查看素材详情',()=>setPreview(asset.id)),
+    ...(rateAsset?[{key:'rate',label:`星级评分${asset.rating?`（${asset.rating}星）`:''}`,children:[5,4,3,2,1,0].map(n=>item(`rate-${n}`,n?`${'★'.repeat(n)} ${n} 星`:'清除评分',()=>rateAsset(asset.id,n)))}]:[]),
     item('canvas','添加到画布',()=>addToCanvas('asset',asset.id),{disabled}),
-    ...(!asset.kind||asset.kind==='image'?[item('layers','添加到图层',()=>addToLayers(asset),{disabled}),item('edit','处理图片…',()=>editImages([asset.id]),{disabled})]:[]),
+    ...(!asset.kind||asset.kind==='image'?[
+      item('layers','添加到图层',()=>addToLayers(asset),{disabled}),
+      ...(addToPpt?[item('ppt','发送到 PPT',()=>addToPpt(asset),{disabled})]:[]),
+      ...(pinAsset?[item('pin','钉住参考图',()=>pinAsset(asset.id))]:[]),
+      ...(extractPalette?[item('palette','提取配色到工程色板',()=>extractPalette(asset),{disabled})]:[]),
+      item('edit','处理图片…',()=>editImages([asset.id]),{disabled}),
+    ]:[]),
     ...(asset.kind==='text'?[item('text','复制文字',()=>run(()=>window.tugou.copyText(asset.text||'')))]:[]),
   ];
-  const assets = useMemo(()=>filterMaterials(document.assets,{query,source,shape,sort}),[document.assets,query,source,shape,sort]);
+  const assets = useMemo(()=>filterMaterials(document.assets,{query,source,workspace:workspaceFilter,workspaces,shape,sort,minRating}),[document.assets,query,source,workspaceFilter,workspaces,shape,sort,minRating]);
   const detail=assets.find(a=>a.id===focused)||assets[0];
   const assetIds=useMemo(()=>new Set(document.assets.map(a=>a.id)),[document.assets]);
   const chosen=selected.filter(id=>assetIds.has(id));
@@ -74,6 +105,14 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
         setQuickLookId(detail.id);
         return;
       }
+      if (rateAsset && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && /^[0-5]$/.test(event.key)) {
+        const targets = chosen.length ? chosen : detail ? [detail.id] : [];
+        if (targets.length) {
+          event.preventDefault();
+          rateAsset(targets, Number(event.key));
+          return;
+        }
+      }
       if ((event.key === 'Delete' || (window.tugou?.platform === 'darwin' && event.key === 'Backspace')) && chosen.length) {
         event.preventDefault();
         remove(chosen);
@@ -94,7 +133,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [disabled, preview, quickLookId, removingIds, detail, chosen, assets]);
+  }, [disabled, preview, quickLookId, removingIds, detail, chosen, assets, rateAsset]);
   const remove = (ids) => run(async () => {
     if(disabled||!ids.length)return;
     setError('');setNotice('');
@@ -125,15 +164,29 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
     <section className={`asset-library density-${density}`} data-selecting={chosen.length ? 'true' : undefined} onDragOver={imageImport.over} onDrop={e=>{if(hasImageFiles(e))imageImport.drop(e);}}>
       <div className="library-toolbar">
         <PanelHeader title="素材库" count={document.assets.length} />
-        <div className="library-filters" role="group" aria-label="素材来源筛选">{[["all","全部"],["imported","导入素材"],["generated","生成结果"],["processed","处理结果"]].map(([id,label])=><Button key={id} aria-pressed={source===id} onClick={()=>setSource(id)}>{label}</Button>)}</div>
+        <div className="library-filters" role="group" aria-label="素材工作区筛选">
+          {[["all","全部"],["canvas","画布"],["layers","图层"],["ppt","PPT"],["unused","未使用"]].map(([id,label])=><Button key={id} aria-pressed={workspaceFilter===id} onClick={()=>setWorkspaceFilter(id)}>{label}</Button>)}
+        </div>
+        <Select
+          aria-label="按星级筛选"
+          value={String(minRating)}
+          onChange={(e) => setMinRating(Number(e.target.value))}
+        >
+          <option value="0">全部星级</option>
+          <option value="1">1 星及以上</option>
+          <option value="2">2 星及以上</option>
+          <option value="3">3 星及以上</option>
+          <option value="4">4 星及以上</option>
+          <option value="5">仅看 5 星</option>
+        </Select>
   
         <SearchField label="搜索素材" value={query} onChange={setQuery} />
-        <ToolPopover label={source!=='all'||shape!=='all'?'筛选 · 已启用':'筛选与排序'} icon="filter">
+        <ToolPopover label={workspaceFilter!=='all'||source!=='all'||shape!=='all'||minRating>0?'筛选 · 已启用':'筛选与排序'} icon="filter">
           <div className="image-tool-detail">
             <label>来源<Select aria-label="素材来源" value={source} onChange={e=>setSource(e.target.value)}><option value="all">全部来源</option><option value="imported">导入素材</option><option value="generated">生成结果</option><option value="processed">处理结果</option></Select></label>
             <label>比例<Select aria-label="素材比例" value={shape} onChange={e=>setShape(e.target.value)}><option value="all">全部比例</option><option value="portrait">竖图</option><option value="landscape">横图</option><option value="square">方图</option></Select></label>
-            <label>排序<Select aria-label="素材排序" value={sort} onChange={e=>setSort(e.target.value)}><option value="newest">最近加入</option><option value="oldest">最早加入</option><option value="name">名称</option><option value="pixels">像素从大到小</option></Select></label>
-            <Button onClick={()=>{setSource('all');setShape('all');setQuery('');setSort('newest');}}>重置筛选</Button>
+            <label>排序<Select aria-label="素材排序" value={sort} onChange={e=>setSort(e.target.value)}><option value="newest">最近加入</option><option value="oldest">最早加入</option><option value="rating">评分从高到低</option><option value="name">名称</option><option value="pixels">像素从大到小</option></Select></label>
+            <Button onClick={()=>{setWorkspaceFilter('all');setSource('all');setMinRating(0);setShape('all');setQuery('');setSort('newest');}}>重置筛选</Button>
             <Button onClick={()=>setSelected(assets.map(a=>a.id))}>选择当前结果</Button>
             <Button disabled={!chosen.length} onClick={()=>setSelected([])}>清空选择</Button>
           </div>
@@ -197,6 +250,14 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
                     )
                   }
                 />
+                {rateAsset&&<StarRating
+                  compact
+                  className="asset-card-rating"
+                  value={asset.rating||0}
+                  disabled={disabled}
+                  onChange={r=>rateAsset(asset.id,r)}
+                  aria-label={`给 ${asset.name} 打星`}
+                />}
                 <div className="asset-actions">
                   {(!asset.kind||asset.kind==='image')&&<Button iconOnly icon="export" size="small" onClick={()=>saveImage(asset.id)}>保存图片</Button>}
                   <Button iconOnly icon="layers" size="small" disabled={asset.kind&&asset.kind!=='image'} onClick={() => addToLayers(asset)}>
@@ -213,9 +274,23 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
               <div className="asset-caption">
                 <strong title={asset.name}>{asset.name}</strong>
                 <AssetTime asset={asset}/>
-                <span className="asset-dims">
-                  {asset.kind&&asset.kind!=='image'?{text:'文本',audio:'音频',video:'视频'}[asset.kind]:`${asset.width} × ${asset.height}`}
-                </span>
+                <div className="asset-caption-foot">
+                  <span className="asset-dims">
+                    {asset.kind&&asset.kind!=='image'?{text:'文本',audio:'音频',video:'视频'}[asset.kind]:`${asset.width} × ${asset.height}`}
+                  </span>
+                  <span className="asset-scopes">
+                    {(() => {
+                      const tags = workspaces.get(asset.id) || [];
+                      return tags.length
+                        ? tags.map((scope) => (
+                            <span key={scope} className="asset-scope-tag" data-scope={scope}>
+                              {workspaceLabels[scope]}
+                            </span>
+                          ))
+                        : <span className="asset-scope-tag" data-scope="unused">未使用</span>;
+                    })()}
+                  </span>
+                </div>
               </div>
             </article>
             </ImageSaveMenu>
@@ -223,9 +298,9 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
         </MaterialGrid>
       ) : (
         <EmptyState
-          title={query||source!=='all'||shape!=='all' ? "没有匹配的素材" : "暂无素材"}
+          title={query||workspaceFilter!=='all'||source!=='all'||shape!=='all'||minRating>0 ? "没有匹配的素材" : "暂无素材"}
           description={
-            query||source!=='all'||shape!=='all' ? "调整关键词或顶部筛选条件。" : "支持拖入图片"
+            query||workspaceFilter!=='all'||source!=='all'||shape!=='all'||minRating>0 ? "调整关键词或顶部筛选条件。" : "支持拖入图片"
           }
         >
           <Button primary icon="import" loading={imageImport.importing} disabled={imageImport.importing||disabled} onClick={imageImport.open}>
@@ -233,17 +308,23 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
           </Button>
         </EmptyState>
       )}
-      {detail&&<aside className="library-details" aria-label="素材详情"><div className="panel-heading"><h2>素材详情</h2><Button iconOnly icon="maximize" aria-label="放大预览" onClick={()=>setPreview(detail.id)}/></div><MediaPreview asset={detail} className="material-preview"/><div className="material-identity"><h3>{detail.name}</h3><AssetTime asset={detail}/></div><dl><dt>尺寸</dt><dd>{detail.width&&detail.height?detail.width+' × '+detail.height:detail.kind}</dd><dt>来源</dt><dd>{({processed:'处理结果',generated:'生成结果',imported:'导入素材'})[materialSource(detail)]}</dd></dl><div className="detail-actions"><Button primary icon="canvas" onClick={()=>addToCanvas('asset',detail.id)}>添加到画布</Button><Button icon="layers" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>addToLayers(detail)}>添加到图层</Button><Button icon="tools" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>editImages([detail.id])}>处理图片</Button>{(!detail.kind||detail.kind==='image')&&<Button icon="export" onClick={()=>saveImage(detail.id)}>保存图片</Button>}<Button onClick={()=>setPreview(detail.id)}>查看完整详情</Button></div></aside>}
+      {detail&&<aside className="library-details" aria-label="素材详情"><div className="panel-heading"><h2>素材详情</h2><Button iconOnly icon="maximize" aria-label="放大预览" onClick={()=>setPreview(detail.id)}/></div><MediaPreview asset={detail} className="material-preview"/><div className="material-identity"><h3>{detail.name}</h3><div className="material-identity-meta"><AssetTime asset={detail}/>{rateAsset&&<StarRating compact value={detail.rating||0} disabled={disabled} onChange={r=>rateAsset(detail.id,r)} aria-label="当前素材星级评分"/>}</div></div><dl><dt>归属</dt><dd>{(() => { const tags = workspaces.get(detail.id) || []; return tags.length ? tags.map((s) => workspaceLabels[s]).join(" · ") : "未使用"; })()}</dd><dt>尺寸</dt><dd>{detail.width&&detail.height?detail.width+' × '+detail.height:detail.kind}</dd><dt>来源</dt><dd>{({processed:'处理结果',generated:'生成结果',imported:'导入素材'})[materialSource(detail)]}</dd></dl><div className="detail-actions"><Button primary icon="canvas" onClick={()=>addToCanvas('asset',detail.id)}>添加到画布</Button><Button icon="layers" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>addToLayers(detail)}>添加到图层</Button>{addToPpt&&<Button icon="ppt" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>addToPpt(detail)}>发送到 PPT</Button>}{pinAsset&&(!detail.kind||detail.kind==='image')&&<Button icon="pin" onClick={()=>pinAsset(detail.id)}>钉住参考</Button>}<Button icon="tools" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>editImages([detail.id])}>处理图片</Button>{(!detail.kind||detail.kind==='image')&&<Button icon="export" onClick={()=>saveImage(detail.id)}>保存图片</Button>}<Button onClick={()=>setPreview(detail.id)}>查看完整详情</Button></div></aside>}
       </div>
       {chosen.length>0&&<div className="library-bulk-bar" role="region" aria-label="批量素材操作">
         <span>已选 <strong>{chosen.length}</strong> 项</span>
+        {rateAsset&&<StarRating compact value={0} disabled={disabled} onChange={r=>rateAsset(chosen,r)} aria-label="批量打星"/>}
         <Button icon="tools" disabled={chosen.some(id=>document.assets.some(a=>a.id===id&&a.kind&&a.kind!=='image'))} onClick={()=>editImages(chosen)}>批量处理</Button>
+        {chosen.length>=2&&<Button icon="export" disabled={chosen.some(id=>document.assets.some(a=>a.id===id&&a.kind&&a.kind!=='image'))} onClick={()=>run(async()=>{
+          const list=chosen.map(id=>document.assets.find(a=>a.id===id)).filter(Boolean);
+          const ok=await exportContactSheet({filename:`${document.name||'素材'}_审稿拼图`,title:`${document.name||'素材库'} · 审稿拼图`,items:list.map(a=>({title:a.name,subtitle:`${a.width} × ${a.height}`,url:originalUrl(a)})),columns:list.length<=2?list.length:3,theme:theme.mode});
+          if(ok)setNotice(`已导出 ${list.length} 张素材的审稿拼图`);
+        })}>审稿拼图</Button>}
         <Button danger icon="delete" disabled={disabled} onClick={()=>remove(chosen)}>移除</Button>
         <Button onClick={()=>setSelected([])}>取消选择</Button>
       </div>}
       {removingIds&&<RemovalDialog title={`移除 ${removingIds.length} 项素材？`} description="素材将从当前工程素材库移除，本地原文件不会被删除。" confirmLabel="移除" close={()=>setRemovingIds(null)} remove={confirmRemove}/>}
-      {quickLookId&&(()=>{const target=assets.find(a=>a.id===quickLookId);return target?<CanvasImageViewer key={target.id} asset={target} assets={assets} onSave={a=>saveImage(a.id)} close={()=>setQuickLookId(null)}/>:null;})()}
-      {preview&&<MaterialDetails projectId={projectId} document={document} assetId={preview} change={change} close={()=>setPreview(null)} editImages={editImages} analyzeImage={analyzeImage} addToCanvas={addToCanvas} addToLayers={addToLayers}/>}
+      {quickLookId&&(()=>{const target=assets.find(a=>a.id===quickLookId);return target?<CanvasImageViewer key={target.id} asset={target} assets={assets} onRate={rateAsset} onPin={pinAsset} onSave={a=>saveImage(a.id)} close={()=>setQuickLookId(null)}/>:null;})()}
+      {preview&&<MaterialDetails projectId={projectId} document={document} assetId={preview} change={change} close={()=>setPreview(null)} editImages={editImages} analyzeImage={analyzeImage} addToCanvas={addToCanvas} addToLayers={addToLayers} rateAsset={rateAsset}/>}
     </section>
   );
 }
