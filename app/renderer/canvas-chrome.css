@@ -6,5 +6,5 @@
 .ruler-horizontal { border-bottom:1px solid var(--line); }
 .ruler-vertical { border-right:1px solid var(--line); }
 .ruler-origin { position:absolute;left:0;top:0;width:22px;height:22px;display:grid;place-items:center;background:var(--panel);border-right:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--muted);font-size:8px;pointer-events:auto; }
-.selection-size-badge { position:absolute;z-index:3;transform:translateX(-50%);height:23px;line-height:21px;padding:0 9px;border:1px solid var(--accent);border-radius:4px;background:var(--panel);color:var(--accent);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px #0002; }
+.selection-size-badge { position:absolute;z-index:3;transform:translateX(-50%);height:23px;line-height:21px;padding:0 9px;border:1px solid var(--accent);border-radius:5px;background:var(--panel);color:var(--accent);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none;box-shadow:var(--shadow-node); }
 .selection-size-badge span { opacity:.7;font-size:10px; }

@@ -52,14 +52,16 @@ test('large selections remain deterministic and bounded',()=>{
   assert.ok(next.every(n=>Number.isFinite(n.position.x)&&Number.isFinite(n.position.y)));
   console.log(`2000-node arrangement: ${(performance.now()-start).toFixed(1)} ms (two runs and comparison)`);
 });
-test('connected layout staggers sources into two columns with a clear path to the downstream node',()=>{
+test('connected layout aligns sources in a clean column centered on the downstream node',()=>{
   const nodes=[node('photo-a',20,20,300,360),node('photo-b',20,440,300,400),node('words',20,920),node('desk',500,350,400,500),node('outside',1800,400)];
   const edges=['photo-a','photo-b','words'].map(source=>({source,target:'desk',role:'keep'})),before=structuredClone({nodes,edges});
   const next=arrangeNodes(nodes,['photo-a','photo-b','words','desk'],'flow',edges),desk=next[3];
-  assert.equal(next[0].position.x,next[1].position.x);assert.ok(next[2].position.x>next[0].position.x);
-  assert.ok(next.slice(0,3).every(n=>n.position.x+n.width+112<=desk.position.x));
-  const sideBottom=next[2].position.y+next[2].height;
-  assert.ok(next.slice(0,2).every(n=>n.position.y+n.height/2>=sideBottom+64));assert.ok(desk.position.y+desk.height/2>=sideBottom+64);
+  assert.equal(next[0].position.x,next[1].position.x);assert.equal(next[1].position.x,next[2].position.x);
+  assert.equal(next[1].position.y,next[0].position.y+next[0].height+36);
+  assert.equal(next[2].position.y,next[1].position.y+next[1].height+36);
+  assert.ok(next.slice(0,3).every(n=>n.position.x+n.width+108<=desk.position.x));
+  const avgCenter=next.slice(0,3).reduce((s,n)=>s+n.position.y+n.height/2,0)/3;
+  assert.ok(Math.abs(desk.position.y+desk.height/2-avgCenter)<=1);
   assert.equal(next[4],nodes[4]);assert.deepEqual({nodes,edges},before);
   assert.deepEqual(arrangeNodes(next,next.slice(0,4).map(n=>n.id),'flow',edges),next);
 });
@@ -68,8 +70,18 @@ test('connected layout follows multiple levels and maps group child edges to the
   const edges=[{source:'a',target:'desk'},{source:'b',target:'desk'},{source:'desk',target:'result'}];
   const next=arrangeNodes(nodes,nodes.map(n=>n.id),'flow',edges);
   assert.equal(next[1],nodes[1]);assert.equal(next[2],nodes[2]);
-  assert.ok(next[3].position.x>=next[0].position.x+next[0].width+112);
-  assert.ok(next[4].position.x>=next[3].position.x+next[3].width+112);
+  assert.ok(next[3].position.x>=next[0].position.x+next[0].width+108);
+  assert.ok(next[4].position.x>=next[3].position.x+next[3].width+108);
+});
+test('connected layout separates independent workflows and pulls late sources next to their consumer',()=>{
+  const nodes=[node('a1',10,10,300,220),node('a2',400,10,400,400),node('late',10,300,300,220),node('a3',900,10,400,400),node('b1',10,800,300,220),node('b2',400,800,400,300)];
+  const edges=[{source:'a1',target:'a2'},{source:'a2',target:'a3'},{source:'late',target:'a3'},{source:'b1',target:'b2'}];
+  const next=arrangeNodes(nodes,nodes.map(n=>n.id),'flow',edges);
+  const byId=Object.fromEntries(next.map(n=>[n.id,n]));
+  assert.equal(byId.late.position.x,byId.a2.position.x);
+  const topFlowBottom=Math.max(byId.a1.position.y+byId.a1.height,byId.a2.position.y+byId.a2.height,byId.late.position.y+byId.late.height,byId.a3.position.y+byId.a3.height);
+  assert.ok(Math.min(byId.b1.position.y,byId.b2.position.y)>=topFlowBottom+88);
+  assert.deepEqual(arrangeNodes(next,next.map(n=>n.id),'flow',edges),next);
 });
 test('connected layout handles disconnected selection and rejects cycles without mutation',()=>{
   const nodes=[node('a',40,80),node('b',20,400),node('c',20,800)],ids=nodes.map(n=>n.id),before=structuredClone(nodes);

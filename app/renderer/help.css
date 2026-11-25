@@ -3,8 +3,8 @@
 .help-intro { margin:0 0 16px; }
 .help-count { margin:24px 0 8px; }
 .help-topics { display:flex; flex-direction:column; }
-.help-topics button { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--text); text-align:left; font:inherit; font-size:14px; cursor:pointer; }
-.help-topics button:hover { color:var(--accent); background:var(--hover); }
+.help-topics button { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 10px; border:0; border-bottom:1px solid var(--panel-line); border-radius:6px; background:transparent; color:var(--text); text-align:left; font:inherit; font-size:13.5px; cursor:pointer; transition:background-color 120ms var(--ease-ui), color 120ms var(--ease-ui); }
+.help-topics button:hover { color:var(--accent); background:var(--surface); }
 .help-article h2 { margin:24px 0 16px; font-size:18px; line-height:1.5; }
 .help-article p { margin:0 0 16px; font-size:14px; line-height:1.9; overflow-wrap:anywhere; }
 .help-drawer :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }

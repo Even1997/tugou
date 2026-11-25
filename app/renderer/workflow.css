@@ -1,13 +1,13 @@
 .workflow-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 6px 16px;
-  min-height: 44px;
-  border-bottom: 1px solid var(--line);
+  min-height: 42px;
+  border-bottom: 1px solid var(--panel-line);
   flex-shrink: 0;
   flex-wrap: wrap;
-  background: var(--shell);
+  background: var(--bg);
 }
 #canvas-actions {
   display: flex;
@@ -21,13 +21,20 @@
 }
 .workflow-toolbar .ant-btn {
   font-size: 12px;
-  padding-inline: 8px;
+  padding-inline: 9px;
   height: 30px;
+  border-radius: 7px;
+  color: var(--muted);
 }
-.workflow-toolbar .ant-btn.icon-button { width: 34px; height: 34px; padding: 0; }
+.workflow-toolbar .ant-btn:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--hover);
+}
+.workflow-toolbar .ant-btn.icon-button { width: 32px; height: 32px; padding: 0; }
 .workflow-toolbar button[aria-pressed="true"] {
   color: var(--accent);
   background: var(--accent-bg);
+  font-weight: 500;
 }
 .workflow-toolbar > .sync-action:disabled {
   display: none;
@@ -298,6 +305,7 @@
   min-width: 0;
   min-height: 0;
   position: relative;
+  background: var(--work-surface);
 }
 .canvas-inspector {
   width: 280px;
@@ -374,13 +382,13 @@
 }
 .canvas-card-sized header, .canvas-card-sized footer { flex-shrink: 0; }
 .react-flow {
-  --xy-background-color-default: var(--bg);
-  --xy-edge-stroke: var(--muted);
-  --xy-edge-stroke-width: 2;
-  --xy-edge-stroke-default: var(--muted);
+  --xy-background-color-default: transparent;
+  --xy-edge-stroke: var(--line-strong);
+  --xy-edge-stroke-width: 1.8;
+  --xy-edge-stroke-default: var(--line-strong);
   --xy-handle-background-color-default: var(--accent);
   --xy-handle-border-color-default: var(--panel);
-  --xy-background-pattern-dots-color-default: var(--line);
+  --xy-background-pattern-dots-color-default: color-mix(in srgb, var(--muted) 32%, transparent);
 }
 .canvas-workspace .react-flow__handle {
   width: 20px;
@@ -397,20 +405,62 @@
 .react-flow__handle::after {
   content: '';
   position: absolute;
-  inset: 4px;
+  inset: 5px;
   border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid var(--panel);
+  background: var(--panel);
+  border: 1.8px solid var(--accent);
   pointer-events: none;
+  transition: transform 120ms var(--ease-ui), background-color 120ms var(--ease-ui);
 }
 .react-flow__handle:hover::after,
 .react-flow__handle.valid::after {
-  box-shadow: 0 0 0 4px var(--accent-bg);
+  background: var(--accent);
+  transform: scale(1.2);
 }
-.canvas-workspace .react-flow__edge:hover .react-flow__edge-path,
-.canvas-workspace .react-flow__edge.selected .react-flow__edge-path {
+.canvas-workspace .react-flow__edge-path {
+  stroke: var(--line-strong);
+  stroke-width: 1.8;
+  stroke-dasharray: 8 6;
+  stroke-linecap: round;
+  animation: none;
+  transition: stroke 140ms var(--ease-ui), stroke-width 140ms var(--ease-ui);
+}
+.canvas-workspace .react-flow__edge.is-input-wire .react-flow__edge-path {
   stroke: var(--accent);
-  stroke-width: 2.5;
+  stroke-width: 2;
+  animation: canvas-wire-flow 1.3s linear infinite;
+}
+.canvas-workspace .react-flow__edge.is-input-wire.is-connected .react-flow__edge-path,
+.canvas-workspace .react-flow__edge.is-input-wire:hover .react-flow__edge-path,
+.canvas-workspace .react-flow__edge.is-input-wire.selected .react-flow__edge-path {
+  animation-duration: 0.9s;
+}
+.canvas-workspace .react-flow__edge:not(.is-input-wire).is-connected .react-flow__edge-path,
+.canvas-workspace .react-flow__edge:not(.is-input-wire):hover .react-flow__edge-path,
+.canvas-workspace .react-flow__edge:not(.is-input-wire).selected .react-flow__edge-path {
+  stroke: var(--accent);
+  stroke-width: 2;
+  animation: canvas-wire-flow 1.3s linear infinite;
+}
+.canvas-workspace .react-flow__connection-path {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+  stroke-linecap: round;
+  animation: canvas-wire-flow 0.9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .canvas-workspace .react-flow__edge-path,
+  .canvas-workspace .react-flow__connection-path {
+    animation: none !important;
+  }
+}
+.react-flow__minimap {
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel) !important;
+  box-shadow: var(--shadow-popover);
+  overflow: hidden;
 }
 .react-flow__attribution {
   font-size: 9px;
@@ -466,14 +516,16 @@
   }
 }
 
-.module-picker .module-tile { position:relative; width:100%; min-height:44px; padding:10px; gap:8px; border:1px solid var(--line); border-radius:8px; background:var(--surface); display:flex; align-items:center; cursor:pointer; }
+.module-picker .module-tile { position:relative; width:100%; min-height:44px; padding:10px 12px; gap:8px; border:1px solid var(--panel-line); border-radius:8px; background:var(--panel); display:flex; align-items:center; cursor:pointer; transition:border-color 140ms var(--ease-ui), background-color 140ms var(--ease-ui); }
+.module-picker .module-tile:hover { border-color:var(--accent-line); background:var(--surface); }
 .module-tile > input { flex-shrink:0; width:15px; height:15px; margin:0; }
 .module-tile > span { flex:1; min-width:0; line-height:1.5; overflow-wrap:anywhere; }
-.module-tile:has(input:checked) { border-color:var(--accent); background:var(--accent-bg); }
+.module-tile:has(input:checked) { border-color:var(--accent-line); background:var(--accent-wash); }
 .module-tile > small { flex-shrink:0; font-size:11px; color:var(--muted); }
 
-.recipe-generation-controls { display:grid; gap:10px; padding-top:16px; border-top:1px solid var(--line); }
-.recipe-generation-controls > .ant-btn { display:flex; width:100%; height:48px; padding:8px 12px; background:var(--surface); border:1px solid var(--line); gap:10px; }
+.recipe-generation-controls { display:grid; gap:10px; padding-top:16px; border-top:1px solid var(--panel-line); }
+.recipe-generation-controls > .ant-btn { display:flex; width:100%; height:48px; padding:8px 12px; background:var(--panel); border:1px solid var(--panel-line); border-radius:9px; gap:10px; }
+.recipe-generation-controls > .ant-btn:hover:not(:disabled) { border-color:var(--accent-line); background:var(--surface); }
 .recipe-generation-controls .ant-btn-icon { color:var(--accent); }
 .recipe-generation-controls + .recipe-footer { border-top:0; padding-top:12px; }
 
@@ -484,4 +536,4 @@
 .recipe-sidebar .panel-heading { margin-bottom:12px; }
 .recipe-fields section h2 { font-size:13px;font-weight:600; }
 .toolbar-hint,.module-picker small { font-size:12px; }
-.canvas-tools-bottom { border-radius:6px;border-color:var(--panel-line); }
+.canvas-tools-bottom { border-radius:8px;border-color:var(--line-strong);background:var(--panel);box-shadow:var(--shadow-popover); }

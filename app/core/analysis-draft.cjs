@@ -133,13 +133,17 @@ function analysisToCanvas(document, draftId, sourceNodeId) {
   const receipt=document.tugouAnalysisImports?.find(r=>r.id===draftId);
   if(!receipt)throw Error('请先审阅并加入所选模块');
   const graph=document.tugouCanvas||emptyCanvas(),anchor=graph.nodes.find(n=>n.id===sourceNodeId);
-  const x=(anchor?.position.x??0)+330,y=anchor?.position.y??60;
+  const anchorWidth=anchor?(anchor.width||anchor.measured?.width||300):0;
+  const anchorHeight=anchor?(anchor.height||anchor.measured?.height||420):420;
+  const x=Math.round((anchor?.position.x??0)+(anchor?anchorWidth+108:0));
+  const moduleStep=256,moduleHeight=Math.max(0,receipt.moduleIds.length-1)*moduleStep+220;
+  const startY=Math.round((anchor?.position.y??60)+(anchor?(anchorHeight-moduleHeight)/2:0));
   const additions=[];
   const modules=receipt.moduleIds.map((id,i)=>{
     const nodeId='analysis-module-'+id;
     const existing=graph.nodes.find(n=>n.id===nodeId);
     if(existing && (existing.type!=='module'||existing.data.binding.moduleId!==id))throw Error('画布节点编号冲突，请先检查现有节点');
-    if(!existing)additions.push({...createNode(document,'module',id,{x,y:y+i*280}),id:nodeId});
+    if(!existing)additions.push({...createNode(document,'module',id,{x,y:startY+i*moduleStep}),id:nodeId});
     return nodeId;
   });
   const recipe=document.recipes.find(r=>r.id==='analysis-'+draftId),edges=[];
@@ -147,7 +151,7 @@ function analysisToCanvas(document, draftId, sourceNodeId) {
     const nodeId='analysis-recipe-'+draftId;
     const existing=graph.nodes.find(n=>n.id===nodeId);
     if(existing && (existing.type!=='recipe'||existing.data.recipeId!==recipe.id))throw Error('画布节点编号冲突，请先检查现有节点');
-    if(!existing)additions.push({...createNode(document,'recipe',recipe.id,{x:x+340,y}),id:nodeId});
+    if(!existing)additions.push({...createNode(document,'recipe',recipe.id,{x:x+408,y:Math.round(startY+(moduleHeight-420)/2)}),id:nodeId});
     for(const source of modules)if(!graph.edges.some(e=>e.source===source&&e.target===nodeId))edges.push({id:'analysis-edge-'+source,source,target:nodeId});
   }
   return additions.length||edges.length?{...document,tugouCanvas:{...graph,nodes:[...graph.nodes,...additions],edges:[...graph.edges,...edges]}}:document;

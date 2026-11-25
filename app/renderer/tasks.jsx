@@ -83,10 +83,10 @@ export function TaskPanel({ tasks, close, refresh, openProject }) {
               </div>
               <p className="task-metadata">{[task.context?.batchCount?`批量 ${task.context.batchIndex+1}/${task.context.batchCount}`:'',task.context?.model,task.context?.requestedSize,Number.isFinite(Date.parse(task.createdAt))?new Date(task.createdAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'时间未记录'].filter(Boolean).join(' · ')}</p>
               {task.status==="running"&&Number.isFinite(task.progress)&&<progress aria-label="任务进度" max="100" value={task.progress}/>}
-              {task.status==='running'&&!Number.isFinite(task.progress)&&!task.message&&<p className="task-message">正在处理，完成时间取决于任务与服务响应。</p>}
-              {['failed','interrupted','cancelled'].includes(task.status)&&<p className="task-message">{task.status==='cancelled'?'已取消。需要继续时，可使用可用的恢复操作。':'请先查看错误信息，再选择恢复操作。'}</p>}
-              {['cloud-tool','workflow'].includes(task.context?.kind)&&['failed','interrupted','cancelled','review'].includes(task.status)&&<p className="task-message">重新提交云端生成可能再次计费。</p>}
+              {task.status==='running'&&!Number.isFinite(task.progress)&&!task.message&&<p className="task-hint">正在处理，完成时间取决于任务与服务响应。</p>}
               {task.message&&(task.message.length>80?<details className="task-message-details"><summary title={task.message}>{task.message}</summary><p>{task.message}</p></details>:<p className="task-message">{task.message}</p>)}
+              {['failed','interrupted','cancelled'].includes(task.status)&&<p className="task-hint">{task.status==='cancelled'?'已取消。需要继续时，可使用右侧可用的恢复操作。':'请先查看上方错误信息，再选择恢复操作。'}{['cloud-tool','workflow'].includes(task.context?.kind)?'重新提交云端生成可能再次计费。':''}</p>}
+              {task.status==='review'&&['cloud-tool','workflow'].includes(task.context?.kind)&&<p className="task-hint">重新提交云端生成可能再次计费。</p>}
               {task.imageTimings?.length>0&&<details className="task-timings">
                 <summary>生图耗时详情</summary>
                 {task.imageTimings.map((timing,index)=><p className="muted" key={index}>

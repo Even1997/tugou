@@ -1,5 +1,5 @@
 const { emptyCanvas } = require('./prompts.cjs');
-const { outputPosition, outputEdge } = require('./generation-output.cjs');
+const { outputPositions, outputEdge } = require('./generation-output.cjs');
 function mergeActive(document, results) {
   let assets = [...document.assets], graph = document.tugouCanvas || emptyCanvas();
   let nodes = [...graph.nodes],edges=[...graph.edges];
@@ -7,15 +7,20 @@ function mergeActive(document, results) {
   const received = new Set(document.generationResultIds || []);
   for (const result of results) {
     if (received.has(result.id)) continue;
+    const source = nodes.find(n => n.id === result.nodeId);
+    const canvasOutput=result.kind!=='local-tool'||source?.type==='imageTool';
+    const pendingFresh=canvasOutput?result.assets.filter(a=>{const id=`result-${a.id}`;return !nodes.some(n=>n.id===id)&&!reserved.has(id);}):[];
+    const sampleDims=pendingFresh.find(a=>a.width&&a.height);
+    const slots=pendingFresh.length?outputPositions(nodes,source,pendingFresh.length,{assets,dims:sampleDims}):[];
+    let slotIndex=0;
     for (const asset of result.assets) {
     if (!assets.some(a => a.id === asset.id)) assets.push(asset);
     const id = `result-${asset.id}`;
-    const source = nodes.find(n => n.id === result.nodeId),existing=nodes.find(n=>n.id===id);
-    const canvasOutput=result.kind!=='local-tool'||source?.type==='imageTool';
+    const existing=nodes.find(n=>n.id===id);
     if(existing?.data.generationTaskId===result.id){
       nodes=nodes.map(n=>n.id===id?{...n,data:{...n.data,assetId:asset.id,name:asset.name}}:n);
     }else if (canvasOutput && !existing&&!reserved.has(id)) {
-      nodes.push({ id, type: 'asset', position: outputPosition(nodes,source), data: { assetId: asset.id, role: result.kind==='local-tool'?'处理结果':'生成结果' } });
+      nodes.push({ id, type: 'asset', position: slots[slotIndex++], data: { assetId: asset.id, role: result.kind==='local-tool'?'处理结果':'生成结果' } });
     }
     if(canvasOutput&&source&&nodes.some(n=>n.id===id))outputEdge(edges,source,id);
     if(result.kind==='workflow')nodes=nodes.map(n=>n.id===result.nodeId?{...n,data:{...n.data,outputAssetId:result.assets[0]?.id,outputAssetIds:result.assets.map(a=>a.id),...(result.mode==='text'?{resultText:result.assets[0]?.text||''}:{})}}:n);

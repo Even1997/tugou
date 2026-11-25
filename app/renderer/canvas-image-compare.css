@@ -13,8 +13,8 @@
 .canvas-image-compare .image-compare-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .canvas-image-compare .image-compare-controls > span { min-width: 40px; text-align: center; font-variant-numeric: tabular-nums; }
 .canvas-image-compare .image-compare-grid { display: grid; grid-template-columns: repeat(var(--compare-columns), minmax(0,1fr)); grid-template-rows: repeat(var(--compare-rows), minmax(150px,1fr)); gap: 12px; flex: 1; min-height: 0; overflow: auto; }
-.canvas-image-compare .image-compare-cell { min-height: 0; min-width: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
-.canvas-image-compare .image-compare-cell > header { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 12px; }
+.canvas-image-compare .image-compare-cell { min-height: 0; min-width: 0; display: flex; flex-direction: column; border: 1px solid var(--panel-line); border-radius: 10px; overflow: hidden; background: var(--panel); transition: border-color 120ms var(--ease-ui); }
+.canvas-image-compare .image-compare-cell > header { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--panel-line); font-size: 12px; }
 .canvas-image-compare .image-compare-index { color: var(--muted); font-variant-numeric: tabular-nums; }
 .canvas-image-compare .image-compare-name { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .canvas-image-compare .image-compare-cell small { color: var(--muted); font-size: 11px; white-space: nowrap; }

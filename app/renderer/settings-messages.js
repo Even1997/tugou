@@ -101,7 +101,7 @@ canvasSnapHint:['使用上方网格间距；仅影响后续拖动，不移动现
 canvasWheel:['鼠标滚轮行为','滑鼠滾輪行為','Mouse wheel behavior','マウスホイール操作','마우스 휠 동작'],
 wheelZoom:['缩放画布','縮放畫布','Zoom canvas','キャンバスをズーム','캔버스 확대/축소'],
 wheelPan:['平移画布','平移畫布','Pan canvas','キャンバスを移動','캔버스 이동'],
-canvasWheelHint:['平移模式仍可使用缩放按钮或触控板捏合缩放。','平移模式仍可使用縮放按鈕或觸控板捏合縮放。','In pan mode, use zoom buttons or trackpad pinch to zoom.','移動モードでもズームボタンやピンチ操作が使えます。','이동 모드에서도 확대 버튼이나 트랙패드 핀치를 사용할 수 있습니다.'],
+canvasWheelHint:['平移模式下双指上下左右滑动平移，双指捏合或 Ctrl/Cmd + 滚轮缩放。','平移模式下雙指上下左右滑動平移，雙指捏合或 Ctrl/Cmd + 滾輪縮放。','In pan mode, scroll or swipe to pan, and pinch or hold Ctrl/Cmd + wheel to zoom.','移動モードではスクロールで移動し、ピンチまたは Ctrl/Cmd + ホイールでズームします。','이동 모드에서는 스크롤로 이동하고 핀치 또는 Ctrl/Cmd + 휠로 확대/축소합니다.'],
 canvasMinimap:['默认显示小地图','預設顯示小地圖','Show minimap by default','ミニマップを既定で表示','미니맵 기본 표시'],
 canvasMinimapHint:['进入画布时应用；可用画布工具栏临时切换。','進入畫布時套用；可用畫布工具列暫時切換。','Applied when entering the canvas; toggle temporarily in its toolbar.','キャンバスを開くと適用。ツールバーで一時切り替えできます。','캔버스를 열 때 적용됩니다. 도구 모음에서 임시로 전환할 수 있습니다.'],
 soundsHint:['仅在启用任务完成通知时播放提示音。','僅在啟用任務完成通知時播放提示音。','Plays only when task notifications are enabled.','タスク通知が有効な場合のみ音を鳴らします。','작업 알림이 켜진 경우에만 소리를 재생합니다.'],

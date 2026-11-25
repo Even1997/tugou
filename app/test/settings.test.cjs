@@ -64,8 +64,8 @@ test('MCP stdio exits cooperatively for updates and read calls report restart st
 
 test('workspace preferences persist and reject invalid interaction settings',async t=>{
   const p=await folder(t),settings=new Preferences(p);await settings.init();
-  assert.equal(settings.value.canvasGridSize,24);assert.equal(settings.value.startupWorkspace,'home');assert.equal(settings.value.canvasWheel,'zoom');
-  const patch={startupWorkspace:'layers',reduceMotion:true,canvasGridSize:32,canvasSnap:true,canvasMinimap:true,canvasWheel:'pan'};
+  assert.equal(settings.value.canvasGridSize,24);assert.equal(settings.value.startupWorkspace,'home');assert.equal(settings.value.canvasWheel,'pan');
+  const patch={startupWorkspace:'layers',reduceMotion:true,canvasGridSize:32,canvasSnap:true,canvasMinimap:true,canvasWheel:'zoom'};
   await settings.save(patch);const restored=new Preferences(p);await restored.init();for(const [key,value] of Object.entries(patch))assert.equal(restored.value[key],value);
   for(const bad of [{startupWorkspace:'unknown'},{canvasGridSize:0},{canvasGridSize:'24'},{canvasWheel:'scroll'},{canvasSnap:1},{reduceMotion:null},{canvasMinimap:'true'}])assert.throws(()=>settings.save(bad),/INVALID_SETTINGS/);
   assert.deepEqual(JSON.parse(await fs.readFile(settings.file,'utf8')),restored.value);

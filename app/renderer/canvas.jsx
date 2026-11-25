@@ -88,6 +88,7 @@ const nodeTypes = {
   imageTool: CanvasToolNode,
   ...Object.fromEntries(workflowTypes.map(type=>[type,ContentNode])),
 };
+const consoleTypes=new Set(['recipe','imageTool',...workflowTypes]);
 
 function CanvasWorkspace({
   projectId,
@@ -109,7 +110,14 @@ function CanvasWorkspace({
   const panHeld=useKeyPress(panKey,{target:window,actInsideInputWithModifier:false});
   const [nodes, setNodes] = useState(graph.nodes);
   const [edges, setEdges] = useState(graph.edges);
-  const displayedEdges=useMemo(()=>edges.map(edge=>({...edge,type:'default',interactionWidth:24})),[edges]);
+  const selectedIds=useMemo(()=>new Set(nodes.filter(n=>n.selected).map(n=>n.id)),[nodes]);
+  const nodeTypesById=useMemo(()=>new Map(nodes.map(n=>[n.id,n.type])),[nodes]);
+  const displayedEdges=useMemo(()=>edges.map(edge=>{
+    const isInput=consoleTypes.has(nodeTypesById.get(edge.target));
+    const isConnected=isInput?selectedIds.has(edge.source)||selectedIds.has(edge.target):selectedIds.has(edge.target);
+    const className=[isInput&&'is-input-wire',isConnected&&'is-connected'].filter(Boolean).join(' ')||undefined;
+    return {...edge,type:'default',interactionWidth:24,className};
+  }),[edges,selectedIds,nodeTypesById]);
   const [palette, setPalette] = useState("node"),
     [query, setQuery] = useState(""),
     [minimapOverride, setMinimap] = useState(null),
@@ -210,6 +218,66 @@ function CanvasWorkspace({
       })),
     );
   }, [document.tugouCanvas?.nodes,document.tugouCanvas?.edges]);
+  const isMac=window.tugou.platform==='darwin';
+  const wheelPan=preferences.value.canvasWheel!=='zoom';
+  useEffect(()=>{
+    const element=holder.current;
+    if(!element||!flowReady)return;
+    let syncTimer=0;
+    const scheduleSync=()=>{
+      clearTimeout(syncTimer);
+      syncTimer=setTimeout(()=>{
+        if(uiMoving.current||!mounted.current)return;
+        const viewport=flow.getViewport(),source=current.current.document,canvas=source.tugouCanvas;
+        if(canvas&&['x','y','zoom'].some(key=>canvas.viewport[key]!==viewport[key]))
+          change({...source,tugouCanvas:{...canvas,viewport}},{viewOnly:true});
+      },160);
+    };
+    const canScrollInner=(target,dx,dy)=>{
+      let el=target instanceof Element?target:target?.parentElement;
+      while(el&&el!==element){
+        if(el.matches?.('.tool-popover,.ant-popover,.canvas-tools-bottom,.react-flow__minimap,.canvas-node-picker'))return true;
+        const style=getComputedStyle(el);
+        const scrollY=(style.overflowY==='auto'||style.overflowY==='scroll')&&el.scrollHeight>el.clientHeight+1;
+        const scrollX=(style.overflowX==='auto'||style.overflowX==='scroll')&&el.scrollWidth>el.clientWidth+1;
+        if(scrollY&&Math.abs(dy)>=Math.abs(dx)&&((dy<0&&el.scrollTop>0)||(dy>0&&el.scrollTop+el.clientHeight<el.scrollHeight-1)))return true;
+        if(scrollX&&Math.abs(dx)>Math.abs(dy)&&((dx<0&&el.scrollLeft>0)||(dx>0&&el.scrollLeft+el.clientWidth<el.scrollWidth-1)))return true;
+        el=el.parentElement;
+      }
+      return false;
+    };
+    const onWheel=event=>{
+      const target=event.target instanceof Element?event.target:event.target?.parentElement;
+      if(!target?.closest('.react-flow'))return;
+      if(target.closest('.tool-popover,.ant-popover,.canvas-tools-bottom,.react-flow__minimap,.canvas-node-picker'))return;
+      const scale=event.deltaMode===1?20:1;
+      let dx=event.deltaX*scale,dy=event.deltaY*scale;
+      if(event.ctrlKey||event.metaKey){
+        event.preventDefault();event.stopPropagation();
+        const rect=element.getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top;
+        const v=flow.getViewport();
+        const pinch=event.ctrlKey&&isMac&&event.deltaMode===0&&Math.abs(dy)<50;
+        const nextZoom=Math.max(0.15,Math.min(3,v.zoom*Math.exp(-dy*(pinch?0.008:0.002))));
+        flow.setViewport({zoom:nextZoom,x:x-(x-v.x)*nextZoom/v.zoom,y:y-(y-v.y)*nextZoom/v.zoom});
+        setZoom(nextZoom);scheduleSync();
+        return;
+      }
+      if(canScrollInner(target,dx,dy)){
+        event.stopPropagation();
+        return;
+      }
+      if(wheelPan){
+        event.preventDefault();event.stopPropagation();
+        setCreateMenu(null);contextMenu.close();
+        if(!isMac&&event.shiftKey&&!dx){dx=dy;dy=0;}
+        const v=flow.getViewport();
+        flow.setViewport({x:v.x-dx,y:v.y-dy,zoom:v.zoom});
+        scheduleSync();
+      }
+    };
+    element.addEventListener('wheel',onWheel,{passive:false,capture:true});
+    return ()=>{clearTimeout(syncTimer);element.removeEventListener('wheel',onWheel,{capture:true});};
+  },[flow,flowReady,wheelPan,isMac]);
   useEffect(() => {
     if (JSON.stringify(flow.getViewport()) !== JSON.stringify(graph.viewport))
       flow.setViewport(graph.viewport);
@@ -396,10 +464,21 @@ function CanvasWorkspace({
     );
   };
   const paste=()=>pasteNodes(clipboard);
+  const batchAssetGrid=(assets,baseX,baseY,maxCols=4)=>{
+    const cols=Math.min(maxCols,Math.max(1,assets.length)),rowHeights=[];
+    assets.forEach((a,i)=>{
+      const h=a?.width&&a?.height?Math.max(140,Math.min(480,Math.round(276*a.height/a.width)))+110:420;
+      const row=Math.floor(i/cols);rowHeights[row]=Math.max(rowHeights[row]||0,h);
+    });
+    const rowY=[baseY];
+    for(let r=1;r<rowHeights.length;r++)rowY[r]=rowY[r-1]+rowHeights[r-1]+36;
+    return assets.map((_,i)=>({x:Math.round(baseX+(i%cols)*336),y:Math.round(rowY[Math.floor(i/cols)])}));
+  };
   const imageImport = useImageImport((assets,point) => {
       const doc = current.current.document,
         next = { ...doc, assets: [...doc.assets, ...assets] },
         graph = doc.tugouCanvas || emptyCanvas();
+      const slots=batchAssetGrid(assets,point?.x??80,point?.y??80,4);
       change({
         ...next,
         tugouCanvas: {
@@ -407,7 +486,7 @@ function CanvasWorkspace({
           nodes: [
             ...graph.nodes,
             ...assets.map((a, i) =>
-              createNode(next, "asset", a.id, { x: (point?.x ?? 80) + i * 260, y: point?.y ?? 80 }),
+              createNode(next, "asset", a.id, slots[i]),
             ),
           ],
         },
@@ -432,8 +511,10 @@ function CanvasWorkspace({
     const target=graph.nodes.find(n=>n.id===targetId);
     const parent=graph.nodes.find(n=>n.id===target?.parentId);
     const next={...source,assets:[...source.assets,...assets]};
-    const position=point||{x:(parent?.position.x||0)+(target?.position.x??80)+300,y:(parent?.position.y||0)+(target?.position.y??80)};
-    const added=assets.map((a,i)=>createNode(next,'asset',a.id,{x:position.x+i*280,y:position.y}));
+    const targetWidth=target?(target.width||target.measured?.width||nodeWidth(target.type)):0;
+    const position=point||{x:(parent?.position.x||0)+(target?.position.x??80)+targetWidth+108,y:(parent?.position.y||0)+(target?.position.y??80)};
+    const slots=batchAssetGrid(assets,position.x,position.y,3);
+    const added=assets.map((a,i)=>createNode(next,'asset',a.id,slots[i]));
     change({...next,tugouCanvas:{...graph,nodes:[...graph.nodes.map(n=>n.id===targetId&&updateOutput?{...n,data:{...n.data,outputAssetId:assets[0]?.id,outputAssetIds:assets.map(a=>a.id)}}:n),...added]}});
   };
   const runNode=async id=>{
@@ -454,7 +535,8 @@ function CanvasWorkspace({
       const source=current.current.document,target=current.current.nodes.find(n=>n.id===id);if(!target)return;
       const next={...source,assets:[...source.assets,...assets]};
       const parent=current.current.nodes.find(n=>n.id===target.parentId);
-        const added=assets.slice(1).map((a,i)=>createNode(next,'asset',a.id,{x:target.position.x+(parent?.position.x||0)+(i+1)*300,y:target.position.y+(parent?.position.y||0)}));
+      const extra=assets.slice(1),slots=batchAssetGrid(extra,target.position.x+(parent?.position.x||0)+336,target.position.y+(parent?.position.y||0),3);
+      const added=extra.map((a,i)=>createNode(next,'asset',a.id,slots[i]));
       commit([...current.current.nodes.map(n=>n.id===id?{...n,data:{...n.data,assetId:assets[0].id}}:n),...added],current.current.edges,{source:next});
     });}finally{importingNodes.current.delete(id);}
   };
@@ -480,6 +562,20 @@ function CanvasWorkspace({
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     flow.fitView({nodes:[{id}],padding:.4,maxZoom:1,duration:200});
   },[flow]);
+  const flyToNode=useCallback(async id=>{
+    const target=current.current.nodes.find(n=>n.id===id);
+    if(!target)return;
+    const reduced=preferences.value.reduceMotion||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    window.getSelection?.()?.removeAllRanges?.();
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    flow.fitView({
+      nodes:[{id}],
+      padding:target.type==='group'?0.16:0.24,
+      minZoom:0.25,
+      maxZoom:target.type==='group'?1.15:1.25,
+      duration:reduced?0:420,
+    });
+  },[flow,preferences.value.reduceMotion]);
   const nodeContext=useMemo(()=>({document:document.tugouCanvas?document:{...document,tugouCanvas:graph},saveImage,paintImage:(nodeId,assetId)=>{if(disabled)return;const source=document.assets.find(a=>a.id===assetId),node=graph.nodes.find(n=>n.id===nodeId);if(source&&node)setPaintSession({nodeId,source,document,mask:node.data.localEdit?.assetId===assetId?document.assets.find(a=>a.id===node.data.localEdit.maskId):null});},resize,previewResize,disabled,tasks,patch:patchById,runNode,cancelNode,submittingIds,connection,refreshConnection,run,importNodeImage,openNodeScene:setSceneNode,showDetails,openConnection,openRecipe,nodeErrors,locateNode,moveInput,removeInput,replaceImage:(nodeId,assetId)=>setReplacement({nodeId,assetId}),updateReference:id=>commit(current.current.nodes.map(n=>n.id===id?refreshNode(current.current.document,n):n),current.current.edges),sizedIds:new Set(sizedKey?sizedKey.split('|'):[])}),[document,disabled,tasks,submittingIds,connection,nodeErrors,sizedKey,resize,previewResize,showDetails,openConnection,openRecipe,projectId,locateNode,saveImage]);
   const openContext=(event,type,id)=>{
     if(disabled||event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
@@ -802,8 +898,9 @@ function CanvasWorkspace({
               zoomOnDoubleClick={false}
               snapToGrid={preferences.value.canvasSnap}
               snapGrid={[preferences.value.canvasGridSize,preferences.value.canvasGridSize]}
-              zoomOnScroll={preferences.value.canvasWheel==='zoom'}
-              panOnScroll={preferences.value.canvasWheel==='pan'}
+              zoomOnScroll={!wheelPan}
+              panOnScroll={wheelPan}
+              panOnScrollSpeed={1}
               onMoveStart={()=>{setCreateMenu(null);contextMenu.close();}}
               onPaneClick={()=>setCreateMenu(null)}
               onNodeClick={()=>setCreateMenu(null)}
@@ -811,7 +908,12 @@ function CanvasWorkspace({
               onNodeContextMenu={(event,n)=>openContext(event,'node',n.id)}
               onEdgeContextMenu={(event,edge)=>openContext(event,'edge',edge.id)}
               onSelectionContextMenu={(event,nodes)=>{if(nodes.length)openContext(event,'node',nodes[0].id);}}
-              onNodeDoubleClick={(_,n)=>{if(n.type==='director'||n.type==='panorama'&&n.data.outputAssetId)setSceneNode(n.id);}}
+              onNodeDoubleClick={(event,n)=>{
+                const el=event.target instanceof Element?event.target:event.target?.parentElement;
+                if(!el||el.closest('.node-media-preview,.node-result-preview,.node-text,.node-text-editor,.group-caption,.react-flow__handle,.react-flow__resize-control,input,textarea,select,button,a,img,video,audio,[contenteditable="true"],.ant-select,.ant-input,.ant-input-affix-wrapper'))return;
+                if((n.type==='director'||(n.type==='panorama'&&n.data.outputAssetId))&&!el.closest('.node-caption,.desk-heading')){setSceneNode(n.id);return;}
+                flyToNode(n.id);
+              }}
               onConnectEnd={(event,state)=>{
                 if(disabled||state.isValid||!state.fromNode||!event.target.closest('.react-flow__pane'))return;
                 const p=event.changedTouches?.[0]||event;
@@ -835,7 +937,7 @@ function CanvasWorkspace({
               connectionDragThreshold={3}
               defaultEdgeOptions={{ type: "default", interactionWidth: 24 }}
               connectionLineType={ConnectionLineType.Bezier}
-              connectionLineStyle={{stroke:'var(--accent)',strokeWidth:2}}
+              connectionLineStyle={{stroke:'var(--accent)',strokeWidth:2,strokeDasharray:'8 6'}}
               connectionRadius={32}
               connectOnClick
               onNodesChange={(changes) =>
@@ -898,7 +1000,7 @@ function CanvasWorkspace({
                 <Background
                   variant={background === "lines" ? "lines" : "dots"}
                   gap={preferences.value.canvasGridSize}
-                  size={1}
+                  size={1.25}
                 />
               )}{" "}
               {minimap && (

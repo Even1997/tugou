@@ -28,7 +28,7 @@ export function CanvasToolNode({id,data,selected}){
   return <div className={`canvas-card node-shell node-picture canvas-tool-node ${selected?'selected':''}`} style={{'--node-width':'320px'}}>
     <header className="node-caption"><Icon name={icons[data.operation]||'tools'}/><strong>{data.name}</strong><small>{data.operation==='cloudExtend'?'模型工具':'本地工具'}</small></header>
     <Handle type="target" position={Position.Left} aria-label="工具图片输入" title={inputLimit(data.operation)>1?"连接多张图片，在参数中调整顺序":"连接一张图片或上游工具结果"}/>
-    <div className="canvas-tool-status nodrag nowheel">
+    <div className="canvas-tool-status nodrag">
       <span className="muted">{source?`输入：${source.name} · ${source.width} × ${source.height}`:'连接图片后开始处理'}</span>
       <span className="muted">{data.operation==='upscale'?`${{general:'通用',illustration:'插画',anime:'动漫'}[settings.model]} · ${settings.scale}×`:data.operation==='cutout'?`${settings.model==='u2netp'?'轻量':'精细'}抠图 · 透明背景`:data.operation==='cloudExtend'?'调用已配置的生图模型，可能产生费用':data.operation==='gif'?'多图合并 · 可调整帧顺序与时长':'使用工具参数处理原图'}</span>
       <span className="muted">新图生成在右侧，可连接多个工具</span>

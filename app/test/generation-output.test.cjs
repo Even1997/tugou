@@ -7,8 +7,15 @@ const task=(id='job',count=2,status='running')=>({id,status,context:{kind:'workf
 const result=(count=2)=>({id:'job',nodeId:'desk',kind:'workflow',mode:'image',assets:Array.from({length:count},(_,i)=>({id:`job-${i}`,kind:'image',name:`结果${i}`}))});
 test('submission reserves distinct right-hand nodes and one edge per image, idempotently',()=>{
  const d=fixture(),s=stageOutputs(d,[task()]),out=s.tugouCanvas.nodes.slice(1);
- assert.equal(d.tugouCanvas.nodes.length,1);assert.equal(out.length,2);assert.ok(out.every(n=>n.position.x>=570));assert.ok(out[1].position.y-out[0].position.y>=632);
+ assert.equal(d.tugouCanvas.nodes.length,1);assert.equal(out.length,2);assert.ok(out.every(n=>n.position.x===608));assert.ok(out[1].position.y-out[0].position.y>=550);
  assert.deepEqual(s.tugouCanvas.edges.map(e=>[e.source,e.target]),out.map(n=>['desk',n.id]));assert.equal(stageOutputs(s,[task()]),s);
+});
+test('four-image batch forms a centered 2x2 grid sized to aspect ratio',()=>{
+ const d=fixture();d.tugouCanvas.nodes[0].data.size='1920x1080';
+ const s=stageOutputs(d,[task('quad',4)]),out=s.tugouCanvas.nodes.slice(1);
+ assert.equal(out.length,4);assert.equal(out[0].position.x,out[2].position.x);assert.equal(out[1].position.x,out[3].position.x);
+ assert.equal(out[1].position.x-out[0].position.x,332);assert.equal(out[0].position.y,out[1].position.y);
+ assert.ok(out[2].position.y-out[0].position.y>=280&&out[2].position.y-out[0].position.y<360);
 });
 test('completion fills existing placeholders without moving user-positioned nodes or duplicating edges',()=>{
  const s=stageOutputs(fixture(),[task()]);s.tugouCanvas.nodes[1].position={x:999,y:111};const n=mergeResults(s,[result()]);
@@ -23,12 +30,12 @@ test('partial provider batch removes unused placeholders and their edges',()=>{
 });
 test('new generation preserves previous results and avoids their occupied positions',()=>{
  const s=mergeResults(stageOutputs(fixture(),[task()]),[result()]),n=stageOutputs(s,[task('second',1)]);
- assert.equal(n.tugouCanvas.nodes.length,4);assert.ok(n.tugouCanvas.nodes.at(-1).position.y>s.tugouCanvas.nodes.at(-1).position.y+600);
+ assert.equal(n.tugouCanvas.nodes.length,4);assert.ok(n.tugouCanvas.nodes.at(-1).position.y>s.tugouCanvas.nodes.at(-1).position.y+520);
 });
 test('grouped sources use absolute coordinates; pending task survives failure, cancellation and reload',()=>{
  const d=fixture();d.tugouCanvas.nodes[0].parentId='group';d.tugouCanvas.nodes.unshift({id:'group',type:'group',position:{x:400,y:200},data:{}});
- const s=stageOutputs(d,[task()]);assert.equal(s.tugouCanvas.nodes[2].position.x,970);assert.equal(s.tugouCanvas.nodes[2].position.y,250);
- for(const state of ['failed','cancelled','interrupted'])assert.deepEqual(stageOutputs(JSON.parse(JSON.stringify(s)),[task('job',2,state)]),s);
+ const s=stageOutputs(d,[task('job',1)]);assert.equal(s.tugouCanvas.nodes[2].position.x,1008);assert.equal(s.tugouCanvas.nodes[2].position.y,218);
+ for(const state of ['failed','cancelled','interrupted'])assert.deepEqual(stageOutputs(JSON.parse(JSON.stringify(s)),[task('job',1,state)]),s);
 });
 test('completion merges into undo and redo snapshots without stale pending cards',()=>{
  const s=stageOutputs(fixture(),[task()]),n=applyResults(s,{past:[s],future:[s]},[result()]);
