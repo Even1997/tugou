@@ -2,7 +2,9 @@ import {loadPages} from './page-storage.js';
 import {kinds,list} from '../core/pages.cjs';
 import {AssetTime} from './asset-time.jsx';
 import {Select} from './select.jsx';
-import React, { useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import { useClipboardImagePaste } from "./image-clipboard.js";
+import { CanvasImageViewer } from "./canvas-image-viewer.jsx";
 import {filterMaterials,materialSource} from '../core/materials.cjs';
 import {dragMaterial} from './material-drag.js';
 import {useImageImport,hasImageFiles} from './use-image-import.js';
@@ -30,7 +32,8 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
     [error, setError] = useState(""),
     [selected, setSelected] = useState([]),
     [density, setDensity] = useState("medium"),
-    [removingIds, setRemovingIds] = useState(null);
+    [removingIds, setRemovingIds] = useState(null),
+    [quickLookId, setQuickLookId] = useState(null);
   const latest = useRef(document);
   const [notice,setNotice]=useState('');
   useUiView('assets',{get:()=>({source,shape,sort,query,focused,selected,density}),restore:v=>{setSource(v.source);setShape(v.shape);setSort(v.sort);setQuery(v.query);setFocused(v.focused);setSelected(v.selected);setDensity(v.density);}});
@@ -57,6 +60,41 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
           assets: [...latest.current.assets, ...added],
         });
     },setError,disabled);
+  useClipboardImagePaste(added => {
+    setError('');
+    change({ ...latest.current, assets: [...latest.current.assets, ...added] });
+    setFocused(added[0].id);
+    setNotice(`已粘贴 ${added.length} 张图片到素材库`);
+  }, setError, disabled);
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (disabled || preview || quickLookId || removingIds || event.target?.closest?.('input,textarea,select,[contenteditable]') || window.document.querySelector('[role="dialog"]')) return;
+      if (event.key === ' ' && detail && (!detail.kind || detail.kind === 'image') && !event.target?.closest?.('button:not(.asset-preview),a,summary,[role="menuitem"]')) {
+        event.preventDefault();
+        setQuickLookId(detail.id);
+        return;
+      }
+      if ((event.key === 'Delete' || (window.tugou?.platform === 'darwin' && event.key === 'Backspace')) && chosen.length) {
+        event.preventDefault();
+        remove(chosen);
+        return;
+      }
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && assets.length) {
+        event.preventDefault();
+        const currentIndex = Math.max(0, assets.findIndex(a => a.id === detail?.id));
+        const grid = window.document.querySelector('.asset-grid');
+        const cols = grid ? Math.max(1, getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length) : 1;
+        const delta = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols }[event.key];
+        const next = assets[Math.max(0, Math.min(assets.length - 1, currentIndex + delta))];
+        if (next) {
+          setFocused(next.id);
+          requestAnimationFrame(() => window.document.querySelector(`.asset-card[data-asset-id="${CSS.escape(next.id)}"]`)?.scrollIntoView({ block: 'nearest' }));
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [disabled, preview, quickLookId, removingIds, detail, chosen, assets]);
   const remove = (ids) => run(async () => {
     if(disabled||!ids.length)return;
     setError('');setNotice('');
@@ -131,6 +169,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
           {(asset) => (
             <ImageSaveMenu key={asset.id} asset={asset} save={saveImage} remove={id=>remove([id])} disabled={disabled} actions={menuItems(asset)}>
             <article
+              data-asset-id={asset.id}
               className={`asset-card ${selected.includes(asset.id)||detail?.id===asset.id ? "selected" : ""}`}
               key={asset.id}
             >
@@ -203,6 +242,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
         <Button onClick={()=>setSelected([])}>取消选择</Button>
       </div>}
       {removingIds&&<RemovalDialog title={`移除 ${removingIds.length} 项素材？`} description="素材将从当前工程素材库移除，本地原文件不会被删除。" confirmLabel="移除" close={()=>setRemovingIds(null)} remove={confirmRemove}/>}
+      {quickLookId&&(()=>{const target=assets.find(a=>a.id===quickLookId);return target?<CanvasImageViewer key={target.id} asset={target} assets={assets} onSave={a=>saveImage(a.id)} close={()=>setQuickLookId(null)}/>:null;})()}
       {preview&&<MaterialDetails projectId={projectId} document={document} assetId={preview} change={change} close={()=>setPreview(null)} editImages={editImages} analyzeImage={analyzeImage} addToCanvas={addToCanvas} addToLayers={addToLayers}/>}
     </section>
   );

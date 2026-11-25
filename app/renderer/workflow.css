@@ -11,15 +11,44 @@
 }
 .workspace-canvas .workflow-toolbar {
   position: absolute;
-  left: 50%;
+  left: var(--canvas-stage-center, 50%);
   bottom: 16px;
   transform: translateX(-50%);
   z-index: 20;
-  min-height: 40px;
-  max-width: calc(100% - 28px);
-  padding: 5px 9px;
-  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  max-width: min(var(--canvas-stage-width, calc(100% - 28px)), calc(100% - 28px));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+.workspace-canvas .workflow-toolbar > *:not(#canvas-actions) {
+  pointer-events: auto;
+}
+.workspace-canvas #canvas-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   flex-wrap: nowrap;
+  flex: none;
+  max-width: 100%;
+  pointer-events: none;
+}
+.canvas-dock-bar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-height: 40px;
+  max-width: 100%;
+  padding: 5px 9px;
   overflow-x: auto;
   scrollbar-width: none;
   border: 1px solid var(--line-strong);
@@ -27,13 +56,7 @@
   background: var(--panel);
   box-shadow: var(--shadow-popover);
 }
-.workspace-canvas #canvas-actions {
-  flex-wrap: nowrap;
-  flex: none;
-}
-.workspace-canvas #canvas-actions > .toolbar-divider:first-child {
-  display: none;
-}
+.canvas-dock-bar::-webkit-scrollbar { display: none; }
 .workspace-canvas .workflow-toolbar .studio-select {
   height: 28px;
   min-width: 78px;
@@ -55,16 +78,12 @@
   font-variant-numeric: tabular-nums;
 }
 .canvas-selection-bar {
-  position: absolute;
-  left: 50%;
-  bottom: 64px;
-  transform: translateX(-50%);
-  z-index: 21;
+  pointer-events: auto;
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
   gap: 4px;
-  max-width: calc(100% - 28px);
+  max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
   padding: 5px 8px;

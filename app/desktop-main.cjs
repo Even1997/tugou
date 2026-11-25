@@ -366,6 +366,13 @@ async function boot() {
   });
   handle('editCommand',action=>{if(['undo','redo','cut','copy','paste','selectAll'].includes(action))window.webContents[action]();});
   handle('copyText', (text) => { if (typeof text !== 'string') throw new Error('复制内容无效'); clipboard.writeText(text); });
+  handle('copyImage', (bytes) => {
+    const buffer = bytes instanceof Uint8Array || Array.isArray(bytes) ? Buffer.from(bytes) : null;
+    if (!buffer || !buffer.length || buffer.length > 64 * 1024 * 1024) throw new Error('图片数据无效');
+    const image = nativeImage.createFromBuffer(buffer);
+    if (image.isEmpty()) throw new Error('无法识别图片格式');
+    clipboard.writeImage(image);
+  });
   handle('cancelTask', (id) => tasks.cancel(id));
   handle('dirty', (value) => { dirty = value === true; });
   let closeSave=null;

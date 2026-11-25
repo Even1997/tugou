@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from "react";
 import {materialMime} from './material-drag.js';
 import {usePreferences} from './preferences.jsx';
 import {ProjectManager} from './removal-dialog.jsx';
-import GithubOutlined from '@ant-design/icons/GithubOutlined';
 import {
   Button,
   Icon,
@@ -126,7 +125,7 @@ export function StudioHeader({
           />
           <IconButton
             label={t('maximize')}
-            icon="maximize"
+            icon="rectangle"
             onClick={() => window.tugou.window("maximize")}
           />
           <IconButton
@@ -163,8 +162,8 @@ export function StudioHeader({
               onDrop={()=>{clearTimeout(dragTimer.current);dragTimer.current=null;}}
             ><span>{t(id)}</span></Button>
           ))}
-          <Button className="rail-help" icon="info" aria-label="帮助" onClick={help}><span>帮助</span></Button>
-          <div className="rail-bottom"><IconButton label="GitHub" icon={<GithubOutlined />} onClick={openGithub}/><IconButton label={t('settings')} className={['available','ready'].includes(update?.status)&&update.skippedVersion!==update.version?'has-update':''} icon="settings" aria-current={workspace==='settings'?'page':undefined} onClick={()=>setWorkspace('settings')}/><IconButton
+          <Button className="rail-help" icon="help" aria-label="帮助" onClick={help}><span>帮助</span></Button>
+          <div className="rail-bottom"><IconButton label="GitHub" icon="github" onClick={openGithub}/><IconButton label={t('settings')} className={['available','ready'].includes(update?.status)&&update.skippedVersion!==update.version?'has-update':''} icon="settings" aria-current={workspace==='settings'?'page':undefined} onClick={()=>setWorkspace('settings')}/><IconButton
             label={theme.mode === "dark" ? "切换浅色主题" : "切换深色主题"}
             icon={theme.mode === "dark" ? "sun" : "moon"}
             onClick={theme.toggle}

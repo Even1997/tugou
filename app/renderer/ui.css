@@ -280,6 +280,12 @@ textarea:not(.ant-input):focus,
 .workspace-rail > .ant-btn .anticon { font-size:17px; }
 .workspace-rail > .ant-btn[aria-current] { color:var(--accent); background:var(--accent-bg); font-weight:600; }
 .workspace-rail > .ant-btn[aria-current]::before { content:''; position:absolute; left:1px; top:12px; bottom:12px; width:2.5px; border-radius:2px; background:var(--accent); }
+.studio-icon svg { display:block; }
+.studio-icon svg :where(path, circle, rect, line, polyline, polygon, ellipse) { vector-effect:non-scaling-stroke; }
+.workspace-rail > .ant-btn[aria-current] .studio-icon svg :where(rect, circle, polygon),
+.workspace-canvas .workflow-toolbar .ant-btn[aria-pressed="true"] .studio-icon svg :where(rect, circle, polygon),
+.composition-primary-tools > .ant-btn[aria-pressed="true"] .studio-icon svg :where(rect, circle, polygon),
+.ppt-floating-dock .ant-btn[aria-pressed="true"] .studio-icon svg :where(rect, circle, polygon) { fill:color-mix(in srgb, currentColor 15%, transparent); }
 @media(max-height:760px){.workspace-rail{gap:2px;padding-top:4px;padding-bottom:6px}.workspace-rail>.ant-btn{height:42px;flex-shrink:0}.workspace-rail .rail-bottom{flex-shrink:0}}
 .rail-bottom { margin-top:auto; display:flex; justify-content:center; }
 .workspace-rail > .rail-help { margin-top:auto; flex-shrink:0; }

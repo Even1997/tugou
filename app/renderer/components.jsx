@@ -17,15 +17,15 @@ import {
   theme as antTheme,
 } from "antd";
 import {
-  Presentation, Play, ArrowLeft, Circle, House, PenLine, ArrowLeftRight, Camera, Video, Volume2, Bot, Square,
-  Wrench, LayoutGrid, NotebookPen, Workflow, Layers, Images, Plus, Search,
+  GalleryHorizontalEnd, Play, ArrowLeft, Circle, House, PenLine, ArrowLeftRight, Camera, Video, Volume2, Cpu, Square,
+  WandSparkles, LayoutGrid, SquarePen, LayoutDashboard, Layers, Images, Plus, Search,
   Trash2, Copy, Upload, Download, Save, Settings, Sun, Moon,
-  Ellipsis, Undo2, Redo2, X, Minus, Maximize, Eye, EyeOff,
+  Ellipsis, Undo2, Redo2, X, Minus, Expand, Eye, EyeOff,
   LockKeyhole, LockKeyholeOpen, Palette, UserRound, Move, Shirt, Mountain, Sparkles,
-  Type, Shapes, ListTodo, Clock3, FolderOpen, Check, Scan, MousePointer2,
+  Type, Shapes, ListTodo, Clock3, FolderOpen, Check, Focus, MousePointer2,
   Paintbrush, Eraser, Crop, SlidersHorizontal, PanelsTopLeft, AlignLeft, Rotate3d, Plug,
   SquareDashed, Blend, Clipboard, ZoomIn, ZoomOut, RefreshCw, ScanSearch, ListFilter,
-  Info, LoaderCircle, ArrowUp, ArrowDown, ChevronRight, ChevronDown, CloudDownload, CircleCheck,
+  Info, CircleHelp, LoaderCircle, ArrowUp, ArrowDown, ChevronRight, ChevronDown, CloudDownload, CircleCheck,
 } from 'lucide-react';
 import {usePreferences} from './preferences.jsx';
 import {messages} from './settings-messages.js';
@@ -36,8 +36,15 @@ import jaJP from 'antd/locale/ja_JP';
 import koKR from 'antd/locale/ko_KR';
 const commonLabels=Object.fromEntries(Object.entries(messages['zh-CN']).map(([key,label])=>[label,key]));
 
+const GithubOutlineIcon = ({ size = "1em", strokeWidth = 1.45, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+    <path d="M9 18c-4.51 2-5-2-7-2" />
+  </svg>
+);
+
 const icons = {
-  ppt: Presentation,
+  ppt: GalleryHorizontalEnd,
   play: Play,
   back: ArrowLeft,
   home: House,
@@ -46,14 +53,14 @@ const icons = {
   camera: Camera,
   video: Video,
   audio: Volume2,
-  model: Bot,
+  model: Cpu,
   stop: Square,
   rectangle: Square,
   circle: Circle,
-  tools: Wrench,
+  tools: WandSparkles,
   brand: LayoutGrid,
-  prompts: NotebookPen,
-  canvas: Workflow,
+  prompts: SquarePen,
+  canvas: LayoutDashboard,
   layers: Layers,
   assets: Images,
   add: Plus,
@@ -71,7 +78,7 @@ const icons = {
   redo: Redo2,
   close: X,
   minimize: Minus,
-  maximize: Maximize,
+  maximize: Expand,
   visible: Eye,
   hidden: EyeOff,
   locked: LockKeyhole,
@@ -90,7 +97,7 @@ const icons = {
   clock: Clock3,
   open: FolderOpen,
   check: Check,
-  fit: Scan,
+  fit: Focus,
   select: MousePointer2,
   brush: Paintbrush,
   eraser: Eraser,
@@ -110,6 +117,8 @@ const icons = {
   analyze: ScanSearch,
   filter: ListFilter,
   info: Info,
+  help: CircleHelp,
+  github: GithubOutlineIcon,
   loading: LoaderCircle,
   up: ArrowUp,
   down: ArrowDown,
@@ -120,7 +129,7 @@ const icons = {
 };
 export function Icon({ name, className = "", ...props }) {
   const Component = icons[name] || Shapes;
-  return <span aria-hidden="true" data-icon={name} className={`anticon studio-icon ${name === 'loading' ? 'anticon-spin ' : ''}${name === 'collapse' || name === 'expand' ? 'disclosure-icon ' : ''}${className}`} {...props}><Component size="1em" strokeWidth={1.8} focusable="false"/></span>;
+  return <span aria-hidden="true" data-icon={name} className={`anticon studio-icon ${name === 'loading' ? 'anticon-spin ' : ''}${name === 'collapse' || name === 'expand' ? 'disclosure-icon ' : ''}${className}`} {...props}><Component size="1em" strokeWidth={1.45} focusable="false"/></span>;
 }
 const ThemeContext = createContext({ mode: "dark" });
 export function useTheme() {

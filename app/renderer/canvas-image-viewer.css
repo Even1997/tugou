@@ -1,12 +1,21 @@
 .canvas-image-viewer .ant-image-preview-img { border:0; border-radius:0; box-shadow:none; background:transparent; }
-.canvas-image-viewer .viewer-controls { display:flex; align-items:center; gap:6px; padding:5px 10px; border:1px solid #313849; border-radius:10px; background:#161a22; color:#f0f3f8; box-shadow:0 12px 32px rgba(0,0,0,.48); }
-.canvas-image-viewer .viewer-controls .ant-btn,.canvas-image-viewer .viewer-close.ant-btn { color:#f0f3f8; border:0; background:transparent; box-shadow:none; border-radius:7px; }
-.canvas-image-viewer .viewer-controls .ant-btn:hover,.canvas-image-viewer .viewer-close.ant-btn:hover { color:#fff; background:#242a37; }
+.canvas-image-viewer .viewer-header { position:fixed; top:18px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; max-width:min(560px, calc(100vw - 140px)); padding:7px 14px; border:1px solid #313849; border-radius:10px; background:#161a22; color:#f0f3f8; font-size:12px; box-shadow:0 12px 32px rgba(0,0,0,.48); pointer-events:auto; }
+.canvas-image-viewer .viewer-header strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+.canvas-image-viewer .viewer-header span { color:#8a94a6; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.canvas-image-viewer .viewer-header em { font-style:normal; padding:1px 7px; border-radius:99px; background:#242a37; color:#cbd3e1; font-size:11px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.canvas-image-viewer .viewer-controls { display:flex; align-items:center; gap:5px; padding:5px 10px; border:1px solid #313849; border-radius:10px; background:#161a22; color:#f0f3f8; box-shadow:0 12px 32px rgba(0,0,0,.48); }
+.canvas-image-viewer .viewer-controls .ant-btn,.canvas-image-viewer .viewer-close.ant-btn,.canvas-image-viewer .viewer-nav.ant-btn { color:#f0f3f8; border:0; background:transparent; box-shadow:none; border-radius:7px; }
+.canvas-image-viewer .viewer-controls .ant-btn:hover,.canvas-image-viewer .viewer-close.ant-btn:hover,.canvas-image-viewer .viewer-nav.ant-btn:hover { color:#fff; background:#242a37; }
 .canvas-image-viewer .viewer-controls .ant-btn:disabled { color:rgba(240,243,248,.32); }
-.canvas-image-viewer .viewer-controls .ant-btn { height:34px; }
-.canvas-image-viewer .viewer-controls .icon-button { min-width:34px; }
-.canvas-image-viewer .viewer-controls>span { min-width:48px; text-align:center; font-size:12px; color:#8a94a6; font-variant-numeric:tabular-nums; }
+.canvas-image-viewer .viewer-controls .ant-btn { height:32px; font-size:12px; }
+.canvas-image-viewer .viewer-controls .icon-button { min-width:32px; }
+.canvas-image-viewer .viewer-controls>span:not(.viewer-sep) { min-width:44px; text-align:center; font-size:12px; color:#8a94a6; font-variant-numeric:tabular-nums; }
+.canvas-image-viewer .viewer-sep { width:1px; height:18px; background:#313849; margin:0 3px; flex-shrink:0; }
 .canvas-image-viewer .viewer-close.ant-btn { position:fixed; top:18px; right:18px; width:38px; height:38px; border:1px solid #313849; border-radius:50%; background:#161a22; pointer-events:auto; }
+.canvas-image-viewer .viewer-nav.ant-btn { position:fixed; top:50%; transform:translateY(-50%); width:42px; height:42px; border:1px solid #313849; border-radius:50%; background:#161a22; box-shadow:0 8px 24px rgba(0,0,0,.42); pointer-events:auto; font-size:16px; }
+.canvas-image-viewer .viewer-prev { left:20px; }
+.canvas-image-viewer .viewer-prev .anticon { transform:rotate(180deg); }
+.canvas-image-viewer .viewer-next { right:20px; }
 .canvas-image-viewer .ant-btn:focus-visible { outline:2px solid #fff; outline-offset:2px; }
-.canvas-image-viewer .viewer-error { position:fixed; top:72px; left:0; right:0; text-align:center; color:#fff; }
-@media(max-width:600px){.canvas-image-viewer .viewer-controls{gap:2px;padding:4px 8px}.canvas-image-viewer .viewer-close.ant-btn{top:12px;right:12px}}
+.canvas-image-viewer .viewer-error { position:fixed; top:68px; left:0; right:0; text-align:center; color:#fca5a5; font-size:12px; }
+@media(max-width:600px){.canvas-image-viewer .viewer-controls{gap:2px;padding:4px 8px}.canvas-image-viewer .viewer-close.ant-btn{top:12px;right:12px}.canvas-image-viewer .viewer-nav.ant-btn{width:34px;height:34px}.canvas-image-viewer .viewer-prev{left:10px}.canvas-image-viewer .viewer-next{right:10px}}

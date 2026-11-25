@@ -86,6 +86,7 @@ import {ReplaceImageDialog} from './replace-image.jsx';
 import {replaceLayerAsset} from '../core/materials.cjs';
 import {dragMaterial,readMaterialDrop,materialMime} from './material-drag.js';
 import {useImageImport,hasImageFiles} from './use-image-import.js';
+import {useClipboardImagePaste} from './image-clipboard.js';
 
 function Menu({ name, icon, children }) {
   return (
@@ -727,6 +728,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     setTool("select");
   };
   const imageImport=useImageImport((assets,point)=>{addAssets(assets,point);setMessage('');},setMessage,disabled);
+  useClipboardImagePaste(assets=>{addAssets(assets);setMessage(`已粘贴 ${assets.length} 张图片到画板`);},setMessage,disabled||!workspace?.board);
   const newPaintLayer = () => run(async () => {
     const source=latest.current.document;
     const blank=surface(source.width,source.height);

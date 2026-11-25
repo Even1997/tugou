@@ -725,7 +725,7 @@ export function ImageTools({
         </div>
       )}
       <div className="image-tools-body">
-        {viewingOriginal&&source&&<CanvasImageViewer key={source.id} asset={source} close={()=>setViewingOriginal(false)}/>}
+        {viewingOriginal&&source&&<CanvasImageViewer key={source.id} asset={source} assets={imageAssets} onSave={a=>run(async()=>{if(await exportMaterial(a))setStatus('已导出 PNG');})} close={()=>setViewingOriginal(false)}/>}
         <div className={`image-comparison view-${view}`}>
           {!source ? (
             <EmptyState

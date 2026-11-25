@@ -707,6 +707,7 @@ function App() {
                   )}
                   disabled={busy}
                   editImages={openImageTools}
+                  addToLayers={addAssetLayer}
                   document={record.document}
                   change={change}
                   openRecipe={(id) => {
@@ -787,7 +788,7 @@ function App() {
         openTasks={() => setTasksOpen(true)}
         connection={() => setConnectionOpen(true)}
       />
-      {detailsSession&&record&&(()=>{const asset=record.document.assets.find(a=>a.id===detailsSession.assetId);return asset&&(!asset.kind||asset.kind==='image')?<CanvasImageViewer key={asset.id} asset={asset} close={()=>setDetailsSession(null)}/>:<MaterialDetails {...detailsSession} projectId={record.id} document={record.document} change={change} close={()=>setDetailsSession(null)} editImages={openImageTools} analyzeImage={analyzeImage} addToLayers={addAssetLayer} addToCanvas={addToCanvas}/>;})()}
+      {detailsSession&&record&&(()=>{const asset=record.document.assets.find(a=>a.id===detailsSession.assetId);return asset&&(!asset.kind||asset.kind==='image')?<CanvasImageViewer key={asset.id} asset={asset} assets={record.document.assets.filter(a=>!a.kind||a.kind==='image')} onSave={a=>run(async()=>{if(await api.exportAsset(record.id,present.current.document,a.id))setNotice('已保存图片');})} close={()=>setDetailsSession(null)}/>:<MaterialDetails {...detailsSession} projectId={record.id} document={record.document} change={change} close={()=>setDetailsSession(null)} editImages={openImageTools} analyzeImage={analyzeImage} addToLayers={addAssetLayer} addToCanvas={addToCanvas}/>;})()}
       {analysisOpen && record && <AnalysisDialog key={record.id+":"+(analysisSource?.assetId||"")} initialAssetId={analysisSource?.assetId} sendToCanvas={sendAnalysisToCanvas} projectId={record.id} document={record.document} change={change} tasks={tasks} refreshTasks={refreshTasks} close={() => setAnalysisOpen(false)} onSelect={setModuleId} />}
       {tasksOpen && (
         <TaskPanel

@@ -21,6 +21,7 @@ import {contentOf,contentText,contentTitle,contentStatus,setContent,syncContent}
 import {ContentPanel,ContentField,PresentationOutline} from './presentation-content.jsx';
 import {usePptZoom} from './use-ppt-zoom.js';
 import {useImageImport,hasImageFiles} from './use-image-import.js';
+import {useClipboardImagePaste} from './image-clipboard.js';
 
 const source=a=>a?.resource?`tugou-media://original/${a.resource}`:a?.dataUrl;
 function EditingSlideText({element,original,style,onCommit,onCancel}){
@@ -171,6 +172,15 @@ export function PresentationsWorkspace({record,change,disabled,createProject,sav
     change({...now,assets:[...now.assets,...imported],presentations:now.presentations.map(p=>p.id===d.id?{...p,slides:p.slides.map(p=>p.id===s.id?{...p,elements:[...p.elements,...items]}:p)}:p)});
     setSelection(items[0].id);
   },setFailure,busy||!deck||!current);
+  useClipboardImagePaste(imported=>{
+    const {doc:now,deck:d,current:s}=latest.current;
+    if(!d||!s||!imported.length)return;
+    if(s.elements.length+imported.length>200){setFailure('每页最多 200 个元素');return;}
+    const items=imported.map(imageElement);
+    change({...now,assets:[...now.assets,...imported],presentations:now.presentations.map(p=>p.id===d.id?{...p,slides:p.slides.map(p=>p.id===s.id?{...p,elements:[...p.elements,...items]}:p)}:p)});
+    setSelection(items[0].id);
+    setNotice(`已粘贴 ${imported.length} 张图片到当前页`);
+  },setFailure,busy||!deck||!current||sidebar==='outline');
   const alignElement=edge=>{
     if(!chosen||chosen.locked||busy||!deck)return;
     const [sw,sh]=sizes[deck.ratio];

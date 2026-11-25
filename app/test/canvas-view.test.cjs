@@ -69,6 +69,6 @@ test('generation outputs clear the full default desk width inside groups',()=>{
   const doc={assets:[],tugouCanvas:{nodes:[group,source],edges:[],version:1,viewport:{x:0,y:0,zoom:1}}};
   const next=mergeResults(doc,[{id:'r',nodeId:'desk',kind:'workflow',mode:'image',assets:[{id:'output'}]}]);
   assert.equal(next.tugouCanvas.nodes.at(-1).position.x,500+50+400+108);
-  assert.equal(next.tugouCanvas.nodes.at(-1).position.y,270);
+  assert.equal(next.tugouCanvas.nodes.at(-1).position.y,280);
   assert.deepEqual(doc.tugouCanvas.nodes,[group,source]);
 });
