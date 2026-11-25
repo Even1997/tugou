@@ -57,7 +57,7 @@ test('angle generation snapshots source and camera, shares configured model and 
   assert.deepEqual(f.document,original);assert.equal(f.requests.length,1);assert.match(f.requests[0].body,/右侧 30°/);assert.match(f.requests[0].body,/test-model/);
   const journal=JSON.parse(await fs.readFile(path.join(f.root,'requests',id+'.json'),'utf8'));assert.deepEqual(journal.angle,params);assert.equal(journal.referenceAssets[0].dataUrl,a.dataUrl);assert.ok(!JSON.stringify(journal).includes('secret-test-token'));
   const result=(await f.service.results(f.record.id))[0],merged=mergeResults(f.document,[result]);
-  assert.deepEqual(merged.assets[0],a);assert.deepEqual(merged.tugouCanvas.nodes[1],original.tugouCanvas.nodes[1]);assert.deepEqual(result.assets[0].generation.angle,params);assert.equal(merged.tugouCanvas.nodes.at(-1).position.x,40+require('../core/workflow-nodes.cjs').nodeWidth('asset')+70);
+  assert.deepEqual(merged.assets[0],a);assert.deepEqual(merged.tugouCanvas.nodes[1],original.tugouCanvas.nodes[1]);assert.deepEqual(result.assets[0].generation.angle,params);assert.equal(merged.tugouCanvas.nodes.at(-1).position.x,40+require('../core/workflow-nodes.cjs').nodeWidth('asset')+108);
   assert.equal((await f.service.assetDetails(f.record.id,merged,result.assets[0].id)).prompt,result.prompt);
   await assert.rejects(f.service.angle(f.record.id,f.document,'image','missing',params),/源图片/);assert.equal(f.requests.length,1);
 });

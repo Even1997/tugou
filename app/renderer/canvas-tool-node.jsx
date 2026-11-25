@@ -25,7 +25,7 @@ export function CanvasToolNode({id,data,selected}){
   try{source=compileTool(document,id).asset;}catch(e){error=e.message;}
   if(asset)try{toolOutput(document,node);}catch{stale=true;}
   const settings=settingsOf(node,source);
-  return <div className={`canvas-card node-shell node-picture canvas-tool-node ${selected?'selected':''}`} style={{'--node-width':'320px'}}>
+  return <div data-node-role="tool" className={`canvas-card node-shell node-picture canvas-tool-node ${selected?'selected':''}`} style={{'--node-width':'320px'}}>
     <header className="node-caption"><Icon name={icons[data.operation]||'tools'}/><strong>{data.name}</strong><small>{data.operation==='cloudExtend'?'模型工具':'本地工具'}</small></header>
     <Handle type="target" position={Position.Left} aria-label="工具图片输入" title={inputLimit(data.operation)>1?"连接多张图片，在参数中调整顺序":"连接一张图片或上游工具结果"}/>
     <div className="canvas-tool-status nodrag">

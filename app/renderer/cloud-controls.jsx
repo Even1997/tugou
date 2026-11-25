@@ -40,7 +40,7 @@ export function CloudControls({
             aria-label="云端修改要求"
             value={value.instruction}
             maxLength={4000}
-            rows={4}
+            rows={operation === 'cloudEdit' ? 3 : 2}
             placeholder={operation === 'cloudEdit' ? '例如：去掉选区内的杂物，补全背景' : '描述需要保留或补充的内容'}
             onChange={(e) => update({ instruction: e.target.value })}
           />
@@ -155,8 +155,10 @@ export function CloudControls({
       )}
       {operation === "cloudExtend" && (
         <>
-          {number("width", "扩图宽度", 1)}
-          {number("height", "扩图高度", 1)}
+          <div className="tool-size-pair">
+            {number("width", "扩图宽度", 1)}
+            {number("height", "扩图高度", 1)}
+          </div>
           <ToolPopover className="tools-parameter-popover" icon="settings" label="原图位置" showLabel>
             <div className="image-tool-detail">
               {number("left", "原图左侧")}

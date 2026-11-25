@@ -242,7 +242,10 @@ class ProjectStore {
     for (const [id, name] of projects) {
       try {
         const {record,recovered} = await this.readSnapshot(id);
-        result.push({ id, name: record.document.name, updatedAt: record.updatedAt, revision: record.revision, recovered,
+        const assets = record.document.assets || [];
+        const coverResource = assets.filter(a => (!a.kind || a.kind === 'image') && a.resource).at(-1)?.resource || '';
+        result.push({ id, name: record.document.name, updatedAt: record.updatedAt, revision: record.revision, recovered, assetCount: assets.length,
+          ...(coverResource ? { coverResource } : {}),
           ...(record.origin?.legacyCanvasId ? { canvasNodeCount: record.document.tugouCanvas?.nodes.length??record.document.pages?.canvas.items.find(p=>p.id===record.document.pages.canvas.activeId)?.ref?.nodes.length??0 } : {}) });
       } catch { result.push({ id, name, error: '工程无法读取，请保留原文件并恢复备份' }); }
     }

@@ -37,8 +37,12 @@ export function PromptWorkbench({
   busy,
 }) {
   const [query, setQuery] = useState("");
+  const [kindFilter, setKindFilter] = useState("all");
+  const [copied, setCopied] = useState(false);
   const menu=useContextMenu(),[removing,setRemoving]=useState(null),[error,setError]=useState('');
   useUiView('prompts',{get:()=>({query}),restore:v=>setQuery(v.query)});
+  const moduleKinds=[...new Set(document.modules.map(m=>m.kind).filter(Boolean))];
+  const visibleModules=document.modules.filter((m) => (kindFilter==='all'||m.kind===kindFilter) && `${m.name} ${m.text}`.includes(query));
   const selectedId = activeId ?? document.modules[0]?.id,
     selected = document.modules.find((m) => m.id === selectedId),
     recipe = document.recipes.find(
@@ -69,10 +73,13 @@ export function PromptWorkbench({
           <IconButton label="新建模块" icon="add" onClick={add} />
         </PanelHeader>
         <SearchField label="搜索模块" value={query} onChange={setQuery} />
+        {moduleKinds.length>1&&<div className="module-kind-filters" role="group" aria-label="模块分类筛选">
+          <button type="button" aria-pressed={kindFilter==='all'} onClick={()=>setKindFilter('all')}>全部</button>
+          {moduleKinds.map(k=><button key={k} type="button" aria-pressed={kindFilter===k} onClick={()=>setKindFilter(k)}>{kinds[k]||k}</button>)}
+        </div>}
         <div className="module-items">
-          {query && !document.modules.some(m=>`${m.name} ${m.text}`.includes(query)) && <EmptyState compact icon="search" title="没有匹配的模块" description="试试其他关键词。" />}
-          {document.modules
-            .filter((m) => `${m.name} ${m.text}`.includes(query))
+          {(query||kindFilter!=='all') && !visibleModules.length && <EmptyState compact icon="search" title="没有匹配的模块" description="试试其他关键词或切换分类。" />}
+          {visibleModules
             .map((m) => (
               <PromptHoverPreview key={m.id} document={document} item={m} type="module">
               <Button
@@ -136,16 +143,8 @@ export function PromptWorkbench({
               <IconButton
                 label="删除模块"
                 icon="delete"
-                onClick={() => {
-                  if (
-                    confirm(
-                      "删除模块？已使用的引用将保留快照并标记来源已删除。",
-                    )
-                  ) {
-                    change(removeModule(document, selectedId));
-                    onSelect(null);
-                  }
-                }}
+                disabled={busy}
+                onClick={() => setRemoving(selected)}
               />
             </div>
             <div className="module-options">
@@ -185,7 +184,32 @@ export function PromptWorkbench({
                 onChange={(e) => update({ text: e.target.value })}
                 placeholder="描述这个模块的内容与约束…"
               />
-              <div className="editor-footer">{selected.text.length} 字</div>
+              <div className="editor-footer">
+                <span>{selected.text.length} 字</span>
+                <div className="editor-footer-actions">
+                  <Button
+                    icon={copied ? "check" : "copy"}
+                    disabled={!selected.text}
+                    onClick={async () => {
+                      try {
+                        await window.tugou.copyText(selected.text);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 1800);
+                      } catch (e) {
+                        setError(e.message);
+                      }
+                    }}
+                  >
+                    {copied ? "已复制" : "复制提示词"}
+                  </Button>
+                  <Button
+                    disabled={busy || !selected.text}
+                    onClick={() => update({ text: "" })}
+                  >
+                    清空
+                  </Button>
+                </div>
+              </div>
             </div>
             {recipe && (
               <details className="complete-prompt">

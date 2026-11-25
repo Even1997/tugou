@@ -49,7 +49,7 @@
 .composition-editor .layer-workspace { display:contents; }
 .composition-editor .layer-stage { grid-column:1;grid-row:4;background:var(--bg);min-height:0; }
 .composition-editor .layer-sidebar { grid-column:-2/-1;grid-row:2/5;width:auto;min-height:0;background:var(--panel);overflow:hidden; }
-.composition-editor .layer-sidebar > .inspector-tabs { height:44px;min-height:44px;padding:0 14px;display:flex;align-items:stretch;gap:22px;border-bottom:1px solid var(--line); }
+.composition-editor .layer-sidebar > .inspector-tabs { height:44px;min-height:44px;margin-bottom:0;padding:0 14px;display:flex;align-items:stretch;justify-content:flex-start;gap:22px;border-bottom:1px solid var(--line); }
 .composition-editor .inspector-tabs > button,.composition-layer-heading > button:not(.icon-button) { padding:0;height:auto;font-size:12px;color:var(--muted);border-radius:0;position:relative;background:transparent; }
 .composition-editor .inspector-tabs > button[aria-pressed=true],.composition-layer-heading > button[aria-pressed=true] { color:var(--text);font-weight:600; }
 .composition-editor .inspector-tabs > button[aria-pressed=true]::after,.composition-layer-heading > button[aria-pressed=true]::after { content:'';position:absolute;height:2px;background:var(--accent);bottom:0;left:0;right:0; }
@@ -291,21 +291,25 @@
 .composition-editor .composition-command-tools > button { font-size:12px; }
 .composition-editor .composition-primary-tools > button,.composition-editor .composition-primary-tools summary { border-radius:6px; }
 .composition-editor .composition-primary-tools:focus-visible { outline:2px solid var(--accent);outline-offset:-2px; }
-.composition-editor .layer-property-heading,.composition-editor .layer-sidebar > .inspector-tabs,.composition-editor .composition-layer-heading { padding-inline:14px;border-color:var(--editor-line); }
-.composition-editor .layer-property-heading strong { font-size:14px;font-weight:600; }
-.composition-editor .inspector-tabs > button,.composition-editor .composition-layer-heading > button:not(.icon-button) { font-size:13px; }
-.composition-editor .inspector-tabs > button[aria-pressed=true],.composition-editor .composition-layer-heading > button[aria-pressed=true] { color:var(--accent); }
+.composition-editor .layer-property-heading,.composition-editor .layer-sidebar > .inspector-tabs,.composition-editor .composition-layer-heading { padding-inline:12px;border-color:var(--editor-line); }
+.composition-editor .layer-sidebar > .inspector-tabs,.composition-editor .composition-layer-heading { align-items:center;gap:4px;height:40px;min-height:40px; }
+.composition-editor .inspector-tabs > button,.composition-editor .composition-layer-heading > button:not(.icon-button) { height:26px;padding:0 10px;border-radius:6px;font-size:12px;color:var(--muted); }
+.composition-editor .inspector-tabs > button:hover:not([aria-pressed=true]),.composition-editor .composition-layer-heading > button:not(.icon-button):hover:not([aria-pressed=true]) { background:var(--hover);color:var(--text); }
+.composition-editor .inspector-tabs > button[aria-pressed=true],.composition-editor .composition-layer-heading > button[aria-pressed=true] { background:var(--accent-bg);color:var(--accent);font-weight:600; }
+.composition-editor .inspector-tabs > button[aria-pressed=true]::after,.composition-editor .composition-layer-heading > button[aria-pressed=true]::after { display:none; }
+.composition-editor .layer-property-heading strong { font-size:13.5px;font-weight:600; }
 .composition-editor .layer-dock-inspector { flex-basis:200px; }
-.composition-editor .inspector-adjustments,.composition-editor .inspector-navigation { padding:14px; }
-.composition-editor .inspector-caption { font-size:12px;line-height:1.6;margin-bottom:4px; }
+.composition-editor .inspector-adjustments,.composition-editor .inspector-navigation { padding:12px; }
+.composition-editor .inspector-caption { font-size:11.5px;line-height:1.55;margin-bottom:4px; }
 .composition-editor .adjustment-grid { margin-top:10px;gap:6px; }
-.composition-editor .adjustment-grid > button { height:30px;padding:0 10px;font-size:12px;border-radius:6px;background:var(--surface);border:1px solid var(--panel-line); }
-.composition-editor .adjustment-grid > button:not(:disabled):hover { background:var(--hover);border-color:var(--line-strong);color:var(--accent); }
+.composition-editor .adjustment-grid > button { height:32px;padding:0 10px;font-size:12px;font-weight:500;color:var(--text);border-radius:7px;background:var(--shell);border:1px solid var(--panel-line);box-shadow:var(--shadow-card);transition:border-color 120ms var(--ease-ui),background-color 120ms var(--ease-ui),color 120ms var(--ease-ui); }
+.composition-editor .adjustment-grid > button:not(:disabled):hover { background:var(--panel);border-color:var(--accent-line);color:var(--accent); }
 .composition-editor .adjustment-grid > button .ant-btn-icon { display:none; }
 .composition-editor .layer-filter-row { padding:4px 12px 6px;font-size:12px;border-bottom:0; }
 .composition-editor .layer-filter-row .studio-select { font-size:12px; }
-.composition-editor .layer-list { padding:4px 8px 8px; }
-.composition-editor .layer-row { min-height:42px;border-radius:6px; }
+.composition-editor .layer-list { padding:4px 8px 8px;scrollbar-gutter:stable; }
+.composition-editor .layer-row { position:relative;min-height:40px;border-radius:7px;transition:background-color 110ms var(--ease-ui); }
+.composition-editor .layer-row.selected::before { content:'';position:absolute;left:2px;top:9px;bottom:9px;width:2.5px;border-radius:2px;background:var(--accent); }
 .composition-editor .layer-row button { font-size:12px; }
 .composition-editor .layer-row[data-artboard=true] { min-height:38px;margin-top:4px; }
 .layer-virtual-rows { position:relative; }
@@ -326,5 +330,24 @@
 .composition-editor .layer-tool-settings > summary { padding:12px 14px; }
 .composition-editor .board-actions { padding-top:8px;border-top:1px solid var(--editor-line); }
 .composition-editor .board-management { padding-top:0;border-top:0; }
-.composition-editor .layer-stage-hint { font-size:11px;color:var(--muted);padding:3px 9px;border:1px solid var(--panel-line);border-radius:6px;background:var(--panel); }
+.composition-editor .layer-stage-hint { top:28px;left:28px;bottom:auto;font-size:11px;color:var(--muted);padding:3px 9px;border:1px solid var(--panel-line);border-radius:6px;background:var(--panel); }
 @media(max-width:1150px) { .composition-editor { --inspector-width:220px; } }
+
+/* Floating bottom tool dock centered over the layer stage (Figma UI3 style). */
+.composition-editor { grid-template-columns:minmax(0,1fr) var(--inspector-width); }
+.composition-editor[data-properties-open] { grid-template-columns:minmax(0,1fr) 260px var(--inspector-width); }
+.composition-editor > .composition-tools { padding:0 12px; }
+.composition-editor .layer-stage { grid-column:1;grid-row:2; }
+.composition-editor .layer-sidebar { grid-column:-2/-1;grid-row:2; }
+.composition-editor .layer-property-sidebar { grid-column:2;grid-row:2; }
+.composition-tool-rail { grid-column:1;grid-row:2;align-self:end;justify-self:center;margin-bottom:14px;flex-direction:row;max-width:calc(100% - 28px);padding:4px 6px;gap:2px;border:1px solid var(--line-strong);border-radius:12px;background:var(--panel);box-shadow:var(--shadow-popover);z-index:16; }
+.composition-tool-rail > .composition-primary-tools { flex-direction:row;align-items:center;gap:2px;padding:0 2px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none; }
+.composition-tool-rail > .composition-primary-tools::-webkit-scrollbar { display:none; }
+.composition-editor .composition-primary-tools > .ant-btn,.composition-editor .shape-picker > summary,.composition-editor .layer-menu > summary { width:34px;min-width:34px;height:34px;border-radius:7px; }
+.composition-editor .composition-tool-rail > .tool-rail-scroll { width:24px;height:32px; }
+.tool-rail-scroll-up .anticon { transform:rotate(90deg); }
+.composition-tool-rail > .tool-rail-scroll:not(.tool-rail-scroll-up) .anticon { transform:rotate(-90deg); }
+.tool-rail-divider { width:1px;height:20px;border:0;border-left:1px solid var(--line);margin:0 4px; }
+.composition-context { bottom:66px; }
+.composition-materials { top:46px;bottom:68px; }
+@media(max-width:1150px) { .composition-editor[data-properties-open] { grid-template-columns:minmax(0,1fr) 248px var(--inspector-width); } }

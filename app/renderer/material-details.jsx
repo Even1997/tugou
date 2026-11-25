@@ -64,126 +64,128 @@ export function MaterialDetails({
       </FormDialog>
     );
   return (
-    <FormDialog title="素材详情" close={close} width={800}>
-      <div
-        className="dialog-footer"
-        style={{ marginTop: 0, marginBottom: 16, flexWrap: "wrap" }}
-      >
-        <Button iconOnly
-          icon="copy"
-          disabled={!details?.prompt}
-          onClick={() =>
-            run(async () => {
-              await copyAssetPrompt(details);
-              setNotice("提示词已复制");
-            })
-          }
-        >
-          复制提示词
-        </Button>
-        <Button iconOnly icon="analyze"
-          disabled={asset.kind&&asset.kind!=='image'}
-          onClick={() => {
-            close();
-            analyzeImage(asset.id, nodeId);
-          }}
-        >
-          图片反推
-        </Button>
-        <Button iconOnly
-          icon="tools"
-          disabled={asset.kind&&asset.kind!=='image'}
-          onClick={() => {
-            close();
-            editImages([asset.id]);
-          }}
-        >
-          处理图片
-        </Button>
-        <ToolPopover label="素材操作">
-          <div className="image-tool-detail">
-            <Button
-              icon="export"
-              onClick={() => run(async() => {if(await window.tugou.exportAsset(projectId,document,asset.id))setNotice(asset.kind&&asset.kind!=='image'?'已导出原文件':'已保存图片');})}
+    <FormDialog title="素材详情" className="material-details-dialog" close={close} width={920}>
+      <div className="material-details-layout">
+        <div className="material-details-stage">
+          <MediaPreview asset={asset} full
+            className="material-preview"
+            src={originalUrl(asset)}
+            alt={asset.name}
+          />
+          {asset.width && asset.height && (
+            <span className="material-details-dims">{asset.width} × {asset.height} px</span>
+          )}
+        </div>
+        <div className="material-details-side">
+          <div className="material-details-actions">
+            <Button iconOnly
+              icon="copy"
+              disabled={!details?.prompt}
+              onClick={() =>
+                run(async () => {
+                  await copyAssetPrompt(details);
+                  setNotice("提示词已复制");
+                })
+              }
             >
-              {asset.kind&&asset.kind!=='image'?'导出原文件':'保存图片'}
+              复制提示词
             </Button>
-            <Button
+            <Button iconOnly icon="analyze"
               disabled={asset.kind&&asset.kind!=='image'}
               onClick={() => {
-                addToLayers(asset);
                 close();
+                analyzeImage(asset.id, nodeId);
               }}
             >
-              加入图层
+              图片反推
             </Button>
-            <Button
+            <Button iconOnly
+              icon="tools"
+              disabled={asset.kind&&asset.kind!=='image'}
               onClick={() => {
-                addToCanvas("asset", asset.id);
                 close();
+                editImages([asset.id]);
               }}
             >
-              加入画布
+              处理图片
             </Button>
+            <ToolPopover label="素材操作">
+              <div className="image-tool-detail">
+                <Button
+                  icon="export"
+                  onClick={() => run(async() => {if(await window.tugou.exportAsset(projectId,document,asset.id))setNotice(asset.kind&&asset.kind!=='image'?'已导出原文件':'已保存图片');})}
+                >
+                  {asset.kind&&asset.kind!=='image'?'导出原文件':'保存图片'}
+                </Button>
+                <Button
+                  disabled={asset.kind&&asset.kind!=='image'}
+                  onClick={() => {
+                    addToLayers(asset);
+                    close();
+                  }}
+                >
+                  加入图层
+                </Button>
+                <Button
+                  onClick={() => {
+                    addToCanvas("asset", asset.id);
+                    close();
+                  }}
+                >
+                  加入画布
+                </Button>
+              </div>
+            </ToolPopover>
           </div>
-        </ToolPopover>
-        <span>
-          {asset.width} × {asset.height} px
-        </span>
+          {error && (
+            <p role="alert" className="message error">
+              {error}
+            </p>
+          )}
+          {notice && (
+            <p role="status" className="message">
+              {notice}
+            </p>
+          )}
+          <label>
+            名称
+            <Input
+              aria-label="素材名称"
+              value={asset.name}
+              onChange={(e) =>
+                change({
+                  ...document,
+                  assets: document.assets.map((a) =>
+                    a.id === asset.id ? { ...a, name: e.target.value } : a,
+                  ),
+                })
+              }
+            />
+          </label>
+          <AssetTime asset={asset}/>
+          <label className="material-details-prompt">
+            {details?.label || "生成提示词"}
+            <TextArea
+              aria-label="素材提示词"
+              readOnly
+              rows={7}
+              value={details?.prompt || ""}
+              placeholder={details?.reason || (error ? "读取失败" : "正在读取…")}
+            />
+          </label>
+          {details?.model && (
+            <p className="muted">
+              {details.model}
+              {details.requestedSize ? ` · 请求尺寸 ${details.requestedSize}` : ""}
+            </p>
+          )}
+          {details?.label?.startsWith("来源素材") && (
+            <p className="muted">
+              来源：{details.sourceName}。后续处理不改变这条原始记录。
+            </p>
+          )}
+        </div>
       </div>
-      {error && (
-        <p role="alert" className="message error">
-          {error}
-        </p>
-      )}
-      {notice && (
-        <p role="status" className="message">
-          {notice}
-        </p>
-      )}
-      <MediaPreview asset={asset} full
-        className="material-preview"
-        style={{ maxHeight: "30vh" }}
-        src={originalUrl(asset)}
-        alt={asset.name}
-      />
-      <label>
-        名称
-        <Input
-          aria-label="素材名称"
-          value={asset.name}
-          onChange={(e) =>
-            change({
-              ...document,
-              assets: document.assets.map((a) =>
-                a.id === asset.id ? { ...a, name: e.target.value } : a,
-              ),
-            })
-          }
-        />
-      </label>
-      <AssetTime asset={asset}/>
-      <label>
-        {details?.label || "生成提示词"}
-        <TextArea
-          aria-label="素材提示词"
-          readOnly
-          rows={5}
-          value={details?.prompt || ""}
-          placeholder={details?.reason || (error ? "读取失败" : "正在读取…")}
-        />
-      </label>
-      {details?.model && (
-        <p className="muted">
-          {details.model}
-          {details.requestedSize ? ` · 请求尺寸 ${details.requestedSize}` : ""}
-        </p>
-      )}
-      {details?.label?.startsWith("来源素材") && (
-        <p className="muted">
-          来源：{details.sourceName}。后续处理不改变这条原始记录。
-        </p>
-      )}
     </FormDialog>
   );
 }

@@ -127,7 +127,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
   useEffect(()=>{
     const rail=toolRail.current;
     const update=()=>{
-      const up=rail.scrollTop>1,down=rail.scrollTop+rail.clientHeight<rail.scrollHeight-1;
+      const up=rail.scrollLeft>1,down=rail.scrollLeft+rail.clientWidth<rail.scrollWidth-1;
       setRailEdges(previous=>previous.up===up&&previous.down===down?previous:{up,down});
       const focused=window.document.activeElement;
       if(focused?.parentElement===rail.parentElement){
@@ -141,7 +141,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     rail.addEventListener('scroll',update,{passive:true});update();
     return()=>{observer.disconnect();rail.removeEventListener('scroll',update);};
   },[!!workspace]);
-  const scrollTools=direction=>toolRail.current.scrollBy({top:direction*Math.max(120,toolRail.current.clientHeight*.6),behavior:preferences.value.reduceMotion?'auto':'smooth'});
+  const scrollTools=direction=>toolRail.current.scrollBy({left:direction*Math.max(140,toolRail.current.clientWidth*.6),behavior:preferences.value.reduceMotion?'auto':'smooth'});
   const scrollbarTimer=useRef(null);
   const revealScrollbar=event=>{
     const rail=event.currentTarget;
@@ -247,9 +247,9 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     const selector='.composition-primary-tools .layer-menu[open],.composition-primary-tools .shape-picker[open]';
     const position=()=>window.document.querySelectorAll(selector).forEach(menu=>{
       const trigger=menu.querySelector('summary'),body=menu.querySelector('.layer-menu-body,.shape-picker-menu'),rect=trigger.getBoundingClientRect(),rail=menu.closest('nav').getBoundingClientRect();
-      if(rect.bottom<=rail.top||rect.top>=rail.bottom){menu.open=false;return;}
-      body.style.left=`${Math.min(rail.right+6,innerWidth-body.offsetWidth-8)}px`;
-      body.style.top=`${Math.max(8,Math.min(rect.top,innerHeight-body.offsetHeight-8))}px`;
+      if(rect.right<=rail.left||rect.left>=rail.right){menu.open=false;return;}
+      body.style.left=`${Math.max(8,Math.min(rect.left+rect.width/2-body.offsetWidth/2,innerWidth-body.offsetWidth-8))}px`;
+      body.style.top=`${Math.max(8,rail.top-body.offsetHeight-10)}px`;
     });
     const close=e=>{
       if(e.target.closest('.ant-select-dropdown,.ant-popover'))return;
@@ -1761,7 +1761,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
     <div className="layer-editor composition-editor" data-properties-open={propertiesOpen||undefined} onContextMenu={e=>{const row=e.target.closest('[data-tree-id]');if(row&&workspace&&rightClickAllowed())workspace.contextMenu(e,row.dataset.treeId,gifTime);}} data-dev-update-blocked={editingText||painting.busy||selectionBusy||merging||imageImport.importing||exportState||draft||pathDraft||motion||shapeDraft||polygon.length||tool!=='select'?'请先完成图层编辑，并切换到移动工具后更新':undefined}>
 
       <div className="composition-tool-rail">
-        <Button aria-label="向上滚动工具" title="向上滚动工具" icon="collapse" className="tool-rail-scroll tool-rail-scroll-up" data-rail-direction="up" aria-hidden={!railEdges.up} disabled={!railEdges.up} tabIndex={railEdges.up?0:-1} style={{visibility:railEdges.up?'visible':'hidden'}} onClick={()=>scrollTools(-1)} />
+        <Button aria-label="向左滚动工具" title="向左滚动工具" icon="collapse" className="tool-rail-scroll tool-rail-scroll-up" data-rail-direction="up" aria-hidden={!railEdges.up} disabled={!railEdges.up} tabIndex={railEdges.up?0:-1} style={{visibility:railEdges.up?'visible':'hidden'}} onClick={()=>scrollTools(-1)} />
         <nav ref={toolRail} tabIndex={-1} className="composition-primary-tools" aria-label="图层工具" onMouseEnter={revealScrollbar} onScroll={revealScrollbar} onFocus={revealScrollbar} onClickCapture={e=>{const button=e.target.closest('button');if(button&&!['抓手','缩放'].includes(button.getAttribute('aria-label')))setPropertiesOpen(true)}}>
           <Button iconOnly icon="action" aria-pressed={tool==='select'&&!boardTool} onClick={()=>{setTool('select');setBoardTool(false)}}>移动</Button>
           {workspace&&<Button iconOnly icon="layout" aria-pressed={boardTool&&tool==='select'} onClick={()=>{setSelected([]);setTool('select');setBoardTool(true);setPropertiesOpen(true)}}>画板</Button>}
@@ -2122,7 +2122,7 @@ export function LayerEditor({ projectId, document, change, disabled, selected, s
             </Menu>
             <Menu name="导出选项" icon="export"><label className="check"><input type="checkbox" checked={transparent} onChange={e=>setTransparent(e.target.checked)}/>透明导出</label></Menu>
         </nav>
-        <Button aria-label="向下滚动工具" title="向下滚动工具" icon="collapse" className="tool-rail-scroll" data-rail-direction="down" aria-hidden={!railEdges.down} disabled={!railEdges.down} tabIndex={railEdges.down?0:-1} style={{visibility:railEdges.down?'visible':'hidden'}} onClick={()=>scrollTools(1)} />
+        <Button aria-label="向右滚动工具" title="向右滚动工具" icon="collapse" className="tool-rail-scroll" data-rail-direction="down" aria-hidden={!railEdges.down} disabled={!railEdges.down} tabIndex={railEdges.down?0:-1} style={{visibility:railEdges.down?'visible':'hidden'}} onClick={()=>scrollTools(1)} />
       </div>
       <div className="composition-tools">
       <div className="composition-breadcrumb">

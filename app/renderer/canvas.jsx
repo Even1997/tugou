@@ -16,6 +16,7 @@ import {
 } from "./components.jsx";
 import React, {
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -27,6 +28,9 @@ import {
   ReactFlow,
   Background,
   MiniMap,
+  BaseEdge,
+  EdgeLabelRenderer,
+  getBezierPath,
   applyNodeChanges,
   applyEdgeChanges,
   ReactFlowProvider,
@@ -88,6 +92,28 @@ const nodeTypes = {
   imageTool: CanvasToolNode,
   ...Object.fromEntries(workflowTypes.map(type=>[type,ContentNode])),
 };
+function CanvasEdge({id,target,sourceX,sourceY,targetX,targetY,sourcePosition,targetPosition,selected,data,style,markerEnd}){
+  const {disconnectEdge,canDisconnectEdge,setHoveredEdge}=useContext(CanvasContext);
+  const [edgePath,labelX,labelY]=getBezierPath({sourceX,sourceY,sourcePosition,targetX,targetY,targetPosition});
+  const visible=(selected||data?.hovered)&&canDisconnectEdge(target);
+  return <>
+    <BaseEdge id={id} path={edgePath} style={style} markerEnd={markerEnd} interactionWidth={24}/>
+    {visible&&<EdgeLabelRenderer>
+      <button
+        type="button"
+        className="canvas-edge-disconnect nodrag nopan"
+        style={{transform:`translate(-50%,-50%) translate(${labelX}px,${labelY}px)`}}
+        aria-label="断开连接"
+        title="断开连接"
+        onMouseEnter={()=>setHoveredEdge(id)}
+        onMouseLeave={()=>setHoveredEdge(cur=>cur===id?null:cur)}
+        onPointerDown={e=>e.stopPropagation()}
+        onClick={e=>{e.stopPropagation();setHoveredEdge(null);disconnectEdge(id);}}
+      >×</button>
+    </EdgeLabelRenderer>}
+  </>;
+}
+const edgeTypes={default:CanvasEdge};
 const consoleTypes=new Set(['recipe','imageTool',...workflowTypes]);
 
 function CanvasWorkspace({
@@ -110,14 +136,15 @@ function CanvasWorkspace({
   const panHeld=useKeyPress(panKey,{target:window,actInsideInputWithModifier:false});
   const [nodes, setNodes] = useState(graph.nodes);
   const [edges, setEdges] = useState(graph.edges);
+  const [hoveredEdge, setHoveredEdge] = useState(null);
   const selectedIds=useMemo(()=>new Set(nodes.filter(n=>n.selected).map(n=>n.id)),[nodes]);
   const nodeTypesById=useMemo(()=>new Map(nodes.map(n=>[n.id,n.type])),[nodes]);
   const displayedEdges=useMemo(()=>edges.map(edge=>{
     const isInput=consoleTypes.has(nodeTypesById.get(edge.target));
     const isConnected=isInput?selectedIds.has(edge.source)||selectedIds.has(edge.target):selectedIds.has(edge.target);
-    const className=[isInput&&'is-input-wire',isConnected&&'is-connected'].filter(Boolean).join(' ')||undefined;
-    return {...edge,type:'default',interactionWidth:24,className};
-  }),[edges,selectedIds,nodeTypesById]);
+    const className=[isInput&&'is-input-wire',isConnected&&'is-connected',edge.id===hoveredEdge&&'is-hovered'].filter(Boolean).join(' ')||undefined;
+    return {...edge,type:'default',interactionWidth:24,className,data:{...edge.data,hovered:edge.id===hoveredEdge}};
+  }),[edges,selectedIds,nodeTypesById,hoveredEdge]);
   const [palette, setPalette] = useState("node"),
     [query, setQuery] = useState(""),
     [minimapOverride, setMinimap] = useState(null),
@@ -137,6 +164,12 @@ function CanvasWorkspace({
     [],
   );
   const [message, setMessage] = useState("");
+  const [inspectorHidden, setInspectorHidden] = useState(false);
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => setMessage(""), 3200);
+    return () => clearTimeout(timer);
+  }, [message]);
   const saveImage=useCallback(async assetId=>{
     try{if(await window.tugou.exportAsset(projectId,current.current.document,assetId))setMessage('已保存图片');}
     catch(error){setMessage(error.message);}
@@ -576,7 +609,50 @@ function CanvasWorkspace({
       duration:reduced?0:420,
     });
   },[flow,preferences.value.reduceMotion]);
-  const nodeContext=useMemo(()=>({document:document.tugouCanvas?document:{...document,tugouCanvas:graph},saveImage,paintImage:(nodeId,assetId)=>{if(disabled)return;const source=document.assets.find(a=>a.id===assetId),node=graph.nodes.find(n=>n.id===nodeId);if(source&&node)setPaintSession({nodeId,source,document,mask:node.data.localEdit?.assetId===assetId?document.assets.find(a=>a.id===node.data.localEdit.maskId):null});},resize,previewResize,disabled,tasks,patch:patchById,runNode,cancelNode,submittingIds,connection,refreshConnection,run,importNodeImage,openNodeScene:setSceneNode,showDetails,openConnection,openRecipe,nodeErrors,locateNode,moveInput,removeInput,replaceImage:(nodeId,assetId)=>setReplacement({nodeId,assetId}),updateReference:id=>commit(current.current.nodes.map(n=>n.id===id?refreshNode(current.current.document,n):n),current.current.edges),sizedIds:new Set(sizedKey?sizedKey.split('|'):[])}),[document,disabled,tasks,submittingIds,connection,nodeErrors,sizedKey,resize,previewResize,showDetails,openConnection,openRecipe,projectId,locateNode,saveImage]);
+  const disconnectEdge=useCallback(edgeId=>{
+    const g=current.current,edge=g.edges.find(e=>e.id===edgeId);
+    if(!edge||disabled||pendingSubmissions.current.has(edge.target)||tasks.some(t=>t.context?.nodeId===edge.target&&['queued','running'].includes(t.status)))return;
+    commitRef.current(g.nodes,g.edges.filter(e=>e.id!==edgeId));
+  },[disabled,tasks]);
+  const canDisconnectEdge=useCallback(targetId=>!disabled&&!pendingSubmissions.current.has(targetId)&&!tasks.some(t=>t.context?.nodeId===targetId&&['queued','running'].includes(t.status)),[disabled,tasks]);
+  const nodeContext=useMemo(()=>({document:document.tugouCanvas?document:{...document,tugouCanvas:graph},saveImage,paintImage:(nodeId,assetId)=>{if(disabled)return;const source=document.assets.find(a=>a.id===assetId),node=graph.nodes.find(n=>n.id===nodeId);if(source&&node)setPaintSession({nodeId,source,document,mask:node.data.localEdit?.assetId===assetId?document.assets.find(a=>a.id===node.data.localEdit.maskId):null});},resize,previewResize,disabled,tasks,patch:patchById,runNode,cancelNode,submittingIds,connection,refreshConnection,run,importNodeImage,openNodeScene:setSceneNode,showDetails,openConnection,openRecipe,nodeErrors,locateNode,moveInput,removeInput,disconnectEdge,canDisconnectEdge,setHoveredEdge,replaceImage:(nodeId,assetId)=>setReplacement({nodeId,assetId}),updateReference:id=>commit(current.current.nodes.map(n=>n.id===id?refreshNode(current.current.document,n):n),current.current.edges),sizedIds:new Set(sizedKey?sizedKey.split('|'):[])}),[document,disabled,tasks,submittingIds,connection,nodeErrors,sizedKey,resize,previewResize,showDetails,openConnection,openRecipe,projectId,locateNode,saveImage,disconnectEdge,canDisconnectEdge]);
+  useEffect(() => {
+    const onPaste = (event) => {
+      if (disabled || event.target?.closest?.('input,textarea,select,[contenteditable]') || window.document.querySelector('[role="dialog"]')) return;
+      const files = Array.from(event.clipboardData?.items || [])
+        .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+        .map((item) => item.getAsFile())
+        .filter(Boolean);
+      if (files.length) {
+        event.preventDefault();
+        run(async () => {
+          const assets = [];
+          for (let i = 0; i < files.length; i++) {
+            const bytes = new Uint8Array(await files[i].arrayBuffer());
+            const label = files[i].name && files[i].name !== 'image.png' ? files[i].name.replace(/\.[^.]+$/, '') : `剪贴板图片${files.length > 1 ? ` ${i + 1}` : ''}`;
+            assets.push(await window.tugou.storeRaster(bytes, label));
+          }
+          if (!mounted.current || !assets.length) return;
+          const bounds = holder.current?.getBoundingClientRect();
+          const origin = bounds ? flow.screenToFlowPosition({ x: bounds.x + bounds.width / 2 - 140, y: bounds.y + bounds.height / 2 - 110 }) : { x: 120, y: 120 };
+          const source = current.current.document;
+          const next = { ...source, assets: [...source.assets, ...assets] };
+          const slots = batchAssetGrid(assets, origin.x, origin.y, 3);
+          const added = assets.map((a, i) => createNode(next, 'asset', a.id, slots[i]));
+          selectAfterAdd.current = added[0].id;
+          commit([...current.current.nodes, ...added], current.current.edges, { source: next });
+          setMessage(`已粘贴 ${assets.length} 张图片到画布`);
+        });
+        return;
+      }
+      if (clipboard?.nodes?.length) {
+        event.preventDefault();
+        paste();
+      }
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  });
   const openContext=(event,type,id)=>{
     if(disabled||event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
     setCreateMenu(null);pendingLink.current=null;setInsertPoint(null);
@@ -654,7 +730,7 @@ function CanvasWorkspace({
               copy();
               if (event.key.toLowerCase() === "x") remove();
             }
-            if (event.key.toLowerCase() === "v") {
+            if (event.key.toLowerCase() === "v" && !event.isTrusted) {
               event.preventDefault();
               paste();
             }
@@ -669,31 +745,6 @@ function CanvasWorkspace({
           createPortal(
             <>
               <span className="toolbar-divider" />
-              <Button
-                iconOnly icon="generate"
-                className="primary"
-                disabled={
-                  disabled ||
-                  submittingIds.has(node?.id) ||
-                  (!['recipe','imageTool'].includes(node?.type) && (!workflowTypes.includes(node?.type)||node?.type==='director')) ||
-                  Boolean(activeTask) ||
-                  Boolean(compiled?.error)
-                }
-                onClick={()=>runNode(node.id)}
-              >
-                {activeTask
-                  ? activeTask.status === "queued"
-                    ? "等待中"
-                    : node?.type==='imageTool'?'处理中':"生成中"
-                  : submittingIds.has(node?.id)
-                    ? "提交中"
-                  : node?.type==='imageTool'?'开始处理':node?.type==='config'?'开始生成':node?.type==='textgen'?'生成文本':"生成图片"}
-              </Button>
-              {activeTask&&<Button iconOnly icon="stop" onClick={()=>run(async()=>{await window.tugou.cancelTask(activeTask.id);await refreshTasks();})}>{node?.type==='imageTool'?'取消处理':'取消生成'}</Button>}
-              {node?.type==='director'&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>打开导演台</Button>}
-              {selectedMedia&&<><Button iconOnly icon="tools" onClick={()=>setMediaTool({asset:selectedMedia,nodeId:node.id})}>媒体工具</Button><Button iconOnly icon="export" onClick={()=>run(()=>window.tugou.exportAsset(projectId,current.current.document,selectedMedia.id))}>导出媒体</Button></>}
-              {node?.type==='panorama'&&node.data.outputAssetId&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>环视全景</Button>}
-              {node?.type==='asset'&&document.assets.find(a=>a.id===node.data.assetId)?.projection&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>环视全景</Button>}
               <Button iconOnly icon="text" onClick={() => add("text")}>
                 文字
               </Button>
@@ -701,57 +752,10 @@ function CanvasWorkspace({
               <Button iconOnly icon="import" loading={imageImport.importing} aria-label={imageImport.importing?"导入中":"导入图片"} disabled={imageImport.importing||disabled} onClick={imageImport.open}>
                 {imageImport.importing?'导入中':'图片'}
               </Button>
-              {selectedImages.length > 0 && <>
-                {selectedImages.length>1&&<Button icon="assets" onClick={()=>setComparison(selectedImages.map(n=>document.assets.find(a=>a.id===(n.data.assetId||n.data.outputAssetId))))}>多图对比</Button>}
-                <Button iconOnly icon="replace" disabled={disabled||!selectedImage} onClick={()=>setReplacement({nodeId:node.id,assetId:selectedImage.id})}>替换图片</Button>
-                <Button iconOnly icon="crop" disabled={disabled} onClick={()=>editSelectedImages("crop")}>裁剪</Button>
-                <Button iconOnly icon="zoomIn" disabled={disabled} onClick={()=>editSelectedImages("resize")}>放大</Button>
-                {selectedImage&&<Button iconOnly icon="export" onClick={()=>saveImage(selectedImage.id)}>保存图片</Button>}
-                {selectedImage&&<DisplayControls node={node} resize={resize} patch={patchNode} disabled={disabled}/>}
-                <ToolPopover label="图片工具" icon="tools">
-                  <div className="image-tool-detail">
-                    <Button disabled={disabled||!selectedImage||Boolean(activeTask)} onClick={()=>setAngleSource({nodeId:node.id,asset:selectedImage})}>AI 多角度</Button>
-                    <Button disabled={disabled||!selectedImage} onClick={()=>showDetails(selectedImage.id,node.id)}>查看原图</Button>
-                    <Button disabled={disabled||!selectedImage} onClick={async()=>{
-                      try{await copyAssetPrompt(await window.tugou.assetDetails(projectId,current.current.document,selectedImage.id,node.id));if(mounted.current)setMessage("提示词已复制");}
-                      catch(e){if(mounted.current)setMessage(e.message);}
-                    }}>复制提示词</Button>
-                    <Button disabled={disabled||!selectedImage} onClick={()=>analyzeImage(selectedImage.id,node.id)}>图片反推</Button>
-                    <Button disabled={disabled} onClick={()=>editSelectedImages("upscale")}>AI 超分辨率</Button>
-                    <Button disabled={disabled} onClick={()=>editSelectedImages("cutout")}>主体抠图</Button>
-                    <Button disabled={disabled} onClick={()=>editSelectedImages("split")}>切图</Button>
-                    <Button disabled={disabled} onClick={()=>editSelectedImages("resize")}>全部图像工具</Button>
-                  </div>
-                </ToolPopover>
-              </>}
-              <Button iconOnly icon="copy" disabled={!selected.length} onClick={copy}>
-                复制
-              </Button>
-              <ToolPopover label="分组" icon="layers">
-                <Button disabled={disabled||!canGroup} title={formatBinding(bindings(window.tugou.platform,preferences.value.shortcuts).group,window.tugou.platform)} onClick={createGroup}>创建分组</Button>
-                <Button disabled={disabled||node?.type!=='group'} title={formatBinding(bindings(window.tugou.platform,preferences.value.shortcuts).ungroup,window.tugou.platform)} onClick={dissolveGroup}>解散分组</Button>
-              </ToolPopover>
-              <ToolPopover label="整理选中节点" icon="align" className="canvas-arrange-menu">
-                <small className="muted">{!layoutSameParent?'请选择同组节点，或选择整个组合':layoutNodes.length<2?'选择至少两个节点后整理':`整理 ${layoutNodes.length} 个节点 / 组合`}</small>
-                {[
-                  ['flow','按连接整理',2],['left','左对齐',2],['top','顶部对齐',2],
-                  ['horizontal','水平等间距',3],['vertical','垂直等间距',3],['grid','按行整理',2],
-                ].map(([mode,label,min])=><Button key={mode} disabled={disabled||!layoutSameParent||layoutNodes.length<min} onClick={()=>arrange(mode)}>{label}</Button>)}
-              </ToolPopover>
-              <Button iconOnly icon="paste" onClick={paste} disabled={!clipboard}>
-                粘贴
-              </Button>
-              <Button iconOnly icon="delete"
-                disabled={
-                  !selected.length && !edges.some((edge) => edge.selected)
-                }
-                onClick={remove}
-              >
-                删除所选
-              </Button>
+              {clipboard&&<Button iconOnly icon="paste" onClick={paste}>粘贴</Button>}
               <span className="toolbar-divider" />
               <Button iconOnly icon="zoomOut" aria-label="缩小画布" onClick={() => flow.zoomOut()}>−</Button>
-              <span>{Math.round(zoom * 100)}%</span>
+              <span className="canvas-dock-zoom">{Math.round(zoom * 100)}%</span>
               <Button iconOnly icon="zoomIn" aria-label="放大画布" onClick={() => flow.zoomIn()}>＋</Button>
               <Button iconOnly
                 icon="fit"
@@ -907,6 +911,8 @@ function CanvasWorkspace({
               onPaneContextMenu={event=>openContext(event,'pane')}
               onNodeContextMenu={(event,n)=>openContext(event,'node',n.id)}
               onEdgeContextMenu={(event,edge)=>openContext(event,'edge',edge.id)}
+              onEdgeMouseEnter={(_,edge)=>setHoveredEdge(edge.id)}
+              onEdgeMouseLeave={(_,edge)=>setHoveredEdge(cur=>cur===edge.id?null:cur)}
               onSelectionContextMenu={(event,nodes)=>{if(nodes.length)openContext(event,'node',nodes[0].id);}}
               onNodeDoubleClick={(event,n)=>{
                 const el=event.target instanceof Element?event.target:event.target?.parentElement;
@@ -923,6 +929,7 @@ function CanvasWorkspace({
               nodes={nodes}
               edges={displayedEdges}
               nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
               defaultViewport={graph.viewport}
               minZoom={0.15}
               maxZoom={3}
@@ -1007,6 +1014,67 @@ function CanvasWorkspace({
                 <MiniMap pannable zoomable nodeColor="var(--accent)" />
               )}
             </ReactFlow>}
+            {flowReady&&!nodes.length&&<div className="canvas-empty-guide" aria-hidden="true">
+              <strong>无限画布</strong>
+              <div className="canvas-empty-hints">
+                <span><kbd>双击空白处</kbd> 添加节点</span>
+                <span><kbd>拖入图片</kbd> 创建参考图</span>
+                <span><kbd>Tab</kbd> 快速搜索节点</span>
+              </div>
+            </div>}
+            {(selected.length>0||edges.some(edge=>edge.selected))&&<div className="canvas-selection-bar" role="toolbar" aria-label="选中节点操作">
+              {selected.length>1&&<span className="canvas-selection-count">已选 {selected.length} 项</span>}
+              {(node&&(['recipe','imageTool'].includes(node.type)||(workflowTypes.includes(node.type)&&node.type!=='director')))&&<Button
+                primary
+                icon="generate"
+                disabled={disabled||submittingIds.has(node.id)||Boolean(activeTask)||Boolean(compiled?.error)}
+                onClick={()=>runNode(node.id)}
+              >
+                {activeTask?(activeTask.status==="queued"?"等待中":node.type==='imageTool'?'处理中':"生成中"):submittingIds.has(node.id)?"提交中":node.type==='imageTool'?'开始处理':node.type==='config'?'开始生成':node.type==='textgen'?'生成文本':"生成图片"}
+              </Button>}
+              {activeTask&&<Button iconOnly icon="stop" onClick={()=>run(async()=>{await window.tugou.cancelTask(activeTask.id);await refreshTasks();})}>{node?.type==='imageTool'?'取消处理':'取消生成'}</Button>}
+              {node?.type==='director'&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>打开导演台</Button>}
+              {selectedMedia&&<><Button iconOnly icon="tools" onClick={()=>setMediaTool({asset:selectedMedia,nodeId:node.id})}>媒体工具</Button><Button iconOnly icon="export" onClick={()=>run(()=>window.tugou.exportAsset(projectId,current.current.document,selectedMedia.id))}>导出媒体</Button></>}
+              {node?.type==='panorama'&&node.data.outputAssetId&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>环视全景</Button>}
+              {node?.type==='asset'&&document.assets.find(a=>a.id===node.data.assetId)?.projection&&<Button iconOnly icon="camera" onClick={()=>setSceneNode(node.id)}>环视全景</Button>}
+              {selectedImages.length>0&&<>
+                {selectedImages.length>1&&<Button icon="assets" onClick={()=>setComparison(selectedImages.map(n=>document.assets.find(a=>a.id===(n.data.assetId||n.data.outputAssetId))))}>多图对比</Button>}
+                {selectedImage&&<Button iconOnly icon="replace" disabled={disabled} onClick={()=>setReplacement({nodeId:node.id,assetId:selectedImage.id})}>替换图片</Button>}
+                <Button iconOnly icon="crop" disabled={disabled} onClick={()=>editSelectedImages("crop")}>裁剪</Button>
+                <Button iconOnly icon="zoomIn" disabled={disabled} onClick={()=>editSelectedImages("resize")}>放大</Button>
+                {selectedImage&&<Button iconOnly icon="export" onClick={()=>saveImage(selectedImage.id)}>保存图片</Button>}
+                {selectedImage&&<DisplayControls node={node} resize={resize} patch={patchNode} disabled={disabled}/>}
+                <ToolPopover label="图片工具" icon="tools">
+                  <div className="image-tool-detail">
+                    <Button disabled={disabled||!selectedImage||Boolean(activeTask)} onClick={()=>setAngleSource({nodeId:node.id,asset:selectedImage})}>AI 多角度</Button>
+                    <Button disabled={disabled||!selectedImage} onClick={()=>showDetails(selectedImage.id,node.id)}>查看原图</Button>
+                    <Button disabled={disabled||!selectedImage} onClick={async()=>{
+                      try{await copyAssetPrompt(await window.tugou.assetDetails(projectId,current.current.document,selectedImage.id,node.id));if(mounted.current)setMessage("提示词已复制");}
+                      catch(e){if(mounted.current)setMessage(e.message);}
+                    }}>复制提示词</Button>
+                    <Button disabled={disabled||!selectedImage} onClick={()=>analyzeImage(selectedImage.id,node.id)}>图片反推</Button>
+                    <Button disabled={disabled} onClick={()=>editSelectedImages("upscale")}>AI 超分辨率</Button>
+                    <Button disabled={disabled} onClick={()=>editSelectedImages("cutout")}>主体抠图</Button>
+                    <Button disabled={disabled} onClick={()=>editSelectedImages("split")}>切图</Button>
+                    <Button disabled={disabled} onClick={()=>editSelectedImages("resize")}>全部图像工具</Button>
+                  </div>
+                </ToolPopover>
+              </>}
+              {(canGroup||node?.type==='group')&&<ToolPopover label="分组" icon="layers">
+                <Button disabled={disabled||!canGroup} title={formatBinding(bindings(window.tugou.platform,preferences.value.shortcuts).group,window.tugou.platform)} onClick={createGroup}>创建分组</Button>
+                <Button disabled={disabled||node?.type!=='group'} title={formatBinding(bindings(window.tugou.platform,preferences.value.shortcuts).ungroup,window.tugou.platform)} onClick={dissolveGroup}>解散分组</Button>
+              </ToolPopover>}
+              {layoutNodes.length>=2&&<ToolPopover label="整理选中节点" icon="align" className="canvas-arrange-menu">
+                <small className="muted">{!layoutSameParent?'请选择同组节点，或选择整个组合':`整理 ${layoutNodes.length} 个节点 / 组合`}</small>
+                {[
+                  ['flow','按连接整理',2],['left','左对齐',2],['top','顶部对齐',2],
+                  ['horizontal','水平等间距',3],['vertical','垂直等间距',3],['grid','按行整理',2],
+                ].map(([mode,label,min])=><Button key={mode} disabled={disabled||!layoutSameParent||layoutNodes.length<min} onClick={()=>arrange(mode)}>{label}</Button>)}
+              </ToolPopover>}
+              {selected.length>0&&<Button iconOnly icon="copy" onClick={copy}>复制</Button>}
+              {selected.length>0&&inspectorHidden&&<Button icon="adjust" onClick={()=>setInspectorHidden(false)}>属性</Button>}
+              <Button iconOnly icon="delete" onClick={remove}>删除所选</Button>
+            </div>}
             {createMenu&&<CanvasNodeMenu position={createMenu} close={()=>{setCreateMenu(null);pendingLink.current=null;}} choose={chooseNode} disabled={disabled} canChoose={pendingLink.current?canCreateLinked:undefined}/>}
             <ContextMenu context={contextMenu.context} close={contextMenu.close} items={contextItems()} className="canvas-context-menu"/>
             {renameTarget&&<FormDialog title="重命名节点" close={()=>setRenameNodeId(null)} width={420}>
@@ -1017,28 +1085,31 @@ function CanvasWorkspace({
             </FormDialog>}
           </div>
           <aside
-            className={`canvas-inspector ${selected.length ? "" : "collapsed"}`}
+            className={`canvas-inspector ${selected.length && !inspectorHidden ? "" : "collapsed"}`}
           >
             {node ? (
               <>
                 <div className="panel-heading">
                   <h2>节点设置</h2>
-                  {nodeStatus(document, node) === "outdated" && (
-                    <Button
-                      onClick={() =>
-                        commit(
-                          nodes.map((entry) =>
-                            entry.id === node.id
-                              ? refreshNode(document, entry)
-                              : entry,
-                          ),
-                          edges,
-                        )
-                      }
-                    >
-                      更新引用
-                    </Button>
-                  )}
+                  <div className="panel-actions">
+                    {nodeStatus(document, node) === "outdated" && (
+                      <Button
+                        onClick={() =>
+                          commit(
+                            nodes.map((entry) =>
+                              entry.id === node.id
+                                ? refreshNode(document, entry)
+                                : entry,
+                            ),
+                            edges,
+                          )
+                        }
+                      >
+                        更新引用
+                      </Button>
+                    )}
+                    <Button iconOnly icon="close" aria-label="收起节点设置" onClick={() => setInspectorHidden(true)}>收起</Button>
+                  </div>
                 </div>
                 {node.type === "module" && (
                   <ReferenceEditor

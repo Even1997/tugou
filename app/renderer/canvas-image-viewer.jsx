@@ -13,7 +13,7 @@ export function CanvasImageViewer({asset, close}) {
   useEffect(()=>{
     const resize=()=>setViewport({width:window.innerWidth,height:window.innerHeight});
     const key=e=>{
-      if(e.ctrlKey||e.metaKey||e.altKey)return;
+      if(e.altKey)return;
       const action={'+':()=>actionsRef.current?.onZoomIn(),'=':()=>actionsRef.current?.onZoomIn(),'-':()=>actionsRef.current?.onZoomOut(),'0':()=>reset(false),'1':()=>reset(true)}[e.key];
       if(action){e.preventDefault();e.stopPropagation();action();}
     };

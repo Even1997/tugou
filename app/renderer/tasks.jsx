@@ -89,9 +89,12 @@ export function TaskPanel({ tasks, close, refresh, openProject }) {
               {task.status==='review'&&['cloud-tool','workflow'].includes(task.context?.kind)&&<p className="task-hint">重新提交云端生成可能再次计费。</p>}
               {task.imageTimings?.length>0&&<details className="task-timings">
                 <summary>生图耗时详情</summary>
-                {task.imageTimings.map((timing,index)=><p className="muted" key={index}>
-                  请求 {index+1}：{[['排队','queued','sent'],['等待响应','sent','headers'],['接收响应','headers','body'],['下载 / 解码','body','ready'],['保存图片','ready','saved']].map(([label,from,to])=>`${label} ${Number.isFinite(timing[to])&&Number.isFinite(timing[from])?((timing[to]-timing[from])/1000).toFixed(1)+' 秒':'—'}`).join(' · ')}
-                </p>)}
+                {task.imageTimings.map((timing,index)=><div className="task-timing-row" key={index}>
+                  <span className="task-timing-index">请求 {index+1}</span>
+                  <div className="task-timing-chips">
+                    {[['排队','queued','sent'],['等待响应','sent','headers'],['接收响应','headers','body'],['下载解码','body','ready'],['保存图片','ready','saved']].map(([label,from,to])=><span className="task-timing-chip" key={label}><span>{label}</span><strong>{Number.isFinite(timing[to])&&Number.isFinite(timing[from])?((timing[to]-timing[from])/1000).toFixed(1)+'s':'—'}</strong></span>)}
+                  </div>
+                </div>)}
                 <p className="muted">等待响应包含上传、服务端处理及网络等待；以上为客户端计时。</p>
               </details>}
               </div><div className="task-actions">

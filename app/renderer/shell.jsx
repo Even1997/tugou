@@ -28,6 +28,7 @@ export function StudioHeader({
   openProject,
   connection,
   tasks,
+  taskItems = [],
   undo,
   redo,
   canUndo,
@@ -44,6 +45,8 @@ export function StudioHeader({
     [renaming, setRenaming] = useState(false),
     [managing, setManaging] = useState(false),
     [name, setName] = useState("");
+  const activeTaskCount = taskItems.filter((item) => ["queued", "running"].includes(item.status)).length;
+  const attentionTaskCount = taskItems.filter((item) => ["failed", "interrupted", "review"].includes(item.status)).length;
   return (
     <>
       {managing&&<ProjectManager projects={projects} currentId={record?.id} dirty={dirty} busy={busy} remove={deleteProject} close={()=>setManaging(false)}/>}
@@ -94,8 +97,16 @@ export function StudioHeader({
             onClick={redo}
           />
           <span className="header-save-state" role="status" data-save-state={saveState}>{workspace==='fonts'?t('fontAuto'):t(saveState==='saving'?'saving':saveState==='saveFailed'?'saveFailed':dirty?'unsavedLabel':'saved')}</span>
-          <Button icon="tasks" onClick={tasks}>{t('tasks')}</Button>
+          <Button icon="tasks" className="header-tasks-btn" onClick={tasks}>
+            {t('tasks')}
+            {activeTaskCount > 0 ? (
+              <span className="header-task-badge" aria-label={`进行中任务 ${activeTaskCount} 项`}>{activeTaskCount}</span>
+            ) : attentionTaskCount > 0 ? (
+              <span className="header-task-dot" aria-label={`待关注任务 ${attentionTaskCount} 项`} />
+            ) : null}
+          </Button>
           <Button
+            className="header-save-btn"
             primary
             title={t('save')}
             aria-label={t('save')}
@@ -203,8 +214,9 @@ export function StudioStatus({
   const running = tasks.filter((t) =>
     ["running", "queued"].includes(t.status),
   ).length;
+  const showBar = Boolean(updateVisible);
   return (
-    <footer className="statusbar">
+    <footer className={`statusbar${showBar ? " is-active" : ""}`}>
       <span role="status">
         {dirty ? "有未保存修改" : notice || (record ? "已保存" : "就绪")}
       </span>

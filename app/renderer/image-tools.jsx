@@ -47,7 +47,7 @@ const toolGroups = [
   ['动图', {gif:'GIF 动图制作'}],
 ];
 const operations = Object.assign({}, ...toolGroups.map(([, entries])=>entries));
-const toolIcons = {cloudExtend:'maximize',upscale:'zoomIn',cutout:'mask'};
+const toolIcons = {cloudExtend:'maximize',upscale:'zoomIn',cutout:'mask',watermark:'eraser'};
 const defaults = {
   gif: {},
   ...cleanupDefaults,
@@ -419,7 +419,7 @@ export function ImageTools({
       <aside className="tools-materials" aria-label="图片素材">
         <div className="tools-materials-heading"><PanelHeader title="素材" count={materialAssets.length}><Button icon="import" loading={imageImport.importing} disabled={disabled||imageImport.importing} onClick={imageImport.open}>{imageImport.importing?'导入中…':'导入图片'}</Button></PanelHeader><SearchField label="搜索素材" value={materialQuery} onChange={setMaterialQuery}/></div>
         <div className="tools-material-list" role="group" aria-label="处理来源" data-value={sourceId}>
-          {visibleMaterials.map(a=><Button key={a.id} className="tools-material-item" data-asset-id={a.id} aria-label={`选择素材 ${a.name||'未命名图片'}`} aria-pressed={sourceId===a.id} disabled={working} onClick={()=>selectSource(a)}><img src={assetUrl(a)} alt="" loading="lazy" draggable={false}/><span><strong>{a.name||'未命名图片'}</strong><AssetTime asset={a}/><small>{a.width} × {a.height}{a.id===historicalSource?.id?' · 历史原图':''}</small></span></Button>)}
+          {visibleMaterials.map(a=><Button key={a.id} className="tools-material-item" data-asset-id={a.id} aria-label={`选择素材 ${a.name||'未命名图片'}`} aria-pressed={sourceId===a.id} disabled={working} onClick={()=>selectSource(a)}><img src={assetUrl(a)} alt="" loading="lazy" draggable={false}/><span><strong title={a.name||'未命名图片'}>{a.name||'未命名图片'}</strong><small>{a.width} × {a.height}{a.id===historicalSource?.id?' · 历史原图':''}</small></span></Button>)}
           {!visibleMaterials.length&&<EmptyState compact icon="assets" title={materialQuery.trim()?'没有匹配的素材':'还没有图片'} description={materialQuery.trim()?'试试其他关键词。':undefined}/>}
         </div>
         <details className="processing-history"><summary>处理记录 · {history.length}</summary>
@@ -622,11 +622,16 @@ export function ImageTools({
           importLut={importLut}
         />
       )}
-      {isCloud && <div className="cloud-tool-status">
-        <p role="status">{connectionError || cloudReady.reason}</p>
-        <Button onClick={() => setConnectionOpen(true)}>配置模型</Button>
-        <Button icon="refresh" aria-label="刷新云端工具状态" onClick={() => setConnectionRefresh(n => n + 1)}>刷新</Button>
-        <p className="muted">提交后可能产生费用；已配置不代表供应商支持编辑或当前尺寸。</p>
+      {isCloud && <div className="cloud-tool-status" data-ready={String(Boolean(!connectionError && cloudReady.ready))}>
+        <div className="cloud-tool-status-head">
+          <span className="cloud-status-dot" aria-hidden="true" />
+          <p role="status">{connectionError || cloudReady.reason}</p>
+        </div>
+        <div className="cloud-tool-status-actions">
+          <Button onClick={() => setConnectionOpen(true)}>配置模型</Button>
+          <Button icon="refresh" aria-label="刷新云端工具状态" onClick={() => setConnectionRefresh(n => n + 1)}>刷新</Button>
+        </div>
+        <p className="muted cloud-tool-note">提交后可能产生费用；已配置不代表供应商支持编辑或当前尺寸。</p>
       </div>}
       {connectionOpen && <ConnectionDialog close={() => setConnectionOpen(false)} />}
 </div><div className="tools-submit"><p className="muted">{!source ? "请先在左侧选择处理素材" : "生成新素材，原图保留"}</p><Button
@@ -799,7 +804,7 @@ export function ImageTools({
         </div>
 
       </div>
-      <div className="image-tools-footer">
+      <div className="image-tools-footer" data-empty={String(!result)}>
         <span className="muted">
           {source
             ? `${source.name} · 原尺寸 ${source.width} × ${source.height}`

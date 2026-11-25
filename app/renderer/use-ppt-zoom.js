@@ -32,7 +32,7 @@ export function usePptZoom(deck,enabled,gesture){
       apply(next);frame=requestAnimationFrame(animate);
     };
     const wheel=event=>{
-      if(!event.ctrlKey){stop();return;}
+      if(!event.ctrlKey&&!event.metaKey){stop();return;}
       event.preventDefault();event.stopPropagation();
       if(!event.deltaY||gesture.current||pan)return;
       const delta=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?node.clientHeight:1);

@@ -157,6 +157,7 @@ export function RecipeWorkbench({
     selected = document.recipes.find((r) => r.id === selectedId);
   const [submitting, setSubmitting] = useState(false),[sharedModel,setSharedModel]=useState('');
   const [recipeMenuOpen, setRecipeMenuOpen] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
   const menu=useContextMenu(),[removeId,setRemoveId]=useState(null);
   const target=document.recipes.find(r=>r.id===menu.context?.id),removing=document.recipes.find(r=>r.id===removeId);
   const parameterError=selected?imageSettingsError(sharedModel,selected):'';
@@ -178,6 +179,13 @@ export function RecipeWorkbench({
   return (
     <aside className="recipe-editor recipe-sidebar">
       <PanelHeader title="配方">
+        {selected && <IconButton label={copiedPrompt ? "已复制合成提示词" : "复制合成提示词"} icon={copiedPrompt ? "check" : "copy"} onClick={async () => {
+          try {
+            await window.tugou.copyText(compileRecipe(document, selected).prompt);
+            setCopiedPrompt(true);
+            setTimeout(() => setCopiedPrompt(false), 1800);
+          } catch {}
+        }} />}
         {selected && <IconButton label="新建配方" icon="add" onClick={add} />}
       </PanelHeader>
       {selected ? (
@@ -210,17 +218,9 @@ export function RecipeWorkbench({
                 />
               </label>
               <Button
-                onClick={() => {
-                  if (confirm("删除配方？画布中已有快照会保留。")) {
-                    change({
-                      ...document,
-                      recipes: document.recipes.filter(
-                        (r) => r.id !== selectedId,
-                      ),
-                    });
-                    onSelect(null);
-                  }
-                }}
+                danger
+                disabled={busy}
+                onClick={() => setRemoveId(selectedId)}
               >
                 删除配方
               </Button>
@@ -228,19 +228,18 @@ export function RecipeWorkbench({
           </div>
           <div className="recipe-fields">
             <section>
-              <h2>组合模块</h2>
+              <h2>组合模块 <span className="recipe-module-count">{document.modules.filter((m) => isGlobal(m) || selected.moduleIds.includes(m.id)).length}</span></h2>
               <div className="module-picker">
-                {document.modules.map((module) => (
+                {document.modules.map((module) => {
+                  const checked = isGlobal(module) || selected.moduleIds.includes(module.id);
+                  return (
                   <PromptHoverPreview key={module.id} document={document} item={module} type="module">
-                  <label className="check module-tile">
+                  <label className={`check module-tile${checked ? " is-checked" : ""}`}>
                     <input
                       type="checkbox"
                       aria-label={module.name}
                       disabled={isGlobal(module)}
-                      checked={
-                        isGlobal(module) ||
-                        selected.moduleIds.includes(module.id)
-                      }
+                      checked={checked}
                       onChange={(e) => {
                         const moduleIds = e.target.checked
                           ? [...selected.moduleIds, module.id]
@@ -259,7 +258,8 @@ export function RecipeWorkbench({
                     {isGlobal(module) && <small>全局</small>}
                   </label>
                   </PromptHoverPreview>
-                ))}
+                  );
+                })}
               </div>
               <details className="binding-details">
                 <summary>

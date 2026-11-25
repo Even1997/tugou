@@ -104,7 +104,7 @@ test("reviewed analysis goes to linked canvas modules/recipe once, preserving so
   assert.equal(next.tugouCanvas.edges.length, 3);
   assert.deepEqual(next.tugouCanvas.nodes.slice(0, 2), doc.tugouCanvas.nodes);
   assert.deepEqual(next.tugouCanvas.edges[0], doc.tugouCanvas.edges[0]);
-  assert.deepEqual(next.tugouCanvas.nodes[2].position, { x: 335, y: 0 });
+  assert.deepEqual(next.tugouCanvas.nodes[2].position, { x: 413, y: -28 });
   assert.equal(next.tugouCanvas.futureGraph, 42);
   assert.equal(next.unknown, doc.unknown);
   const compiled = compileNode(next, "analysis-recipe-" + draft.id);

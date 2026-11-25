@@ -106,6 +106,30 @@ export function ConnectionDialog({close}) {
           </nav>
 
           <main className="supplier-content">
+            <div className="supplier-routes-bar" role="region" aria-label="当前默认用途模型">
+              {purposes.map(([purpose, label, field]) => {
+                const conn = manager.connections.find((c) => c.id === manager.routes?.[purpose]);
+                const model = conn?.[field] || '';
+                const prov = conn ? manager.providers.find((p) => p.id === conn.providerId) : null;
+                const active = prov && prov.id === provider?.id;
+                return (
+                  <button
+                    key={purpose}
+                    type="button"
+                    className={`supplier-route-chip${model ? ' is-ready' : ''}${active ? ' is-current' : ''}`}
+                    disabled={!prov}
+                    title={model ? `${label}：${model}（${prov?.name || ''}）· 点击定位` : `${label}：尚未设置默认模型`}
+                    onClick={() => prov && chooseProvider(prov.id)}
+                  >
+                    <span className="supplier-route-head">
+                      <i aria-hidden="true" />
+                      <span>{label}</span>
+                    </span>
+                    <strong>{model || '未设置'}</strong>
+                  </button>
+                );
+              })}
+            </div>
             {error&&<p className="error" role="alert">{error}</p>}
             {provider?<>
               <div className="supplier-heading">

@@ -1,4 +1,5 @@
 import {Select} from './select.jsx';
+import {RemovalDialog} from './removal-dialog.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import {
   Button,
@@ -96,8 +97,12 @@ export function AnalysisDialog({
       if (mounted.current) setBusy(false);
     }
   };
-  const choose = (id) => {
-    if (edited && !confirm("放弃未保存的分析草稿修改？")) return;
+  const [discardDialog, setDiscardDialog] = useState(null);
+  const guardEdited = (action, description = "当前草稿修改尚未保存，放弃本次修改？") => {
+    if (!edited) return void action();
+    setDiscardDialog({ description, action });
+  };
+  const choose = (id) => guardEdited(() => {
     const item = results.find((r) => r.id === id);
     pending.current=null;
     setDraft(item);
@@ -106,11 +111,10 @@ export function AnalysisDialog({
     setEdited(false);
     setNotice("");
     setError("");
-  };
-  const chooseAsset=id=>{
-    if(edited&&!confirm("放弃未保存的分析草稿修改？"))return;
+  });
+  const chooseAsset=id=>guardEdited(()=>{
     pending.current=null;selected.current=null;setDraft(null);setReview(null);setEdited(false);setAssetId(id);setError("");setNotice("");
-  };
+  });
   const patch = (update) => {
     setReview((value) => ({ ...value, ...update }));
     setEdited(true);
@@ -121,13 +125,7 @@ export function AnalysisDialog({
         i === index ? { ...m, ...update } : m,
       ),
     });
-  const leave = () => {
-    if (
-      !edited ||
-      confirm("分析结果已保存，但草稿修改尚未保存。放弃本次修改？")
-    )
-      close();
-  };
+  const leave = () => guardEdited(close, "分析结果已保存，但草稿修改尚未保存。放弃本次修改？");
   const imported =
     draft &&
     document.tugouAnalysisImports?.some((item) => item.id === draft.id);
@@ -168,8 +166,7 @@ export function AnalysisDialog({
           <Button
             disabled={busy}
             onClick={() =>
-              run(async () => {
-                if(edited&&!confirm("放弃未保存的分析草稿修改？"))return;
+              guardEdited(() => run(async () => {
                 const assets = await api.importImage();
                 if (!mounted.current || !assets.length) return;
                 if (
@@ -180,7 +177,7 @@ export function AnalysisDialog({
                 )
                   throw new Error("工程正在保存，请稍后导入");
                 pending.current=null;selected.current=null;setDraft(null);setReview(null);setEdited(false);setAssetId(assets[0].id);
-              })
+              }))
             }
           >
             导入参考图
@@ -208,8 +205,7 @@ export function AnalysisDialog({
               )
             }
             onClick={() =>
-              run(async () => {
-                if(edited&&!confirm("放弃未保存的分析草稿修改？"))return;
+              guardEdited(() => run(async () => {
                 const job=await api.analyze(
                   projectId,
                   current.current.document,
@@ -221,7 +217,7 @@ export function AnalysisDialog({
                 await refreshTasks();
                 if (mounted.current)
                   setNotice("分析已提交，可关闭窗口继续编辑");
-              })
+              }))
             }
           >
             开始分析
@@ -455,6 +451,7 @@ export function AnalysisDialog({
           {imported&&sendToCanvas&&<Button primary disabled={busy} onClick={()=>run(()=>sendToCanvas(draft.id))}>送入画布</Button>}
         </footer>
       )}
+      {discardDialog&&<RemovalDialog title="放弃未保存的分析草稿修改？" description={discardDialog.description} confirmLabel="放弃修改" close={()=>setDiscardDialog(null)} remove={()=>discardDialog.action()}/>}
     </FormDialog>
   );
 }

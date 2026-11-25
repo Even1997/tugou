@@ -54,8 +54,8 @@ function FontProject({id,back,remove}){
   const [removal,setRemoval]=useState(null);
   const [p,setProject]=useState(null),[runtime,setRuntime]=useState(null),[tab,setTab]=useState('library'),[atlasId,setAtlasId]=useState(null),[promptChars,setPromptChars]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[promptOpen,setPromptOpen]=useState(false),[exportOpen,setExportOpen]=useState(false),[inspectId,setInspectId]=useState(null),[detail,setDetail]=useState(null);
   const [threshold,setThreshold]=useState(128),[normalize,setNormalize]=useState(true),[smoothing,setSmoothing]=useState(14),[bold,setBold]=useState(4);
-  const current=useRef(null),mounted=useRef(true),acting=useRef(false);
-  const refresh=async()=>{const next=await call('project.get',{projectId:id});if(mounted.current){current.current=next;setProject(next);}return next;};
+  const current=useRef(null),projectKey=useRef(''),mounted=useRef(true),acting=useRef(false);
+  const refresh=async()=>{const next=await call('project.get',{projectId:id});if(mounted.current){current.current=next;const key=JSON.stringify(next);if(key!==projectKey.current){projectKey.current=key;setProject(next);}}return next;};
   useEffect(()=>{mounted.current=true;refresh().catch(e=>setError(e.message));call('status').then(setRuntime).catch(e=>setError(e.message));
     let fetching=false;const timer=setInterval(async()=>{if(fetching)return;fetching=true;try{await refresh();}catch(e){if(mounted.current)setError(e.message);}finally{fetching=false;}},1200);
     return()=>{mounted.current=false;clearInterval(timer);};},[id]);

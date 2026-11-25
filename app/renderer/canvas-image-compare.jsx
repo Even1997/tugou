@@ -24,7 +24,7 @@ export function CanvasImageCompare({assets, close}) {
     resize();
     const observer=new ResizeObserver(resize);observer.observe(element);
     const wheel=event=>{
-      if(!event.ctrlKey)return;
+      if(!event.ctrlKey&&!event.metaKey)return;
       event.preventDefault();event.stopPropagation();
       if(event.deltaY)setViews(previous=>previous.map(view=>zoomView(view,event.deltaY<0?.25:-.25)));
     };
@@ -60,7 +60,7 @@ export function CanvasImageCompare({assets, close}) {
         </div>
         <span className="image-compare-hint">{linked?`${assets.length} 张图片一起调整`:`正在调整第 ${active+1} 张 · 点击图片切换`}{!overview&&assets.length>2?' · 向下滚动查看更多':''}</span>
       </div>
-      <div className="image-compare-controls" aria-label="对比缩放控件" title="Ctrl＋滚轮：统一缩放全部图片">
+      <div className="image-compare-controls" aria-label="对比缩放控件" title="Ctrl/⌘＋滚轮：统一缩放全部图片">
         <Button iconOnly icon="zoomOut" aria-label="缩小对比图片" disabled={targets.every(view=>view.scale<=.25)} onClick={()=>zoom(-.25)}/>
         <span aria-label="对比缩放倍率" title={mixed?'各图倍率不同，联动时同时增减':'相对于适应窗口的倍率'}>{mixed?'混合':factor(targets[0].scale)}</span>
         <Button iconOnly icon="zoomIn" aria-label="放大对比图片" disabled={targets.every(view=>view.scale>=4)} onClick={()=>zoom(.25)}/>

@@ -11,6 +11,7 @@ import { MaterialGrid } from "./material-grid.jsx";
 import {MediaPreview} from './media-preview.jsx';
 import {useUiView} from './ui-view.js';
 import {ImageSaveMenu} from './image-save-menu.jsx';
+import {RemovalDialog} from './removal-dialog.jsx';
 import {menuAction as item} from './context-menu.jsx';
 
 import {
@@ -28,7 +29,8 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
     [focused,setFocused]=useState(null),
     [error, setError] = useState(""),
     [selected, setSelected] = useState([]),
-    [density, setDensity] = useState("medium");
+    [density, setDensity] = useState("medium"),
+    [removingIds, setRemovingIds] = useState(null);
   const latest = useRef(document);
   const [notice,setNotice]=useState('');
   useUiView('assets',{get:()=>({source,shape,sort,query,focused,selected,density}),restore:v=>{setSource(v.source);setShape(v.shape);setSort(v.sort);setQuery(v.query);setFocused(v.focused);setSelected(v.selected);setDensity(v.density);}});
@@ -69,18 +71,24 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
       setError(`${used.length} 项素材仍被图层、画布或配方引用，请先解除引用。`);
       return;
     }
-    if (confirm(`从素材库移除 ${ids.length} 项素材？原文件不会删除。`)) {
-      change({
-        ...latest.current,
-        assets: assets.filter((a) => !ids.includes(a.id)),
-      });
-      setSelected(current=>current.filter(id=>!ids.includes(id)));
-    }
+    setRemovingIds(ids);
   });
+  const confirmRemove = () => {
+    if (!removingIds?.length) return;
+    const targets = new Set(removingIds);
+    change({
+      ...latest.current,
+      assets: latest.current.assets.filter((a) => !targets.has(a.id)),
+    });
+    setSelected((current) => current.filter((id) => !targets.has(id)));
+    setNotice(`已移除 ${targets.size} 项素材`);
+  };
   return (
-    <section className={`asset-library density-${density}`} onDragOver={imageImport.over} onDrop={e=>{if(hasImageFiles(e))imageImport.drop(e);}}>
+    <section className={`asset-library density-${density}`} data-selecting={chosen.length ? 'true' : undefined} onDragOver={imageImport.over} onDrop={e=>{if(hasImageFiles(e))imageImport.drop(e);}}>
       <div className="library-toolbar">
         <PanelHeader title="素材库" count={document.assets.length} />
+        <div className="library-filters" role="group" aria-label="素材来源筛选">{[["all","全部"],["imported","导入素材"],["generated","生成结果"],["processed","处理结果"]].map(([id,label])=><Button key={id} aria-pressed={source===id} onClick={()=>setSource(id)}>{label}</Button>)}</div>
+  
         <SearchField label="搜索素材" value={query} onChange={setQuery} />
         <ToolPopover label={source!=='all'||shape!=='all'?'筛选 · 已启用':'筛选与排序'} icon="filter">
           <div className="image-tool-detail">
@@ -101,10 +109,10 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
           <option value="medium">中缩略图</option>
           <option value="large">大缩略图</option>
         </Select>
-        <Button iconOnly aria-label={`移除${selected.length ? ` (${selected.length})` : ""}`} disabled={disabled||!chosen.length} icon="delete" onClick={()=>remove(chosen)}>
+        <Button className="library-selection-action" iconOnly aria-label={`移除${selected.length ? ` (${selected.length})` : ""}`} disabled={disabled||!chosen.length} icon="delete" onClick={()=>remove(chosen)}>
           移除{selected.length ? ` (${selected.length})` : ""}
         </Button>
-        <Button iconOnly aria-label={`处理所选${selected.length ? ` (${selected.length})` : ""}`} disabled={!selected.length||selected.some(id=>document.assets.some(a=>a.id===id&&a.kind&&a.kind!=='image'))} icon="tools" onClick={()=>editImages(selected)}>处理所选{selected.length ? ` (${selected.length})` : ""}</Button>
+        <Button className="library-selection-action" iconOnly aria-label={`处理所选${selected.length ? ` (${selected.length})` : ""}`} disabled={!selected.length||selected.some(id=>document.assets.some(a=>a.id===id&&a.kind&&a.kind!=='image'))} icon="tools" onClick={()=>editImages(selected)}>处理所选{selected.length ? ` (${selected.length})` : ""}</Button>
         {replacementTarget&&<Button iconOnly icon="replace" disabled={chosen.length!==1||replacementTarget.locked||document.assets.some(a=>a.id===chosen[0]&&a.kind&&a.kind!=="image")} title={`替换「${replacementTarget.name}」`} onClick={()=>run(()=>replaceLayer(chosen[0]))}>替换图层</Button>}
         <Button aria-label={imageImport.importing?"导入中":"导入图片"} primary icon="import" loading={imageImport.importing} disabled={imageImport.importing||disabled} onClick={imageImport.open}>
           {imageImport.importing?'导入中…':'导入图片'}
@@ -116,7 +124,7 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
         </div>
       )}
       {notice&&<div className="message" role="status">{notice}</div>}
-      <div className="library-filters" role="group" aria-label="素材来源筛选">{[["all","全部"],["imported","导入素材"],["generated","生成结果"],["processed","处理结果"]].map(([id,label])=><Button key={id} aria-pressed={source===id} onClick={()=>setSource(id)}>{label}</Button>)}</div>
+
       <div className="library-content">
       {assets.length ? (
         <MaterialGrid items={assets} density={density}>
@@ -150,13 +158,6 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
                     )
                   }
                 />
-              </div>
-              <div className="asset-caption">
-                <strong title={asset.name}>{asset.name}</strong>
-                <AssetTime asset={asset}/>
-                <span>
-                  {asset.kind&&asset.kind!=='image'?{text:'文本',audio:'音频',video:'视频'}[asset.kind]:`${asset.width} × ${asset.height}`}
-                </span>
                 <div className="asset-actions">
                   {(!asset.kind||asset.kind==='image')&&<Button iconOnly icon="export" size="small" onClick={()=>saveImage(asset.id)}>保存图片</Button>}
                   <Button iconOnly icon="layers" size="small" disabled={asset.kind&&asset.kind!=='image'} onClick={() => addToLayers(asset)}>
@@ -169,6 +170,13 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
                     加入画布
                   </Button>
                 </div>
+              </div>
+              <div className="asset-caption">
+                <strong title={asset.name}>{asset.name}</strong>
+                <AssetTime asset={asset}/>
+                <span className="asset-dims">
+                  {asset.kind&&asset.kind!=='image'?{text:'文本',audio:'音频',video:'视频'}[asset.kind]:`${asset.width} × ${asset.height}`}
+                </span>
               </div>
             </article>
             </ImageSaveMenu>
@@ -186,8 +194,15 @@ export function AssetLibrary({ projectId, document, change, addToCanvas, addToLa
           </Button>
         </EmptyState>
       )}
-      {detail&&<aside className="library-details" aria-label="素材详情"><div className="panel-heading"><h2>素材详情</h2><Button iconOnly icon="maximize" aria-label="放大预览" onClick={()=>setPreview(detail.id)}/></div><MediaPreview asset={detail} className="material-preview"/><div className="material-identity"><h3>{detail.name}</h3><AssetTime asset={detail}/></div><dl><dt>尺寸</dt><dd>{detail.width&&detail.height?detail.width+' × '+detail.height:detail.kind}</dd><dt>来源</dt><dd>{({processed:'处理结果',generated:'生成结果',imported:'导入素材'})[materialSource(detail)]}</dd></dl><div className="detail-actions">{(!detail.kind||detail.kind==='image')&&<Button icon="export" onClick={()=>saveImage(detail.id)}>保存图片</Button>}<Button primary icon="canvas" onClick={()=>addToCanvas('asset',detail.id)}>添加到画布</Button><Button icon="layers" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>addToLayers(detail)}>添加到图层</Button><Button icon="tools" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>editImages([detail.id])}>处理图片</Button><Button onClick={()=>setPreview(detail.id)}>查看完整详情</Button></div></aside>}
+      {detail&&<aside className="library-details" aria-label="素材详情"><div className="panel-heading"><h2>素材详情</h2><Button iconOnly icon="maximize" aria-label="放大预览" onClick={()=>setPreview(detail.id)}/></div><MediaPreview asset={detail} className="material-preview"/><div className="material-identity"><h3>{detail.name}</h3><AssetTime asset={detail}/></div><dl><dt>尺寸</dt><dd>{detail.width&&detail.height?detail.width+' × '+detail.height:detail.kind}</dd><dt>来源</dt><dd>{({processed:'处理结果',generated:'生成结果',imported:'导入素材'})[materialSource(detail)]}</dd></dl><div className="detail-actions"><Button primary icon="canvas" onClick={()=>addToCanvas('asset',detail.id)}>添加到画布</Button><Button icon="layers" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>addToLayers(detail)}>添加到图层</Button><Button icon="tools" disabled={!!detail.kind&&detail.kind!=='image'} onClick={()=>editImages([detail.id])}>处理图片</Button>{(!detail.kind||detail.kind==='image')&&<Button icon="export" onClick={()=>saveImage(detail.id)}>保存图片</Button>}<Button onClick={()=>setPreview(detail.id)}>查看完整详情</Button></div></aside>}
       </div>
+      {chosen.length>0&&<div className="library-bulk-bar" role="region" aria-label="批量素材操作">
+        <span>已选 <strong>{chosen.length}</strong> 项</span>
+        <Button icon="tools" disabled={chosen.some(id=>document.assets.some(a=>a.id===id&&a.kind&&a.kind!=='image'))} onClick={()=>editImages(chosen)}>批量处理</Button>
+        <Button danger icon="delete" disabled={disabled} onClick={()=>remove(chosen)}>移除</Button>
+        <Button onClick={()=>setSelected([])}>取消选择</Button>
+      </div>}
+      {removingIds&&<RemovalDialog title={`移除 ${removingIds.length} 项素材？`} description="素材将从当前工程素材库移除，本地原文件不会被删除。" confirmLabel="移除" close={()=>setRemovingIds(null)} remove={confirmRemove}/>}
       {preview&&<MaterialDetails projectId={projectId} document={document} assetId={preview} change={change} close={()=>setPreview(null)} editImages={editImages} analyzeImage={analyzeImage} addToCanvas={addToCanvas} addToLayers={addToLayers}/>}
     </section>
   );

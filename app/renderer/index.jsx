@@ -12,7 +12,8 @@ import { ConnectionDialog } from "./connection.jsx";
 import { ImageTools } from "./image-tools.jsx";
 import { AssetLibrary } from "./materials.jsx";
 import { StudioHeader, StudioStatus } from "./shell.jsx";
-import { ThemeProvider, Button, FormDialog } from "./components.jsx";
+import { ThemeProvider, Button, FormDialog, Icon } from "./components.jsx";
+import { ShortcutsDialog } from "./command-palette.jsx";
 import { InfiniteCanvas } from "./canvas.jsx";
 import { CompositeWorkspace as LayerEditor } from "./composite-workspace.jsx";
 import { AnalysisDialog } from "./analysis.jsx";
@@ -43,6 +44,17 @@ import {views} from './ui-view.js';
 import {useAutosave} from './use-autosave.js';
 import {loadPage,loadPages,rememberPages,suspendPages,undoPageFocus} from './page-storage.js';
 const api = window.tugou;
+const validWorkspaces = ["home", "layers", "canvas", "prompts", "assets", "tools", "fonts", "settings", "ppt"];
+function readStoredView() {
+  try {
+    const raw = sessionStorage.getItem("tugou-reload-view") || sessionStorage.getItem("tugou-session-view");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 let previewBootstrap={enabled:false,snapshot:null};
 function prepareRecord(record){
   if(!record)return record;
@@ -62,11 +74,25 @@ function App() {
   },[]);
   const [projects, setProjects] = useState(previewBootstrap.snapshot?.projects||[]);
   const [projectsReady,setProjectsReady]=useState(!!previewBootstrap.snapshot);
+  const initialViewRef = useRef(undefined);
+  if (initialViewRef.current === undefined) initialViewRef.current = readStoredView();
+  const sessionHydrated = useRef(Boolean(previewBootstrap.snapshot));
+  const [hydrating, setHydrating] = useState(() => !previewBootstrap.snapshot && Boolean(initialViewRef.current?.id));
   const [record, setRecord] = useState(previewBootstrap.snapshot?.record||null);
   useEffect(()=>{document.title=record?.document.name?`${record.document.name} · 土狗`:'土狗';},[record?.document.name]);
-  const [workspace, setWorkspace] = useState(previewBootstrap.snapshot?.workspace||"home");
+  const [workspace, setWorkspace] = useState(() => {
+    if (previewBootstrap.snapshot?.workspace) return previewBootstrap.snapshot.workspace;
+    const saved = initialViewRef.current?.workspace;
+    return validWorkspaces.includes(saved) ? saved : "home";
+  });
   const [lastWorkspace,setLastWorkspace]=useState(()=>{const value=localStorage.getItem('tugou-last-workspace');return Object.hasOwn(workspaceNames,value)?value:null;});
   useEffect(()=>{if(Object.hasOwn(workspaceNames,workspace)){setLastWorkspace(workspace);localStorage.setItem('tugou-last-workspace',workspace);}},[workspace]);
+  useEffect(() => {
+    if (!sessionHydrated.current) return;
+    try {
+      sessionStorage.setItem("tugou-session-view", JSON.stringify({ id: record?.id || null, workspace }));
+    } catch {}
+  }, [record?.id, workspace]);
 
   const [recipeId, setRecipeId] = useState(previewBootstrap.snapshot?.recipeId||null);
   const [moduleId, setModuleId] = useState(previewBootstrap.snapshot?.moduleId||null);
@@ -82,8 +108,22 @@ function App() {
   const [notice, setNotice] = useState("");
   const [tasks, setTasks] = useState([]),
     [tasksOpen, setTasksOpen] = useState(false);
+  const tasksKeyRef = useRef("");
+  const updateTasks = (list) => {
+    const key = JSON.stringify(list);
+    if (key !== tasksKeyRef.current) {
+      tasksKeyRef.current = key;
+      setTasks(list);
+    }
+  };
   const [tasksReady,setTasksReady]=useState(false);
   const [helpOpen,setHelpOpen]=useState(false);
+  const [shortcutsOpen,setShortcutsOpen]=useState(false);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(""), 3400);
+    return () => clearTimeout(timer);
+  }, [notice]);
   const seenResults = useRef(new Set(previewBootstrap.snapshot?.seenResults||[]));
   const history = useRef(previewBootstrap.snapshot?.history||{ past: [], future: [] });
   const pageViews=useRef(previewBootstrap.snapshot?.pageViews||{});
@@ -103,26 +143,43 @@ function App() {
   const refresh = async () => {setProjects(await api.list());setProjectsReady(true);};
   useEffect(() => {
     run(refresh);
-    if(!previewBootstrap.snapshot&&!sessionStorage.getItem('tugou-reload-view'))run(async()=>{const [last,settings]=await Promise.all([api.settings('lastProject'),api.settings('get')]);const restored=prepareRecord(last);if(restored&&!present.current){present.current=restored;setRecord(restored);setWorkspace(current=>current==='home'?settings.preferences.startupWorkspace:current);if(restored.promptsExtracted)markDirty(true);}});
-  }, []);
-  useEffect(() => {
-    const raw = sessionStorage.getItem("tugou-reload-view");
-    if (!raw) return;
+    if (previewBootstrap.snapshot) return;
+    const stored = initialViewRef.current;
     sessionStorage.removeItem("tugou-reload-view");
     run(async () => {
-      const view = JSON.parse(raw);
-      if (view.id) {
-        const next = prepareRecord(await api.open(view.id));
-        present.current = next;
-        setRecord(next);
-        if(next.promptsExtracted)markDirty(true);
+      try {
+        if (stored) {
+          let next = null;
+          if (stored.id) {
+            try { next = prepareRecord(await api.open(stored.id)); } catch {}
+          }
+          if (!next) {
+            const last = await api.settings("lastProject");
+            next = prepareRecord(last);
+          }
+          if (next && !present.current) {
+            present.current = next;
+            setRecord(next);
+            if (next.promptsExtracted) markDirty(true);
+          }
+          if (validWorkspaces.includes(stored.workspace)) setWorkspace(stored.workspace);
+          return;
+        }
+        const [last, settings] = await Promise.all([api.settings("lastProject"), api.settings("get")]);
+        const restored = prepareRecord(last);
+        if (restored && !present.current) {
+          present.current = restored;
+          setRecord(restored);
+          setWorkspace((current) => (current === "home" ? settings.preferences.startupWorkspace : current));
+          if (restored.promptsExtracted) markDirty(true);
+        }
+      } finally {
+        sessionHydrated.current = true;
+        setHydrating(false);
+        try {
+          sessionStorage.setItem("tugou-session-view", JSON.stringify({ id: present.current?.id || null, workspace: validWorkspaces.includes(stored?.workspace) ? stored.workspace : workspace }));
+        } catch {}
       }
-      if (
-        ["home", "layers", "canvas", "prompts", "assets", "tools", "fonts", "settings", "ppt"].includes(
-          view.workspace,
-        )
-      )
-        setWorkspace(view.workspace);
     });
   }, []);
   const markDirty = (value, autoSave = true) => {
@@ -170,7 +227,7 @@ function App() {
       change(suspendPages(next),{history:false});
     }
   };
-  const refreshTasks = async () => {const list=await api.tasks();setTasks(list);setTasksReady(true);await syncOutputs(list);};
+  const refreshTasks = async () => {const list=await api.tasks();updateTasks(list);setTasksReady(true);await syncOutputs(list);};
   useEffect(() => {
     let stopped = false,
       polling = false, pending = false;
@@ -181,7 +238,7 @@ function App() {
       try {
         const list = await api.tasks();
         if (stopped) return;
-        setTasks(list);
+        updateTasks(list);
         setTasksReady(true);
         await syncOutputs(list);
         const id = present.current?.id;
@@ -438,6 +495,11 @@ function App() {
   }));
   useEffect(() => {
     const handler = (event) => {
+      if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey && !shortcutBlocked(event)) {
+        event.preventDefault();
+        setShortcutsOpen((open) => !open);
+        return;
+      }
       if(shortcutBlocked(event)||busy)return;
       const command=commandFor(event,api.platform,preferences.value.shortcuts);
       if (command === 'save') {
@@ -456,7 +518,7 @@ function App() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   });
-  const switchProject = (operation) => {
+  const switchProject = (operation, options = {}) => {
     if (busyRef.current) return;
     run(async () => {
       await prepareToLeave();
@@ -469,7 +531,7 @@ function App() {
           seenResults.current = new Set();
           setRecord(next);
           setModuleId(null);
-          if(workspace==='home'&&lastWorkspace)setWorkspace(lastWorkspace);
+          if (!options.stay) setWorkspace("home");
           setLayerSelection([]);
           setRecipeId(null);
           setToolSession(null);
@@ -524,6 +586,7 @@ function App() {
         openProject={(id) => switchProject(() => api.open(id))}
         connection={() => setConnectionOpen(true)}
         tasks={() => setTasksOpen(true)}
+        taskItems={tasks}
         undo={() => run(()=>travel("undo"))}
         redo={() => run(()=>travel("redo"))}
         canUndo={Boolean(history.current.past.length)}
@@ -566,7 +629,7 @@ function App() {
               addToCanvas={addToCanvas} addToLayers={(...args)=>{if(!busyRef.current){addAssetLayer(...args);setToolSession(null);}}} />
           </div>
         </FormDialog>}
-        {workspace === 'ppt' ? <PresentationsWorkspace key={record?.id||'empty'} record={record} change={change} disabled={busy} save={save} undo={()=>run(()=>travel('undo'))} redo={()=>run(()=>travel('redo'))} canUndo={Boolean(history.current.past.length)} canRedo={Boolean(history.current.future.length)} createProject={()=>switchProject(()=>api.create('演示文稿工程'))}/> : workspace === 'home' ? <HomeWorkspace lastWorkspace={lastWorkspace} projects={projects} projectsReady={projectsReady} record={record} tasks={tasks} tasksReady={tasksReady} busy={busy} create={()=>switchProject(()=>api.create('未命名创作'))} open={id=>switchProject(()=>api.open(id))} navigate={setWorkspace} showTasks={()=>setTasksOpen(true)}/> : workspace === 'settings' ? <SettingsWorkspace openModels={()=>setConnectionOpen(true)} modelsOpen={connectionOpen} /> : workspace === "fonts" ? <FontWorkspace /> : record ? (
+        {workspace === 'ppt' ? <PresentationsWorkspace key={record?.id||'empty'} record={record} change={change} disabled={busy} save={save} undo={()=>run(()=>travel('undo'))} redo={()=>run(()=>travel('redo'))} canUndo={Boolean(history.current.past.length)} canRedo={Boolean(history.current.future.length)} createProject={()=>switchProject(()=>api.create('演示文稿工程'),{stay:true})}/> : workspace === 'home' ? <HomeWorkspace lastWorkspace={lastWorkspace} projects={projects} projectsReady={projectsReady} record={record} dirty={dirty} tasks={tasks} tasksReady={tasksReady} busy={busy} create={()=>switchProject(()=>api.create('未命名创作'))} open={id=>switchProject(()=>api.open(id))} renameProject={(name)=>change({ ...present.current.document, name })} deleteProject={deleteProject} navigate={setWorkspace} showTasks={()=>setTasksOpen(true)}/> : workspace === 'settings' ? <SettingsWorkspace openModels={()=>setConnectionOpen(true)} modelsOpen={connectionOpen} /> : workspace === "fonts" ? <FontWorkspace /> : record ? (
           <>
             <div className="document-heading">
               <input
@@ -692,7 +755,7 @@ function App() {
               )}
             </fieldset>
           </>
-        ) : (
+        ) : hydrating ? null : (
           <div className="empty welcome">
             <span className="eyebrow">土狗 / 创作空间</span>
             <h1>把想法，拆成可以组合的素材。</h1>
@@ -740,6 +803,16 @@ function App() {
       <HelpPanel open={helpOpen} close={()=>setHelpOpen(false)} showTasks={()=>setTasksOpen(true)}/>
       {connectionOpen && (
         <ConnectionDialog close={() => setConnectionOpen(false)} />
+      )}
+      {shortcutsOpen && <ShortcutsDialog close={() => setShortcutsOpen(false)} />}
+      {notice && (
+        <div className="studio-toast" role="status" aria-live="polite">
+          <Icon name="checkCircle" />
+          <span>{notice}</span>
+          <button type="button" className="studio-toast-close" aria-label="关闭提示" onClick={() => setNotice("")}>
+            <Icon name="close" />
+          </button>
+        </div>
       )}
     </div>
   );

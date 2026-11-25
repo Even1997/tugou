@@ -30,8 +30,10 @@
 .task-row-heading strong { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13.5px; font-weight:600; line-height:1.4; }
 .task-state { display:inline-flex; align-items:center; gap:5px; flex-shrink:0; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:600; color:var(--muted); background:var(--surface); }
 .task-state::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+@keyframes task-pulse { 0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent);} 50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 0%,transparent);} }
 .task-row[data-status=completed] .task-state { color:var(--success); background:color-mix(in srgb,var(--success) 12%,var(--panel)); }
 .task-row[data-status=running] .task-state,.task-row[data-status=queued] .task-state { color:var(--accent); background:var(--accent-bg); }
+.task-row[data-status=running] .task-state::before,.task-row[data-status=queued] .task-state::before { animation:task-pulse 1.8s ease-in-out infinite; }
 .task-row[data-status=failed] .task-state,.task-row[data-status=interrupted] .task-state,.task-row[data-status=review] .task-state { color:var(--danger); background:color-mix(in srgb,var(--danger) 12%,var(--panel)); }
 
 .task-row p { margin:5px 0 0; font-size:12px; line-height:1.65; overflow-wrap:anywhere; }
@@ -54,7 +56,13 @@
 .task-message-details>summary { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; list-style-position:inside; }
 .task-message-details[open]>summary { color:var(--accent); }
 .task-message-details p { white-space:pre-wrap; }
-.task-timings[open] { padding:10px 12px; border:1px solid var(--panel-line); border-radius:7px; background:var(--bg); }
+.task-timings[open] { padding:10px 12px; border:1px solid var(--panel-line); border-radius:7px; background:var(--bg); display:flex; flex-direction:column; gap:8px; }
+.task-timing-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.task-timing-index { font-size:11px; font-weight:600; color:var(--muted); min-width:44px; }
+.task-timing-chips { display:flex; flex-wrap:wrap; gap:5px; }
+.task-timing-chip { display:inline-flex; align-items:center; gap:5px; padding:2px 7px; border:1px solid var(--panel-line); border-radius:5px; background:var(--panel); font-size:11px; font-variant-numeric:tabular-nums; }
+.task-timing-chip > span { color:var(--muted); }
+.task-timing-chip > strong { color:var(--text); font-weight:600; }
 .task-dialog .task-error { margin:0; padding:10px 22px; background:color-mix(in srgb,var(--danger) 10%,var(--panel)); color:var(--danger); font-size:12px; overflow-wrap:anywhere; }
 .task-dialog :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
